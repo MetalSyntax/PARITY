@@ -138,14 +138,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpd
                 className="p-4 bg-theme-surface border border-white/10 hover:bg-white/5 rounded-xl flex flex-col items-center gap-2 transition-colors"
             >
                 <FileSpreadsheet size={24} className="text-emerald-400" />
-                <span className="text-xs font-bold text-theme-primary">Export Transactions (CSV)</span>
+                <span className="text-xs font-bold text-theme-primary">{t('exportTransactions')}</span>
             </button>
              <button 
                 onClick={handleBackupJSON}
                 className="p-4 bg-theme-surface border border-white/10 hover:bg-white/5 rounded-xl flex flex-col items-center gap-2 transition-colors"
             >
                 <FileSpreadsheet size={24} className="text-blue-400" />
-                <span className="text-xs font-bold text-theme-primary">Full Backup (JSON)</span>
+                <span className="text-xs font-bold text-theme-primary">{t('fullBackup')}</span>
             </button>
         </div>
 
@@ -153,7 +153,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpd
              <label className="text-xs text-theme-secondary mb-2 block">Restore Data</label>
              <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
                 <div className="flex flex-col items-center gap-1">
-                    <span className="text-xs text-theme-secondary">Click to upload backup (.json)</span>
+                    <span className="text-xs text-theme-secondary">{t('clickToUploadBackup')}</span>
                 </div>
                 <input type="file" className="hidden" accept=".json" onChange={handleImportFile} />
              </label>

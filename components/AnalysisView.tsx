@@ -137,11 +137,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                 {showDetails && (
                     <div className="mt-6 pt-6 border-t border-white/5 animate-in slide-in-from-top-2">
                         <div className="flex justify-between text-sm text-theme-secondary mb-2">
-                            <span>Total Income</span>
+                            <span>{t('totalIncomeLabel')}</span>
                             <span className="text-emerald-400">${totalIncome.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-theme-secondary">
-                            <span>Total Expenses</span>
+                            <span>{t('totalExpensesLabel')}</span>
                             <span className="text-red-400">-${totalSpent.toFixed(2)}</span>
                         </div>
                     </div>
@@ -155,7 +155,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
             {/* Scheduled Payments List */}
             <div className="flex flex-col gap-3">
                 {scheduledPayments.length === 0 && (
-                    <p className="text-theme-secondary text-sm ml-2">No upcoming subscriptions.</p>
+                    <p className="text-theme-secondary text-sm ml-2">{t('noSubscriptions')}</p>
                 )}
                 {displayedSubs.map(sub => {
                     const days = getDaysDiff(sub.date);
@@ -172,7 +172,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                             </div>
                             <div className="text-right">
                                 <div className={`text-[10px] ${badgeColor} px-2 py-0.5 rounded-full mb-1 inline-block`}>
-                                    {days < 0 ? `${Math.abs(days)} days ago` : days === 0 ? 'Today' : `${days} days left`}
+                                    {days < 0 ? `${Math.abs(days)} ${t('daysAgo')}` : days === 0 ? t('today') : `${days} ${t('daysLeft')}`}
                                 </div>
                                 <div className="font-bold text-theme-primary">${sub.amount}</div>
                             </div>
@@ -183,7 +183,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
           </>
       ) : (
           <div className="animate-in slide-in-from-right duration-300">
-              <h2 className="text-2xl font-bold mb-6 text-theme-primary">Income Sources & Platforms</h2>
+              <h2 className="text-2xl font-bold mb-6 text-theme-primary">{t('incomeSources')}</h2>
               
               <div className="grid grid-cols-1 gap-4 mb-8">
                   {incomeCategories.map(cat => (
@@ -200,7 +200,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                           </div>
                           
                           <div className="flex justify-between items-center">
-                             <span className="text-theme-secondary text-sm">Platform Total</span>
+                             <span className="text-theme-secondary text-sm">{t('platformTotal')}</span>
                              <span className="text-theme-brand text-sm font-bold">{((cat.total / totalIncome) * 100).toFixed(1)}%</span>
                           </div>
                           
@@ -211,7 +211,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                   ))}
                   {incomeCategories.length === 0 && (
                       <div className="text-center py-20 text-theme-secondary border-2 border-dashed border-white/10 rounded-3xl">
-                          No income sources found. Add income transactions first.
+                          {t('noIncomeSources')}
                       </div>
                   )}
               </div>

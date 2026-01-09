@@ -72,10 +72,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
   const [budgets, setBudgets] = useState<Budget[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_BUDGETS);
     try {
-        return saved ? JSON.parse(saved) : [
-            { categoryId: 'food', limit: 300 },
-            { categoryId: 'transport', limit: 120 }
-        ];
+        return saved ? JSON.parse(saved) : [];
     } catch {
         return [];
     }
@@ -84,10 +81,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
   const [goals, setGoals] = useState<Goal[]>(() => {
       const saved = localStorage.getItem(STORAGE_KEY_GOALS);
       try {
-          return saved ? JSON.parse(saved) : [
-            { id: '1', name: 'Trip to Japan', targetAmount: 2500, savedAmount: 1250, deadline: '2024-12-31', icon: 'travel', color: 'from-blue-600 to-indigo-600' },
-            { id: '2', name: 'Emergency Fund', targetAmount: 1000, savedAmount: 200, deadline: '2024-06-01', icon: 'medical', color: 'from-emerald-600 to-teal-600' }
-          ];
+          return saved ? JSON.parse(saved) : [];
       } catch {
           return [];
       }
@@ -239,7 +233,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                                 {typeof cat.icon === 'string' ? renderIcon(cat.icon, ENVELOPE_ICONS, 24) : cat.icon}
                               </div>
                               <div className="flex-1">
-                                  <h3 className="font-bold text-base text-theme-primary">{cat.name}</h3>
+                                  <h3 className="font-bold text-base text-theme-primary">{t(cat.name)}</h3>
                                   {!isManaging && (
                                       percent > 90 ? (
                                           <p className="text-red-400 text-xs flex items-center gap-1">⚠️ {Math.round(percent)}% {t('limitReached')}</p>
@@ -257,7 +251,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                           ) : (
                               <div className="text-right">
                                   <p className="text-lg font-bold text-theme-primary">${spent.toFixed(0)}</p>
-                                  <p className="text-xs text-theme-secondary">of ${budget.limit}</p>
+                                  <p className="text-xs text-theme-secondary">{t('of')} ${budget.limit}</p>
                               </div>
                           )}
                       </div>
@@ -284,7 +278,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                 
                 {isManaging && budgets.length === 0 && (
                      <div className="text-center p-8 border-2 border-dashed border-white/10 rounded-3xl text-theme-secondary">
-                         No envelopes. Click + to add one.
+                         {t('noEnvelopes')}
                      </div>
                 )}
               </div>
@@ -296,18 +290,18 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
           <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
              <div className="bg-theme-surface w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
                 <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
-                    <h3 className="font-bold text-theme-primary">Add Envelope</h3>
+                    <h3 className="font-bold text-theme-primary">{t('addEnvelopeTitle')}</h3>
                     <button onClick={() => setShowAddBudgetModal(false)} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </div>
                 <div className="p-4">
                      <button onClick={() => { setShowAddBudgetModal(false); setShowCustomEnvelopeModal(true); }} className="w-full p-4 bg-theme-brand text-white rounded-xl font-bold mb-4 flex items-center justify-center gap-2">
-                         <Plus size={20} /> Create Custom Envelope
+                         <Plus size={20} /> {t('createCustomEnvelope')}
                      </button>
-                     <p className="text-xs text-theme-secondary uppercase font-bold mb-3">Or choose from categories:</p>
+                     <p className="text-xs text-theme-secondary uppercase font-bold mb-3">{t('chooseCategory')}</p>
                      
                      <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px]">
                         {availableCategories.length === 0 ? (
-                            <p className="text-center text-theme-secondary py-4">All categories used!</p>
+                            <p className="text-center text-theme-secondary py-4">{t('allCategoriesUsed')}</p>
                         ) : (
                             availableCategories.map(cat => (
                                 <button 
@@ -318,7 +312,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${cat.color} bg-opacity-20`}>
                                         {cat.icon}
                                     </div>
-                                    <span className="font-bold text-theme-primary">{cat.name}</span>
+                                    <span className="font-bold text-theme-primary">{t(cat.name)}</span>
                                 </button>
                             ))
                         )}
@@ -332,20 +326,20 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
       {showCustomEnvelopeModal && (
           <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
               <div className="bg-theme-surface w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl overflow-hidden p-6 flex flex-col gap-4">
-                   <h3 className="font-bold text-lg text-theme-primary">New Custom Envelope</h3>
+                   <h3 className="font-bold text-lg text-theme-primary">{t('newCustomEnvelope')}</h3>
                    
                    <div>
-                       <label className="text-xs text-zinc-500 mb-1 block">Name</label>
-                       <input className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none" value={customName} onChange={e => setCustomName(e.target.value)} placeholder="e.g. My Project" />
+                       <label className="text-xs text-zinc-500 mb-1 block">{t('name')}</label>
+                       <input className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none" value={customName} onChange={e => setCustomName(e.target.value)} placeholder={t('projectNamePlaceholder')} />
                    </div>
                    
                    <div>
-                       <label className="text-xs text-zinc-500 mb-1 block">Monthly Limit</label>
+                       <label className="text-xs text-zinc-500 mb-1 block">{t('monthlyLimit')}</label>
                        <input type="number" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none" value={customLimit} onChange={e => setCustomLimit(e.target.value)} placeholder="0" />
                    </div>
 
                    <div>
-                       <label className="text-xs text-zinc-500 mb-1 block">Icon</label>
+                       <label className="text-xs text-zinc-500 mb-1 block">{t('icon')}</label>
                        <div className="flex gap-2 text-xl overflow-x-auto pb-2 no-scrollbar">
                            {Object.keys(ENVELOPE_ICONS).map(key => (
                                <button 
@@ -360,8 +354,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                    </div>
 
                    <div className="flex gap-3 mt-2">
-                       <button onClick={() => setShowCustomEnvelopeModal(false)} className="px-4 py-3 rounded-xl bg-white/5 text-theme-secondary font-bold">Cancel</button>
-                       <button onClick={handleAddCustomBudget} className="flex-1 py-3 rounded-xl bg-theme-brand text-white font-bold">Create Envelope</button>
+                       <button onClick={() => setShowCustomEnvelopeModal(false)} className="px-4 py-3 rounded-xl bg-white/5 text-theme-secondary font-bold">{t('cancel')}</button>
+                       <button onClick={handleAddCustomBudget} className="flex-1 py-3 rounded-xl bg-theme-brand text-white font-bold">{t('createEnvelopeAction')}</button>
                    </div>
               </div>
           </div>
@@ -372,7 +366,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
       {activeTab === 'GOALS' && (
           <div className="animate-in fade-in duration-300">
              <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-lg font-bold text-theme-primary">Shared Goals</h2>
+                <h2 className="text-lg font-bold text-theme-primary">{t('sharedGoals')}</h2>
                 <button onClick={() => { setEditingGoal(null); setShowGoalModal(true); }}
                     className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg shadow-indigo-900/40">
                     <Plus size={14} /> {t('addGoal')}
@@ -463,7 +457,7 @@ const GoalForm = ({ initialData, onSave, onDelete, t }: { initialData: Goal | nu
         <div className="p-6 flex flex-col gap-4">
             <div>
                 <label className="text-xs text-zinc-500 mb-1 block">{t('name')}</label>
-                <input className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. New Laptop" />
+                <input className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={name} onChange={e => setName(e.target.value)} placeholder={t('goalNamePlaceholder')} />
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -480,7 +474,7 @@ const GoalForm = ({ initialData, onSave, onDelete, t }: { initialData: Goal | nu
                 <input type="date" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={date} onChange={e => setDate(e.target.value)} />
             </div>
             <div>
-                <label className="text-xs text-zinc-500 mb-1 block">Icon</label>
+                <label className="text-xs text-zinc-500 mb-1 block">{t('icon')}</label>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                     {Object.keys(GOAL_ICONS).map(key => (
                         <button 

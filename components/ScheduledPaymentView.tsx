@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Calendar, Plus, Trash2 } from 'lucide-react';
 import { Language, Currency, ScheduledPayment } from '../types';
 import { getTranslation } from '../i18n';
+import { CATEGORIES } from '../constants';
 
 interface ScheduledPaymentViewProps {
   onBack: () => void;
@@ -48,10 +49,38 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
                   <h1 className="text-xl font-bold text-theme-primary">{t('addPayment')}</h1>
               </div>
               <div className="flex flex-col gap-6">
-                  <input className="bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" placeholder="Name (e.g. Rent)" value={newName} onChange={e => setNewName(e.target.value)} />
-                  <input className="bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" type="number" placeholder="Amount" value={newAmount} onChange={e => setNewAmount(e.target.value)} />
-                  <input className="bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
-                  <button onClick={handleAdd} className="bg-theme-brand p-4 rounded-xl font-bold text-white shadow-lg">{t('save')}</button>
+                  <div>
+                      <label className="text-xs text-zinc-500 mb-2 block">{t('category')}</label>
+                      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mb-4">
+                        {CATEGORIES.map(cat => (
+                            <button 
+                                key={cat.id} 
+                                onClick={() => setNewName(t(cat.name))}
+                                className="flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-xl bg-theme-surface border border-white/5 text-theme-secondary hover:bg-white/5 hover:text-theme-primary transition-colors"
+                            >
+                                <div className="mb-1">{cat.icon}</div>
+                                <span className="text-[9px] truncate max-w-[50px]">{t(cat.name)}</span>
+                            </button>
+                        ))}
+                      </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">{t('name')}</label>
+                    <input className="w-full bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" placeholder={t('paymentNamePlaceholder')} value={newName} onChange={e => setNewName(e.target.value)} />
+                  </div>
+                  
+                  <div>
+                     <label className="text-xs text-zinc-500 mb-1 block">{t('amount')}</label>
+                     <input className="w-full bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" type="number" placeholder={t('amount')} value={newAmount} onChange={e => setNewAmount(e.target.value)} />
+                  </div>
+
+                  <div>
+                     <label className="text-xs text-zinc-500 mb-1 block">{t('dueDate')}</label>
+                     <input className="w-full bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
+                  </div>
+                  
+                  <button onClick={handleAdd} className="bg-theme-brand p-4 rounded-xl font-bold text-white shadow-lg mt-4">{t('save')}</button>
               </div>
           </div>
       );
@@ -85,7 +114,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
                   </div>
               </div>
           ))}
-          {scheduledPayments.length === 0 && <p className="text-center text-theme-secondary mt-10">No payments scheduled.</p>}
+          {scheduledPayments.length === 0 && <p className="text-center text-theme-secondary mt-10">{t('noPaymentsScheduled')}</p>}
       </div>
     </div>
   );

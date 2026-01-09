@@ -32,8 +32,39 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [isCalculatorMode, setIsCalculatorMode] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAccountSelector, setShowAccountSelector] = useState<'FROM' | 'TO' | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const t = (key: any) => getTranslation(lang, key);
+
+  const handleSpeechInput = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setNote(prev => prev ? prev + ' ' + transcript : transcript);
+      };
+
+      recognition.start();
+    } else {
+      alert('Speech recognition not supported in this browser');
+    }
+  };
+
+  const handleReset = () => {
+    setAmountStr('0');
+    setNote('');
+    setCategoryId(CATEGORIES[0].id);
+    setShowMenu(false);
+  };
 
   // Safe Math Evaluation
   const evaluateExpression = (expression: string): string => {
@@ -192,9 +223,16 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             ))}
         </div>
 
-        <button className="p-2 bg-white/10 rounded-full text-theme-secondary hover:bg-white/20 transition-colors">
-          <div className="w-5 h-5 flex items-center justify-center font-bold pb-2">...</div>
-        </button>
+        <div className="relative">
+            <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white/10 rounded-full text-theme-secondary hover:bg-white/20 transition-colors">
+              <div className="w-5 h-5 flex items-center justify-center font-bold pb-2">...</div>
+            </button>
+            {showMenu && (
+                <div className="absolute right-0 top-12 bg-theme-surface border border-white/10 rounded-xl shadow-2xl p-2 min-w-[150px] z-50 animate-in fade-in zoom-in-95">
+                    <button onClick={handleReset} className="w-full text-left px-4 py-2 text-sm text-theme-primary hover:bg-white/5 rounded-lg">Reset Form</button>
+                </div>
+            )}
+        </div>
       </div>
 
       {/* Main Content */}
@@ -253,13 +291,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
              placeholder={t('notePlaceholder')}
              className="bg-transparent flex-1 px-4 py-3 text-sm text-theme-primary placeholder:text-theme-secondary outline-none w-full"
            />
-           <button className="bg-theme-brand hover:brightness-110 text-white p-2.5 rounded-xl transition-colors m-1 shadow-lg shadow-brand/20">
-             <Mic size={18} />
-           </button>
+            <button onClick={handleSpeechInput} className={`bg-theme-brand hover:brightness-110 text-white p-2.5 rounded-xl transition-colors m-1 shadow-lg shadow-brand/20 ${isListening ? 'animate-pulse bg-red-500' : ''}`}>
+              <Mic size={18} />
+            </button>
         </div>
 
         {/* Categories Carousel */}
-        {type !== TransactionType.TRANSFER && (
+        {type !== TransactionType.TRANSFER && (<>
         <div className="mb-4">
            <div className="flex items-center justify-between mb-3">
              <span className="text-xs font-bold text-theme-secondary tracking-wider uppercase flex items-center gap-1">
@@ -285,7 +323,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             <div className={`${categoryId === cat.id ? 'text-theme-brand' : 'text-theme-secondary'}`}>
                                 {cat.icon}
                             </div>
-                            <span className="text-[10px] font-medium truncate w-full text-center">{cat.name}</span>
+                            <span className="text-[10px] font-medium truncate w-full text-center">{t(cat.name)}</span>
                         </button>
                     ))}
                </div>
@@ -304,13 +342,32 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             <div className={`${categoryId === cat.id ? 'text-theme-brand' : 'text-theme-secondary'} mb-1`}>
                                 {cat.icon}
                             </div>
-                            <span className="text-[10px] font-medium">{cat.name}</span>
+                            <span className="text-[10px] font-medium">{t(cat.name)}</span>
                         </button>
                     ))}
                </div>
            )}
         </div>
-        )}
+
+
+        {/* Smart Suggestions */}
+        <div className="mb-4">
+             <div className="flex gap-2 flex-wrap">
+                 {Object.entries(SMART_CATEGORIES)
+                     .filter(([key, cat]) => cat === categoryId)
+                     .slice(0, 5) // Show top 5 suggestions
+                     .map(([key, cat]) => (
+                     <button
+                         key={key}
+                         onClick={() => setNote(key.charAt(0).toUpperCase() + key.slice(1))}
+                         className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full text-xs text-theme-secondary transition-colors"
+                     >
+                         {key.charAt(0).toUpperCase() + key.slice(1)}
+                     </button>
+                 ))}
+             </div>
+        </div>
+        </>)}
       </div>
 
       {/* Keypad */}

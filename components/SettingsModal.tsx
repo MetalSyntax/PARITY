@@ -89,10 +89,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
 
         <div className="p-6 h-[60vh] overflow-y-auto no-scrollbar">
           
-          {/* Theme Section */}
           <div className="mb-8">
             <h3 className="text-sm font-bold text-theme-secondary uppercase mb-4 flex items-center gap-2">
-                <Palette size={14}/> Appearance
+                <Palette size={14}/> {t('appearance')}
             </h3>
             <div className="grid grid-cols-2 gap-3">
                 {availableThemes.map(theme => (
@@ -110,9 +109,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
           <div className="border-t border-white/5 my-6"></div>
 
           <h3 className="text-sm font-bold text-theme-secondary uppercase mb-4 flex items-center gap-2">
-            <TrendingUp size={14}/> Exchange Rate
+            <TrendingUp size={14}/> {t('exchangeRateLabel')}
           </h3>
-          <p className="text-xs text-theme-secondary mb-4">Select the source for the conversion rate applied to your USD balance visualization.</p>
+          <p className="text-xs text-theme-secondary mb-4">{t('rateSourceDescription')}</p>
           
           <div className="flex flex-col gap-3 mb-6">
              <button 
@@ -132,7 +131,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
              >
                 <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><TrendingUp size={20} className="text-amber-400" /></div>
                 <div>
-                   <p className="font-bold text-sm text-theme-primary">EnParaleloVzla</p>
+                   <p className="font-bold text-sm text-theme-primary">Bursatil</p>
                    <p className="text-xs text-theme-secondary">{isFetching && mode === 'PARALLEL' ? t('fetching') : t('averageParallel')}</p>
                 </div>
              </button>
@@ -151,7 +150,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
           {/* Security Section */}
            <div className="mb-6">
              <h3 className="text-sm font-bold text-theme-secondary uppercase mb-4 flex items-center gap-2">
-               <Lock size={14}/> Security
+               <Lock size={14}/> {t('security')}
              </h3>
              
              {!showPinChange ? (
@@ -197,7 +196,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
           {/* Slider/Input Area */}
           <div className={`transition-all duration-300 ${mode === 'MANUAL' ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
              <div className="text-center mb-2">
-               <span className="text-xs text-theme-secondary uppercase tracking-widest">Current Rate</span>
+               <span className="text-xs text-theme-secondary uppercase tracking-widest">{t('currentRateLabel')}</span>
              </div>
              <div className="flex items-center justify-center gap-4 bg-black/20 p-2 rounded-2xl border border-white/5">
                <button onClick={() => setRate(r => Number((r - 0.1).toFixed(2)))} className="w-12 h-12 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-xl font-bold transition-colors text-theme-primary">-</button>
@@ -218,7 +217,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
             onClick={handleSave}
             className="w-full mt-8 bg-white text-black font-bold py-4 rounded-xl hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
           >
-            <RefreshCw size={18} /> Update
+            <RefreshCw size={18} /> {t('update')}
           </button>
         </div>
       </div>

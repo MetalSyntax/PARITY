@@ -256,7 +256,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {/* Interactive Chart Hint */}
                     <div className="flex items-center gap-2 text-xs text-theme-brand font-bold opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-4 left-6 z-20">
                         <BarChart3 size={12} />
-                        View Analytics
+                        {t('viewAnalytics')}
                     </div>
                 </div>
 
@@ -294,7 +294,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="px-4 md:px-0">
                <div className="flex items-center justify-between mb-2">
                  <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('wallet')}</h3>
-                 <button onClick={() => onNavigate('WALLET')} className="text-theme-brand text-xs font-bold">Manage</button>
+                 <button onClick={() => onNavigate('WALLET')} className="text-theme-brand text-xs font-bold">{t('manage')}</button>
                </div>
                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                   {accounts.map(acc => (
@@ -352,7 +352,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <h3 className="text-sm font-bold text-theme-secondary uppercase tracking-wider mb-1 flex items-center gap-2">
                         {t('structure')} <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-theme-brand"/>
                     </h3>
-                    <p className="text-xs text-theme-secondary">Last 30 days expenses by category</p>
+                    <p className="text-xs text-theme-secondary">{t('last30DaysExpenses')}</p>
                 </div>
                 <div className="flex items-center gap-4">
                     {/* Check if we have data */}
@@ -485,8 +485,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="w-16 h-16 rounded-2xl bg-theme-surface border border-white/10 flex items-center justify-center text-theme-brand shadow-2xl shadow-brand/20 mb-4">
                         <Lock size={32} />
                     </div>
-                    <h2 className="text-2xl font-bold text-theme-primary text-center">Verify Identity</h2>
-                    <p className="text-theme-secondary text-sm text-center">Enter PIN to view balance</p>
+                    <h2 className="text-2xl font-bold text-theme-primary text-center">{t('verifyIdentity')}</h2>
+                    <p className="text-theme-secondary text-sm text-center">{t('enterPin')}</p>
                 </div>
 
                 {/* PIN Dots */}
@@ -522,7 +522,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         onClick={() => setPinInput(prev => prev.slice(0, -1))}
                         className="w-full aspect-square rounded-full flex items-center justify-center text-theme-secondary hover:text-white"
                     >
-                        Delete
+                        {t('delete')}
                     </button>
                 </div>
                 
@@ -530,7 +530,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onClick={closePinModal}
                     className="mt-4 text-theme-secondary text-sm hover:text-white"
                 >
-                    Cancel
+                    {t('cancel')}
                 </button>
             </div>
         </div>
