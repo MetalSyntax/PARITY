@@ -2,114 +2,105 @@
 
 **Master the Flux. Two Currencies. One Wallet.**
 
-*(Replace with actual banner/screenshot)*
+*(Add screenshots here showing Dark Mode, Privacy Mode, and Budgeting Views)*
 
 ## 📋 About The Project
 
-**Parity** is a next-generation financial tracker designed for the modern economy: digital nomads, freelancers, and users living in high-inflation environments. Unlike traditional wallets that treat multi-currency as an afterthought, Parity is built with a **Dual-Currency Native Core**.
+**Parity** is a modern, privacy-focused financial tracker designed for users living in multi-currency economies (specifically tailored for high-inflation environments like Venezuela). It treats dual-currency management (USD & VES) as a first-class citizen, not an afterthought.
 
-It visualizes, tracks, and analyzes your finances in your Local Currency (e.g., VES, ARS) and a Hard Currency (e.g., USD, EUR) simultaneously, preserving the historical value of your money against exchange rate volatility.
+Built with a **Local-First** philosophy, Parity stores all your financial data securely in your browser's local storage, ensuring your data never leaves your device without your explicit action.
 
 ## ✨ Key Features
 
-### 🚀 The "Dual-Core" Experience
+### 🚀 Dual-Currency Core
+* **Instant Toggle:** Switch your entire Dashboard and transaction history between **USD** and **VES** with a single tap.
+* **Dynamic Exchange Rate:** Manage your own exchange rate in real-time via the Settings panel. Visualizations adapt instantly.
+* **Smart Transfers:** Move money between accounts of different currencies (e.g., USD Zelle -> VES Bank) with automatic rate calculation.
 
-* **Simultaneous Display:** Dashboard shows balances in both Base and Local currencies instantly.
-* **Historic Rate Preservation:** Transactions lock the exchange rate at the moment of purchase. Changing the rate today does not alter the history of yesterday.
-* **Smart Rate Engine:** Choose between API-based rates (Forex), Parallel Market APIs, or a "Manual Control" slider for maximum precision.
+### 🛡️ Privacy & Security
+* **Privacy Mode:** One-click balance masking (`******`) to hide sensitive numbers in public.
+* **PIN Protection:** Secure your financial data with a 4-digit PIN.
+* **Local Storage:** No external servers. Your data belongs to you.
 
-### ⚡ Frictionless UX (Input-First)
+### 🎨 Personalization
+* **Dynamic Theming:** Choose your vibe with built-in themes:
+    * **Original:** Clean, professional visuals.
+    * **Midnight:** Deep dark mode with neon accents.
+    * **Forest:** Calming green and nature-inspired tones.
+* **Responsive Design:** A mobile-first experience that feels native on your phone but scales beautifully to desktop.
 
-* **One-Thumb Interaction:** All key actions are reachable with one hand.
-* **Custom Smart Keypad:** Built-in calculator and "Quick Currency Toggle" inside the number pad.
-* **Natural Language Input:** Type "Dinner $20" and let AI categorize it automatically.
-* **4-Second Entry:** Designed to open, log, and close in record time.
-
-### 🎨 Neumorphic / Glassmorphism UI
-
-* **Visual Depth:** Modern interface using blur effects, semitransparent layers, and subtle shadows.
-* **OLED Dark Mode:** True black mode for battery saving and eye comfort.
-* **Sankey Diagrams:** Flow-based visualization for income vs. expenses (replacing boring pie charts).
-* **Haptic Feedback:** Subtle vibrations on key interactions.
-
-### 🌍 Global Ready (i18n)
-
-* **Multi-language Support:** Fully localized (English/Spanish) using `i18next`.
-* **Regional Formats:** Adapts decimal separators (`, ` vs `.`) and currency symbols automatically.
+### 💰 Financial Management
+* **Digital Envelopes:** Set monthly spending limits per category (Food, Transport, etc.) and track progress visually.
+* **Shared Goals:** Create savings goals (e.g., "Trip to Japan") and track your contributions over time.
+* **Recurring Payments:** Never miss a bill with the Scheduled Payments tracker.
+* **Analysis:** Interactive charts showing expense structure and balance trends (7-day lookback).
 
 ---
 
 ## 🛠 Tech Stack
 
-This project is built as a Monorepo (Client only).
+The project is built as a lightweight, performant Single Page Application (SPA).
 
-### Client (Frontend)
-
-* **Framework:** React 18
-* **Build Tool:** Vite (for lightning-fast HMR)
-* **Language:** TypeScript
-* **Styling:** CSS Modules / Styled-components
+* **Framework:** [React 18](https://reactjs.org/)
+* **Build Tool:** [Vite](https://vitejs.dev/)
+* **Language:** [TypeScript](https://www.typescriptlang.org/)
+* **Styling:** [TailwindCSS](https://tailwindcss.com/) using CSS Variables for Theming.
+* **Icons:** [Lucide React](https://lucide.dev/)
+* **State/Persistence:** React Hooks + LocalStorage
 
 ---
 
 ## ⚙️ Installation & Setup
 
+Parity is a client-side application. You can run it locally in minutes.
+
 ### Prerequisites
 
-* Node.js (v18 or higher)
-* npm or yarn
+* Node.js (v16 or higher)
+* npm or pnpm
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/parity-wallet.git
-cd parity-wallet
-
+git clone https://github.com/your-username/parity.git
+cd parity
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-# Install root dependencies
 npm install
-
-# Navigate to client and install
-cd client
-npm install
-
-# Navigate to server and install
-cd ../server
-npm install
-
 ```
 
 ### 3. Run Development Server
 
 ```bash
-# In the client folder
 npm run dev
 ```
+The app will open at `http://localhost:5173` (or similar).
 
 ---
 
-## 📱 Screen & UX Architecture
+## 📱 Navigation Structure
 
-1. **Dashboard:** Split-view balance card with trend indicators.
-2. **Add Transaction:** Instant keypad popup with currency toggle (USD/Local).
-3. **Rate Control:** Slider UI to adjust the daily exchange rate manually or sync via API.
-4. **Insights:** "Money Leaks" analysis and Emotional Spending tracking.
+1.  **Dashboard:** Your financial command center. View balances, recent transactions, and quick stats.
+2.  **Wallet:** Manage your accounts (Cash, Bank, Apps).
+3.  **Analysis:** Deep dive into where your money goes with visual charts.
+4.  **Profile:** Manage data (Import/Export JSON), language settings, and user details.
+5.  **Budgets & Goals:** Dedicated view for Envelope budgeting and Savings tracking.
+6.  **Settings:** Configure Exchange Rates, Themes, and Security PIN.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
 ---
 

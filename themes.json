@@ -1,0 +1,52 @@
+{
+  "themes": {
+    "original": {
+      "name": "Original Dark",
+      "colors": {
+        "--bg-primary": "#000000",
+        "--bg-secondary": "#121212",
+        "--bg-tertiary": "#1e1e1e",
+        "--text-primary": "#ffffff",
+        "--text-secondary": "#71717a",
+        "--primary": "#4f46e5",
+        "--primary-hover": "#4338ca",
+        "--success": "#10b981",
+        "--warning": "#f59e0b",
+        "--danger": "#ef4444",
+        "--border": "rgba(255, 255, 255, 0.1)"
+      }
+    },
+    "midnight_ocean": {
+      "name": "Midnight Ocean",
+      "colors": {
+        "--bg-primary": "#020617",
+        "--bg-secondary": "#0f172a",
+        "--bg-tertiary": "#1e293b",
+        "--text-primary": "#e2e8f0",
+        "--text-secondary": "#94a3b8",
+        "--primary": "#0ea5e9",
+        "--primary-hover": "#0284c7",
+        "--success": "#22c55e",
+        "--warning": "#eab308",
+        "--danger": "#f43f5e",
+        "--border": "rgba(148, 163, 184, 0.1)"
+      }
+    },
+    "forest": {
+      "name": "Forest",
+      "colors": {
+        "--bg-primary": "#020402",
+        "--bg-secondary": "#051105",
+        "--bg-tertiary": "#0a1f0a",
+        "--text-primary": "#e2f0e2",
+        "--text-secondary": "#8da38d",
+        "--primary": "#22c55e",
+        "--primary-hover": "#16a34a",
+        "--success": "#4ade80",
+        "--warning": "#facc15",
+        "--danger": "#ef4444",
+        "--border": "rgba(74, 222, 128, 0.1)"
+      }
+    }
+  }
+}

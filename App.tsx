@@ -9,6 +9,8 @@ import { AnalysisView } from './components/AnalysisView';
 import { WalletView } from './components/WalletView';
 import { ProfileView } from './components/ProfileView';
 import { ScheduledPaymentView } from './components/ScheduledPaymentView';
+import { ThemeProvider } from './contexts/ThemeContext';
+import './index.css';
 
 import { INITIAL_RATE, MOCK_ACCOUNTS } from './constants';
 import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment } from './types';
@@ -16,9 +18,18 @@ import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile
 const STORAGE_KEY = 'dualflow_data_v3';
 
 export default function App() {
+  return (
+    <ThemeProvider>
+       <AppContent />
+    </ThemeProvider>
+  );
+}
+
+function AppContent() {
   const [currentView, setCurrentView] = useState<ViewState>('DASHBOARD');
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true);
   
   // Application State
   const [exchangeRate, setExchangeRate] = useState(INITIAL_RATE);
@@ -59,17 +70,48 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [exchangeRate, accounts, transactions, scheduledPayments, userProfile, isLoaded]);
 
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
   const handleUpdateAccounts = (newAccounts: Account[]) => {
       setAccounts(newAccounts);
   };
 
-  const handleSaveTransaction = (data: Omit<Transaction, 'id' | 'normalizedAmountUSD'>) => {
+  const handleDeleteTransaction = (id: string) => {
+    if (confirm('Delete this transaction?')) {
+        const tx = transactions.find(t => t.id === id);
+        if (tx) {
+             // Revert balance change logic (simplified: just remove and let user handle drift or implement revert logic)
+             // Implementing smart revert:
+             setAccounts(prev => prev.map(acc => {
+                if (acc.id === tx.accountId) {
+                    let amount = tx.amount;
+                     if (acc.currency !== tx.originalCurrency) {
+                        // Reverse conversion logic
+                        if (acc.currency === Currency.USD) amount = tx.normalizedAmountUSD;
+                        else amount = tx.amount * tx.exchangeRate; // Approx
+                     }
+                     const modifier = tx.type === TransactionType.INCOME ? -1 : 1; // Reverse
+                     return { ...acc, balance: acc.balance + (amount * modifier) };
+                }
+                return acc;
+             }));
+             setTransactions(prev => prev.filter(t => t.id !== id));
+        }
+    }
+  };
+
+  const handleSaveTransaction = (data: any) => {
+    // If Editing, delete old one first (simplified update)
+    if (data.id) {
+        handleDeleteTransaction(data.id); 
+    }
+
     const normalizedUSD = data.originalCurrency === Currency.USD 
       ? data.amount 
       : data.amount / data.exchangeRate;
 
     const newTransaction: Transaction = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: data.id || Math.random().toString(36).substr(2, 9),
       ...data,
       normalizedAmountUSD: normalizedUSD
     };
@@ -117,17 +159,31 @@ export default function App() {
     }));
 
     setShowAdd(false);
+    setEditingTransaction(null);
+  };
+
+  const handleImportData = (data: any) => {
+     if (data.transactions && data.accounts) {
+         setTransactions(data.transactions);
+         setAccounts(data.accounts);
+         if (data.exchangeRate) setExchangeRate(data.exchangeRate);
+         if (data.userProfile) setUserProfile(data.userProfile);
+         if (data.scheduledPayments) setScheduledPayments(data.scheduledPayments);
+         alert('Data imported successfully!');
+     } else {
+         alert('Invalid data file.');
+     }
   };
 
   if (!isLoaded) return null;
 
   return (
-    <div className="h-screen w-full bg-background text-white font-sans flex flex-col items-center justify-center overflow-hidden">
+    <div className="h-screen w-full bg-theme-bg text-theme-primary font-sans flex flex-col items-center justify-center overflow-hidden">
       {/* Wrapper */}
-      <div className="w-full h-full bg-background relative shadow-2xl overflow-hidden flex flex-col">
+      <div className="w-full h-full bg-theme-bg relative shadow-2xl overflow-hidden flex flex-col">
         
         {/* Main Content Router */}
-        <div className="flex-1 relative z-0 overflow-hidden flex flex-col">
+        <div className="flex-1 relative z-0 overflow-y-auto flex flex-col">
           {currentView === 'DASHBOARD' && (
             <Dashboard 
               accounts={accounts}
@@ -136,6 +192,9 @@ export default function App() {
               onOpenSettings={() => setShowSettings(true)}
               onNavigate={setCurrentView}
               userProfile={userProfile}
+              onDeleteTransaction={handleDeleteTransaction}
+              onEditTransaction={(tx) => { setEditingTransaction(tx); setShowAdd(true); }}
+              onToggleBottomNav={setIsNavVisible}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -176,6 +235,7 @@ export default function App() {
                accounts={accounts}
                onUpdateAccounts={handleUpdateAccounts}
                lang={userProfile.language}
+               transactions={transactions}
              />
           )}
           {currentView === 'PROFILE' && (
@@ -185,22 +245,23 @@ export default function App() {
                onUpdateProfile={setUserProfile}
                transactions={transactions}
                accounts={accounts}
+               onImportData={handleImportData}
              />
           )}
         </div>
 
-        {/* Bottom Nav (Only visible on Dashboard) */}
-        {['DASHBOARD', 'WALLET', 'ANALYSIS', 'PROFILE'].includes(currentView) && (
-          <div className="h-20 bg-[#050505]/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-8 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300">
+        {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
+        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS'].includes(currentView) && isNavVisible && (
+          <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-8 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
              <button 
                onClick={() => setCurrentView('DASHBOARD')} 
-               className={`p-3 transition-colors ${currentView === 'DASHBOARD' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+               className={`p-3 transition-colors ${currentView === 'DASHBOARD' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
              >
                <Home size={24} />
              </button>
              <button 
                onClick={() => setCurrentView('WALLET')} 
-               className={`p-3 transition-colors ${currentView === 'WALLET' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+               className={`p-3 transition-colors ${currentView === 'WALLET' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
              >
                <Wallet size={24} />
              </button>
@@ -208,8 +269,8 @@ export default function App() {
              {/* FAB container */}
              <div className="relative -top-6">
                 <button 
-                  onClick={() => setShowAdd(true)}
-                  className="w-16 h-16 rounded-full bg-blue-600 shadow-lg shadow-blue-900/50 flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform border-4 border-[#050505]"
+                  onClick={() => { setEditingTransaction(null); setShowAdd(true); }}
+                  className="w-16 h-16 rounded-full bg-theme-brand shadow-lg shadow-brand/50 flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform border-4 border-theme-bg"
                 >
                   <Plus size={32} />
                 </button>
@@ -217,13 +278,13 @@ export default function App() {
 
              <button 
                onClick={() => setCurrentView('ANALYSIS')} 
-               className={`p-3 transition-colors ${currentView === 'ANALYSIS' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+               className={`p-3 transition-colors ${currentView === 'ANALYSIS' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
              >
                <Target size={24} />
              </button>
              <button 
                onClick={() => setCurrentView('PROFILE')} 
-               className={`p-3 transition-colors ${currentView === 'PROFILE' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+               className={`p-3 transition-colors ${currentView === 'PROFILE' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
              >
                <User size={24} />
              </button>
@@ -233,11 +294,12 @@ export default function App() {
         {/* Modals */}
         {showAdd && (
           <AddTransaction 
-            onClose={() => setShowAdd(false)} 
+            onClose={() => { setShowAdd(false); setEditingTransaction(null); }} 
             onSave={handleSaveTransaction}
             exchangeRate={exchangeRate}
             accounts={accounts}
             lang={userProfile.language}
+            initialData={editingTransaction}
           />
         )}
 

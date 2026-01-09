@@ -29,6 +29,7 @@ export interface Account {
   balance: number;
   icon: string;
   color?: string; // For UI styling
+  payrollClient?: string;
 }
 
 export interface Transaction {

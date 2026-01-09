@@ -42,50 +42,50 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
 
   if (isAdding) {
       return (
-          <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto">
+          <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-theme-bg">
               <div className="flex items-center gap-4 mb-8">
-                  <button onClick={() => setIsAdding(false)} className="p-2 bg-white/5 rounded-full"><ArrowLeft size={20} /></button>
-                  <h1 className="text-xl font-bold">{t('addPayment')}</h1>
+                  <button onClick={() => setIsAdding(false)} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
+                  <h1 className="text-xl font-bold text-theme-primary">{t('addPayment')}</h1>
               </div>
               <div className="flex flex-col gap-6">
-                  <input className="bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none" placeholder="Name (e.g. Rent)" value={newName} onChange={e => setNewName(e.target.value)} />
-                  <input className="bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none" type="number" placeholder="Amount" value={newAmount} onChange={e => setNewAmount(e.target.value)} />
-                  <input className="bg-white/5 border border-white/10 p-4 rounded-xl text-white outline-none" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
-                  <button onClick={handleAdd} className="bg-indigo-600 p-4 rounded-xl font-bold">{t('save')}</button>
+                  <input className="bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" placeholder="Name (e.g. Rent)" value={newName} onChange={e => setNewName(e.target.value)} />
+                  <input className="bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" type="number" placeholder="Amount" value={newAmount} onChange={e => setNewAmount(e.target.value)} />
+                  <input className="bg-theme-surface border border-white/10 p-4 rounded-xl text-theme-primary outline-none" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
+                  <button onClick={handleAdd} className="bg-theme-brand p-4 rounded-xl font-bold text-white shadow-lg">{t('save')}</button>
               </div>
           </div>
       );
   }
 
   return (
-    <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto">
+    <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-theme-bg">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2 bg-white/5 rounded-full"><ArrowLeft size={20} /></button>
-            <h1 className="text-xl font-bold">{t('scheduledPayments')}</h1>
+            <button onClick={onBack} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
+            <h1 className="text-xl font-bold text-theme-primary">{t('scheduledPayments')}</h1>
         </div>
-        <button onClick={() => setIsAdding(true)} className="p-2 bg-indigo-600 rounded-full text-white"><Plus size={20} /></button>
+        <button onClick={() => setIsAdding(true)} className="p-2 bg-theme-brand rounded-full text-white shadow-lg"><Plus size={20} /></button>
       </div>
 
       <div className="flex flex-col gap-4">
           {scheduledPayments.map(p => (
-              <div key={p.id} className="bg-[#121212] p-4 rounded-2xl border border-white/5 flex items-center justify-between">
+              <div key={p.id} className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-indigo-400">
+                      <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-theme-brand">
                           <Calendar size={20} />
                       </div>
                       <div>
-                          <h4 className="font-bold">{p.name}</h4>
-                          <p className="text-xs text-zinc-500">{t('dueDate')}: {p.date} • {p.frequency}</p>
+                          <h4 className="font-bold text-theme-primary">{p.name}</h4>
+                          <p className="text-xs text-theme-secondary">{t('dueDate')}: {p.date} • {p.frequency}</p>
                       </div>
                   </div>
                   <div className="text-right flex items-center gap-4">
-                      <span className="font-bold text-lg">${p.amount}</span>
+                      <span className="font-bold text-lg text-theme-primary">${p.amount}</span>
                       <button onClick={() => handleDelete(p.id)} className="text-red-400 opacity-50 hover:opacity-100"><Trash2 size={16} /></button>
                   </div>
               </div>
           ))}
-          {scheduledPayments.length === 0 && <p className="text-center text-zinc-500 mt-10">No payments scheduled.</p>}
+          {scheduledPayments.length === 0 && <p className="text-center text-theme-secondary mt-10">No payments scheduled.</p>}
       </div>
     </div>
   );
