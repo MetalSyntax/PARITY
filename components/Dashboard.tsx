@@ -1,8 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ArrowRightLeft, 
   TrendingUp, 
-  Wallet, 
   PieChart, 
   ArrowUpRight,
   Plus,
@@ -13,9 +12,31 @@ import {
   BarChart3,
   X 
 } from 'lucide-react';
-import { Transaction, Account, Currency, Language, UserProfile, TransactionType } from '../types';
+import { Transaction, Account, Currency, UserProfile, TransactionType } from '../types';
 import { CATEGORIES } from '../constants';
 import { getTranslation } from '../i18n';
+import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
+
+// Icon Map for Financial Services
+const ACCOUNT_ICONS: Record<string, React.ElementType> = {
+    'wallet': FaWallet,
+    'bank': FaBuildingColumns,
+    'card': FaCreditCard,
+    'visa': FaCcVisa,
+    'mastercard': FaCcMastercard,
+    'cash': FaMoneyBillWave,
+    'crypto': FaBitcoin,
+    'paypal': FaPaypal,
+    'mobile': FaMobileScreen,
+    'savings': FaPiggyBank
+};
+
+// Helper to render icon safely
+const renderAccountIcon = (iconKey: string, size: number = 24) => {
+    const IconComponent = ACCOUNT_ICONS[iconKey];
+    if (IconComponent) return <IconComponent size={size} />;
+    return <span style={{ fontSize: size }}>{iconKey}</span>; 
+};
 
 interface DashboardProps {
   accounts: Account[];
@@ -279,7 +300,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   {accounts.map(acc => (
                     <div key={acc.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-3 rounded-xl flex flex-col gap-2">
                        <div className="flex justify-between items-start">
-                          <span className="text-xl">{acc.icon}</span>
+                          <div className="text-xl text-theme-primary">
+                              {renderAccountIcon(acc.icon, 20)}
+                          </div>
                           <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-theme-secondary">{acc.currency}</span>
                        </div>
                        <div>

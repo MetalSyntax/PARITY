@@ -1,8 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, X, Trash2, Check, Target, MoreHorizontal, Settings2, Trophy } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Trophy } from 'lucide-react';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language } from '../types';
 import { getTranslation } from '../i18n';
+import { FaPlane, FaHouse, FaCar, FaGraduationCap, FaGift, FaGamepad, FaBasketShopping, FaEnvelope, FaBox, FaRibbon, FaBriefcaseMedical, FaBullseye, FaRing, FaLaptop } from 'react-icons/fa6';
+
+// Icon Maps
+const ENVELOPE_ICONS: Record<string, React.ElementType> = {
+    'envelope': FaEnvelope,
+    'box': FaBox,
+    'ribbon': FaRibbon,
+    'shopping': FaBasketShopping,
+    'game': FaGamepad,
+    'medical': FaBriefcaseMedical
+};
+
+const GOAL_ICONS: Record<string, React.ElementType> = {
+    'target': FaBullseye,
+    'travel': FaPlane,
+    'house': FaHouse,
+    'car': FaCar,
+    'education': FaGraduationCap,
+    'ring': FaRing,
+    'laptop': FaLaptop,
+    'medical': FaBriefcaseMedical,
+    'gift': FaGift
+};
+
+const renderIcon = (key: string, map: Record<string, React.ElementType>, size: number = 20) => {
+    const IconComp = map[key] || map['target'] || FaEnvelope;
+    // Check if key is actually an emoji (fallback)
+    if (!map[key] && (key.length < 5 || key.match(/\p{Emoji}/u))) {
+         return <span style={{ fontSize: size }}>{key}</span>;
+    }
+    return <IconComp size={size} />;
+};
 
 interface BudgetViewProps {
   onBack: () => void;
@@ -53,8 +85,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
       const saved = localStorage.getItem(STORAGE_KEY_GOALS);
       try {
           return saved ? JSON.parse(saved) : [
-            { id: '1', name: 'Trip to Japan', targetAmount: 2500, savedAmount: 1250, deadline: '2024-12-31', icon: '🗻', color: 'from-blue-600 to-indigo-600' },
-            { id: '2', name: 'Emergency Fund', targetAmount: 1000, savedAmount: 200, deadline: '2024-06-01', icon: '🆘', color: 'from-emerald-600 to-teal-600' }
+            { id: '1', name: 'Trip to Japan', targetAmount: 2500, savedAmount: 1250, deadline: '2024-12-31', icon: 'travel', color: 'from-blue-600 to-indigo-600' },
+            { id: '2', name: 'Emergency Fund', targetAmount: 1000, savedAmount: 200, deadline: '2024-06-01', icon: 'medical', color: 'from-emerald-600 to-teal-600' }
           ];
       } catch {
           return [];
@@ -64,13 +96,13 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
   // Modal/Form State
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
-  const [showCustomEnvelopeModal, setShowCustomEnvelopeModal] = useState(false); // New modal for custom
+  const [showCustomEnvelopeModal, setShowCustomEnvelopeModal] = useState(false); 
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
   // New Custom Envelope Form State
   const [customName, setCustomName] = useState('');
   const [customLimit, setCustomLimit] = useState('');
-  const [customIcon, setCustomIcon] = useState('✉️');
+  const [customIcon, setCustomIcon] = useState('envelope');
 
   // Persistence Effects
   useEffect(() => {
@@ -107,14 +139,14 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
       // Reset form
       setCustomName('');
       setCustomLimit('');
-      setCustomIcon('✉️');
+      setCustomIcon('envelope');
   };
 
   const handleDeleteBudget = (catId: string) => {
       setBudgets(prev => prev.filter(b => b.categoryId !== catId));
   };
   
-  // ... Goal handlers (omitted for brevity, unchanged)
+  // ... Goal handlers
   const handleSaveGoal = (goal: Goal) => {
       if (editingGoal) {
           setGoals(prev => prev.map(g => g.id === goal.id ? goal : g));
@@ -182,7 +214,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                       cat = {
                           id: budget.categoryId,
                           name: budget.customName,
-                          icon: budget.customIcon || '📦',
+                          icon: budget.customIcon || 'box',
                           color: budget.customColor || 'text-indigo-400'
                       } as any;
                   }
@@ -204,7 +236,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                       <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-4">
                               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${cat.color.replace('text', 'bg').split('-')[0] + '-500/20'} border border-white/5`}>
-                                {cat.icon}
+                                {typeof cat.icon === 'string' ? renderIcon(cat.icon, ENVELOPE_ICONS, 24) : cat.icon}
                               </div>
                               <div className="flex-1">
                                   <h3 className="font-bold text-base text-theme-primary">{cat.name}</h3>
@@ -315,8 +347,14 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                    <div>
                        <label className="text-xs text-zinc-500 mb-1 block">Icon</label>
                        <div className="flex gap-2 text-xl overflow-x-auto pb-2 no-scrollbar">
-                           {['✉️','📦','🎀','🧸','🛠️','💊','📚','🎵'].map(i => (
-                               <button key={i} onClick={() => setCustomIcon(i)} className={`p-2 rounded-lg ${customIcon === i ? 'bg-theme-brand' : 'bg-white/5'}`}>{i}</button>
+                           {Object.keys(ENVELOPE_ICONS).map(key => (
+                               <button 
+                                key={key} 
+                                onClick={() => setCustomIcon(key)} 
+                                className={`p-3 rounded-lg transition-colors ${customIcon === key ? 'bg-theme-brand text-white' : 'bg-white/5 text-theme-secondary hover:bg-white/10'}`}
+                               >
+                                {renderIcon(key, ENVELOPE_ICONS, 20)}
+                               </button>
                            ))}
                        </div>
                    </div>
@@ -355,8 +393,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                                           <h3 className="text-xl font-bold text-white mb-1">{goal.name}</h3>
                                           <p className="text-xs text-zinc-400">{t('deadline')}: {new Date(goal.deadline).toLocaleDateString()}</p>
                                       </div>
-                                      <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-xl shadow-inner border border-white/10">
-                                          {goal.icon}
+                                      <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-xl shadow-inner border border-white/10 text-white">
+                                          {renderIcon(goal.icon, GOAL_ICONS, 20)}
                                       </div>
                                   </div>
 
@@ -406,9 +444,7 @@ const GoalForm = ({ initialData, onSave, onDelete, t }: { initialData: Goal | nu
     const [target, setTarget] = useState(initialData?.targetAmount.toString() || '');
     const [saved, setSaved] = useState(initialData?.savedAmount.toString() || '');
     const [date, setDate] = useState(initialData?.deadline || '');
-    const [icon, setIcon] = useState(initialData?.icon || '🎯');
-
-    const icons = ['🎯', '✈️', '🏠', '🚗', '🎓', '💍', '💻', '🆘'];
+    const [icon, setIcon] = useState(initialData?.icon || 'target');
 
     const handleSubmit = () => {
         if (!name || !target) return;
@@ -446,8 +482,14 @@ const GoalForm = ({ initialData, onSave, onDelete, t }: { initialData: Goal | nu
             <div>
                 <label className="text-xs text-zinc-500 mb-1 block">Icon</label>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                    {icons.map(i => (
-                        <button key={i} onClick={() => setIcon(i)} className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-colors ${icon === i ? 'bg-indigo-600 text-white' : 'bg-white/5 hover:bg-white/10'}`}>{i}</button>
+                    {Object.keys(GOAL_ICONS).map(key => (
+                        <button 
+                            key={key} 
+                            onClick={() => setIcon(key)} 
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${icon === key ? 'bg-indigo-600 text-white' : 'bg-white/5 hover:bg-white/10 text-zinc-400'}`}
+                        >
+                            {renderIcon(key, GOAL_ICONS, 20)}
+                        </button>
                     ))}
                 </div>
             </div>

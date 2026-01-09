@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { X, Globe, TrendingUp, Lock, RefreshCw, Palette } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { getTranslation } from '../i18n';
+import { Language } from '../types';
 
 interface SettingsModalProps {
   currentRate: number;
   onClose: () => void;
   onUpdateRate: (newRate: number) => void;
+  lang: Language;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang }) => {
+  const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
   const [mode, setMode] = useState<'AUTO' | 'PARALLEL' | 'MANUAL'>('MANUAL');
   const { currentTheme, setTheme, availableThemes } = useTheme();
@@ -18,21 +22,56 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
 
+  // Rate Fetching State
+  const [isFetching, setIsFetching] = useState(false);
+
+  const handleFetchRate = async (targetMode: 'AUTO' | 'PARALLEL') => {
+      setMode(targetMode);
+      setIsFetching(true);
+      
+      try {
+          const endpoint = targetMode === 'AUTO' 
+              ? 'https://ve.dolarapi.com/v1/dolares/oficial' 
+              : 'https://ve.dolarapi.com/v1/dolares/paralelo';
+          
+          const response = await fetch(endpoint);
+          
+          if (!response.ok) throw new Error('Network error');
+          
+          const data = await response.json();
+          // The API returns { ..., promedio: number, ... }
+          const fetchedRate = data.promedio;
+
+          if (fetchedRate) {
+              setRate(Number(fetchedRate));
+          } else {
+              throw new Error("Invalid format");
+          }
+      } catch (error) {
+          console.error("Failed to fetch rate", error);
+          // Fallback values if API fails
+          setRate(targetMode === 'AUTO' ? 50.50 : 60.15);
+          alert(t('fetchError'));
+      } finally {
+          setIsFetching(false);
+      }
+  };
+
   const handleChangePin = () => {
       const currentStored = localStorage.getItem('dualflow_pin') || '0000';
       if (oldPin !== currentStored) {
-          alert('Incorrect current PIN');
+          alert(t('incorrectPin'));
           return;
       }
       if (newPin.length !== 4 || isNaN(Number(newPin))) {
-          alert('New PIN must be 4 digits');
+          alert(t('pinLengthError'));
           return;
       }
       localStorage.setItem('dualflow_pin', newPin);
       setShowPinChange(false);
       setOldPin('');
       setNewPin('');
-      alert('PIN updated successfully');
+      alert(t('pinSuccess'));
   };
 
   const handleSave = () => {
@@ -44,7 +83,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-theme-surface w-full max-w-sm rounded-3xl border border-white/10 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="p-6 border-b border-white/5 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-theme-primary">Settings</h2>
+          <h2 className="text-lg font-bold text-theme-primary">{t('settings')}</h2>
           <button onClick={onClose}><X size={20} className="text-theme-secondary" /></button>
         </div>
 
@@ -76,27 +115,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
           <p className="text-xs text-theme-secondary mb-4">Select the source for the conversion rate applied to your USD balance visualization.</p>
           
           <div className="flex flex-col gap-3 mb-6">
-             <button disabled className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all opacity-50 cursor-not-allowed bg-white/5 border-transparent`}>
-                <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><Globe size={20} className="text-theme-secondary" /></div>
+             <button 
+                 onClick={() => handleFetchRate('AUTO')}
+                 className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${mode === 'AUTO' ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
+             >
+                <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><Globe size={20} className="text-emerald-400" /></div>
                 <div>
-                   <p className="font-bold text-sm text-theme-secondary">Official Bank Rate</p>
-                   <p className="text-xs text-theme-secondary">Temporarily Disabled</p>
+                   <p className="font-bold text-sm text-theme-primary">{t('officialRate')}</p>
+                   <p className="text-xs text-theme-secondary">{isFetching && mode === 'AUTO' ? t('fetching') : 'Banco Central de Venezuela'}</p>
                 </div>
              </button>
              
-             <button disabled className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all opacity-50 cursor-not-allowed bg-white/5 border-transparent`}>
-                <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><TrendingUp size={20} className="text-theme-secondary" /></div>
+             <button 
+                onClick={() => handleFetchRate('PARALLEL')}
+                className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${mode === 'PARALLEL' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
+             >
+                <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><TrendingUp size={20} className="text-amber-400" /></div>
                 <div>
-                   <p className="font-bold text-sm text-theme-secondary">Parallel Market</p>
-                   <p className="text-xs text-theme-secondary">Temporarily Disabled</p>
+                   <p className="font-bold text-sm text-theme-primary">EnParaleloVzla</p>
+                   <p className="text-xs text-theme-secondary">{isFetching && mode === 'PARALLEL' ? t('fetching') : t('averageParallel')}</p>
                 </div>
              </button>
 
              <button onClick={() => setMode('MANUAL')} className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${mode === 'MANUAL' ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-white/5 border-transparent'}`}>
                 <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><Lock size={20} className="text-purple-400" /></div>
                 <div>
-                   <p className="font-bold text-sm text-theme-primary">Manual Control</p>
-                   <p className="text-xs text-theme-secondary">Set your own fixed rate</p>
+                   <p className="font-bold text-sm text-theme-primary">{t('manualRate')}</p>
+                   <p className="text-xs text-theme-secondary">{t('setFixedRate')}</p>
                 </div>
              </button>
           </div>
@@ -112,19 +157,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
              {!showPinChange ? (
                  <button onClick={() => setShowPinChange(true)} className="w-full text-left p-4 bg-white/5 border border-white/5 hover:bg-white/10 rounded-xl transition-colors flex justify-between items-center group">
                      <div>
-                         <p className="font-bold text-sm text-theme-primary">Change Security PIN</p>
-                         <p className="text-xs text-theme-secondary">Current PIN: ****</p>
+                         <p className="font-bold text-sm text-theme-primary">{t('changePin')}</p>
+                         <p className="text-xs text-theme-secondary">{t('currentPinLabel')}</p>
                      </div>
-                     <span className="text-xs font-bold text-theme-brand group-hover:underline">Edit</span>
+                     <span className="text-xs font-bold text-theme-brand group-hover:underline">{t('edit')}</span>
                  </button>
              ) : (
                  <div className="bg-white/5 p-4 rounded-xl border border-white/5 animate-in fade-in">
-                     <p className="font-bold text-sm text-theme-primary mb-3">Update PIN</p>
+                     <p className="font-bold text-sm text-theme-primary mb-3">{t('updatePin')}</p>
                      
                      <div className="flex flex-col gap-3">
                          <input 
                             type="password" 
-                            placeholder="Current PIN" 
+                            placeholder={t('currentPinPlaceholder')}
                             maxLength={4}
                             value={oldPin}
                             onChange={(e) => setOldPin(e.target.value)}
@@ -132,15 +177,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
                          />
                          <input 
                             type="password" 
-                            placeholder="New PIN (4 digits)" 
+                            placeholder={t('newPinPlaceholder')}
                             maxLength={4}
                             value={newPin}
                             onChange={(e) => setNewPin(e.target.value)}
                             className="bg-black/20 p-3 rounded-lg text-white outline-none border border-white/10 focus:border-theme-brand text-center tracking-widest"
                          />
                          <div className="flex gap-2 mt-2">
-                             <button onClick={() => setShowPinChange(false)} className="flex-1 py-2 text-xs font-bold text-theme-secondary hover:text-white">Cancel</button>
-                             <button onClick={handleChangePin} className="flex-1 py-2 bg-theme-brand text-white rounded-lg text-xs font-bold shadow-lg">Save PIN</button>
+                             <button onClick={() => setShowPinChange(false)} className="flex-1 py-2 text-xs font-bold text-theme-secondary hover:text-white">{t('cancel')}</button>
+                             <button onClick={handleChangePin} className="flex-1 py-2 bg-theme-brand text-white rounded-lg text-xs font-bold shadow-lg">{t('savePin')}</button>
                          </div>
                      </div>
                  </div>

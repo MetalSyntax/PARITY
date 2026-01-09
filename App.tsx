@@ -269,8 +269,16 @@ function AppContent() {
              {/* FAB container */}
              <div className="relative -top-6">
                 <button 
-                  onClick={() => { setEditingTransaction(null); setShowAdd(true); }}
-                  className="w-16 h-16 rounded-full bg-theme-brand shadow-lg shadow-brand/50 flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform border-4 border-theme-bg"
+                  onClick={() => { 
+                      if (accounts.length === 0) {
+                          alert("Please create a wallet first!");
+                          setCurrentView('WALLET');
+                          return;
+                      }
+                      setEditingTransaction(null); 
+                      setShowAdd(true); 
+                  }}
+                  className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform border-4 border-theme-bg ${accounts.length === 0 ? 'bg-zinc-600 shadow-zinc-900/50 grayscale' : 'bg-theme-brand shadow-brand/50'}`}
                 >
                   <Plus size={32} />
                 </button>
@@ -308,6 +316,7 @@ function AppContent() {
              currentRate={exchangeRate}
              onClose={() => setShowSettings(false)}
              onUpdateRate={setExchangeRate}
+             lang={userProfile.language}
           />
         )}
       </div>

@@ -4,11 +4,7 @@ import { Account, Currency } from './types';
 
 export const INITIAL_RATE = 50.50;
 
-export const MOCK_ACCOUNTS: Account[] = [
-  { id: '1', name: 'Cash Wallet', currency: Currency.USD, balance: 140, icon: '💵', color: 'from-emerald-500 to-emerald-700' },
-  { id: '2', name: 'Banesco', currency: Currency.VES, balance: 25250, icon: '🏦', color: 'from-green-600 to-green-800' }, // ~500 USD
-  { id: '3', name: 'Zelle', currency: Currency.USD, balance: 850, icon: '⚡', color: 'from-purple-500 to-purple-700' },
-];
+export const MOCK_ACCOUNTS: Account[] = [];
 
 export const CATEGORIES = [
   { id: 'food', name: 'Food', icon: <ShoppingCart size={20} />, color: 'bg-orange-500/20 text-orange-400' },

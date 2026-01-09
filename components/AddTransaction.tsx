@@ -19,11 +19,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [type, setType] = useState<TransactionType>(initialData ? initialData.type : TransactionType.EXPENSE);
   const [note, setNote] = useState(initialData ? initialData.note : '');
   
-  const [fromAccountId, setFromAccountId] = useState<string>(initialData ? initialData.accountId : accounts[0].id);
+  const [fromAccountId, setFromAccountId] = useState<string>(
+    initialData ? initialData.accountId : (accounts.length > 0 ? accounts[0].id : '')
+  );
   const [toAccountId, setToAccountId] = useState<string>(
       initialData && initialData.toAccountId 
       ? initialData.toAccountId 
-      : (accounts.length > 1 ? accounts[1].id : accounts[0].id)
+      : (accounts.length > 1 ? accounts[1].id : (accounts.length > 0 ? accounts[0].id : ''))
   );
   
   const [categoryId, setCategoryId] = useState<string>(initialData ? initialData.category : CATEGORIES[0].id);
@@ -109,6 +111,23 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   };
 
   const getActiveAccount = (id: string) => accounts.find(a => a.id === id) || accounts[0];
+
+  if (accounts.length === 0) {
+      return (
+        <div className="fixed inset-0 bg-theme-bg z-50 flex items-center justify-center p-6">
+            <div className="bg-theme-surface p-6 rounded-2xl border border-white/10 text-center max-w-sm w-full">
+               <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <X size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-theme-primary mb-2">{t('noAccounts')}</h3>
+                <p className="text-theme-secondary mb-6 text-sm">Please create a wallet first before adding transactions.</p>
+                <button onClick={onClose} className="w-full py-3 bg-theme-surface border border-white/10 hover:bg-white/5 rounded-xl font-bold text-theme-primary">
+                    {t('close')}
+                </button>
+            </div>
+        </div>
+      );
+  }
 
   return (
     <div className="fixed inset-0 bg-theme-bg z-50 flex flex-col font-sans h-[100dvh] overflow-hidden">
