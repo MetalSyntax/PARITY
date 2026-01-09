@@ -11,7 +11,7 @@ import { ProfileView } from './components/ProfileView';
 import { ScheduledPaymentView } from './components/ScheduledPaymentView';
 
 import { INITIAL_RATE, MOCK_ACCOUNTS } from './constants';
-import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile } from './types';
+import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment } from './types';
 
 const STORAGE_KEY = 'dualflow_data_v3';
 
@@ -24,6 +24,7 @@ export default function App() {
   const [exchangeRate, setExchangeRate] = useState(INITIAL_RATE);
   const [accounts, setAccounts] = useState<Account[]>(MOCK_ACCOUNTS);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: 'John Doe', language: 'en' });
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -36,6 +37,7 @@ export default function App() {
         setExchangeRate(data.exchangeRate || INITIAL_RATE);
         setAccounts(data.accounts && data.accounts.length > 0 ? data.accounts : MOCK_ACCOUNTS);
         setTransactions(data.transactions || []);
+        setScheduledPayments(data.scheduledPayments || []);
         setUserProfile(data.userProfile || { name: 'John Doe', language: 'en' });
       } catch (e) {
         console.error("Failed to load data", e);
@@ -51,10 +53,11 @@ export default function App() {
       exchangeRate,
       accounts,
       transactions,
+      scheduledPayments,
       userProfile
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [exchangeRate, accounts, transactions, userProfile, isLoaded]);
+  }, [exchangeRate, accounts, transactions, scheduledPayments, userProfile, isLoaded]);
 
   const handleUpdateAccounts = (newAccounts: Account[]) => {
       setAccounts(newAccounts);
@@ -148,6 +151,8 @@ export default function App() {
              <ScheduledPaymentView 
                onBack={() => setCurrentView('DASHBOARD')}
                lang={userProfile.language}
+               scheduledPayments={scheduledPayments}
+               onUpdateScheduledPayments={setScheduledPayments}
              />
           )}
           {currentView === 'BUDGET' && (
@@ -161,6 +166,7 @@ export default function App() {
              <AnalysisView 
                onBack={() => setCurrentView('DASHBOARD')}
                transactions={transactions}
+               scheduledPayments={scheduledPayments}
                lang={userProfile.language}
              />
           )}
@@ -184,10 +190,20 @@ export default function App() {
         </div>
 
         {/* Bottom Nav (Only visible on Dashboard) */}
-        {currentView === 'DASHBOARD' && (
-          <div className="h-20 bg-[#050505]/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-12 px-2 relative z-10 pb-2 flex-shrink-0 w-full">
-             <button onClick={() => setCurrentView('DASHBOARD')} className="p-3 text-white"><Home size={24} /></button>
-             <button onClick={() => setCurrentView('WALLET')} className="p-3 text-zinc-500 hover:text-white transition-colors"><Wallet size={24} /></button>
+        {['DASHBOARD', 'WALLET', 'ANALYSIS', 'PROFILE'].includes(currentView) && (
+          <div className="h-20 bg-[#050505]/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-8 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300">
+             <button 
+               onClick={() => setCurrentView('DASHBOARD')} 
+               className={`p-3 transition-colors ${currentView === 'DASHBOARD' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+             >
+               <Home size={24} />
+             </button>
+             <button 
+               onClick={() => setCurrentView('WALLET')} 
+               className={`p-3 transition-colors ${currentView === 'WALLET' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+             >
+               <Wallet size={24} />
+             </button>
              
              {/* FAB container */}
              <div className="relative -top-6">
@@ -199,8 +215,18 @@ export default function App() {
                 </button>
              </div>
 
-             <button onClick={() => setCurrentView('ANALYSIS')} className="p-3 text-zinc-500 hover:text-white transition-colors"><Target size={24} /></button>
-             <button onClick={() => setCurrentView('PROFILE')} className="p-3 text-zinc-500 hover:text-white transition-colors"><User size={24} /></button>
+             <button 
+               onClick={() => setCurrentView('ANALYSIS')} 
+               className={`p-3 transition-colors ${currentView === 'ANALYSIS' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+             >
+               <Target size={24} />
+             </button>
+             <button 
+               onClick={() => setCurrentView('PROFILE')} 
+               className={`p-3 transition-colors ${currentView === 'PROFILE' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+             >
+               <User size={24} />
+             </button>
           </div>
         )}
 

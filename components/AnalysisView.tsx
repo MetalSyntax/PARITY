@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { CATEGORIES } from '../constants';
-import { Transaction, TransactionType, Language } from '../types';
+import { Transaction, TransactionType, Language, ScheduledPayment } from '../types';
 import { getTranslation } from '../i18n';
-
 interface AnalysisViewProps {
   onBack: () => void;
   transactions: Transaction[];
   lang: Language;
+  scheduledPayments: ScheduledPayment[];
 }
 
-export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang }) => {
+export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang, scheduledPayments }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [showDetails, setShowDetails] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
   
   const today = new Date().toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'pt-BR', { year: 'numeric', month: 'short', day: 'numeric' });
+
+  // ... (existing calculation logic remains same until return)
 
   const totalSpent = transactions
     .filter(t => t.type === TransactionType.EXPENSE)
@@ -34,6 +36,17 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
       .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
     return { ...cat, total };
   }).sort((a,b) => b.total - a.total).filter(c => c.total > 0).slice(0, 4); 
+
+  // Helper to get relative time text
+  const getDaysDiff = (dateStr: string) => {
+      const todayDate = new Date();
+      const targetDate = new Date(dateStr);
+      const diffTime = targetDate.getTime() - todayDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+      return diffDays;
+  };
+
+  const displayedSubs = showSubs ? scheduledPayments : scheduledPayments.slice(0, 2);
 
   return (
     <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-black">
@@ -129,34 +142,33 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
         <button onClick={() => setShowSubs(!showSubs)} className="text-blue-500 text-sm">{showSubs ? t('viewLess') : t('viewMore')}</button>
       </div>
       
-      {/* Mock Subs */}
+      {/* Scheduled Payments List */}
       <div className="flex flex-col gap-3">
-         <div className="bg-[#121212] p-4 rounded-2xl border border-white/5 flex items-center gap-4">
-             <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center font-bold">N</div>
-             <div className="flex-1">
-                 <h4 className="font-bold text-sm">Netflix Standard</h4>
-                 <p className="text-zinc-500 text-xs">$15.99 / mo</p>
-             </div>
-             <div className="text-right">
-                 <div className="text-[10px] bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full mb-1 inline-block">2 {t('daysLeft')}</div>
-                 <div className="font-bold">$15.99</div>
-             </div>
-         </div>
-         {showSubs && (
-             <>
-                <div className="bg-[#121212] p-4 rounded-2xl border border-white/5 flex items-center gap-4">
-                    <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center font-bold">S</div>
+         {scheduledPayments.length === 0 && (
+             <p className="text-zinc-500 text-sm ml-2">No upcoming subscriptions.</p>
+         )}
+         {displayedSubs.map(sub => {
+             const days = getDaysDiff(sub.date);
+             const badgeColor = days < 0 ? 'bg-red-500/20 text-red-400' : days <= 7 ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-500/20 text-zinc-400';
+             
+             return (
+                <div key={sub.id} className="bg-[#121212] p-4 rounded-2xl border border-white/5 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-indigo-900/50 text-indigo-400 rounded-lg flex items-center justify-center font-bold uppercase">
+                        {sub.name.charAt(0)}
+                    </div>
                     <div className="flex-1">
-                        <h4 className="font-bold text-sm">Spotify</h4>
-                        <p className="text-zinc-500 text-xs">$9.99 / mo</p>
+                        <h4 className="font-bold text-sm">{sub.name}</h4>
+                        <p className="text-zinc-500 text-xs">${sub.amount} / {sub.frequency}</p>
                     </div>
                     <div className="text-right">
-                        <div className="text-[10px] bg-zinc-500/20 text-zinc-400 px-2 py-0.5 rounded-full mb-1 inline-block">14 {t('daysLeft')}</div>
-                        <div className="font-bold">$9.99</div>
+                        <div className={`text-[10px] ${badgeColor} px-2 py-0.5 rounded-full mb-1 inline-block`}>
+                            {days < 0 ? `${Math.abs(days)} days ago` : days === 0 ? 'Today' : `${days} days left`}
+                        </div>
+                        <div className="font-bold">${sub.amount}</div>
                     </div>
                 </div>
-             </>
-         )}
+             );
+         })}
       </div>
 
     </div>

@@ -6,17 +6,12 @@ import { getTranslation } from '../i18n';
 interface ScheduledPaymentViewProps {
   onBack: () => void;
   lang: Language;
+  scheduledPayments: ScheduledPayment[];
+  onUpdateScheduledPayments: (payments: ScheduledPayment[]) => void;
 }
 
-// Mock Data local to component for demo
-const MOCK_SCHEDULED: ScheduledPayment[] = [
-    { id: '1', name: 'Netflix', amount: 15.99, currency: Currency.USD, date: '2023-11-15', frequency: 'Monthly' },
-    { id: '2', name: 'Gym', amount: 40, currency: Currency.USD, date: '2023-11-20', frequency: 'Monthly' }
-];
-
-export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBack, lang }) => {
+export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBack, lang, scheduledPayments, onUpdateScheduledPayments }) => {
   const t = (key: any) => getTranslation(lang, key);
-  const [payments, setPayments] = useState<ScheduledPayment[]>(MOCK_SCHEDULED);
   const [isAdding, setIsAdding] = useState(false);
   
   // New Payment Form State
@@ -34,7 +29,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
           date: newDate,
           frequency: 'Monthly'
       };
-      setPayments([...payments, newPayment]);
+      onUpdateScheduledPayments([...scheduledPayments, newPayment]);
       setIsAdding(false);
       setNewName('');
       setNewAmount('');
@@ -42,7 +37,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
   };
 
   const handleDelete = (id: string) => {
-      setPayments(payments.filter(p => p.id !== id));
+      onUpdateScheduledPayments(scheduledPayments.filter(p => p.id !== id));
   };
 
   if (isAdding) {
@@ -73,7 +68,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
       </div>
 
       <div className="flex flex-col gap-4">
-          {payments.map(p => (
+          {scheduledPayments.map(p => (
               <div key={p.id} className="bg-[#121212] p-4 rounded-2xl border border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-indigo-400">
@@ -90,7 +85,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
                   </div>
               </div>
           ))}
-          {payments.length === 0 && <p className="text-center text-zinc-500 mt-10">No payments scheduled.</p>}
+          {scheduledPayments.length === 0 && <p className="text-center text-zinc-500 mt-10">No payments scheduled.</p>}
       </div>
     </div>
   );

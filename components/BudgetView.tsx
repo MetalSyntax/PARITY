@@ -117,9 +117,9 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
              <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10"><ArrowLeft size={20} /></button>
-             <h1 className="text-xl font-bold">Budgets & Goals</h1>
+             <h1 className="text-xl font-bold">{t('budgetsAndGoals')}</h1>
         </div>
-        <div className="text-xs bg-white/5 px-3 py-1 rounded-full border border-white/10">USD / EUR</div>
+        <div className="text-xs bg-white/5 px-3 py-1 rounded-full border border-white/10">USD</div>
       </div>
 
       {/* Tabs */}
@@ -142,7 +142,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
       {activeTab === 'ENVELOPES' && (
           <div className="animate-in fade-in duration-300">
               <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-lg font-bold">Digital Envelopes</h2>
+                <h2 className="text-lg font-bold">{t('digitalEnvelopes')}</h2>
                 <button 
                     onClick={() => setIsManaging(!isManaging)}
                     className={`text-sm font-medium px-3 py-1 rounded-full transition-colors ${isManaging ? 'bg-indigo-600 text-white' : 'text-indigo-400 hover:bg-white/5'}`}

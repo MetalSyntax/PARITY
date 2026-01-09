@@ -71,6 +71,8 @@ export const TRANSLATIONS = {
     cancel: 'Cancel',
     category: 'Category',
     name: 'Name',
+    budgetsAndGoals: 'Budgets & Goals',
+    digitalEnvelopes: 'Digital Envelopes',
   },
   es: {
     welcome: 'Bienvenido',
@@ -142,6 +144,8 @@ export const TRANSLATIONS = {
     cancel: 'Cancelar',
     category: 'Categoría',
     name: 'Nombre',
+    budgetsAndGoals: 'Presupuestos & Metas',
+    digitalEnvelopes: 'Envelopes Digitales',
   },
   pt: {
     welcome: 'Bem-vindo',
@@ -213,6 +217,8 @@ export const TRANSLATIONS = {
     cancel: 'Cancelar',
     category: 'Categoria',
     name: 'Nome',
+    budgetsAndGoals: 'Presupuestos & Metas',
+    digitalEnvelopes: 'Envelopes Digitais',
   }
 };
 
