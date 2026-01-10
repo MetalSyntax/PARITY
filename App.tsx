@@ -255,6 +255,7 @@ function AppContent() {
               transactions={transactions}
               scheduledPayments={scheduledPayments}
               lang={userProfile.language}
+              exchangeRate={exchangeRate}
             />
           )}
           {currentView === 'WALLET' && (
@@ -264,6 +265,7 @@ function AppContent() {
               onUpdateAccounts={handleUpdateAccounts}
               lang={userProfile.language}
               transactions={transactions}
+              exchangeRate={exchangeRate}
             />
           )}
           {currentView === 'PROFILE' && (

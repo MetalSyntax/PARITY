@@ -9,9 +9,10 @@ interface AnalysisViewProps {
   transactions: Transaction[];
   lang: Language;
   scheduledPayments: ScheduledPayment[];
+  exchangeRate: number;
 }
 
-export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang, scheduledPayments }) => {
+export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang, scheduledPayments, exchangeRate }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [viewMode, setViewMode] = useState<'OVERVIEW' | 'INCOME'>('OVERVIEW');
   const [showDetails, setShowDetails] = useState(false);
@@ -72,9 +73,12 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
           <>
             <div className="mb-6">
                 <p className="text-theme-secondary text-sm">{t('netCashFlow')}</p>
-                <h2 className={`text-4xl font-bold flex items-center gap-2 ${netCashFlow >= 0 ? 'text-theme-primary' : 'text-red-400'}`}>
-                    {netCashFlow >= 0 ? '+' : '-'}${Math.abs(netCashFlow).toFixed(2)}
-                </h2>
+                <div className="flex flex-col">
+                    <h2 className={`text-4xl font-bold flex items-center gap-2 ${netCashFlow >= 0 ? 'text-theme-primary' : 'text-red-400'}`}>
+                        {netCashFlow >= 0 ? '+' : '-'}${Math.abs(netCashFlow).toFixed(2)}
+                    </h2>
+                    <span className="text-sm font-mono text-theme-secondary mt-1">≈ Bs. {(Math.abs(netCashFlow) * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
             </div>
 
             {/* Main Chart Card */}
@@ -91,7 +95,10 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                     <div className="flex flex-col justify-center h-full w-1/4">
                         <div className="h-[60%] w-3 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full relative group">
                             <div className="absolute top-full mt-2 left-0 text-emerald-400 font-bold text-sm">{t('income')}</div>
-                            <div className="absolute top-full mt-6 left-0 text-theme-primary font-bold text-lg">${totalIncome.toFixed(0)}</div>
+                            <div className="absolute top-full mt-6 left-0">
+                                <div className="text-theme-primary font-bold text-lg">${totalIncome.toFixed(0)}</div>
+                                <div className="text-theme-secondary text-[10px]">Bs.{(totalIncome * exchangeRate).toLocaleString(undefined, {notation: 'compact'})}</div>
+                            </div>
                         </div>
                     </div>
 
@@ -126,6 +133,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                                 <div className="text-right">
                                     <div className="text-[10px] text-theme-secondary uppercase">{t(cat.name)}</div>
                                     <div className="text-sm font-bold text-theme-primary">${cat.total.toFixed(0)}</div>
+                                    <div className="text-[10px] text-zinc-500">Bs.{(cat.total * exchangeRate).toLocaleString(undefined, {notation: 'compact'})}</div>
                                 </div>
                                 <div className={`w-2 h-8 rounded-full ${cat.id === 'food' ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
                             </div>
@@ -138,11 +146,17 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                     <div className="mt-6 pt-6 border-t border-white/5 animate-in slide-in-from-top-2">
                         <div className="flex justify-between text-sm text-theme-secondary mb-2">
                             <span>{t('totalIncomeLabel')}</span>
-                            <span className="text-emerald-400">${totalIncome.toFixed(2)}</span>
+                            <div className="text-right">
+                                <span className="text-emerald-400 block">${totalIncome.toFixed(2)}</span>
+                                <span className="text-emerald-600 text-xs">Bs. {(totalIncome * exchangeRate).toLocaleString()}</span>
+                            </div>
                         </div>
                         <div className="flex justify-between text-sm text-theme-secondary">
                             <span>{t('totalExpensesLabel')}</span>
-                            <span className="text-red-400">-${totalSpent.toFixed(2)}</span>
+                            <div className="text-right">
+                                <span className="text-red-400 block">-${totalSpent.toFixed(2)}</span>
+                                <span className="text-red-600 text-xs">Bs. {(totalSpent * exchangeRate).toLocaleString()}</span>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -32,9 +32,10 @@ interface WalletViewProps {
   onUpdateAccounts: (accounts: Account[]) => void;
   lang: Language;
   transactions: Transaction[];
+  exchangeRate: number;
 }
 
-export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpdateAccounts, lang, transactions }) => {
+export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpdateAccounts, lang, transactions, exchangeRate }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -73,6 +74,11 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
   const commissions = monthlyTransactions
       .filter(t => t.type === TransactionType.EXPENSE && t.category === 'fees')
       .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
+
+  // Safe Conversions
+  const safeRate = exchangeRate;
+  const vesIncome = (totalIncome || 0) * safeRate;
+  const vesNet = (netMonthly || 0) * safeRate;
 
 
   // Active Sources (Income Categories with > 0 income this month)
@@ -244,7 +250,10 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
                       <TrendingUp size={80} />
                   </div>
                   <p className="text-xs text-theme-secondary uppercase tracking-wider mb-2">{t('totalMonthlyIncome')}</p>
-                  <h3 className="text-2xl font-bold text-emerald-400 mb-4">+${totalIncome.toLocaleString()}</h3>
+                  <div className="mb-4">
+                      <h3 className="text-xl font-bold text-emerald-400">+${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</h3>
+                      <p className="text-xs text-emerald-400/60 font-mono">≈ Bs. {vesIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+                  </div>
                   
                   <div className="space-y-2">
                       <div className="flex justify-between text-xs">
@@ -270,7 +279,10 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
                     <p className="text-xs text-theme-secondary uppercase tracking-wider mb-1">{t('totalNetMonthly')}</p>
                     <p className="text-[10px] text-zinc-500 leading-tight">{t('incomeExpenseDiff')}</p>
                   </div>
-                  <h3 className="text-3xl font-bold text-theme-primary mt-4">${netMonthly.toLocaleString()}</h3>
+                  <div className="mt-4">
+                      <h3 className="text-2xl font-bold text-theme-primary">${netMonthly.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</h3>
+                      <p className="text-xs text-theme-secondary font-mono">≈ Bs. {vesNet.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+                  </div>
                   <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-lg w-fit ${netMonthly >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
                       {netMonthly >= 0 ? `+ ${t('positiveFlow')}` : `- ${t('negativeFlow')}`}
                   </div>
