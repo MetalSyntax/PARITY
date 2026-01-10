@@ -124,7 +124,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                         {sortedCategories.map((cat) => (
                             <div key={cat.id} className="flex items-center justify-end gap-2 relative">
                                 <div className="text-right">
-                                    <div className="text-[10px] text-theme-secondary uppercase">{cat.name}</div>
+                                    <div className="text-[10px] text-theme-secondary uppercase">{t(cat.name)}</div>
                                     <div className="text-sm font-bold text-theme-primary">${cat.total.toFixed(0)}</div>
                                 </div>
                                 <div className={`w-2 h-8 rounded-full ${cat.id === 'food' ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
@@ -194,7 +194,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-xl">
                                      {cat.icon}
                                  </div>
-                                 <h3 className="font-bold text-lg text-theme-primary">{cat.name}</h3>
+                                 <h3 className="font-bold text-lg text-theme-primary">{t(cat.name)}</h3>
                              </div>
                              <span className="text-2xl font-bold text-theme-primary">${cat.total.toLocaleString()}</span>
                           </div>

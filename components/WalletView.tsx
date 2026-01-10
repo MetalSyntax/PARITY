@@ -224,7 +224,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
                             </div>
                             <div>
                                 <p className="text-theme-primary font-bold text-lg">${source.total.toLocaleString()}</p>
-                                <p className="text-theme-secondary text-xs truncate">{source.name}</p>
+                                <p className="text-theme-secondary text-xs truncate">{t(source.name)}</p>
                             </div>
                         </div>
                     ))}
@@ -327,7 +327,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
                             <span className="text-theme-secondary text-xs font-medium">{t('availableBalance')}</span>
                             <span className="bg-white/5 px-2 py-1 rounded-lg text-xs font-bold font-mono text-theme-secondary border border-white/5 w-fit">{acc.currency}</span>
                         </div>
-                        <h3 className="text-3xl font-bold text-theme-primary">{acc.balance.toLocaleString()}</h3>
+                        <h3 className="text-3xl font-bold text-theme-primary">{acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : 'Bs.'} {acc.balance.toLocaleString()}</h3>
                     </div>
                   </div>
                 )})}

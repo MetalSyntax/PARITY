@@ -1,8 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
 import { TransactionType, Currency, Account, Language, Transaction } from '../types';
 import { CATEGORIES, SMART_CATEGORIES } from '../constants';
 import { getTranslation } from '../i18n';
+
+// Icon Map for Financial Services
+const ACCOUNT_ICONS: Record<string, React.ElementType> = {
+    'wallet': FaWallet,
+    'bank': FaBuildingColumns,
+    'card': FaCreditCard,
+    'visa': FaCcVisa,
+    'mastercard': FaCcMastercard,
+    'cash': FaMoneyBillWave,
+    'crypto': FaBitcoin,
+    'paypal': FaPaypal,
+    'mobile': FaMobileScreen,
+    'savings': FaPiggyBank
+};
+
+// Helper to render icon safely
+const renderAccountIcon = (iconKey: string, size: number = 24) => {
+    const IconComponent = ACCOUNT_ICONS[iconKey];
+    if (IconComponent) return <IconComponent size={size} />;
+    return <span style={{ fontSize: size }}>{iconKey}</span>; 
+};
 
 interface AddTransactionProps {
   onClose: () => void;
@@ -34,6 +56,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [showAccountSelector, setShowAccountSelector] = useState<'FROM' | 'TO' | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [date, setDate] = useState(initialData ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const t = (key: any) => getTranslation(lang, key);
 
@@ -137,7 +161,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       accountId: fromAccountId,
       toAccountId: type === TransactionType.TRANSFER ? toAccountId : undefined,
       note,
-      date: initialData ? initialData.date : new Date().toISOString(),
+      date: new Date(date).toISOString(),
     });
   };
 
@@ -186,7 +210,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                              }`}
                           >
                               <div className="flex items-center gap-3">
-                                  <span className="text-2xl">{acc.icon}</span>
+                                  <span className="text-2xl">{renderAccountIcon(acc.icon, 24)}</span>
                                   <div className="text-left">
                                       <div className="font-bold text-theme-primary">{acc.name}</div>
                                       <div className="text-xs text-theme-secondary">{acc.currency}</div>
@@ -262,7 +286,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     onClick={() => setShowAccountSelector('FROM')}
                     className="flex items-center gap-2 px-3 py-1 rounded-full hover:bg-white/5"
                  >
-                     <span className="text-sm">{getActiveAccount(fromAccountId).icon}</span>
+                     <span className="text-sm">{renderAccountIcon(getActiveAccount(fromAccountId).icon, 16)}</span>
                      <span className="text-xs font-bold text-theme-secondary max-w-[60px] truncate">{getActiveAccount(fromAccountId).name}</span>
                  </button>
                  
@@ -273,7 +297,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             onClick={() => setShowAccountSelector('TO')}
                             className="flex items-center gap-2 px-3 py-1 rounded-full hover:bg-white/5"
                         >
-                            <span className="text-sm">{getActiveAccount(toAccountId).icon}</span>
+                            <span className="text-sm">{renderAccountIcon(getActiveAccount(toAccountId).icon, 16)}</span>
                             <span className="text-xs font-bold text-theme-secondary max-w-[60px] truncate">{getActiveAccount(toAccountId).name}</span>
                         </button>
                      </>
@@ -296,78 +320,43 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             </button>
         </div>
 
-        {/* Categories Carousel */}
-        {type !== TransactionType.TRANSFER && (<>
-        <div className="mb-4">
-           <div className="flex items-center justify-between mb-3">
-             <span className="text-xs font-bold text-theme-secondary tracking-wider uppercase flex items-center gap-1">
-               {t('smartCategories')}
-             </span>
-             <button onClick={() => setShowAllCategories(!showAllCategories)} className="text-xs text-theme-brand font-bold flex items-center">
-                 {showAllCategories ? t('viewLess') : t('viewMore')} <ChevronRight size={12} className={`transition-transform ${showAllCategories ? 'rotate-90' : ''}`} />
-             </button>
-           </div>
-           
-           {showAllCategories ? (
-               <div className="grid grid-cols-4 gap-2 animate-in slide-in-from-bottom-5 duration-200">
-                   {CATEGORIES.map(cat => (
-                        <button 
-                        key={cat.id}
-                        onClick={() => setCategoryId(cat.id)}
-                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${
-                            categoryId === cat.id 
-                            ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand' 
-                            : 'bg-theme-surface border-white/5 text-theme-secondary hover:bg-white/5'
-                        }`}
-                        >
-                            <div className={`${categoryId === cat.id ? 'text-theme-brand' : 'text-theme-secondary'}`}>
-                                {cat.icon}
-                            </div>
-                            <span className="text-[10px] font-medium truncate w-full text-center">{t(cat.name)}</span>
-                        </button>
-                    ))}
-               </div>
-           ) : (
-               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                   {CATEGORIES.map(cat => (
-                        <button 
-                        key={cat.id}
-                        onClick={() => setCategoryId(cat.id)}
-                        className={`flex flex-col items-center justify-center min-w-[70px] h-[70px] rounded-2xl border transition-all ${
-                            categoryId === cat.id 
-                            ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand' 
-                            : 'bg-theme-surface border-white/5 text-theme-secondary hover:bg-white/5'
-                        }`}
-                        >
-                            <div className={`${categoryId === cat.id ? 'text-theme-brand' : 'text-theme-secondary'} mb-1`}>
-                                {cat.icon}
-                            </div>
-                            <span className="text-[10px] font-medium">{t(cat.name)}</span>
-                        </button>
-                    ))}
-               </div>
-           )}
-        </div>
-
-
-        {/* Smart Suggestions */}
-        <div className="mb-4">
-             <div className="flex gap-2 flex-wrap">
-                 {Object.entries(SMART_CATEGORIES)
-                     .filter(([key, cat]) => cat === categoryId)
-                     .slice(0, 5) // Show top 5 suggestions
-                     .map(([key, cat]) => (
-                     <button
-                         key={key}
-                         onClick={() => setNote(key.charAt(0).toUpperCase() + key.slice(1))}
-                         className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full text-xs text-theme-secondary transition-colors"
-                     >
-                         {key.charAt(0).toUpperCase() + key.slice(1)}
-                     </button>
-                 ))}
+        {/* Date and Category Selection */}
+        <div className="flex gap-4 mb-4">
+             <div className="flex-1">
+                 <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('date') || 'Date'}</label>
+                 <div className="relative">
+                    <input 
+                        type="date" 
+                        value={date} 
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 pl-10 text-theme-primary outline-none focus:border-theme-brand transition-colors text-sm font-bold"
+                    />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none">
+                        <Sparkles size={16} className="text-theme-brand" />
+                    </div>
+                 </div>
              </div>
+             
+             {type !== TransactionType.TRANSFER && (
+                 <div className="flex-1">
+                     <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('category') || 'Category'}</label>
+                     <button 
+                         onClick={() => setShowCategoryModal(true)}
+                         className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 flex items-center justify-between group hover:border-theme-brand transition-colors h-[46px]"
+                     >
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <span className={`${CATEGORIES.find(c => c.id === categoryId)?.color || 'text-theme-primary'}`}>
+                                {CATEGORIES.find(c => c.id === categoryId)?.icon}
+                            </span>
+                            <span className="text-xs font-bold text-theme-primary truncate">
+                                {t(CATEGORIES.find(c => c.id === categoryId)?.name) || CATEGORIES.find(c => c.id === categoryId)?.name}
+                            </span>
+                        </div>
+                        <ChevronDown size={14} className="text-theme-secondary group-hover:text-theme-primary flex-shrink-0" />
+                     </button>
+                 </div>
+             )}
         </div>
-        </>)}
       </div>
 
       {/* Keypad */}
@@ -442,6 +431,62 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             </button>
          </div>
       </div>
+      
+       {/* Category Modal */}
+       {showCategoryModal && (
+        <div className="fixed inset-0 bg-theme-bg z-[60] flex flex-col animate-in slide-in-from-bottom duration-200">
+            {/* Header */}
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-theme-surface">
+                <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory') || 'Select Category'}</h2>
+                <button onClick={() => setShowCategoryModal(false)} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><X size={20}/></button>
+            </div>
+            
+            <div className="overflow-y-auto p-4 flex-1">
+                 <div className="flex flex-col gap-4 pb-10">
+                     {CATEGORIES.map(cat => {
+                         const shortcuts = Object.entries(SMART_CATEGORIES)
+                             .filter(([_, catId]) => catId === cat.id)
+                             .map(([key]) => key);
+
+                         return (
+                             <div key={cat.id} className="bg-theme-surface border border-white/5 rounded-2xl p-4">
+                                 <button
+                                     onClick={() => { setCategoryId(cat.id); setShowCategoryModal(false); }}
+                                     className={`w-full flex items-center gap-3 mb-3 p-2 rounded-xl transition-colors ${categoryId === cat.id ? 'bg-theme-brand/10 text-theme-brand' : 'hover:bg-white/5'}`}
+                                 >
+                                     <div className={`p-2 rounded-lg ${cat.color} bg-opacity-20`}>
+                                         {cat.icon}
+                                     </div>
+                                     <span className="text-lg font-bold text-theme-primary flex-1 text-left">
+                                         {t(cat.name) || cat.name}
+                                     </span>
+                                     {categoryId === cat.id && <Check size={16} />}
+                                 </button>
+
+                                 {shortcuts.length > 0 && (
+                                     <div className="flex flex-wrap gap-2 pl-2 border-t border-white/5 pt-3">
+                                         {shortcuts.map(key => (
+                                             <button
+                                                 key={key}
+                                                 onClick={() => { 
+                                                     setCategoryId(cat.id); 
+                                                     setNote(key.charAt(0).toUpperCase() + key.slice(1)); 
+                                                     setShowCategoryModal(false); 
+                                                 }}
+                                                 className="px-3 py-1.5 bg-theme-bg/50 border border-white/5 rounded-lg text-xs font-medium text-theme-secondary hover:bg-white/10 hover:text-theme-primary transition-colors capitalize"
+                                             >
+                                                 {key}
+                                             </button>
+                                         ))}
+                                     </div>
+                                 )}
+                             </div>
+                         );
+                     })}
+                 </div>
+            </div>
+        </div>
+       )}
     </div>
   );
 };

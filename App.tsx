@@ -76,11 +76,11 @@ function AppContent() {
     setAccounts(newAccounts);
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    if (confirm('Delete this transaction?')) {
+  const handleDeleteTransaction = (id: string, skipConfirm = false, skipStateUpdate = false): Account[] | null => {
+    if (skipConfirm || confirm('Delete this transaction?')) {
       const tx = transactions.find(t => t.id === id);
       if (tx) {
-        setAccounts(prev => prev.map(acc => {
+        const updatedAccounts = accounts.map(acc => {
           if (acc.id === tx.accountId) {
             let amount = tx.amount;
 
@@ -111,15 +111,25 @@ function AppContent() {
           }
 
           return acc;
-        }));
-        setTransactions(prev => prev.filter(t => t.id !== id));
+        });
+
+        if (!skipStateUpdate) {
+            setAccounts(updatedAccounts);
+            setTransactions(prev => prev.filter(t => t.id !== id));
+        }
+        return updatedAccounts;
       }
     }
+    return null;
   };
 
   const handleSaveTransaction = (data: any) => {
+    let currentAccounts = accounts;
+    
+    // If editing, first "revert" the effect of the old transaction on balances
     if (data.id) {
-      handleDeleteTransaction(data.id);
+       const revertedAccounts = handleDeleteTransaction(data.id, true, true);
+       if (revertedAccounts) currentAccounts = revertedAccounts;
     }
 
     const normalizedUSD = data.originalCurrency === Currency.USD
@@ -127,14 +137,19 @@ function AppContent() {
       : data.amount / data.exchangeRate;
 
     const newTransaction: Transaction = {
-      id: data.id || Math.random().toString(36).substr(2, 9),
       ...data,
+      id: data.id || Math.random().toString(36).substr(2, 9),
       normalizedAmountUSD: normalizedUSD
     };
 
-    setTransactions(prev => [newTransaction, ...prev]);
+    setTransactions(prev => {
+        if (data.id) {
+            return [newTransaction, ...prev.filter(t => t.id !== data.id)];
+        }
+        return [newTransaction, ...prev];
+    });
 
-    setAccounts(prev => prev.map(acc => {
+    setAccounts(currentAccounts.map(acc => {
       if (acc.id === data.accountId) {
         let deduction = data.amount;
         if (acc.currency !== data.originalCurrency) {
