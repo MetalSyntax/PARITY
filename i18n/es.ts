@@ -210,4 +210,11 @@ export const es = {
     alert_incorrectPin: 'PIN actual incorrecto',
     alert_pinLengthError: 'El nuevo PIN debe ser de 4 dígitos',
     alert_pinSuccess: 'PIN actualizado correctamente',
+    confirm: 'Confirmar',
+    areYouSure: '¿Estás seguro?',
+    deleteTransactionConfirm: '¿Eliminar esta transacción?',
+    deleteScheduledConfirm: '¿Eliminar este pago programado?',
+    deleteEnvelopeConfirm: '¿Eliminar este sobre?',
+    deleteGoalConfirm: '¿Eliminar esta meta?',
+    importConfirm: 'Al importar los datos se sobrescribirán tus ajustes y transacciones actuales. ¿Continuar?',
 };

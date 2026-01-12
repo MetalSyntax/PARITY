@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Plus, X, Trash2, Trophy } from 'lucide-react';
 import { CATEGORIES } from '../constants';
-import { Transaction, TransactionType, Language, Budget, Goal } from '../types';
+import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { FaPlane, FaHouse, FaCar, FaGraduationCap, FaGift, FaGamepad, FaBasketShopping, FaEnvelope, FaBox, FaRibbon, FaBriefcaseMedical, FaBullseye, FaRing, FaLaptop } from 'react-icons/fa6';
 
@@ -44,6 +44,8 @@ interface BudgetViewProps {
   goals: Goal[];
   onUpdateBudgets: (budgets: Budget[]) => void;
   onUpdateGoals: (goals: Goal[]) => void;
+  onToggleBottomNav: (show: boolean) => void;
+  showConfirm: (config: ConfirmConfig) => void;
 }
 
 export const BudgetView: React.FC<BudgetViewProps> = ({ 
@@ -52,8 +54,10 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     lang, 
     budgets, 
     goals, 
-    onUpdateBudgets, 
-    onUpdateGoals 
+    onUpdateBudgets,
+    onUpdateGoals,
+    onToggleBottomNav,
+    showConfirm
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>('ENVELOPES');
@@ -64,6 +68,10 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [showCustomEnvelopeModal, setShowCustomEnvelopeModal] = useState(false); 
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+
+  React.useEffect(() => {
+    onToggleBottomNav(!(showGoalModal || showAddBudgetModal || showCustomEnvelopeModal));
+  }, [showGoalModal, showAddBudgetModal, showCustomEnvelopeModal, onToggleBottomNav]);
 
   // New Custom Envelope Form State
   const [customName, setCustomName] = useState('');
@@ -100,7 +108,12 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   };
 
   const handleDeleteBudget = (catId: string) => {
-      onUpdateBudgets(budgets.filter(b => b.categoryId !== catId));
+      showConfirm({
+          message: t('deleteEnvelopeConfirm'),
+          onConfirm: () => {
+              onUpdateBudgets(budgets.filter(b => b.categoryId !== catId));
+          }
+      });
   };
   
   // ... Goal handlers
@@ -114,9 +127,14 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       setEditingGoal(null);
   };
   const handleDeleteGoal = (id: string) => {
-      onUpdateGoals(goals.filter(g => g.id !== id));
-      setShowGoalModal(false);
-      setEditingGoal(null);
+      showConfirm({
+          message: t('deleteGoalConfirm'),
+          onConfirm: () => {
+              onUpdateGoals(goals.filter(g => g.id !== id));
+              setShowGoalModal(false);
+              setEditingGoal(null);
+          }
+      });
   };
 
   const availableCategories = CATEGORIES.filter(c => !budgets.find(b => b.categoryId === c.id));

@@ -153,16 +153,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpd
         </div>
 
         <div>
-             <label className="text-xs text-theme-secondary mb-2 block">Restore Data</label>
-             <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
-                <div className="flex flex-col items-center gap-1">
-                    <span className="text-xs text-theme-secondary">{t('clickToUploadBackup')}</span>
-                </div>
-                <input type="file" className="hidden" accept=".json" onChange={handleImportFile} />
-             </label>
-        </div>
-
-        <div>
              <label className="text-xs text-theme-secondary mb-2 block">{t('restoreData')}</label>
              <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
                 <div className="flex flex-col items-center gap-1">

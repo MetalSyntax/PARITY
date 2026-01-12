@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CreditCard, Plus, X, Edit2, Trash2, Wallet, TrendingUp, TrendingDown, Layers, Calendar } from 'lucide-react';
-import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment } from '../types';
+import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
 import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
@@ -35,9 +35,22 @@ interface WalletViewProps {
   exchangeRate: number;
   scheduledPayments: ScheduledPayment[];
   isBalanceVisible: boolean;
+  onToggleBottomNav: (show: boolean) => void;
+  showConfirm: (config: ConfirmConfig) => void;
 }
 
-export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpdateAccounts, lang, transactions, exchangeRate, scheduledPayments, isBalanceVisible }) => {
+export const WalletView: React.FC<WalletViewProps> = ({ 
+    onBack, 
+    accounts, 
+    onUpdateAccounts, 
+    lang, 
+    transactions, 
+    exchangeRate, 
+    scheduledPayments, 
+    isBalanceVisible, 
+    onToggleBottomNav,
+    showConfirm
+}) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -49,6 +62,10 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
   const [icon, setIcon] = useState('wallet');
   const [payrollClient, setPayrollClient] = useState('');
   const [activeTab, setActiveTab] = useState<'INCOME' | 'WALLETS'>('INCOME');
+  
+  React.useEffect(() => {
+    onToggleBottomNav(!isEditing);
+  }, [isEditing, onToggleBottomNav]);
 
   // Computations for "Income source & platform" style view
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -144,9 +161,12 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
   };
 
   const handleDelete = (id: string) => {
-      if (confirm(t('deleteWalletConfirm'))) {
-          onUpdateAccounts(accounts.filter(a => a.id !== id));
-      }
+      showConfirm({
+          message: t('deleteWalletConfirm'),
+          onConfirm: () => {
+              onUpdateAccounts(accounts.filter(a => a.id !== id));
+          }
+      });
   };
 
   if (isEditing) {

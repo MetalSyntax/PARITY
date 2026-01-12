@@ -196,4 +196,11 @@ export const pt = {
     alert_incorrectPin: 'PIN atual incorreto',
     alert_pinLengthError: 'O novo PIN deve ter 4 dígitos',
     alert_pinSuccess: 'PIN atualizado com sucesso',
+    confirm: 'Confirmar',
+    areYouSure: 'Você tem certeza?',
+    deleteTransactionConfirm: 'Excluir esta transação?',
+    deleteScheduledConfirm: 'Excluir este pagamento agendado?',
+    deleteEnvelopeConfirm: 'Excluir este envelope?',
+    deleteGoalConfirm: 'Excluir esta meta?',
+    importConfirm: 'A importação de dados substituirá suas configurações e transações atuais. Continuar?',
 };

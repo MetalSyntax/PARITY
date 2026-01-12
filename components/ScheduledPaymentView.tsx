@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown } from 'lucide-react';
-import { Language, Currency, ScheduledPayment, TransactionType } from '../types';
+import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
 
@@ -9,9 +9,18 @@ interface ScheduledPaymentViewProps {
   lang: Language;
   scheduledPayments: ScheduledPayment[];
   onUpdateScheduledPayments: (payments: ScheduledPayment[]) => void;
+  onToggleBottomNav: (show: boolean) => void;
+  showConfirm: (config: ConfirmConfig) => void;
 }
 
-export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBack, lang, scheduledPayments, onUpdateScheduledPayments }) => {
+export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ 
+  onBack, 
+  lang, 
+  scheduledPayments, 
+  onUpdateScheduledPayments, 
+  onToggleBottomNav,
+  showConfirm 
+}) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,6 +31,10 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
   const [newDate, setNewDate] = useState('');
   const [newType, setNewType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [newFrequency, setNewFrequency] = useState<'Monthly' | 'Weekly' | 'Yearly'>('Monthly');
+  
+  useEffect(() => {
+    onToggleBottomNav(!isAdding);
+  }, [isAdding, onToggleBottomNav]);
 
   // Load data for editing
   useEffect(() => {
@@ -71,9 +84,12 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ onBa
   };
 
   const handleDelete = (id: string) => {
-      if (confirm(t('deleteScheduledConfirm') || 'Delete this scheduled payment?')) {
-          onUpdateScheduledPayments(scheduledPayments.filter(p => p.id !== id));
-      }
+      showConfirm({
+          message: t('deleteScheduledConfirm'),
+          onConfirm: () => {
+              onUpdateScheduledPayments(scheduledPayments.filter(p => p.id !== id));
+          }
+      });
   };
 
   const handleEdit = (payment: ScheduledPayment) => {

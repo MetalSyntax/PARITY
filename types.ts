@@ -80,3 +80,11 @@ export interface Goal {
     icon: string;
     color: string;
 }
+
+export interface ConfirmConfig {
+    message: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+}

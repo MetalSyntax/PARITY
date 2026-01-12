@@ -259,7 +259,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }, {} as Record<string, number>);
 
     const structure = Object.entries(byCategory)
-      .sort(([, a], [, b]) => b - a)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
       .map(([catId, amount]) => {
         const cat = CATEGORIES.find((c) => c.id === catId);
         return {
@@ -269,7 +269,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           color: cat?.color || "text-gray-500",
           bg: cat?.color.replace("text-", "bg-") || "bg-gray-500",
           amount,
-          percent: totalUSD > 0 ? (amount / totalUSD) * 100 : 0,
+          percent: totalUSD > 0 ? ((amount as number) / totalUSD) * 100 : 0,
         };
       });
 
@@ -513,18 +513,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <svg className="w-48 h-48 -rotate-90 filter drop-shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                                 {(() => {
                                     let accumulatedPercent = 0;
+                                    const hexColors: Record<string, string> = {
+                                        'text-red-400': '#f87171', 'text-blue-400': '#60a5fa', 'text-green-400': '#4ade80',
+                                        'text-yellow-400': '#facc15', 'text-purple-400': '#c084fc', 'text-orange-400': '#fb923c',
+                                        'text-emerald-400': '#34d399', 'text-pink-400': '#f472b6', 'text-cyan-400': '#22d3ee',
+                                        'text-amber-500': '#f59e0b', 'text-indigo-400': '#818cf8', 'text-sky-400': '#38bdf8',
+                                        'text-rose-400': '#fb7185', 'text-amber-400': '#fbbf24', 'text-blue-300': '#93c5fd',
+                                        'text-gray-400': '#9ca3af', 'text-zinc-300': '#d4d4d8', 'text-violet-400': '#a78bfa',
+                                        'text-slate-400': '#94a3b8', 'text-teal-400': '#2dd4bf', 'text-rose-300': '#fda4af',
+                                        'text-slate-300': '#cbd5e1', 'text-indigo-300': '#a5b4fc', 'text-gray-300': '#d1d5db',
+                                        'text-amber-700': '#b45309', 'text-indigo-700': '#4338ca', 'text-zinc-500': '#71717a',
+                                        'text-emerald-600': '#059669', 'text-slate-600': '#475569', 'text-blue-600': '#2563eb',
+                                        'text-gray-500': '#6b7280', 'text-zinc-400': '#a1a1aa', 'text-emerald-500': '#10b981',
+                                        'text-indigo-500': '#6366f1', 'text-purple-500': '#a855f7', 'text-pink-500': '#ec4899',
+                                        'text-rose-500': '#f43f5e', 'text-orange-500': '#f97316', 'text-amber-600': '#d97706'
+                                    };
+
                                     return expenseSummary.structure.map((item) => {
-                                        const radius = 70;
+                                        const radius = 80;
                                         const circumference = 2 * Math.PI * radius;
                                         const offset = circumference - (item.percent / 100) * circumference;
                                         const rotation = (accumulatedPercent / 100) * 360;
                                         accumulatedPercent += item.percent;
-                                        const hexColors: Record<string, string> = {
-                                            'text-red-400': '#f87171', 'text-blue-400': '#60a5fa', 'text-green-400': '#4ade80',
-                                            'text-yellow-400': '#facc15', 'text-purple-400': '#c084fc', 'text-orange-400': '#fb923c',
-                                            'text-emerald-400': '#34d399', 'text-pink-400': '#f472b6', 'text-cyan-400': '#22d3ee'
-                                        };
-                                        const strokeColor = hexColors[item.color] || '#6366f1';
+                                        
+                                        const textColorMatch = item.color.match(/text-[a-z0-9-]+(\/[0-9]+)?/);
+                                        const textColorClass = textColorMatch ? textColorMatch[0].split('/')[0] : 'text-gray-500';
+                                        const strokeColor = hexColors[textColorClass] || '#6366f1';
                                         const isSelected = selectedCategory === item.id;
                                         return (
                                             <circle

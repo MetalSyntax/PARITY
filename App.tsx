@@ -15,7 +15,7 @@ import { getTranslation } from './i18n';
 import './index.css';
 
 import { INITIAL_RATE, MOCK_ACCOUNTS } from './constants';
-import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal } from './types';
+import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
 
@@ -57,12 +57,17 @@ function AppContent() {
 
   // Popup Alert State
   const [alertConfig, setAlertConfig] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<ConfirmConfig | null>(null);
 
   const t = (key: any) => getTranslation(userProfile.language, key);
 
   const showAlert = (messageKey: string, type: 'success' | 'error' | 'info' = 'info') => {
       setAlertConfig({ message: t(messageKey), type });
       setTimeout(() => setAlertConfig(null), 3000);
+  };
+
+  const showConfirm = (config: ConfirmConfig) => {
+      setConfirmConfig(config);
   };
 
 
@@ -162,8 +167,7 @@ function AppContent() {
     setAccounts(newAccounts);
   };
 
-  const handleDeleteTransaction = (id: string, skipConfirm = false, skipStateUpdate = false): Account[] | null => {
-    if (skipConfirm || confirm('Delete this transaction?')) {
+  const performDeleteTransaction = (id: string): Account[] | null => {
       const tx = transactions.find(t => t.id === id);
       if (tx) {
         const updatedAccounts = accounts.map(acc => {
@@ -199,13 +203,31 @@ function AppContent() {
           return acc;
         });
 
-        if (!skipStateUpdate) {
-            setAccounts(updatedAccounts);
-            setTransactions(prev => prev.filter(t => t.id !== id));
-        }
         return updatedAccounts;
       }
+      return null;
+  };
+
+  const handleDeleteTransaction = (id: string, skipConfirm = false, skipStateUpdate = false): Account[] | null => {
+    if (skipConfirm) {
+        const updated = performDeleteTransaction(id);
+        if (updated && !skipStateUpdate) {
+            setAccounts(updated);
+            setTransactions(prev => prev.filter(t => t.id !== id));
+        }
+        return updated;
     }
+
+    showConfirm({
+        message: t('deleteTransactionConfirm'),
+        onConfirm: () => {
+            const updated = performDeleteTransaction(id);
+            if (updated) {
+                setAccounts(updated);
+                setTransactions(prev => prev.filter(t => t.id !== id));
+            }
+        }
+    });
     return null;
   };
 
@@ -281,36 +303,42 @@ function AppContent() {
         showAlert('alert_importError', 'error');
         return;
     }
-    
-    // Validate schema loosely
-    setExchangeRate(data.exchangeRate || exchangeRate);
-    setAccounts(data.accounts || []);
-    setTransactions(data.transactions || []);
-    setScheduledPayments(data.scheduledPayments || []);
-    setBudgets(data.budgets || []);
-    setGoals(data.goals || []);
-    setUserProfile(data.userProfile);
-    
-    // Force save
-    const newData: AppData = {
-        exchangeRate: data.exchangeRate || exchangeRate,
-        accounts: data.accounts || [],
-        transactions: data.transactions || [],
-        scheduledPayments: data.scheduledPayments || [],
-        userProfile: data.userProfile,
-        budgets: data.budgets || [],
-        goals: data.goals || []
-    };
 
-    if (storageType === 'INDEXED_DB') {
-        await idbService.save(newData);
-    } else {
-        const encrypted = await encryptData(newData);
-        localStorage.setItem(STORAGE_KEY, encrypted);
-    }
-    
-    showAlert('alert_importSuccess', 'success');
-    setCurrentView('DASHBOARD');
+    showConfirm({
+        message: t('importConfirm'),
+        confirmText: t('confirm'),
+        onConfirm: async () => {
+            // Validate schema loosely
+            setExchangeRate(data.exchangeRate || exchangeRate);
+            setAccounts(data.accounts || []);
+            setTransactions(data.transactions || []);
+            setScheduledPayments(data.scheduledPayments || []);
+            setBudgets(data.budgets || []);
+            setGoals(data.goals || []);
+            setUserProfile(data.userProfile);
+            
+            // Force save
+            const newData: AppData = {
+                exchangeRate: data.exchangeRate || exchangeRate,
+                accounts: data.accounts || [],
+                transactions: data.transactions || [],
+                scheduledPayments: data.scheduledPayments || [],
+                userProfile: data.userProfile,
+                budgets: data.budgets || [],
+                goals: data.goals || []
+            };
+
+            if (storageType === 'INDEXED_DB') {
+                await idbService.save(newData);
+            } else {
+                const encrypted = await encryptData(newData);
+                localStorage.setItem(STORAGE_KEY, encrypted);
+            }
+            
+            showAlert('alert_importSuccess', 'success');
+            setCurrentView('DASHBOARD');
+        }
+    });
   };
 
   if (!isLoaded) return null;
@@ -352,6 +380,8 @@ function AppContent() {
               lang={userProfile.language}
               scheduledPayments={scheduledPayments}
               onUpdateScheduledPayments={setScheduledPayments}
+              onToggleBottomNav={setIsNavVisible}
+              showConfirm={showConfirm}
             />
           )}
           {currentView === 'BUDGET' && (
@@ -363,6 +393,8 @@ function AppContent() {
               goals={goals}
               onUpdateBudgets={setBudgets}
               onUpdateGoals={setGoals}
+              onToggleBottomNav={setIsNavVisible}
+              showConfirm={showConfirm}
             />
           )}
           {currentView === 'ANALYSIS' && (
@@ -385,6 +417,8 @@ function AppContent() {
               exchangeRate={exchangeRate}
               scheduledPayments={scheduledPayments}
               isBalanceVisible={isBalanceVisible}
+              onToggleBottomNav={setIsNavVisible}
+              showConfirm={showConfirm}
             />
           )}
           {currentView === 'PROFILE' && (
@@ -411,7 +445,7 @@ function AppContent() {
         </div>
 
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
-        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED'].includes(currentView) && isNavVisible && (
+        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
           <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-8 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
             <button
               onClick={() => setCurrentView('DASHBOARD')}
@@ -493,6 +527,36 @@ function AppContent() {
                     'bg-theme-surface/80 border-white/10 text-theme-primary'
                 }`}>
                     <span className="text-sm font-bold tracking-tight">{alertConfig.message}</span>
+                </div>
+            </div>
+        )}
+
+        {/* Global Confirmation Modal */}
+        {confirmConfig && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+                    <h3 className="text-lg font-black text-theme-primary mb-2">{t('areYouSure')}</h3>
+                    <p className="text-sm text-theme-secondary mb-8 leading-relaxed">{confirmConfig.message}</p>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => {
+                                confirmConfig.onCancel?.();
+                                setConfirmConfig(null);
+                            }}
+                            className="flex-1 py-4 rounded-2xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors"
+                        >
+                            {confirmConfig.cancelText || t('cancel')}
+                        </button>
+                        <button 
+                            onClick={() => {
+                                confirmConfig.onConfirm();
+                                setConfirmConfig(null);
+                            }}
+                            className="flex-1 py-4 rounded-2xl bg-red-500 text-white font-bold shadow-lg shadow-red-500/20 hover:brightness-110 active:scale-[0.98] transition-all"
+                        >
+                            {confirmConfig.confirmText || t('delete')}
+                        </button>
+                    </div>
                 </div>
             </div>
         )}
