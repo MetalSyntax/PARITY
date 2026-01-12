@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { X, Globe, TrendingUp, Lock, RefreshCw, Palette } from 'lucide-react';
+import { X, Globe, TrendingUp, Lock, RefreshCw, Palette, Database } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getTranslation } from '../i18n';
 import { Language } from '../types';
+import { StorageType } from '../services/db';
 
 interface SettingsModalProps {
   currentRate: number;
   onClose: () => void;
   onUpdateRate: (newRate: number) => void;
   lang: Language;
+  currentStorageType: StorageType;
+  onUpdateStorageType: (type: StorageType) => void;
+  showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, onUpdateStorageType, showAlert }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
   const [mode, setMode] = useState<'AUTO' | 'PARALLEL' | 'MANUAL'>('MANUAL');
@@ -51,7 +55,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
           console.error("Failed to fetch rate", error);
           // Fallback values if API fails
           setRate(targetMode === 'AUTO' ? 50.50 : 60.15);
-          alert(t('fetchError'));
+          showAlert('alert_fetchError', 'error');
       } finally {
           setIsFetching(false);
       }
@@ -60,18 +64,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
   const handleChangePin = () => {
       const currentStored = localStorage.getItem('dualflow_pin') || '0000';
       if (oldPin !== currentStored) {
-          alert(t('incorrectPin'));
+          showAlert('alert_incorrectPin', 'error');
           return;
       }
       if (newPin.length !== 4 || isNaN(Number(newPin))) {
-          alert(t('pinLengthError'));
+          showAlert('alert_pinLengthError', 'error');
           return;
       }
       localStorage.setItem('dualflow_pin', newPin);
       setShowPinChange(false);
       setOldPin('');
       setNewPin('');
-      alert(t('pinSuccess'));
+      showAlert('alert_pinSuccess', 'success');
   };
 
   const handleSave = () => {
@@ -143,6 +147,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
                    <p className="text-xs text-theme-secondary">{t('setFixedRate')}</p>
                 </div>
              </button>
+          </div>
+
+          <div className="border-t border-white/5 my-6"></div>
+
+          {/* Storage Strategy - NEW */}
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-theme-secondary uppercase mb-4 flex items-center gap-2">
+                <Database size={14}/> {t('storageType')}
+            </h3>
+            <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+                <button 
+                    onClick={() => onUpdateStorageType('LOCAL_STORAGE')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${currentStorageType === 'LOCAL_STORAGE' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary hover:text-white'}`}
+                >
+                    {t('localStorage')}
+                </button>
+                <button 
+                    onClick={() => onUpdateStorageType('INDEXED_DB')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${currentStorageType === 'INDEXED_DB' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary hover:text-white'}`}
+                >
+                    {t('indexedDB')}
+                </button>
+            </div>
+            <p className="text-[10px] text-theme-secondary mt-2 opacity-60 px-1">
+                {currentStorageType === 'INDEXED_DB' ? 'Using IndexedDB for larger limits & better performance.' : 'Using LocalStorage (Browser standard).'}
+            </p>
           </div>
 
           <div className="border-t border-white/5 my-6"></div>

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Plus, X, Trash2, Trophy } from 'lucide-react';
 import { CATEGORIES } from '../constants';
-import { Transaction, TransactionType, Language } from '../types';
+import { Transaction, TransactionType, Language, Budget, Goal } from '../types';
 import { getTranslation } from '../i18n';
 import { FaPlane, FaHouse, FaCar, FaGraduationCap, FaGift, FaGamepad, FaBasketShopping, FaEnvelope, FaBox, FaRibbon, FaBriefcaseMedical, FaBullseye, FaRing, FaLaptop } from 'react-icons/fa6';
 
@@ -40,52 +40,24 @@ interface BudgetViewProps {
   onBack: () => void;
   transactions: Transaction[];
   lang: Language;
+  budgets: Budget[];
+  goals: Goal[];
+  onUpdateBudgets: (budgets: Budget[]) => void;
+  onUpdateGoals: (goals: Goal[]) => void;
 }
 
-interface Budget {
-  categoryId: string;
-  limit: number;
-  customName?: string;
-  customIcon?: string;
-  customColor?: string;
-}
-
-interface Goal {
-  id: string;
-  name: string;
-  targetAmount: number;
-  savedAmount: number;
-  deadline: string;
-  icon: string;
-  color: string;
-}
-
-const STORAGE_KEY_BUDGETS = 'dualflow_budgets';
-const STORAGE_KEY_GOALS = 'dualflow_goals';
-
-export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, lang }) => {
+export const BudgetView: React.FC<BudgetViewProps> = ({ 
+    onBack, 
+    transactions, 
+    lang, 
+    budgets, 
+    goals, 
+    onUpdateBudgets, 
+    onUpdateGoals 
+}) => {
   const t = (key: any) => getTranslation(lang, key);
   const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>('ENVELOPES');
   const [isManaging, setIsManaging] = useState(false);
-  
-  // Data State - Lazy Initialization for Persistence
-  const [budgets, setBudgets] = useState<Budget[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_BUDGETS);
-    try {
-        return saved ? JSON.parse(saved) : [];
-    } catch {
-        return [];
-    }
-  });
-
-  const [goals, setGoals] = useState<Goal[]>(() => {
-      const saved = localStorage.getItem(STORAGE_KEY_GOALS);
-      try {
-          return saved ? JSON.parse(saved) : [];
-      } catch {
-          return [];
-      }
-  });
   
   // Modal/Form State
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -98,25 +70,16 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
   const [customLimit, setCustomLimit] = useState('');
   const [customIcon, setCustomIcon] = useState('envelope');
 
-  // Persistence Effects
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_BUDGETS, JSON.stringify(budgets));
-  }, [budgets]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(goals));
-  }, [goals]);
-
   // Logic...
   const handleUpdateLimit = (catId: string, newLimit: string) => {
       const limit = parseFloat(newLimit);
       if (isNaN(limit)) return;
-      setBudgets(prev => prev.map(b => b.categoryId === catId ? { ...b, limit } : b));
+      onUpdateBudgets(budgets.map(b => b.categoryId === catId ? { ...b, limit } : b));
   };
 
   const handleAddBudget = (catId: string) => {
       if (budgets.find(b => b.categoryId === catId)) return;
-      setBudgets([...budgets, { categoryId: catId, limit: 100 }]);
+      onUpdateBudgets([...budgets, { categoryId: catId, limit: 100 }]);
   };
 
   const handleAddCustomBudget = () => {
@@ -128,7 +91,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
           customIcon: customIcon,
           customColor: 'bg-indigo-500' // Default or random
       };
-      setBudgets([...budgets, newBudget]);
+      onUpdateBudgets([...budgets, newBudget]);
       setShowCustomEnvelopeModal(false);
       // Reset form
       setCustomName('');
@@ -137,21 +100,21 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
   };
 
   const handleDeleteBudget = (catId: string) => {
-      setBudgets(prev => prev.filter(b => b.categoryId !== catId));
+      onUpdateBudgets(budgets.filter(b => b.categoryId !== catId));
   };
   
   // ... Goal handlers
   const handleSaveGoal = (goal: Goal) => {
       if (editingGoal) {
-          setGoals(prev => prev.map(g => g.id === goal.id ? goal : g));
+          onUpdateGoals(goals.map(g => g.id === goal.id ? goal : g));
       } else {
-          setGoals([...goals, goal]);
+          onUpdateGoals([...goals, goal]);
       }
       setShowGoalModal(false);
       setEditingGoal(null);
   };
   const handleDeleteGoal = (id: string) => {
-      setGoals(prev => prev.filter(g => g.id !== id));
+      onUpdateGoals(goals.filter(g => g.id !== id));
       setShowGoalModal(false);
       setEditingGoal(null);
   };
@@ -199,7 +162,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 pb-20">
+              <div className="flex flex-col gap-4 pb-32">
                 {budgets.map(budget => {
                   let cat = CATEGORIES.find(c => c.id === budget.categoryId);
                   
@@ -373,7 +336,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({ onBack, transactions, la
                 </button>
               </div>
 
-              <div className="flex flex-col gap-4 pb-20">
+              <div className="flex flex-col gap-4 pb-32">
                   {goals.map(goal => {
                       const percent = Math.min((goal.savedAmount / goal.targetAmount) * 100, 100);
                       return (

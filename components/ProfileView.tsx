@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Globe, FileSpreadsheet } from 'lucide-react';
 import { UserProfile, Language, Transaction, Account } from '../types';
 import { getTranslation } from '../i18n';
+import { StorageType } from '../services/db';
 
 interface ProfileViewProps {
   onBack: () => void;
@@ -10,9 +11,11 @@ interface ProfileViewProps {
   transactions: Transaction[];
   accounts: Account[];
   onImportData: (data: any) => void;
+  storageType: StorageType;
+  showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpdateProfile, transactions, accounts, onImportData }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpdateProfile, transactions, accounts, onImportData, storageType, showAlert }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
   const t = (key: any) => getTranslation(lang, key);
@@ -82,7 +85,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpd
               const data = JSON.parse(e.target?.result as string);
               onImportData(data);
           } catch (error) {
-              alert("Failed to parse backup file.");
+              showAlert('alert_importError', 'error');
           }
       };
       reader.readAsText(file);
@@ -158,6 +161,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpd
                 <input type="file" className="hidden" accept=".json" onChange={handleImportFile} />
              </label>
         </div>
+
+        <div>
+             <label className="text-xs text-theme-secondary mb-2 block">{t('restoreData')}</label>
+             <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
+                <div className="flex flex-col items-center gap-1">
+                    <span className="text-xs text-theme-secondary">{t('clickToUploadBackup')}</span>
+                </div>
+                <input type="file" className="hidden" accept=".json" onChange={handleImportFile} />
+             </label>
+        </div>
+
+        {/* Storage Info */}
+        <div className="bg-theme-surface border border-white/5 rounded-2xl p-6 mt-4 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <div className="w-16 h-16 rounded-full bg-theme-brand blur-2xl" />
+            </div>
+            
+            <StorageWidget storageType={storageType} t={t} />
+        </div>
       </div>
 
       <button 
@@ -168,4 +190,99 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpd
       </button>
     </div>
   );
+};
+
+// Sub-component for Storage Widget to handle async logic cleanly
+const StorageWidget = ({ storageType, t }: { storageType: StorageType, t: any }) => {
+    const [usage, setUsage] = useState<{ used: number, quota: number } | null>(null);
+
+    useEffect(() => {
+        const checkStorage = async () => {
+             // Use storageType prop OR fallback to localStorage key if prop is somehow missing
+             const effectiveType = storageType || localStorage.getItem('dualflow_storage_type') || 'LOCAL_STORAGE';
+             
+             if (effectiveType === 'INDEXED_DB') {
+                 // Try native estimate first
+                 if (navigator.storage && navigator.storage.estimate) {
+                     try {
+                         const estimate = await navigator.storage.estimate();
+                         setUsage({
+                             used: estimate.usage || 0,
+                             quota: estimate.quota || (1024 * 1024 * 1024) // Fallback 1GB
+                         });
+                         return; 
+                     } catch (e) {
+                         console.error("Storage estimate failed", e);
+                     }
+                 }
+                 
+                 // Fallback for IDB if estimate API fails but we are in IDB mode
+                 setUsage({
+                     used: 0, // Unknown
+                     quota: 1024 * 1024 * 1024 * 10 // Assume 10GB default for IDB
+                 });
+
+             } else {
+                 // Check LocalStorage size
+                 let total = 0;
+                 for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        total += (localStorage[key].length + (key?.length || 0)) * 2;
+                    }
+                 }
+                 setUsage({
+                     used: total,
+                     quota: 5 * 1024 * 1024 // 5MB Limit
+                 });
+             }
+        };
+        checkStorage();
+    }, [storageType]);
+    
+    if (!usage) return <div className="text-xs text-theme-secondary">{t('loadingStorage')}</div>;
+
+    const usedMB = usage.used / (1024 * 1024);
+    const quotaMB = usage.quota / (1024 * 1024);
+    // Percentage calculation
+    let percentage = 0;
+    if (usage.quota > 0) {
+        percentage = Math.min(100, (usage.used / usage.quota) * 100);
+    }
+    
+    const availableMB = Math.max(0, quotaMB - usedMB);
+
+    return (
+        <>
+            <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col">
+                    <span className="text-xs font-bold text-theme-secondary uppercase tracking-widest mb-1">{t('appStorage')} ({storageType === 'INDEXED_DB' ? 'IndexedDB' : 'LocalStorage'})</span>
+                    <h3 className="text-xl font-black text-theme-primary">
+                        {quotaMB > 500
+                            ? // High capacity display
+                              availableMB < 1000 
+                                ? `${availableMB.toFixed(2)} MB ${t('available')}`
+                                : `${(availableMB / 1024).toFixed(2)} GB ${t('available')}`
+                            : // Low capacity display
+                              `${availableMB.toFixed(2)} MB ${t('available')}`
+                        }
+                    </h3>
+                </div>
+                <div className="text-right">
+                    <span className="text-[10px] font-bold text-theme-secondary uppercase opacity-40">
+                        {t('limit')}: {quotaMB < 1000 ? `${quotaMB.toFixed(0)} MB` : `${(quotaMB / 1024).toFixed(1)} GB`}
+                    </span>
+                </div>
+            </div>
+
+            <div className="w-full bg-theme-bg h-2 rounded-full overflow-hidden flex">
+                <div 
+                    className={`h-full transition-all duration-1000 ${percentage > 90 ? 'bg-red-500' : percentage > 70 ? 'bg-orange-500' : 'bg-theme-brand'}`}
+                    style={{ width: `${Math.max(1, percentage)}%` }}
+                />
+            </div>
+            <p className="text-[10px] text-theme-secondary mt-2 opacity-60">
+                {usedMB < 1 ? `< 1 MB ${t('used')}` : `${usedMB.toFixed(2)} MB ${t('used')}`}
+            </p>
+        </>
+    );
 };

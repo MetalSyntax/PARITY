@@ -14,81 +14,58 @@ Built with a **Local-First** philosophy, Parity stores all your financial data s
 
 ### 🚀 Dual-Currency Core
 * **Instant Toggle:** Switch your entire Dashboard and transaction history between **USD** and **VES** with a single tap.
-* **Dynamic Exchange Rate:** Manage your own exchange rate in real-time via the Settings panel. Visualizations adapt instantly.
+* **Live Exchange Rates:** Integration with `DolarAPI` to fetch Official (BCV) and Parallel market rates in real-time. Manual control is also available.
 * **Smart Transfers:** Move money between accounts of different currencies (e.g., USD Zelle -> VES Bank) with automatic rate calculation.
 
-### 🛡️ Privacy & Security
-* **Privacy Mode:** One-click balance masking (`******`) to hide sensitive numbers in public.
-* **PIN Protection:** Secure your financial data with a 4-digit PIN.
-* **Local Storage:** No external servers. Your data belongs to you.
+### 🛡️ Privacy & Security (Zero-Knowledge)
+* **Encryption by Default:** All financial data is encrypted using the **Web Crypto API (AES-GCM)** before being stored. Your data is unreadable without the app's internal security context.
+* **Advanced Storage Strategies:** Choose between **LocalStorage** (standard) or **IndexedDB** (high-performance/high-capacity) for storing large datasets.
+* **Privacy Mode:** One-click balance masking (`******`) to hide sensitive numbers in public navigation.
+* **PIN Protection:** Secure your financial data with a configurable 4-digit PIN.
 
-### 🎨 Personalization
-* **Dynamic Theming:** Choose your vibe with built-in themes:
-    * **Original:** Clean, professional visuals.
-    * **Midnight:** Deep dark mode with neon accents.
-    * **Forest:** Calming green and nature-inspired tones.
-* **Responsive Design:** A mobile-first experience that feels native on your phone but scales beautifully to desktop.
+### 🌍 Multi-Language Support (Modular i18n)
+* **Native Localization:** Full support for **English**, **Spanish**, and **Portuguese**.
+* **Modular Architecture:** Refactored i18n system for easy maintenance and expansion to new languages.
 
-### 💰 Financial Management
-* **Digital Envelopes:** Set monthly spending limits per category (Food, Transport, etc.) and track progress visually.
-* **Shared Goals:** Create savings goals (e.g., "Trip to Japan") and track your contributions over time.
-* **Recurring Payments:** Never miss a bill with the Scheduled Payments tracker.
-* **Analysis:** Interactive charts showing expense structure and balance trends (7-day lookback).
+### 💰 Financial Management & Analysis
+* **Interactive Dashboard:** 
+    * **Balance History:** Track your net worth trend over the last 7 days.
+    * **Expense Structure:** Interactive doughnut charts showing spending distribution in both USD and VES.
+* **Digital Envelopes:** Set monthly spending limits per category and track your burning rate visually.
+* **Shared Goals:** Create savings goals (e.g., "New Laptop") with progress tracking and celebration cues.
+* **Scheduled Payments:** Manage recurring bills (subscriptions, rent) and income schedules.
+
+### 🎨 Premium UX & Accessibility
+* **Custom Notifications:** A modern, glassmorphic popup system for non-disruptive feedback.
+* **Voice Input:** Use Speech-to-Text for quick note-taking during transaction entry.
+* **Dynamic Theming:** Choose from **Midnight**, **Forest**, or **Original** themes.
+* **Global Navigation:** Fluid bottom-nav bar accessible across all primary financial views.
 
 ---
 
 ## 🛠 Tech Stack
 
-The project is built as a lightweight, performant Single Page Application (SPA).
+The project is built as a lightweight, performant Single Page Application (SPA) with a focus on local-only processing.
 
 * **Framework:** [React 18](https://reactjs.org/)
-* **Build Tool:** [Vite](https://vitejs.dev/)
+* **Security:** [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) (AES-GCM Encryption)
+* **Storage:** [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) & LocalStorage
 * **Language:** [TypeScript](https://www.typescriptlang.org/)
-* **Styling:** [TailwindCSS](https://tailwindcss.com/) using CSS Variables for Theming.
-* **Icons:** [Lucide React](https://lucide.dev/)
-* **State/Persistence:** React Hooks + LocalStorage
-
----
-
-## ⚙️ Installation & Setup
-
-Parity is a client-side application. You can run it locally in minutes.
-
-### Prerequisites
-
-* Node.js (v16 or higher)
-* npm or pnpm
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/parity.git
-cd parity
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Run Development Server
-
-```bash
-npm run dev
-```
-The app will open at `http://localhost:5173` (or similar).
+* **Styling:** [TailwindCSS](https://tailwindcss.com/) + CSS Variables
+* **Icons:** [Lucide React](https://lucide.dev/) & React Icons
+* **Charts:** custom SVG-based interactive visualizations.
 
 ---
 
 ## 📱 Navigation Structure
 
-1.  **Dashboard:** Your financial command center. View balances, recent transactions, and quick stats.
-2.  **Wallet:** Manage your accounts (Cash, Bank, Apps).
-3.  **Analysis:** Deep dive into where your money goes with visual charts.
-4.  **Profile:** Manage data (Import/Export JSON), language settings, and user details.
+1.  **Dashboard:** Your financial command center. View balances, charts, and recent history.
+2.  **Wallet:** Manage your accounts and active income sources.
+3.  **Analysis:** Deep dive into spending structures and trends.
+4.  **Transactions:** Searchable and filterable full history of all movements.
 5.  **Budgets & Goals:** Dedicated view for Envelope budgeting and Savings tracking.
-6.  **Settings:** Configure Exchange Rates, Themes, and Security PIN.
+6.  **Profile:** Data management (Encrypted Import/Export), language settings, and storage stats.
+7.  **Settings:** Configure Exchange Rates (Live/Manual), Themes, and Security.
 
 ---
 
@@ -98,7 +75,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 1.  Fork the Project
 2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+3.  Commit your Changes using the Conventional Commits format.
 4.  Push to the Branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
 

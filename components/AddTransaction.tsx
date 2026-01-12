@@ -33,9 +33,10 @@ interface AddTransactionProps {
   accounts: Account[];
   lang: Language;
   initialData?: Transaction | null;
+  showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, accounts, lang, initialData }) => {
+export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, accounts, lang, initialData, showAlert }) => {
   const [amountStr, setAmountStr] = useState(initialData ? initialData.amount.toString() : '0');
   const [currency, setCurrency] = useState<Currency>(initialData ? initialData.originalCurrency : Currency.USD);
   const [type, setType] = useState<TransactionType>(initialData ? initialData.type : TransactionType.EXPENSE);
@@ -79,7 +80,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
       recognition.start();
     } else {
-      alert('Speech recognition not supported in this browser');
+      showAlert('alert_speechNotSupported', 'error');
     }
   };
 

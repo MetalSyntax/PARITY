@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CreditCard, Plus, X, Edit2, Trash2, Wallet, TrendingUp, TrendingDown, Layers } from 'lucide-react';
-import { Account, Language, Currency, Transaction, TransactionType } from '../types';
+import { ArrowLeft, CreditCard, Plus, X, Edit2, Trash2, Wallet, TrendingUp, TrendingDown, Layers, Calendar } from 'lucide-react';
+import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
 import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
@@ -33,9 +33,11 @@ interface WalletViewProps {
   lang: Language;
   transactions: Transaction[];
   exchangeRate: number;
+  scheduledPayments: ScheduledPayment[];
+  isBalanceVisible: boolean;
 }
 
-export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpdateAccounts, lang, transactions, exchangeRate }) => {
+export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpdateAccounts, lang, transactions, exchangeRate, scheduledPayments, isBalanceVisible }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,6 +48,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
   const [balance, setBalance] = useState('');
   const [icon, setIcon] = useState('wallet');
   const [payrollClient, setPayrollClient] = useState('');
+  const [activeTab, setActiveTab] = useState<'INCOME' | 'WALLETS'>('INCOME');
 
   // Computations for "Income source & platform" style view
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -81,7 +84,6 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
   const vesNet = (netMonthly || 0) * safeRate;
 
 
-  // Active Sources (Income Categories with > 0 income this month)
   const activeSources = CATEGORIES
       .filter(cat => {
           const catIncome = monthlyTransactions
@@ -96,6 +98,8 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
            return { ...cat, total: catIncome };
       })
       .sort((a,b) => b.total - a.total);
+
+  const scheduledIncomes = scheduledPayments.filter(p => p.type === TransactionType.INCOME);
 
 
   const startEdit = (acc?: Account) => {
@@ -198,153 +202,209 @@ export const WalletView: React.FC<WalletViewProps> = ({ onBack, accounts, onUpda
     <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-theme-bg overflow-hidden">
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 flex-shrink-0">
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
+            <button onClick={onBack} className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"><ArrowLeft size={20} /></button>
             <div>
                  <h1 className="text-xl font-bold text-theme-primary">{t('wallet')} & {t('income')}</h1>
-                 <p className="text-xs text-theme-brand font-bold uppercase tracking-wider">{currentMonthName}</p>
+                 <p className="text-[10px] text-theme-brand font-bold uppercase tracking-widest">{currentMonthName}</p>
             </div>
         </div>
-        <button onClick={() => startEdit()} className="p-2 bg-theme-brand rounded-full text-white shadow-lg shadow-brand/20 hover:scale-105 transition-transform"><Plus size={20} /></button>
+        {activeTab === 'WALLETS' && (
+            <button onClick={() => startEdit()} className="p-2 bg-theme-brand rounded-full text-white shadow-lg shadow-brand/20 hover:scale-105 transition-transform"><Plus size={20} /></button>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-20 flex flex-col gap-8">
-          
-          {/* Active Sources Section */}
-          <div>
-              <div className="flex items-center gap-2 mb-4 px-1">
-                  <Layers size={14} className="text-theme-secondary" />
-                  <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('activeSources')} ({activeSources.length})</span>
-              </div>
-              
-              {activeSources.length > 0 ? (
-                  <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                    {activeSources.map(source => (
-                        <div key={source.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-4 rounded-2xl flex flex-col gap-3 group hover:border-theme-brand/50 transition-colors">
-                            <div className="flex justify-between items-start">
-                                <span className="text-2xl filter drop-shadow-lg">{source.icon}</span>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${source.color.includes('green') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-zinc-400'}`}>
-                                    {Math.round((source.total / totalIncome) * 100)}%
-                                </span>
-                            </div>
-                            <div>
-                                <p className="text-theme-primary font-bold text-lg">${source.total.toLocaleString()}</p>
-                                <p className="text-theme-secondary text-xs truncate">{t(source.name)}</p>
-                            </div>
-                        </div>
-                    ))}
-                  </div>
-              ) : (
-                  <div className="p-6 border border-dashed border-white/10 rounded-2xl text-center text-sm text-theme-secondary">
-                      {t('noActiveSources')}
-                  </div>
-              )}
-          </div>
+      {/* Tabs */}
+      <div className="flex p-1 bg-theme-surface rounded-2xl border border-white/5 mb-8 flex-shrink-0">
+          <button 
+            onClick={() => setActiveTab('INCOME')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'INCOME' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+          >
+              <TrendingUp size={16} className={activeTab === 'INCOME' ? 'text-theme-brand' : ''} />
+              {t('income')}
+          </button>
+          <button 
+            onClick={() => setActiveTab('WALLETS')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'WALLETS' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+          >
+              <Wallet size={16} className={activeTab === 'WALLETS' ? 'text-theme-brand' : ''} />
+              {t('wallet')}
+          </button>
+      </div>
 
-          {/* Stats Summary Cards */}
-          <div className="grid grid-cols-2 gap-4">
-              {/* Total Income Resume */}
-              <div className="bg-theme-surface p-5 rounded-3xl border border-white/5 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-5">
-                      <TrendingUp size={80} />
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
+          {activeTab === 'INCOME' ? (
+              <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  {/* Active Sources Section */}
+                  <div>
+                      <div className="flex items-center gap-2 mb-4 px-1">
+                          <Layers size={14} className="text-theme-secondary" />
+                          <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('activeSources')} ({activeSources.length})</span>
+                      </div>
+                      
+                      {activeSources.length > 0 ? (
+                          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                            {activeSources.map(source => (
+                                <div key={source.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-4 rounded-3xl flex flex-col gap-3 group hover:border-theme-brand/50 transition-colors">
+                                    <div className="flex justify-between items-start">
+                                        <span className="text-2xl filter drop-shadow-lg">{source.icon}</span>
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${source.color.includes('green') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-zinc-400'}`}>
+                                            {Math.round((source.total / totalIncome) * 100)}%
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p className="text-theme-primary font-bold text-lg">{isBalanceVisible ? `$${source.total.toLocaleString()}` : '******'}</p>
+                                        <p className="text-theme-secondary text-xs truncate">{t(source.name)}</p>
+                                    </div>
+                                </div>
+                            ))}
+                          </div>
+                      ) : (
+                          <div className="p-8 border border-dashed border-white/10 rounded-3xl text-center text-sm text-theme-secondary bg-theme-surface/30">
+                              {t('noActiveSources')}
+                          </div>
+                      )}
+
+                      {/* Scheduled Incomes Strip */}
+                      {scheduledIncomes.length > 0 && (
+                          <div className="mt-6">
+                              <div className="flex items-center gap-2 mb-4 px-1">
+                                  <Calendar size={14} className="text-emerald-400" />
+                                  <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('scheduledIncome')}</span>
+                              </div>
+                              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                                {scheduledIncomes.map(income => (
+                                    <div key={income.id} className="min-w-[140px] bg-theme-surface/50 border border-white/5 p-4 rounded-3xl flex flex-col gap-3 border-l-4 border-l-emerald-500 shadow-xl shadow-black/20">
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-xs font-bold text-theme-primary truncate max-w-[100px]">{income.name}</span>
+                                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                                <Calendar size={12} className="text-emerald-400" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-emerald-400 font-bold text-lg">{isBalanceVisible ? `+$${income.amount.toLocaleString()}` : '******'}</p>
+                                            <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-tighter">{t(income.frequency.toLowerCase()) || income.frequency}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                              </div>
+                          </div>
+                      )}
                   </div>
-                  <p className="text-xs text-theme-secondary uppercase tracking-wider mb-2">{t('totalMonthlyIncome')}</p>
-                  <div className="mb-4">
-                      <h3 className="text-xl font-bold text-emerald-400">+${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</h3>
-                      <p className="text-xs text-emerald-400/60 font-mono">≈ Bs. {vesIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+
+                  {/* Stats Summary Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Total Income Resume */}
+                      <div className="bg-theme-surface p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                              <TrendingUp size={120} />
+                          </div>
+                          <p className="text-xs text-theme-secondary uppercase tracking-wider mb-2 font-bold">{t('totalMonthlyIncome')}</p>
+                          <div className="mb-6">
+                              <h3 className="text-2xl font-black text-emerald-400">{isBalanceVisible ? `+$${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '******'}</h3>
+                              {isBalanceVisible && <p className="text-xs text-emerald-400/60 font-mono font-bold">≈ Bs. {vesIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>}
+                          </div>
+                          
+                          <div className="space-y-3">
+                              <div className="flex justify-between text-xs">
+                                  <span className="text-theme-secondary font-medium">{t('savingsEst')}</span>
+                                  <span className="text-theme-primary font-bold">{isBalanceVisible ? `$${savings.toLocaleString()}` : '******'}</span>
+                              </div>
+                              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                                  <div className="h-full bg-blue-500 w-[20%] rounded-full" /> 
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                  <span className="text-theme-secondary font-medium">{t('commissions')}</span>
+                                  <span className="text-red-400 font-bold">{isBalanceVisible ? `-$${commissions.toLocaleString()}` : '******'}</span>
+                              </div>
+                          </div>
+                      </div>
+
+                      {/* Net Monthly */}
+                      <div className="bg-gradient-to-br from-theme-surface to-black p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden flex flex-col justify-between group">
+                          <div className="absolute bottom-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                              <Wallet size={120} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-theme-secondary uppercase tracking-wider mb-1 font-bold">{t('totalNetMonthly')}</p>
+                            <p className="text-[10px] text-zinc-500 leading-tight font-medium">{t('incomeExpenseDiff')}</p>
+                          </div>
+                          <div className="mt-8">
+                              <h3 className="text-3xl font-black text-theme-primary">{isBalanceVisible ? `$${netMonthly.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '******'}</h3>
+                              {isBalanceVisible && <p className="text-xs text-theme-secondary font-mono font-bold">≈ Bs. {vesNet.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>}
+                          </div>
+                          <div className={`text-[10px] font-black mt-4 px-3 py-1.5 rounded-full w-fit uppercase tracking-wider ${netMonthly >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                              {netMonthly >= 0 ? `+ ${t('positiveFlow')}` : `- ${t('negativeFlow')}`}
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          ) : (
+              <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2">
+                        <Wallet size={14} className="text-theme-secondary" />
+                        <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('yourWallets')} ({accounts.length})</span>
+                      </div>
                   </div>
                   
-                  <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                          <span className="text-theme-secondary">{t('savingsEst')}</span>
-                          <span className="text-theme-primary font-bold">${savings.toLocaleString()}</span>
-                      </div>
-                      <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500 w-[20%]" /> {/* Mock width or calculated */}
-                      </div>
-                      <div className="flex justify-between text-xs">
-                          <span className="text-theme-secondary">{t('commissions')}</span>
-                          <span className="text-red-400 font-bold">-${commissions.toLocaleString()}</span>
-                      </div>
-                  </div>
-              </div>
-
-              {/* Net Monthly */}
-              <div className="bg-gradient-to-br from-theme-surface to-black p-5 rounded-3xl border border-white/5 relative overflow-hidden flex flex-col justify-between">
-                  <div className="absolute bottom-0 right-0 p-4 opacity-5">
-                      <Wallet size={80} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-theme-secondary uppercase tracking-wider mb-1">{t('totalNetMonthly')}</p>
-                    <p className="text-[10px] text-zinc-500 leading-tight">{t('incomeExpenseDiff')}</p>
-                  </div>
-                  <div className="mt-4">
-                      <h3 className="text-2xl font-bold text-theme-primary">${netMonthly.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</h3>
-                      <p className="text-xs text-theme-secondary font-mono">≈ Bs. {vesNet.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
-                  </div>
-                  <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-lg w-fit ${netMonthly >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                      {netMonthly >= 0 ? `+ ${t('positiveFlow')}` : `- ${t('negativeFlow')}`}
-                  </div>
-              </div>
-          </div>
-
-          {/* Wallets List */}
-          <div>
-              <div className="flex items-center gap-2 mb-4 px-1">
-                  <Wallet size={14} className="text-theme-secondary" />
-                  <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('yourWallets')} ({accounts.length})</span>
-              </div>
-              <div className="grid gap-4">
-                {accounts.length === 0 && (
-                    <div className="text-center py-12 px-6 border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-3xl animate-bounce">
-                            👇
-                        </div>
-                        <h3 className="text-theme-primary font-bold text-lg">{t('noWallets')}</h3>
-                        <p className="text-theme-secondary text-sm max-w-[200px]">{t('createFirstWallet')}</p>
-                        <button onClick={() => startEdit()} className="px-6 py-3 bg-theme-brand text-white font-bold rounded-xl shadow-lg mt-2">{t('createWallet')}</button>
-                    </div>
-                )}
-                {accounts.map(acc => {
-                  const stripClass = acc.color ? `bg-gradient-to-b ${acc.color}` : 'bg-theme-brand';
-                  return (
-                  <div key={acc.id} className="bg-theme-surface p-6 rounded-3xl border border-white/5 relative overflow-hidden group hover:scale-[1.01] transition-all flex-shrink-0">
-                    <div className={`absolute left-0 top-0 bottom-0 w-2 ${stripClass}`} />
-                    
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-theme-brand border border-white/5">
-                                {renderAccountIcon(acc.icon, 24)}
+                  <div className="grid grid-cols-1 gap-4">
+                    {accounts.length === 0 && (
+                        <div className="text-center py-16 px-8 border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center gap-6 bg-theme-surface/20">
+                            <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-4xl shadow-xl border border-white/5 animate-bounce">
+                                💳
                             </div>
                             <div>
-                                <h3 className="font-bold text-lg text-theme-primary">{acc.name}</h3>
-                                {acc.payrollClient && (
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                        <p className="text-emerald-400 text-xs font-bold uppercase tracking-wide">{acc.payrollClient}</p>
-                                    </div>
-                                )}
+                                <h3 className="text-theme-primary font-black text-xl mb-2">{t('noWallets')}</h3>
+                                <p className="text-theme-secondary text-sm max-w-[240px] mx-auto leading-relaxed">{t('createFirstWallet')}</p>
+                            </div>
+                            <button onClick={() => startEdit()} className="px-8 py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-xl shadow-brand/20 hover:scale-105 transition-all mt-2">{t('createWallet')}</button>
+                        </div>
+                    )}
+                    {accounts.map(acc => {
+                      const stripClass = acc.color ? `bg-gradient-to-b ${acc.color}` : 'bg-theme-brand';
+                      return (
+                      <div key={acc.id} className="bg-theme-surface p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all flex-shrink-0 shadow-xl hover:shadow-black/40">
+                        <div className={`absolute left-0 top-0 bottom-0 w-2.5 ${stripClass}`} />
+                        
+                        <div className="flex justify-between items-start mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-[1.25rem] bg-theme-bg flex items-center justify-center text-theme-brand border border-white/5 shadow-inner">
+                                    {renderAccountIcon(acc.icon, 28)}
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-xl text-theme-primary">{acc.name}</h3>
+                                    {acc.payrollClient && (
+                                        <div className="flex items-center gap-2 mt-1 px-2 py-0.5 bg-emerald-500/10 rounded-full w-fit">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">{acc.payrollClient}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                <button onClick={() => startEdit(acc)} className="p-2.5 bg-theme-bg border border-white/5 rounded-xl text-theme-secondary hover:text-theme-brand transition-colors"><Edit2 size={18} /></button>
+                                <button onClick={() => handleDelete(acc.id)} className="p-2.5 bg-theme-bg border border-white/5 rounded-xl text-red-400 hover:text-white hover:bg-red-500 transition-all"><Trash2 size={18} /></button>
                             </div>
                         </div>
-                        
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => startEdit(acc)} className="p-2 bg-white/5 rounded-xl text-theme-secondary hover:text-theme-primary hover:bg-white/10 transition-colors"><Edit2 size={16} /></button>
-                            <button onClick={() => handleDelete(acc.id)} className="p-2 bg-white/5 rounded-xl text-red-400 hover:text-red-300 hover:bg-white/10 transition-colors"><Trash2 size={16} /></button>
-                        </div>
-                    </div>
 
-                    <div className="flex justify-between items-end">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-theme-secondary text-xs font-medium">{t('availableBalance')}</span>
-                            <span className="bg-white/5 px-2 py-1 rounded-lg text-xs font-bold font-mono text-theme-secondary border border-white/5 w-fit">{acc.currency}</span>
+                        <div className="flex justify-between items-end">
+                            <div className="flex flex-col gap-2">
+                                <span className="text-theme-secondary text-[10px] font-bold uppercase tracking-widest opacity-60">{t('availableBalance')}</span>
+                                <span className="bg-theme-bg px-3 py-1 rounded-lg text-[10px] font-black font-mono text-zinc-400 border border-white/5 w-fit shadow-inner">{acc.currency}</span>
+                            </div>
+                            <h3 className="text-4xl font-black text-theme-primary tracking-tighter">
+                                <span className="text-2xl text-theme-secondary opacity-40 mr-1">{acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : 'Bs.'}</span>
+                                {isBalanceVisible ? acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
+                            </h3>
                         </div>
-                        <h3 className="text-3xl font-bold text-theme-primary">{acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : 'Bs.'} {acc.balance.toLocaleString()}</h3>
-                    </div>
+                      </div>
+                    )})}
                   </div>
-                )})}
               </div>
-          </div>
+          )}
       </div>
     </div>
   );

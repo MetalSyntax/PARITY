@@ -15,7 +15,7 @@ export enum TransactionType {
 
 export type Language = 'en' | 'es' | 'pt';
 
-export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER';
+export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS';
 
 export interface UserProfile {
   name: string;
@@ -60,4 +60,23 @@ export interface ScheduledPayment {
     currency: Currency;
     date: string;
     frequency: 'Monthly' | 'Weekly' | 'Yearly';
+    type?: TransactionType; // Optional for backward compatibility, defaults to EXPENSE
+}
+
+export interface Budget {
+    categoryId: string;
+    limit: number;
+    customName?: string;
+    customIcon?: string;
+    customColor?: string;
+}
+
+export interface Goal {
+    id: string;
+    name: string;
+    targetAmount: number;
+    savedAmount: number;
+    deadline: string;
+    icon: string;
+    color: string;
 }

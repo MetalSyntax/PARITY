@@ -10,9 +10,10 @@ interface AnalysisViewProps {
   lang: Language;
   scheduledPayments: ScheduledPayment[];
   exchangeRate: number;
+  isBalanceVisible: boolean;
 }
 
-export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang, scheduledPayments, exchangeRate }) => {
+export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang, scheduledPayments, exchangeRate, isBalanceVisible }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [viewMode, setViewMode] = useState<'OVERVIEW' | 'INCOME'>('OVERVIEW');
   const [showDetails, setShowDetails] = useState(false);
@@ -20,7 +21,6 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
   
   const today = new Date().toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'pt-BR', { year: 'numeric', month: 'short', day: 'numeric' });
 
-  // ... Logic
   const totalSpent = transactions
     .filter(t => t.type === TransactionType.EXPENSE)
     .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
@@ -75,9 +75,13 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                 <p className="text-theme-secondary text-sm">{t('netCashFlow')}</p>
                 <div className="flex flex-col">
                     <h2 className={`text-4xl font-bold flex items-center gap-2 ${netCashFlow >= 0 ? 'text-theme-primary' : 'text-red-400'}`}>
-                        {netCashFlow >= 0 ? '+' : '-'}${Math.abs(netCashFlow).toFixed(2)}
+                        {netCashFlow >= 0 ? '+' : '-'}{isBalanceVisible ? `$${Math.abs(netCashFlow).toFixed(2)}` : '******'}
                     </h2>
-                    <span className="text-sm font-mono text-theme-secondary mt-1">≈ Bs. {(Math.abs(netCashFlow) * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    {isBalanceVisible && (
+                        <span className="text-sm font-mono text-theme-secondary mt-1">
+                            ≈ Bs. {(Math.abs(netCashFlow) * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -96,8 +100,8 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                         <div className="h-[60%] w-3 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full relative group">
                             <div className="absolute top-full mt-2 left-0 text-emerald-400 font-bold text-sm">{t('income')}</div>
                             <div className="absolute top-full mt-6 left-0">
-                                <div className="text-theme-primary font-bold text-lg">${totalIncome.toFixed(0)}</div>
-                                <div className="text-theme-secondary text-[10px]">Bs.{(totalIncome * exchangeRate).toLocaleString(undefined, {notation: 'compact'})}</div>
+                                <div className="text-theme-primary font-bold text-lg">{isBalanceVisible ? `$${totalIncome.toFixed(0)}` : '******'}</div>
+                                {isBalanceVisible && <div className="text-theme-secondary text-[10px]">Bs.{(totalIncome * exchangeRate).toLocaleString(undefined, {notation: 'compact'})}</div>}
                             </div>
                         </div>
                     </div>
@@ -132,8 +136,8 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                             <div key={cat.id} className="flex items-center justify-end gap-2 relative">
                                 <div className="text-right">
                                     <div className="text-[10px] text-theme-secondary uppercase">{t(cat.name)}</div>
-                                    <div className="text-sm font-bold text-theme-primary">${cat.total.toFixed(0)}</div>
-                                    <div className="text-[10px] text-zinc-500">Bs.{(cat.total * exchangeRate).toLocaleString(undefined, {notation: 'compact'})}</div>
+                                    <div className="text-sm font-bold text-theme-primary">{isBalanceVisible ? `$${cat.total.toFixed(0)}` : '******'}</div>
+                                    {isBalanceVisible && <div className="text-[10px] text-zinc-500">Bs.{(cat.total * exchangeRate).toLocaleString(undefined, {notation: 'compact'})}</div>}
                                 </div>
                                 <div className={`w-2 h-8 rounded-full ${cat.id === 'food' ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
                             </div>
@@ -147,15 +151,15 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                         <div className="flex justify-between text-sm text-theme-secondary mb-2">
                             <span>{t('totalIncomeLabel')}</span>
                             <div className="text-right">
-                                <span className="text-emerald-400 block">${totalIncome.toFixed(2)}</span>
-                                <span className="text-emerald-600 text-xs">Bs. {(totalIncome * exchangeRate).toLocaleString()}</span>
+                                <span className="text-emerald-400 block">{isBalanceVisible ? `$${totalIncome.toFixed(2)}` : '******'}</span>
+                                {isBalanceVisible && <span className="text-emerald-600 text-xs">Bs. {(totalIncome * exchangeRate).toLocaleString()}</span>}
                             </div>
                         </div>
                         <div className="flex justify-between text-sm text-theme-secondary">
                             <span>{t('totalExpensesLabel')}</span>
                             <div className="text-right">
-                                <span className="text-red-400 block">-${totalSpent.toFixed(2)}</span>
-                                <span className="text-red-600 text-xs">Bs. {(totalSpent * exchangeRate).toLocaleString()}</span>
+                                <span className="text-red-400 block">{isBalanceVisible ? `-$${totalSpent.toFixed(2)}` : '******'}</span>
+                                {isBalanceVisible && <span className="text-red-600 text-xs">Bs. {(totalSpent * exchangeRate).toLocaleString()}</span>}
                             </div>
                         </div>
                     </div>
@@ -182,13 +186,13 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                             </div>
                             <div className="flex-1">
                                 <h4 className="font-bold text-sm text-theme-primary">{sub.name}</h4>
-                                <p className="text-theme-secondary text-xs">${sub.amount} / {sub.frequency}</p>
+                                <p className="text-theme-secondary text-xs">{isBalanceVisible ? `$${sub.amount}` : '******'} / {sub.frequency}</p>
                             </div>
                             <div className="text-right">
                                 <div className={`text-[10px] ${badgeColor} px-2 py-0.5 rounded-full mb-1 inline-block`}>
                                     {days < 0 ? `${Math.abs(days)} ${t('daysAgo')}` : days === 0 ? t('today') : `${days} ${t('daysLeft')}`}
                                 </div>
-                                <div className="font-bold text-theme-primary">${sub.amount}</div>
+                                <div className="font-bold text-theme-primary">{isBalanceVisible ? `$${sub.amount}` : '******'}</div>
                             </div>
                         </div>
                     );
@@ -210,7 +214,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                                  </div>
                                  <h3 className="font-bold text-lg text-theme-primary">{t(cat.name)}</h3>
                              </div>
-                             <span className="text-2xl font-bold text-theme-primary">${cat.total.toLocaleString()}</span>
+                             <span className="text-2xl font-bold text-theme-primary">{isBalanceVisible ? `$${cat.total.toLocaleString()}` : '******'}</span>
                           </div>
                           
                           <div className="flex justify-between items-center">
