@@ -58,7 +58,6 @@ export const useGoogleDriveSync = <T extends object>({
               throw (response);
             }
             setIsAuthenticated(true);
-            // El token se guarda internamente en gapi.client
           },
         });
         setTokenClient(client);
@@ -75,76 +74,93 @@ export const useGoogleDriveSync = <T extends object>({
     }
   }, [tokenClient]);
 
-  // Removed complex granular merge logic in favor of full backup replacement
-  // as per user request to match "full backup" behavior.
+  const findFileId = async (gapi: any) => {
+    const listResponse = await gapi.client.drive.files.list({
+      q: `name = '${fileName}' and trashed = false`,
+      fields: 'files(id, name)',
+    });
+    const files = listResponse.result.files;
+    return files && files.length > 0 ? files[0].id : null;
+  };
 
-  // 4. El Proceso de Sincronización
-  const syncNow = useCallback(async () => {
+  // 1. EXPORT TO CLOUD (BACKUP)
+  const exportToCloud = useCallback(async () => {
     if (!gapiInited || !isAuthenticated) return;
     setIsSyncing(true);
 
     try {
       const gapi = (window as any).gapi;
+      const token = gapi.client.getToken().access_token;
+      const currentLocalData = localDataRef.current as any;
+      const fileId = await findFileId(gapi);
 
-      const listResponse = await gapi.client.drive.files.list({
-        q: `name = '${fileName}' and trashed = false`,
-        fields: 'files(id, name)',
-      });
-
-      const files = listResponse.result.files;
-      const currentLocalData = localDataRef.current;
-      let mergedData = currentLocalData;
-
-      if (files && files.length > 0) {
-        const fileId = files[0].id;
-        
-        // For "Full Backup" behavior: we prioritize Local Data as the source of truth to Upload.
-        // We simply overwrite the existing cloud file with current local data.
-        
-        mergedData = currentLocalData; 
-
-        const token = gapi.client.getToken().access_token;
+      if (fileId) {
+        // Update existing file
         await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
           method: 'PATCH',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(mergedData),
+          body: JSON.stringify(currentLocalData),
         });
-
       } else {
-        const fileMetadata = {
-          name: fileName,
-          mimeType: 'application/json',
-        };
-        
-        const token = gapi.client.getToken().access_token;
-        
+        // Create new file
+        const fileMetadata = { name: fileName, mimeType: 'application/json' };
         const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(fileMetadata)
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(fileMetadata)
         });
         const fileJson = await createRes.json();
         
         await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileJson.id}?uploadType=media`, {
-            method: 'PATCH',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(currentLocalData),
-          });
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(currentLocalData),
+        });
       }
 
       if (onSyncSuccess) onSyncSuccess();
-
     } catch (error) {
-      console.error("Sync Error", error);
+      console.error("Export Error", error);
+      if (onSyncError) onSyncError(error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [gapiInited, isAuthenticated, fileName, onSyncSuccess, onSyncError]);
+
+  // 2. IMPORT FROM CLOUD (RESTORE)
+  const importFromCloud = useCallback(async () => {
+    if (!gapiInited || !isAuthenticated) return;
+    setIsSyncing(true);
+
+    try {
+      const gapi = (window as any).gapi;
+      const token = gapi.client.getToken().access_token;
+      const fileId = await findFileId(gapi);
+
+      if (fileId) {
+        const fileContent = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const cloudData = await fileContent.json();
+        
+        if (cloudData) {
+          setLocalData(cloudData);
+          if (onSyncSuccess) onSyncSuccess();
+        }
+      } else {
+        throw new Error("No backup file found in Google Drive");
+      }
+    } catch (error) {
+      console.error("Import Error", error);
       if (onSyncError) onSyncError(error);
     } finally {
       setIsSyncing(false);
@@ -153,7 +169,8 @@ export const useGoogleDriveSync = <T extends object>({
 
   return {
     handleLogin,
-    syncNow,
+    exportToCloud,
+    importFromCloud,
     isSyncing,
     isAuthenticated
   };

@@ -73,19 +73,19 @@ function AppContent() {
       setConfirmConfig(config);
   };
 
-  const { handleLogin, syncNow, isSyncing, isAuthenticated } = useGoogleDriveSync({
+  const { handleLogin, exportToCloud, importFromCloud, isSyncing, isAuthenticated } = useGoogleDriveSync({
     fileName: 'parity_backup_v1.json',
     localData: {
         userId: userProfile.name, // Extra metadata
+        lastBackup: new Date().toISOString(),
         exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals
     },
     setLocalData: (data: any) => {
-        // Handle Restore logic if we enable it later
         if (data.transactions) handleImportData(data); 
     },
     googleClientId: GOOGLE_CLIENT_ID,
-    onSyncSuccess: () => showAlert('alert_importSuccess', 'success'), // Re-using import success message logic
-    onSyncError: (e) => showAlert('alert_importError', 'error')
+    onSyncSuccess: () => showAlert('alert_syncSuccess', 'success'),
+    onSyncError: (e) => showAlert('alert_syncError', 'error')
   });
 
 
@@ -453,7 +453,8 @@ function AppContent() {
               isSyncing={isSyncing}
               isAuthenticated={isAuthenticated}
               onLogin={handleLogin}
-              onSync={syncNow}
+              onExport={exportToCloud}
+              onImport={importFromCloud}
             />
           )}
           {currentView === 'TRANSACTIONS' && (

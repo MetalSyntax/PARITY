@@ -17,7 +17,8 @@ interface ProfileViewProps {
   isSyncing: boolean;
   isAuthenticated: boolean;
   onLogin: () => void;
-  onSync: () => void;
+  onExport: () => void;
+  onImport: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -32,7 +33,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   isSyncing,
   isAuthenticated,
   onLogin,
-  onSync
+  onExport,
+  onImport
 }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
@@ -204,17 +206,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         <span>Connect Google Drive</span>
                     </button>
                 ) : (
-                    <button 
-                        onClick={onSync}
-                        disabled={isSyncing}
-                        className={`w-full py-3 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
-                            isSyncing 
-                            ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand animate-pulse' 
-                            : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
-                        }`}
-                    >
-                        {isSyncing ? 'Syncing...' : 'Sync Now'}
-                    </button>
+                    <>
+                        <button 
+                            onClick={onExport}
+                            disabled={isSyncing}
+                            className={`w-full py-3 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                                isSyncing 
+                                ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand animate-pulse' 
+                                : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
+                            }`}
+                        >
+                            {isSyncing ? 'Processing...' : t('cloudExport')}
+                        </button>
+                        <button 
+                            onClick={onImport}
+                            disabled={isSyncing}
+                            className={`w-full py-3 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                                isSyncing 
+                                ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand animate-pulse' 
+                                : 'bg-blue-500/10 border-blue-500/50 text-blue-400 hover:bg-blue-500/20'
+                            }`}
+                        >
+                            {isSyncing ? 'Processing...' : t('cloudImport')}
+                        </button>
+                    </>
                 )}
                 <p className="text-[10px] text-zinc-500 text-center uppercase tracking-wider">
                     {isAuthenticated ? 'Connected to Google Drive' : 'Backup your data to the cloud'}
