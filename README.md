@@ -2,13 +2,11 @@
 
 **Master the Flux. Two Currencies. One Wallet.**
 
-*(Add screenshots here showing Dark Mode, Privacy Mode, and Budgeting Views)*
-
 ## 📋 About The Project
 
 **Parity** is a modern, privacy-focused financial tracker designed for users living in multi-currency economies (specifically tailored for high-inflation environments like Venezuela). It treats dual-currency management (USD & VES) as a first-class citizen, not an afterthought.
 
-Built with a **Local-First** philosophy, Parity stores all your financial data securely in your browser's local storage, ensuring your data never leaves your device without your explicit action.
+Built with a **Local-First** philosophy, Parity stores all your financial data securely in your browser's local storage or IndexedDB, ensuring your data never leaves your device without your explicit action.
 
 ## ✨ Key Features
 
@@ -30,16 +28,16 @@ Built with a **Local-First** philosophy, Parity stores all your financial data s
 ### 💰 Financial Management & Analysis
 * **Interactive Dashboard:** 
     * **Balance History:** Track your net worth trend over the last 7 days.
-    * **Expense Structure:** Interactive doughnut charts showing spending distribution in both USD and VES.
+    * **Category-Visualized structure:** Interactive doughnut charts with robust **Category-to-Color** mapping for instant spending recognition.
 * **Digital Envelopes:** Set monthly spending limits per category and track your burning rate visually.
 * **Shared Goals:** Create savings goals (e.g., "New Laptop") with progress tracking and celebration cues.
 * **Scheduled Payments:** Manage recurring bills (subscriptions, rent) and income schedules.
 
 ### 🎨 Premium UX & Accessibility
-* **Custom Notifications:** A modern, glassmorphic popup system for non-disruptive feedback.
+* **Immersive Interface:** Custom, glassmorphic **Alert & Confirmation** system replaces native browser dialogs for a seamless, high-end application feel.
+* **Intelligent Navigation:** A context-aware bottom-nav bar that hides during focused tasks (adding transactions, editing accounts) to maximize screen real estate.
 * **Voice Input:** Use Speech-to-Text for quick note-taking during transaction entry.
 * **Dynamic Theming:** Choose from **Midnight**, **Forest**, or **Original** themes.
-* **Global Navigation:** Fluid bottom-nav bar accessible across all primary financial views.
 
 ---
 
@@ -59,10 +57,10 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 
 ## 📱 Navigation Structure
 
-1.  **Dashboard:** Your financial command center. View balances, charts, and recent history.
+1.  **Dashboard:** Your financial command center with intelligent spending charts.
 2.  **Wallet:** Manage your accounts and active income sources.
 3.  **Analysis:** Deep dive into spending structures and trends.
-4.  **Transactions:** Searchable and filterable full history of all movements.
+4.  **Transactions:** Searchable and filterable full history.
 5.  **Budgets & Goals:** Dedicated view for Envelope budgeting and Savings tracking.
 6.  **Profile:** Data management (Encrypted Import/Export), language settings, and storage stats.
 7.  **Settings:** Configure Exchange Rates (Live/Manual), Themes, and Security.
