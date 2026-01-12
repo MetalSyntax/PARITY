@@ -18,6 +18,9 @@ import { INITIAL_RATE, MOCK_ACCOUNTS } from './constants';
 import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
+import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const STORAGE_KEY = 'dualflow_data_v3';
 const STORAGE_PREF_KEY = 'dualflow_storage_type';
@@ -69,6 +72,21 @@ function AppContent() {
   const showConfirm = (config: ConfirmConfig) => {
       setConfirmConfig(config);
   };
+
+  const { handleLogin, syncNow, isSyncing, isAuthenticated } = useGoogleDriveSync({
+    fileName: 'parity_backup_v1.json',
+    localData: {
+        userId: userProfile.name, // Extra metadata
+        exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals
+    },
+    setLocalData: (data: any) => {
+        // Handle Restore logic if we enable it later
+        if (data.transactions) handleImportData(data); 
+    },
+    googleClientId: GOOGLE_CLIENT_ID,
+    onSyncSuccess: () => showAlert('alert_importSuccess', 'success'), // Re-using import success message logic
+    onSyncError: (e) => showAlert('alert_importError', 'error')
+  });
 
 
   // Load Data
@@ -247,7 +265,8 @@ function AppContent() {
     const newTransaction: Transaction = {
       ...data,
       id: data.id || Math.random().toString(36).substr(2, 9),
-      normalizedAmountUSD: normalizedUSD
+      normalizedAmountUSD: normalizedUSD,
+      updatedAt: new Date().toISOString()
     };
 
     setTransactions(prev => {
@@ -430,6 +449,11 @@ function AppContent() {
               accounts={accounts}
               onImportData={handleImportData}
               storageType={storageType}
+              showAlert={showAlert}
+              isSyncing={isSyncing}
+              isAuthenticated={isAuthenticated}
+              onLogin={handleLogin}
+              onSync={syncNow}
             />
           )}
           {currentView === 'TRANSACTIONS' && (

@@ -1,7 +1,8 @@
 
 // Native Web Crypto API implementation for AES-GCM encryption
 
-const APP_SECRET = 'DUALFLOW_SECURE_KEY_V1'; // In production, this should be user-derived or env var
+const APP_SECRET = import.meta.env.VITE_APP_ENCRYPTION_SECRET;
+const APP_SALT = import.meta.env.VITE_APP_ENCRYPTION_SALT;
 
 // Convert string to buffer
 const str2ab = (str: string) => {
@@ -22,7 +23,7 @@ const getKey = async () => {
   return window.crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: str2ab("SALT_DUALFLOW_2026"), // Fixed salt for consistency
+      salt: str2ab(APP_SALT), // Use salt from env
       iterations: 100000,
       hash: "SHA-256"
     },

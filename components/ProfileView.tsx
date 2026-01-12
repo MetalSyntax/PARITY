@@ -13,9 +13,27 @@ interface ProfileViewProps {
   onImportData: (data: any) => void;
   storageType: StorageType;
   showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  // Sync Props
+  isSyncing: boolean;
+  isAuthenticated: boolean;
+  onLogin: () => void;
+  onSync: () => void;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpdateProfile, transactions, accounts, onImportData, storageType, showAlert }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ 
+  onBack, 
+  profile, 
+  onUpdateProfile, 
+  transactions, 
+  accounts, 
+  onImportData, 
+  storageType, 
+  showAlert,
+  isSyncing,
+  isAuthenticated,
+  onLogin,
+  onSync
+}) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
   const t = (key: any) => getTranslation(lang, key);
@@ -169,6 +187,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack, profile, onUpd
             </div>
             
             <StorageWidget storageType={storageType} t={t} />
+        </div>
+        
+        {/* Google Drive Sync */}
+        <div className="bg-theme-surface border border-white/5 rounded-2xl p-6 mt-4 relative overflow-hidden">
+            <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
+                ☁️ Cloud Sync
+            </h3>
+            
+            <div className="flex flex-col gap-3">
+                {!isAuthenticated ? (
+                    <button 
+                        onClick={onLogin}
+                        className="w-full py-3 rounded-xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors border border-white/5 flex items-center justify-center gap-2"
+                    >
+                        <span>Connect Google Drive</span>
+                    </button>
+                ) : (
+                    <button 
+                        onClick={onSync}
+                        disabled={isSyncing}
+                        className={`w-full py-3 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                            isSyncing 
+                            ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand animate-pulse' 
+                            : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
+                        }`}
+                    >
+                        {isSyncing ? 'Syncing...' : 'Sync Now'}
+                    </button>
+                )}
+                <p className="text-[10px] text-zinc-500 text-center uppercase tracking-wider">
+                    {isAuthenticated ? 'Connected to Google Drive' : 'Backup your data to the cloud'}
+                </p>
+            </div>
         </div>
       </div>
 

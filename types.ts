@@ -44,6 +44,7 @@ export interface Transaction {
   toAccountId?: string; // For transfers
   note: string;
   date: string; // ISO string
+  updatedAt?: string;
 }
 
 export interface Category {
