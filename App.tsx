@@ -8,6 +8,7 @@ import { BudgetView } from './components/BudgetView';
 import { AnalysisView } from './components/AnalysisView';
 import { WalletView } from './components/WalletView';
 import { ProfileView } from './components/ProfileView';
+import { Onboarding } from './components/Onboarding';
 import { ScheduledPaymentView } from './components/ScheduledPaymentView';
 import { TransactionsListView } from './components/TransactionsListView';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -23,7 +24,6 @@ import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const STORAGE_KEY = 'dualflow_data_v3';
-const STORAGE_PREF_KEY = 'dualflow_storage_type';
 
 export default function App() {
   return (
@@ -44,9 +44,7 @@ function AppContent() {
   });
   
   // Storage Preference
-  const [storageType, setStorageType] = useState<StorageType>(() => {
-      return (localStorage.getItem(STORAGE_PREF_KEY) as StorageType) || 'LOCAL_STORAGE';
-  });
+  const [storageType] = useState<StorageType>('INDEXED_DB');
 
   // Application State
   const [exchangeRate, setExchangeRate] = useState(INITIAL_RATE);
@@ -55,8 +53,9 @@ function AppContent() {
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile>({ name: 'John Doe', language: 'en' });
+  const [userProfile, setUserProfile] = useState<UserProfile>({ name: '', language: 'en' });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isFirstTime, setIsFirstTime] = useState(false);
 
   // Popup Alert State
   const [alertConfig, setAlertConfig] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -81,7 +80,7 @@ function AppContent() {
         exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals
     },
     setLocalData: (data: any) => {
-        if (data.transactions) handleImportData(data); 
+        if (data.userProfile) handleImportData(data, true); 
     },
     googleClientId: GOOGLE_CLIENT_ID,
     onSyncSuccess: () => showAlert('alert_syncSuccess', 'success'),
@@ -127,7 +126,10 @@ function AppContent() {
             setScheduledPayments(loadedData.scheduledPayments || []);
             setBudgets(loadedData.budgets || []);
             setGoals(loadedData.goals || []);
-            setUserProfile(loadedData.userProfile || { name: 'John Doe', language: 'en' });
+            setUserProfile(loadedData.userProfile || { name: 'User', language: 'en' });
+            setIsFirstTime(false);
+        } else {
+            setIsFirstTime(true);
         }
         setIsLoaded(true);
     };
@@ -160,24 +162,7 @@ function AppContent() {
     save();
   }, [exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals, isLoaded, storageType]);
 
-  const handleSetStorageType = async (type: StorageType) => {
-      setStorageType(type);
-      localStorage.setItem(STORAGE_PREF_KEY, type);
-      
-      // Perform immediate sync/copy to new storage so data isn't lost
-      const currentData: AppData = {
-          exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals
-      };
 
-      if (type === 'INDEXED_DB') {
-          await idbService.save(currentData);
-          showAlert('alert_migrationIDB', 'success');
-      } else {
-          const encrypted = await encryptData(currentData);
-          localStorage.setItem(STORAGE_KEY, encrypted);
-          showAlert('alert_migrationLocal', 'success');
-      }
-  };
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
@@ -317,50 +302,86 @@ function AppContent() {
     setEditingTransaction(null);
   };
 
-  const handleImportData = async (data: any) => {
+  const handleImportData = async (data: any, skipConfirm = false) => {
     if (!data.userProfile) {
         showAlert('alert_importError', 'error');
         return;
     }
 
-    showConfirm({
-        message: t('importConfirm'),
-        confirmText: t('confirm'),
-        onConfirm: async () => {
-            // Validate schema loosely
-            setExchangeRate(data.exchangeRate || exchangeRate);
-            setAccounts(data.accounts || []);
-            setTransactions(data.transactions || []);
-            setScheduledPayments(data.scheduledPayments || []);
-            setBudgets(data.budgets || []);
-            setGoals(data.goals || []);
-            setUserProfile(data.userProfile);
-            
-            // Force save
-            const newData: AppData = {
-                exchangeRate: data.exchangeRate || exchangeRate,
-                accounts: data.accounts || [],
-                transactions: data.transactions || [],
-                scheduledPayments: data.scheduledPayments || [],
-                userProfile: data.userProfile,
-                budgets: data.budgets || [],
-                goals: data.goals || []
-            };
+    const performImport = async () => {
+        setExchangeRate(data.exchangeRate || exchangeRate);
+        setAccounts(data.accounts || []);
+        setTransactions(data.transactions || []);
+        setScheduledPayments(data.scheduledPayments || []);
+        setBudgets(data.budgets || []);
+        setGoals(data.goals || []);
+        setUserProfile(data.userProfile);
+        
+        const newData: AppData = {
+            exchangeRate: data.exchangeRate || exchangeRate,
+            accounts: data.accounts || [],
+            transactions: data.transactions || [],
+            scheduledPayments: data.scheduledPayments || [],
+            userProfile: data.userProfile,
+            budgets: data.budgets || [],
+            goals: data.goals || []
+        };
 
-            if (storageType === 'INDEXED_DB') {
-                await idbService.save(newData);
-            } else {
-                const encrypted = await encryptData(newData);
-                localStorage.setItem(STORAGE_KEY, encrypted);
-            }
-            
-            showAlert('alert_importSuccess', 'success');
-            setCurrentView('DASHBOARD');
+        if (storageType === 'INDEXED_DB') {
+            await idbService.save(newData);
+        } else {
+            const encrypted = await encryptData(newData);
+            localStorage.setItem(STORAGE_KEY, encrypted);
         }
-    });
+        
+        setIsFirstTime(false);
+        showAlert('alert_importSuccess', 'success');
+        setCurrentView('DASHBOARD');
+    };
+
+    if (skipConfirm || isFirstTime) {
+        await performImport();
+    } else {
+        showConfirm({
+            message: t('importConfirm'),
+            confirmText: t('confirm'),
+            onConfirm: performImport
+        });
+    }
+  };
+
+  const handleStartFresh = () => {
+    setUserProfile({ name: 'User', language: 'en' });
+    setIsFirstTime(false);
+  };
+
+  const [isCloudOnboarding, setIsCloudOnboarding] = useState(false);
+  useEffect(() => {
+      if (isAuthenticated && isCloudOnboarding) {
+          importFromCloud();
+          setIsCloudOnboarding(false);
+      }
+  }, [isAuthenticated, isCloudOnboarding]);
+
+  const handleOnboardingCloudSync = () => {
+      setIsCloudOnboarding(true);
+      if (!isAuthenticated) {
+          handleLogin();
+      }
   };
 
   if (!isLoaded) return null;
+
+  if (isFirstTime) {
+      return (
+          <Onboarding 
+            lang={userProfile.language}
+            onStartFresh={handleStartFresh}
+            onSyncFromCloud={handleOnboardingCloudSync}
+            isSyncing={isSyncing}
+          />
+      );
+  }
 
   return (
     <div className="h-screen w-full bg-theme-bg text-theme-primary font-sans flex flex-col items-center justify-center overflow-hidden">
@@ -538,7 +559,6 @@ function AppContent() {
             onUpdateRate={setExchangeRate}
             lang={userProfile.language}
             currentStorageType={storageType}
-            onUpdateStorageType={handleSetStorageType}
             showAlert={showAlert}
           />
         )}

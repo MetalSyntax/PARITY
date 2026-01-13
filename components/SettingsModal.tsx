@@ -11,11 +11,10 @@ interface SettingsModalProps {
   onUpdateRate: (newRate: number) => void;
   lang: Language;
   currentStorageType: StorageType;
-  onUpdateStorageType: (type: StorageType) => void;
   showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, onUpdateStorageType, showAlert }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
   const [mode, setMode] = useState<'AUTO' | 'PARALLEL' | 'MANUAL'>('MANUAL');
@@ -149,31 +148,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
              </button>
           </div>
 
-          <div className="border-t border-white/5 my-6"></div>
 
-          {/* Storage Strategy - NEW */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-theme-secondary uppercase mb-4 flex items-center gap-2">
-                <Database size={14}/> {t('storageType')}
-            </h3>
-            <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
-                <button 
-                    onClick={() => onUpdateStorageType('LOCAL_STORAGE')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${currentStorageType === 'LOCAL_STORAGE' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary hover:text-white'}`}
-                >
-                    {t('localStorage')}
-                </button>
-                <button 
-                    onClick={() => onUpdateStorageType('INDEXED_DB')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${currentStorageType === 'INDEXED_DB' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary hover:text-white'}`}
-                >
-                    {t('indexedDB')}
-                </button>
-            </div>
-            <p className="text-[10px] text-theme-secondary mt-2 opacity-60 px-1">
-                {currentStorageType === 'INDEXED_DB' ? 'Using IndexedDB for larger limits & better performance.' : 'Using LocalStorage (Browser standard).'}
-            </p>
-          </div>
 
           <div className="border-t border-white/5 my-6"></div>
 

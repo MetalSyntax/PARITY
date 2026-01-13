@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   ArrowRightLeft,
   TrendingUp,
@@ -142,6 +142,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const symbolMain = primaryCurrency === Currency.USD ? "$" : "Bs.";
   const symbolSecondary = primaryCurrency === Currency.USD ? "Bs." : "$";
 
+  useEffect(() => {
+    onToggleBottomNav(!(showPinModal || showCustomizer));
+  }, [showPinModal, showCustomizer, onToggleBottomNav]);
+
   const toggleCurrency = (e: React.MouseEvent) => {
     e.stopPropagation();
     setPrimaryCurrency((prev) =>
@@ -152,17 +156,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handlePrivacyToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isBalanceVisible) {
-      setIsBalanceVisible(false);
-      localStorage.setItem("isBalanceVisible", "false");
-    } else {
-      setShowPinModal(true);
-      onToggleBottomNav(false);
-    }
+       setIsBalanceVisible(false);
+       localStorage.setItem("isBalanceVisible", "false");
+     } else {
+       setShowPinModal(true);
+     }
   };
 
   const closePinModal = () => {
     setShowPinModal(false);
-    onToggleBottomNav(true);
     setPinInput("");
     setPinError(false);
   };
