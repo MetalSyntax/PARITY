@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, Plus, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown } from 'lucide-react';
 import { Transaction, Language, Currency, TransactionType } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -24,6 +24,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   const t = (key: any) => getTranslation(lang, key);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<TransactionType | 'ALL'>('ALL');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -34,10 +35,11 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         categoryName.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesType = filterType === 'ALL' || tx.type === filterType;
+      const matchesMonth = tx.date.startsWith(selectedMonth);
       
-      return matchesSearch && matchesType;
+      return matchesSearch && matchesType && matchesMonth;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, searchQuery, filterType, lang]);
+  }, [transactions, searchQuery, filterType, lang, selectedMonth]);
 
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, Transaction[]> = {};
@@ -67,6 +69,25 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-xl font-bold text-theme-primary">{t('transactions')}</h1>
+          
+          <div className="ml-auto relative">
+             <select
+              className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-8"
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              value={selectedMonth}
+            >
+               {(() => {
+                   const months = new Set<string>();
+                   const current = new Date().toISOString().slice(0, 7);
+                   months.add(current);
+                   transactions.forEach(t => months.add(t.date.slice(0, 7)));
+                   return Array.from(months).sort().reverse().map(m => (
+                       <option key={m} value={m}>{m}</option>
+                   ));
+               })()}
+            </select>
+            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" />
+          </div>
         </div>
 
         {/* Search and Filters */}

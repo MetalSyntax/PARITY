@@ -187,7 +187,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         {/* Google Drive Sync */}
         <div className="bg-theme-surface border border-white/5 rounded-2xl p-6 mt-4 relative overflow-hidden">
             <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
-                ☁️ Cloud Sync
+                ☁️ {t('cloudSync')}
             </h3>
             
             <div className="flex flex-col gap-3">
@@ -196,7 +196,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         onClick={onLogin}
                         className="w-full py-3 rounded-xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors border border-white/5 flex items-center justify-center gap-2"
                     >
-                        <span>Connect Google Drive</span>
+                        <span>{t('cloudConnected')}</span>
                     </button>
                 ) : (
                     <>
@@ -209,7 +209,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                                 : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
                             }`}
                         >
-                            {isSyncing ? 'Processing...' : t('cloudExport')}
+                            {isSyncing ? t('processing') : t('cloudExport')}
                         </button>
                         <button 
                             onClick={onImport}
@@ -220,7 +220,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                                 : 'bg-blue-500/10 border-blue-500/50 text-blue-400 hover:bg-blue-500/20'
                             }`}
                         >
-                            {isSyncing ? 'Processing...' : t('cloudImport')}
+                            {isSyncing ? t('processing') : t('cloudImport')}
                         </button>
                     </>
                 )}

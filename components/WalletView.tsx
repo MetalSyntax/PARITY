@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CreditCard, Plus, X, Edit2, Trash2, Wallet, TrendingUp, TrendingDown, Layers, Calendar } from 'lucide-react';
+import { ArrowLeft, CreditCard, Plus, X, Edit2, Trash2, Wallet, TrendingUp, TrendingDown, Layers, Calendar, ChevronDown } from 'lucide-react';
 import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -67,9 +67,13 @@ export const WalletView: React.FC<WalletViewProps> = ({
     onToggleBottomNav(!isEditing);
   }, [isEditing, onToggleBottomNav]);
 
-  // Computations for "Income source & platform" style view
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-  const currentMonthName = new Date().toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', { month: 'long', year: 'numeric' });
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const currentMonth = selectedMonth; 
+
+  // Parse YYYY-MM to Date object correctly for local time
+  const [year, month] = currentMonth.split('-').map(Number);
+  const dateObj = new Date(year, month - 1);
+  const currentMonthName = dateObj.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', { month: 'long', year: 'numeric' });
 
   const monthlyTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
   
@@ -227,7 +231,25 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <button onClick={onBack} className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"><ArrowLeft size={20} /></button>
             <div>
                  <h1 className="text-xl font-bold text-theme-primary">{t('wallet')} & {t('income')}</h1>
-                 <p className="text-[10px] text-theme-brand font-bold uppercase tracking-widest">{currentMonthName}</p>
+                 <div className="flex items-center gap-1 group relative w-fit">
+                    <p className="text-[10px] text-theme-brand font-bold uppercase tracking-widest">{currentMonthName}</p>
+                    <ChevronDown size={10} className="text-theme-brand" />
+                    <select
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        value={selectedMonth}
+                    >
+                        {(() => {
+                            const months = new Set<string>();
+                            const current = new Date().toISOString().slice(0, 7);
+                            months.add(current);
+                            transactions.forEach(t => months.add(t.date.slice(0, 7)));
+                            return Array.from(months).sort().reverse().map(m => (
+                                <option key={m} value={m}>{m}</option>
+                            ));
+                        })()}
+                    </select>
+                 </div>
             </div>
         </div>
         {activeTab === 'WALLETS' && (

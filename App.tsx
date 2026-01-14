@@ -422,6 +422,7 @@ function AppContent() {
               onUpdateScheduledPayments={setScheduledPayments}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
+              exchangeRate={exchangeRate}
             />
           )}
           {currentView === 'BUDGET' && (
@@ -435,6 +436,7 @@ function AppContent() {
               onUpdateGoals={setGoals}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
+              exchangeRate={exchangeRate}
             />
           )}
           {currentView === 'ANALYSIS' && (
@@ -445,6 +447,7 @@ function AppContent() {
               lang={userProfile.language}
               exchangeRate={exchangeRate}
               isBalanceVisible={isBalanceVisible}
+              onToggleBottomNav={setIsNavVisible}
             />
           )}
           {currentView === 'WALLET' && (

@@ -11,6 +11,7 @@ interface ScheduledPaymentViewProps {
   onUpdateScheduledPayments: (payments: ScheduledPayment[]) => void;
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
+  exchangeRate: number;
 }
 
 export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ 
@@ -19,7 +20,8 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   scheduledPayments, 
   onUpdateScheduledPayments, 
   onToggleBottomNav,
-  showConfirm 
+  showConfirm,
+  exchangeRate
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isAdding, setIsAdding] = useState(false);
@@ -30,7 +32,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   const [newAmount, setNewAmount] = useState('');
   const [newDate, setNewDate] = useState('');
   const [newType, setNewType] = useState<TransactionType>(TransactionType.EXPENSE);
-  const [newFrequency, setNewFrequency] = useState<'Monthly' | 'Weekly' | 'Yearly'>('Monthly');
+  const [newFrequency, setNewFrequency] = useState<'Monthly' | 'Weekly' | 'Yearly' | 'Bi-weekly' | 'One-Time'>('Monthly');
   
   useEffect(() => {
     onToggleBottomNav(!isAdding);
@@ -172,8 +174,10 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                           onChange={e => setNewFrequency(e.target.value as any)}
                         >
                           <option value="Weekly">{t('weekly')}</option>
+                          <option value="Bi-weekly">{t('biweekly')}</option>
                           <option value="Monthly">{t('monthly')}</option>
                           <option value="Yearly">{t('yearly')}</option>
+                          <option value="One-Time">{t('oneTime')}</option>
                         </select>
                       </div>
                     </div>
@@ -229,7 +233,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="flex flex-col gap-3">
               {incomeSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} exchangeRate={exchangeRate} />
               ))}
               {incomeSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -247,7 +251,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="flex flex-col gap-3">
               {expenseSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} exchangeRate={exchangeRate} />
               ))}
               {expenseSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -275,9 +279,10 @@ interface ScheduledItemProps {
   t: (key: any) => any;
   onEdit: (p: ScheduledPayment) => void;
   onDelete: (id: string) => void;
+  exchangeRate: number;
 }
 
-const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete }) => {
+const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, exchangeRate }) => {
   const isIncome = p.type === TransactionType.INCOME;
   
   return (
@@ -289,7 +294,7 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete })
           <div>
               <h4 className="font-bold text-sm text-theme-primary">{p.name}</h4>
               <p className="text-[10px] text-theme-secondary font-medium uppercase tracking-tighter">
-                {t('dueDate')}: {p.date} • {t(p.frequency.toLowerCase()) || p.frequency}
+                {t('dueDate')}: {p.date} • {t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}
               </p>
           </div>
       </div>
@@ -298,7 +303,10 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete })
             <span className={`font-black text-sm ${isIncome ? 'text-emerald-400' : 'text-theme-primary'}`}>
               {isIncome ? '+' : '-'}${p.amount.toLocaleString()}
             </span>
-            <span className="text-[9px] text-theme-secondary font-bold uppercase">{t(p.frequency.toLowerCase()) || p.frequency}</span>
+            <span className="text-[10px] text-zinc-500 font-mono">
+              Bs. {(p.amount * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </span>
+            <span className="text-[9px] text-theme-secondary font-bold uppercase">{t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}</span>
           </div>
           <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 

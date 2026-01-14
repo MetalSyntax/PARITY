@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
 import { TransactionType, Currency, Account, Language, Transaction } from '../types';
-import { CATEGORIES, SMART_CATEGORIES } from '../constants';
+import { CATEGORIES, getSmartCategories } from '../constants';
 import { getTranslation } from '../i18n';
 
 // Icon Map for Financial Services
@@ -106,13 +106,14 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   useEffect(() => {
     if (initialData) return; // Don't auto-categorize if editing
     const lowerNote = note.toLowerCase();
-    for (const key in SMART_CATEGORIES) {
+    const smartCats = getSmartCategories(lang);
+    for (const key in smartCats) {
       if (lowerNote.includes(key)) {
-        setCategoryId(SMART_CATEGORIES[key]);
+        setCategoryId(smartCats[key]);
         return;
       }
     }
-  }, [note, initialData]);
+  }, [note, initialData, lang]);
 
   const handleKeyPress = (val: string) => {
     setAmountStr(prev => {
@@ -445,7 +446,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             <div className="overflow-y-auto p-4 flex-1">
                  <div className="flex flex-col gap-4 pb-10">
                      {CATEGORIES.map(cat => {
-                         const shortcuts = Object.entries(SMART_CATEGORIES)
+                         const shortcuts = Object.entries(getSmartCategories(lang))
                              .filter(([_, catId]) => catId === cat.id)
                              .map(([key]) => key);
 

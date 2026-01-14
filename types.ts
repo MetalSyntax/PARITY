@@ -60,7 +60,7 @@ export interface ScheduledPayment {
     amount: number;
     currency: Currency;
     date: string;
-    frequency: 'Monthly' | 'Weekly' | 'Yearly';
+    frequency: 'Monthly' | 'Weekly' | 'Yearly' | 'Bi-weekly' | 'One-Time';
     type?: TransactionType; // Optional for backward compatibility, defaults to EXPENSE
 }
 

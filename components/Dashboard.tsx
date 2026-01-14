@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   ArrowRightLeft,
   TrendingUp,
@@ -15,7 +15,8 @@ import {
   ChevronRight,
   TrendingDown,
   Layout,
-  Receipt
+  Receipt,
+  BarChart
 } from "lucide-react";
 import {
   Transaction,
@@ -26,6 +27,20 @@ import {
 } from "../types";
 import { CATEGORIES } from "../constants";
 import { getTranslation } from "../i18n";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  BarElement,
+  Filler
+} from 'chart.js';
+import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import {
   FaWallet,
   FaBuildingColumns,
@@ -38,6 +53,45 @@ import {
   FaMobileScreen,
   FaPiggyBank,
 } from "react-icons/fa6";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  BarElement,
+  Filler
+);
+
+// Chart Options Helper
+const commonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            backgroundColor: '#18181b', // zinc-900
+            titleColor: '#e4e4e7', // zinc-200
+            bodyColor: '#e4e4e7',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+        }
+    },
+    scales: {
+        x: { display: false },
+        y: { display: false }
+    },
+    interaction: {
+        intersect: false,
+        mode: 'index' as const,
+    },
+};
 
 // Icon Map for Financial Services
 const ACCOUNT_ICONS: Record<string, React.ElementType> = {
@@ -58,6 +112,36 @@ const renderAccountIcon = (iconKey: string, size: number = 24) => {
   const IconComponent = ACCOUNT_ICONS[iconKey];
   if (IconComponent) return <IconComponent size={size} />;
   return <span style={{ fontSize: size }}>{iconKey}</span>;
+};
+
+const tailwindToHex = (colorClass: string) => {
+    if (!colorClass) return '#888888';
+    if (colorClass.includes('orange-400')) return '#fb923c';
+    if (colorClass.includes('blue-400')) return '#60a5fa';
+    if (colorClass.includes('amber-500')) return '#f59e0b';
+    if (colorClass.includes('indigo-400')) return '#818cf8';
+    if (colorClass.includes('yellow-400')) return '#facc15';
+    if (colorClass.includes('red-400')) return '#f87171';
+    if (colorClass.includes('purple-400')) return '#c084fc';
+    if (colorClass.includes('sky-400')) return '#38bdf8';
+    if (colorClass.includes('pink-400')) return '#f472b6';
+    if (colorClass.includes('emerald-400')) return '#34d399';
+    if (colorClass.includes('rose-400')) return '#fb7185';
+    if (colorClass.includes('green-400')) return '#4ade80';
+    if (colorClass.includes('amber-400')) return '#fbbf24';
+    if (colorClass.includes('blue-300')) return '#93c5fd';
+    if (colorClass.includes('gray-400')) return '#9ca3af';
+    if (colorClass.includes('cyan-400')) return '#22d3ee';
+    if (colorClass.includes('zinc-300')) return '#d4d4d8';
+    if (colorClass.includes('violet-400')) return '#a78bfa';
+    if (colorClass.includes('slate-400')) return '#94a3b8';
+    if (colorClass.includes('teal-400')) return '#2dd4bf';
+    if (colorClass.includes('rose-300')) return '#fda4af';
+    if (colorClass.includes('slate-300')) return '#cbd5e1';
+    if (colorClass.includes('indigo-300')) return '#a5b4fc';
+    if (colorClass.includes('gray-300')) return '#d1d5db';
+    if (colorClass.includes('zinc-500')) return '#71717a';
+    return '#888888';
 };
 
 interface DashboardProps {
@@ -95,6 +179,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [pinError, setPinError] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [hoveredPoint, setHoveredPoint] = useState<{ timestamp: number; balance: number } | null>(null);
   
   // Widget Visibility
   const [showBalanceChart, setShowBalanceChart] = useState(() => {
@@ -106,15 +191,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return saved !== null ? JSON.parse(saved) : true;
   });
 
-  const toggleWidget = (widget: 'balance' | 'expense') => {
+  const [showIncomeVsExpense, setShowIncomeVsExpense] = useState(() => {
+     const saved = localStorage.getItem("dash_show_income_expense");
+     return saved !== null ? JSON.parse(saved) : false;
+  });
+  const [showCategoryBreakdown, setShowCategoryBreakdown] = useState(() => {
+     const saved = localStorage.getItem("dash_show_category_breakdown");
+     return saved !== null ? JSON.parse(saved) : false;
+  });
+  const [showDailySpending, setShowDailySpending] = useState(() => {
+     const saved = localStorage.getItem("dash_show_daily_spending");
+     return saved !== null ? JSON.parse(saved) : false;
+  });
+
+  const toggleWidget = (widget: 'balance' | 'expense' | 'incomeVs' | 'category' | 'daily') => {
     if (widget === 'balance') {
       const next = !showBalanceChart;
       setShowBalanceChart(next);
       localStorage.setItem("dash_show_balance_chart", JSON.stringify(next));
-    } else {
+    } else if (widget === 'expense') {
       const next = !showExpenseStructure;
       setShowExpenseStructure(next);
       localStorage.setItem("dash_show_expense_structure", JSON.stringify(next));
+    } else if (widget === 'incomeVs') {
+        const next = !showIncomeVsExpense;
+        setShowIncomeVsExpense(next);
+        localStorage.setItem("dash_show_income_expense", JSON.stringify(next));
+    } else if (widget === 'category') {
+        const next = !showCategoryBreakdown;
+        setShowCategoryBreakdown(next);
+        localStorage.setItem("dash_show_category_breakdown", JSON.stringify(next));
+    } else if (widget === 'daily') {
+        const next = !showDailySpending;
+        setShowDailySpending(next);
+        localStorage.setItem("dash_show_daily_spending", JSON.stringify(next));
     }
   };
 
@@ -194,7 +304,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, Transaction[]> = {};
     transactions.forEach((t) => {
-      const date = t.date.split('T')[0]; // Use stable ISO date string YYYY-MM-DD
+      const date = t.date.split('T')[0];
       if (!groups[date]) groups[date] = [];
       groups[date].push(t);
     });
@@ -203,49 +313,133 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Historical Balance Calculation (Last 7 Days)
   const balanceHistory = useMemo(() => {
-    const days = 7;
-    const history = [];
+    const txnPoints: { timestamp: number; balance: number }[] = [];
     let currentBal = totalBalanceUSD;
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = 0; i < days; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        const isoDate = d.toISOString().split('T')[0];
-        
-        history.unshift({
-            date: isoDate,
-            balance: currentBal
-        });
-
-        // For next iteration (going back in time):
-        // Subtract income from that day, add expenses from that day
-        const dayT = transactions.filter(t => t.date.startsWith(isoDate));
-        dayT.forEach(t => {
-            if (t.type === TransactionType.INCOME) currentBal -= t.normalizedAmountUSD;
-            if (t.type === TransactionType.EXPENSE) currentBal += t.normalizedAmountUSD;
-        });
-    }
-
-    const values = history.map(h => h.balance);
-    const min = Math.min(...values) * 0.95;
-    const max = Math.max(...values) * 1.05;
-    const range = max - min || 1;
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
+    const startTime = sevenDaysAgo.getTime();
+    const endTime = now.getTime();
+    const timeRange = (endTime - startTime) || 1;
+
+    // Filter and sort transactions NEWEST first
+    const recentTxns = transactions
+        .filter(t => new Date(t.date) >= sevenDaysAgo && t.type !== TransactionType.TRANSFER)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a).getTime());
+
+    // Scale helpers
+    const getX = (ts: number) => ((ts - startTime) / timeRange) * 100;
+    const getY = (bal: number, min: number, range: number) => 60 - ((bal - min) / range) * 60;
+
+    // Temporary array to store raw points to find min/max first
+    const rawHistory = [{ timestamp: now.getTime(), balance: currentBal }];
+    let tempBal = currentBal;
+    recentTxns.forEach(t => {
+        const txnTime = new Date(t.date).getTime();
+        rawHistory.push({ timestamp: txnTime, balance: tempBal });
+        if (t.type === TransactionType.INCOME) tempBal -= t.normalizedAmountUSD;
+        if (t.type === TransactionType.EXPENSE) tempBal += t.normalizedAmountUSD;
+        rawHistory.push({ timestamp: txnTime, balance: tempBal });
+    });
+    rawHistory.push({ timestamp: sevenDaysAgo.getTime(), balance: tempBal });
+
+    // Build the smooth line and capture transaction points
+    let b = totalBalanceUSD;
+    const pts: { x: number; y: number; timestamp: number; balance: number }[] = [];
+    
+    // Add current point
+    // Note: We calculate X but defer Y until we have the full range
+    const tempPts: { timestamp: number; balance: number }[] = [];
+    tempPts.push({ timestamp: now.getTime(), balance: b });
+
+    recentTxns.forEach(t => {
+        const txnTime = new Date(t.date).getTime();
+        if (t.type === TransactionType.INCOME) b -= t.normalizedAmountUSD;
+        if (t.type === TransactionType.EXPENSE) b += t.normalizedAmountUSD;
+        
+        tempPts.push({ timestamp: txnTime, balance: b });
+        txnPoints.push({ timestamp: txnTime, balance: b });
+    });
+
+    // Add 7 days ago point
+    tempPts.push({ timestamp: sevenDaysAgo.getTime(), balance: b });
+
+    // Filter rawHistory to calculate min/max correctly based on the actual visible points
+    const values = tempPts.map(h => h.balance);
+    // Add 20% padding to top/bottom to make the curve more subtle
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+    
+    // Ensure we have a minimum visual range so flat lines don't look weird
+    // and small changes don't look huge
+    const minRange = max * 0.1 || 100; // Minimum 10% variation or 100 units
+    if ((max - min) < minRange) {
+        const diff = minRange - (max - min);
+        min -= diff / 2;
+        max += diff / 2;
+    } else {
+        min *= 0.95;
+        max *= 1.05;
+    }
+    
+    // Don't go below zero unless user actually has negative balance
+    if (min < 0 && Math.min(...values) >= 0) min = 0;
+
+    const range = (max - min) || 1;
+
+    // Now generate the Scaled Points
+    tempPts.forEach(p => {
+        pts.push({
+            x: getX(p.timestamp),
+            y: getY(p.balance, min, range),
+            timestamp: p.timestamp,
+            balance: p.balance
+        });
+    });
+
+    // Sort chronologically for path
+    const ptsSorted = pts.sort((a, b) => a.timestamp - b.timestamp);
+    const linePoints = ptsSorted.map(p => ({ x: p.x, y: p.y }));
+
     // Trend percentage
-    const first = values[0];
-    const last = values[values.length - 1];
+    const first = b; // balance 7 days ago
+    const last = totalBalanceUSD;
     const trendPercent = first !== 0 ? ((last - first) / first) * 100 : 0;
 
-    const points = history.map((h, i) => {
-        const x = (i / (days - 1)) * 100;
-        const y = 60 - ((h.balance - min) / range) * 60;
-        return `${x},${y}`;
-    }).join(" ");
+    // Simplified Bezier Curve Generator (Catmull-Rom approximation)
+    const getCurvePath = (pts: { x: number; y: number }[]) => {
+        if (pts.length < 2) return "";
+        let d = `M ${pts[0].x},${pts[0].y}`;
+        for (let i = 0; i < pts.length - 1; i++) {
+            const curr = pts[i];
+            const next = pts[i + 1];
+            const cp1x = curr.x + (next.x - curr.x) * 0.5;
+            const cp1y = curr.y;
+            const cp2x = curr.x + (next.x - curr.x) * 0.5;
+            const cp2y = next.y;
+            d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${next.x},${next.y}`;
+        }
+        return d;
+    };
 
-    return { points, trendPercent, min, max, history };
+    const pointsStr = getCurvePath(linePoints);
+    const areaStr = ptsSorted.length > 0 
+        ? `${getCurvePath(ptsSorted)} L 100,60 L 0,60 Z`
+        : "";
+
+    return { 
+        points: pointsStr, 
+        area: areaStr,
+        trendPercent, 
+        min, 
+        max, 
+        history: ptsSorted, // Return all points for interaction
+        startTime, 
+        timeRange, 
+        range 
+    };
   }, [totalBalanceUSD, transactions]);
 
   // Expense Structure Logic for Pie Chart
@@ -278,6 +472,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return { structure, totalUSD };
   }, [transactions]);
 
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handleChartInteraction = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!balanceHistory.history.length || !chartRef.current) return;
+    
+    // Check if we are interacting with the chart area
+    const rect = chartRef.current.getBoundingClientRect();
+    let clientX;
+    
+    if ('touches' in e) {
+        clientX = e.touches[0].clientX;
+    } else {
+        clientX = (e as React.MouseEvent).clientX;
+    }
+
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const width = rect.width;
+    const xPercent = (x / width) * 100;
+
+    const targetTs = (xPercent / 100) * balanceHistory.timeRange + balanceHistory.startTime;
+
+    // Find closest point
+    let closest = balanceHistory.history[0];
+    let minDiff = Math.abs(targetTs - closest.timestamp);
+
+    for (let i = 1; i < balanceHistory.history.length; i++) {
+        const diff = Math.abs(targetTs - balanceHistory.history[i].timestamp);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = balanceHistory.history[i];
+        }
+    }
+    setHoveredPoint(closest);
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden relative bg-theme-bg">
       <div className="flex-1 overflow-y-auto no-scrollbar pb-32 w-full max-w-7xl mx-auto md:px-8">
@@ -297,6 +526,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </p>
                 </div>
             </div>
+
+            {/* View Selector */}
           </div>
 
           <div className="flex items-center gap-2">
@@ -393,47 +624,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <span className="text-[10px] font-bold text-zinc-500 px-2 py-1 bg-white/5 rounded-lg">7D</span>
                         </div>
 
-                        <div className="h-32 w-full relative group/chart">
-                            <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="w-full h-full">
-                                <defs>
-                                <linearGradient id="balanceTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="currentColor" stopOpacity="0.2" />
-                                    <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-                                </linearGradient>
-                                </defs>
-                                <polyline
-                                points={balanceHistory.points}
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                className="text-theme-brand"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                vectorEffect="non-scaling-stroke"
-                                />
-                                <polygon
-                                points={`${balanceHistory.points} 100,60 0,60`}
-                                fill="url(#balanceTrendGrad)"
-                                className="text-theme-brand"
-                                />
-                                <circle cx="100" cy={balanceHistory.points.split(' ').pop()?.split(',')[1]} r="3" className="fill-theme-brand" />
-                            </svg>
-                            {isBalanceVisible && (
-                                <div className="absolute top-0 right-0 pointer-events-none opacity-0 group-hover/chart:opacity-100 transition-opacity">
-                                    <div className="bg-theme-bg/80 backdrop-blur border border-white/10 p-2 rounded-lg text-right">
-                                        <p className="text-[8px] text-theme-secondary uppercase font-bold">{t("today")}</p>
-                                        <p className="text-xs font-black text-theme-primary">
-                                            {isBalanceVisible ? `$${totalBalanceUSD.toLocaleString()}` : '******'}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
+                        <div className="h-48 w-full">
+                             <Line 
+                                data={{
+                                    labels: balanceHistory.history.map(h => new Date(h.timestamp).toLocaleDateString(undefined, { weekday: 'short' })),
+                                    datasets: [{
+                                        data: balanceHistory.history.map(h => h.balance),
+                                        borderColor: '#6366f1',
+                                        backgroundColor: (context) => {
+                                            const ctx = context.chart.ctx;
+                                            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                                            gradient.addColorStop(0, "rgba(99,102,241, 0.4)");
+                                            gradient.addColorStop(1, "rgba(99,102,241, 0)");
+                                            return gradient;
+                                        },
+                                        fill: true,
+                                        tension: 0.4,
+                                        pointRadius: 0,
+                                        pointHoverRadius: 4,
+                                        pointHoverBackgroundColor: '#6366f1',
+                                        pointHoverBorderColor: '#fff',
+                                        pointHoverBorderWidth: 2
+                                    }]
+                                }}
+                                options={{
+                                    ...commonOptions,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                             mode: 'index' as const,
+                                             intersect: false,
+                                             backgroundColor: 'rgba(24, 24, 27, 0.9)',
+                                             titleColor: '#e4e4e7',
+                                             bodyColor: '#e4e4e7',
+                                             borderColor: 'rgba(255,255,255,0.1)',
+                                             borderWidth: 1,
+                                             padding: 10,
+                                             callbacks: {
+                                                 label: (context) => {
+                                                     return isBalanceVisible 
+                                                         ? `$${context.raw.toLocaleString()}` 
+                                                         : '******';
+                                                 }
+                                             }
+                                        }
+                                    },
+                                    scales: {
+                                        x: { display: true, grid: { display: false }, ticks: { color: '#71717a', font: { size: 10 } } },
+                                        y: { display: false } // Hide Y axis for cleaner look as per design
+                                    }
+                                }}
+                             />
                         </div>
                         <div className="flex justify-between mt-4">
                             <div className="flex flex-col">
                                 <span className="text-[9px] text-zinc-500 font-bold uppercase">{t("available")}</span>
                                 <span className="text-xs font-black text-theme-primary">
-                                    {isBalanceVisible ? `$${totalBalanceUSD.toLocaleString()}` : '******'}
+                                    {isBalanceVisible ? `$${totalBalanceUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '******'}
                                 </span>
                             </div>
                             <div className="text-right flex flex-col">
@@ -446,11 +693,93 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                 </div>
             )}
+            
+            {showIncomeVsExpense && (
+                <div className="px-4 md:px-0">
+                    <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl">
+                        <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t('incomeVsExpenses')}</h3>
+                        <div className="h-48">
+                            <Bar 
+                                data={{
+                                    labels: [t('income'), t('expense'), t('netCashFlow')],
+                                    datasets: [{
+                                        data: [
+                                            transactions.filter(t => t.type === TransactionType.INCOME).reduce((a,c) => a + c.normalizedAmountUSD, 0),
+                                            transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((a,c) => a + c.normalizedAmountUSD, 0),
+                                            transactions.reduce((a,c) => a + (c.type === TransactionType.INCOME ? c.normalizedAmountUSD : -c.normalizedAmountUSD), 0)
+                                        ],
+                                        backgroundColor: ['#34d399', '#f87171', '#60a5fa'],
+                                        borderRadius: 8,
+                                    }]
+                                }}
+                                options={{
+                                    ...commonOptions,
+                                    scales: { y: { display: true, grid: { color: 'rgba(255,255,255,0.05)'}, ticks: { color: '#71717a' } } }
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDailySpending && (
+                <div className="px-4 md:px-0">
+                    <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl">
+                         <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t('dailySpending')}</h3>
+                         <div className="h-48">
+                             <Line 
+                                data={{
+                                    labels: Object.keys(groupedTransactions).slice(0, 7).reverse(),
+                                    datasets: [{
+                                        data: Object.keys(groupedTransactions).slice(0, 7).reverse().map(d => 
+                                            groupedTransactions[d].filter(t => t.type === TransactionType.EXPENSE).reduce((a, c) => a + c.normalizedAmountUSD, 0)
+                                        ),
+                                        borderColor: '#fb923c',
+                                        backgroundColor: 'rgba(251, 146, 60, 0.2)',
+                                        tension: 0.4,
+                                        fill: true
+                                    }]
+                                }}
+                                options={{
+                                    ...commonOptions,
+                                    scales: { y: { display: true, grid: { color: 'rgba(255,255,255,0.05)'}, ticks: { color: '#71717a' } } }
+                                }}
+                             />
+                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showCategoryBreakdown && (
+                <div className="px-4 md:px-0">
+                     <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl">
+                        <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t('categoryBreakdown')}</h3>
+                        <div className="h-52">
+                            <Bar
+                                data={{
+                                    labels: expenseSummary.structure.slice(0, 5).map(s => t(s.name)),
+                                    datasets: [{
+                                        data: expenseSummary.structure.slice(0, 5).map(s => s.amount),
+                                        backgroundColor: expenseSummary.structure.slice(0, 5).map(s => tailwindToHex(s.color)),
+                                        borderRadius: 6,
+                                        barThickness: 20
+                                    }]
+                                }}
+                                options={{
+                                    ...commonOptions,
+                                    indexAxis: 'y' as const,
+                                     scales: { x: { display: true, grid: { color: 'rgba(255,255,255,0.05)'}, ticks: { color: '#71717a' } } }
+                                }}
+                            />
+                        </div>
+                     </div>
+                </div>
+            )}
+
 
             <div className="px-4 md:px-0">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("wallet")}</h3>
-                <button onClick={() => onNavigate("WALLET")} className="text-theme-brand text-xs font-bold">{t("manage")}</button>
               </div>
               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                 {accounts.map((acc) => (
@@ -511,69 +840,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                        <div className="flex justify-center relative group">
-                            <svg className="w-48 h-48 -rotate-90 filter drop-shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                                {(() => {
-                                    let accumulatedPercent = 0;
-                                    const hexColors: Record<string, string> = {
-                                        'text-red-400': '#f87171', 'text-blue-400': '#60a5fa', 'text-green-400': '#4ade80',
-                                        'text-yellow-400': '#facc15', 'text-purple-400': '#c084fc', 'text-orange-400': '#fb923c',
-                                        'text-emerald-400': '#34d399', 'text-pink-400': '#f472b6', 'text-cyan-400': '#22d3ee',
-                                        'text-amber-500': '#f59e0b', 'text-indigo-400': '#818cf8', 'text-sky-400': '#38bdf8',
-                                        'text-rose-400': '#fb7185', 'text-amber-400': '#fbbf24', 'text-blue-300': '#93c5fd',
-                                        'text-gray-400': '#9ca3af', 'text-zinc-300': '#d4d4d8', 'text-violet-400': '#a78bfa',
-                                        'text-slate-400': '#94a3b8', 'text-teal-400': '#2dd4bf', 'text-rose-300': '#fda4af',
-                                        'text-slate-300': '#cbd5e1', 'text-indigo-300': '#a5b4fc', 'text-gray-300': '#d1d5db',
-                                        'text-amber-700': '#b45309', 'text-indigo-700': '#4338ca', 'text-zinc-500': '#71717a',
-                                        'text-emerald-600': '#059669', 'text-slate-600': '#475569', 'text-blue-600': '#2563eb',
-                                        'text-gray-500': '#6b7280', 'text-zinc-400': '#a1a1aa', 'text-emerald-500': '#10b981',
-                                        'text-indigo-500': '#6366f1', 'text-purple-500': '#a855f7', 'text-pink-500': '#ec4899',
-                                        'text-rose-500': '#f43f5e', 'text-orange-500': '#f97316', 'text-amber-600': '#d97706'
-                                    };
-
-                                    return expenseSummary.structure.map((item) => {
-                                        const radius = 80;
-                                        const circumference = 2 * Math.PI * radius;
-                                        const offset = circumference - (item.percent / 100) * circumference;
-                                        const rotation = (accumulatedPercent / 100) * 360;
-                                        accumulatedPercent += item.percent;
-                                        
-                                        const textColorMatch = item.color.match(/text-[a-z0-9-]+(\/[0-9]+)?/);
-                                        const textColorClass = textColorMatch ? textColorMatch[0].split('/')[0] : 'text-gray-500';
-                                        const strokeColor = hexColors[textColorClass] || '#6366f1';
-                                        const isSelected = selectedCategory === item.id;
-                                        return (
-                                            <circle
-                                                key={item.id} r={radius} cx="96" cy="96" fill="transparent" stroke={strokeColor}
-                                                strokeWidth={isSelected ? "22" : "16"} strokeDasharray={circumference} strokeDashoffset={offset}
-                                                strokeLinecap="round" transform={`rotate(${rotation} 96 96)`}
-                                                className={`transition-all duration-500 cursor-pointer ${isSelected ? 'opacity-100' : 'opacity-80 hover:opacity-100 hover:stroke-[18px]'}`}
-                                                onClick={() => setSelectedCategory(isSelected ? null : item.id)}
-                                            />
-                                        );
-                                    });
-                                })()}
-                            </svg>
+                        <div className="flex justify-center relative group h-48 w-48">
+                            <Doughnut
+                                data={{
+                                    labels: expenseSummary.structure.map(s => t(s.name)),
+                                    datasets: [{
+                                        data: expenseSummary.structure.map(s => s.amount),
+                                        backgroundColor: expenseSummary.structure.map(s => {
+                                             const baseColor = tailwindToHex(s.color);
+                                             if (selectedCategory && selectedCategory !== s.id) {
+                                                 return baseColor + '40'; // Low opacity if not selected
+                                             }
+                                             return baseColor;
+                                        }),
+                                        borderWidth: 0,
+                                        hoverOffset: 10,
+                                    }]
+                                }}
+                                options={{
+                                    ...commonOptions,
+                                    cutout: '80%',
+                                    onClick: (evt, elements) => {
+                                        if (elements.length > 0) {
+                                            const index = elements[0].index;
+                                            const catId = expenseSummary.structure[index].id;
+                                            setSelectedCategory(prev => prev === catId ? null : catId);
+                                        } else {
+                                            setSelectedCategory(null);
+                                        }
+                                    },
+                                    plugins: { legend: { display: false } }
+                                }}
+                            />
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                {selectedCategory ? (
-                                    <div className="text-center animate-in zoom-in-50 duration-200">
-                                        {(() => {
-                                            const cat = expenseSummary.structure.find(s => s.id === selectedCategory);
-                                            return (
-                                                <>
-                                                    <p className="text-2xl font-black text-theme-primary leading-none">
-                                                        {isBalanceVisible ? `$${cat?.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '******'}
-                                                    </p>
-                                                    <p className="text-[9px] font-black uppercase text-theme-brand mt-1 tracking-widest">{t(cat?.name)}</p>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-                                ) : (
-                                    <div className="text-center">
-                                        <p className="text-xs font-black text-theme-secondary uppercase tracking-widest opacity-40">{t("topSpend")}</p>
-                                    </div>
-                                )}
+                                <div className="text-center">
+                                    <p className="text-xs font-black text-theme-secondary uppercase tracking-widest opacity-40">{t("topSpend")}</p>
+                                </div>
                             </div>
                         </div>
                         <div className="flex flex-col gap-3">
@@ -700,6 +1002,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </div>
                           <button onClick={() => toggleWidget('expense')} className={`w-12 h-6 rounded-full transition-all relative ${showExpenseStructure ? 'bg-theme-brand' : 'bg-white/10'}`}>
                               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showExpenseStructure ? 'left-7' : 'left-1'}`} />
+                          </button>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-white/5">
+                          <div className="flex items-center gap-3">
+                              <BarChart size={18} className="text-theme-brand" />
+                              <span className="text-sm font-bold text-theme-primary">{t("incomeVsExpenses")}</span>
+                          </div>
+                          <button onClick={() => toggleWidget('incomeVs')} className={`w-12 h-6 rounded-full transition-all relative ${showIncomeVsExpense ? 'bg-theme-brand' : 'bg-white/10'}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showIncomeVsExpense ? 'left-7' : 'left-1'}`} />
+                          </button>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-white/5">
+                          <div className="flex items-center gap-3">
+                              <TrendingUp size={18} className="text-theme-brand" />
+                              <span className="text-sm font-bold text-theme-primary">{t("dailySpending")}</span>
+                          </div>
+                          <button onClick={() => toggleWidget('daily')} className={`w-12 h-6 rounded-full transition-all relative ${showDailySpending ? 'bg-theme-brand' : 'bg-white/10'}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showDailySpending ? 'left-7' : 'left-1'}`} />
+                          </button>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-white/5">
+                          <div className="flex items-center gap-3">
+                              <BarChart size={18} className="text-theme-brand rotate-90" />
+                              <span className="text-sm font-bold text-theme-primary">{t("categoryBreakdown")}</span>
+                          </div>
+                          <button onClick={() => toggleWidget('category')} className={`w-12 h-6 rounded-full transition-all relative ${showCategoryBreakdown ? 'bg-theme-brand' : 'bg-white/10'}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showCategoryBreakdown ? 'left-7' : 'left-1'}`} />
                           </button>
                       </div>
                   </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, X, Trash2, Trophy } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown } from 'lucide-react';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
@@ -46,6 +46,7 @@ interface BudgetViewProps {
   onUpdateGoals: (goals: Goal[]) => void;
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
+  exchangeRate: number;
 }
 
 export const BudgetView: React.FC<BudgetViewProps> = ({ 
@@ -57,11 +58,13 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     onUpdateBudgets,
     onUpdateGoals,
     onToggleBottomNav,
-    showConfirm
+    showConfirm,
+    exchangeRate
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>('ENVELOPES');
   const [isManaging, setIsManaging] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   
   // Modal/Form State
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -147,7 +150,27 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
              <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
              <h1 className="text-xl font-bold text-theme-primary">{t('budgetsAndGoals')}</h1>
         </div>
-        <div className="text-xs bg-white/5 px-3 py-1 rounded-full border border-white/10 text-theme-secondary">USD</div>
+        <div className="flex items-center gap-2">
+            <div className="relative">
+             <select
+              className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-8"
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              value={selectedMonth}
+            >
+               {(() => {
+                   const months = new Set<string>();
+                   const current = new Date().toISOString().slice(0, 7);
+                   months.add(current);
+                   transactions.forEach(t => months.add(t.date.slice(0, 7)));
+                   return Array.from(months).sort().reverse().map(m => (
+                       <option key={m} value={m}>{m}</option>
+                   ));
+               })()}
+            </select>
+            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" />
+          </div>
+            <div className="text-xs bg-white/5 px-3 py-1 rounded-full border border-white/10 text-theme-secondary">USD</div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -197,7 +220,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                   if (!cat) return null;
 
                   const spent = transactions
-                    .filter(t => t.category === cat?.id && t.type === TransactionType.EXPENSE)
+                    .filter(t => t.category === cat?.id && t.type === TransactionType.EXPENSE && t.date.startsWith(selectedMonth))
                     .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
                   
                   const percent = Math.min((spent / budget.limit) * 100, 100);
@@ -232,6 +255,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                           ) : (
                               <div className="text-right">
                                   <p className="text-lg font-bold text-theme-primary">${spent.toFixed(0)}</p>
+                                  <p className="text-[10px] text-zinc-500">Bs. {(spent * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                                   <p className="text-xs text-theme-secondary">{t('of')} ${budget.limit}</p>
                               </div>
                           )}
@@ -374,7 +398,10 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                   </div>
 
                                   <div className="flex justify-between items-end mb-2">
-                                      <span className="text-2xl font-bold">${goal.savedAmount.toLocaleString()}</span>
+                                      <div>
+                                          <span className="text-2xl font-bold block">${goal.savedAmount.toLocaleString()}</span>
+                                          <span className="text-xs text-zinc-400 font-mono">Bs. {(goal.savedAmount * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                      </div>
                                       <span className="text-xs font-mono text-zinc-400 mb-1">{percent.toFixed(0)}%</span>
                                   </div>
 
