@@ -800,7 +800,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 px-6 md:px-0">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 px-6 md:px-0">
               {[
                 { id: "TRANSACTIONS", label: t("transactions"), icon: <Receipt size={20} />, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
                 { id: "BUDGET", label: t("budget"), icon: <PieChart size={20} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },

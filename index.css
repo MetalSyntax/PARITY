@@ -20,6 +20,7 @@
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  user-select: none;
 }
 
 /* Custom Utilities for usage with variables */

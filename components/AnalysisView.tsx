@@ -87,6 +87,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
   const [showDetails, setShowDetails] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   
   const today = new Date().toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'pt-BR', { year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -182,23 +183,42 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
         </div>
         <div className="flex items-center gap-3">
         <div className="relative">
-             <select
-              className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-8"
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              value={selectedMonth}
-            >
-               {(() => {
-                   const months = new Set<string>();
-                   const current = new Date().toISOString().slice(0, 7);
-                   months.add(current);
-                   transactions.forEach(t => months.add(t.date.slice(0, 7)));
-                   return Array.from(months).sort().reverse().map(m => (
-                       <option key={m} value={m}>{m}</option>
-                   ));
-               })()}
-            </select>
-            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" />
-          </div>
+              <button 
+                onClick={() => setShowMonthPicker(!showMonthPicker)}
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
+              >
+                <span>{selectedMonth}</span>
+                <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showMonthPicker && (
+                <>
+                  <div className="fixed inset-0 z-[60]" onClick={() => setShowMonthPicker(false)} />
+                  <div className="absolute top-full mt-2 right-0 w-40 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="max-h-[240px] overflow-y-auto no-scrollbar py-2 text-left">
+                       {(() => {
+                           const months = new Set<string>();
+                           const current = new Date().toISOString().slice(0, 7);
+                           months.add(current);
+                           transactions.forEach(t => months.add(t.date.slice(0, 7)));
+                           return Array.from(months).sort().reverse().map(m => (
+                               <button
+                                 key={m}
+                                 onClick={() => {
+                                   setSelectedMonth(m);
+                                   setShowMonthPicker(false);
+                                 }}
+                                 className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors hover:bg-white/5 ${selectedMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+                               >
+                                 {m}
+                               </button>
+                           ));
+                       })()}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           <button 
             onClick={() => setShowAnalysisCustomizer(true)}
             className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-white transition-colors"
