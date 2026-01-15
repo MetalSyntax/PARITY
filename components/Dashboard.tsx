@@ -800,15 +800,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 md:px-0">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 px-6 md:px-0">
               {[
                 { id: "TRANSACTIONS", label: t("transactions"), icon: <Receipt size={20} />, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
                 { id: "BUDGET", label: t("budget"), icon: <PieChart size={20} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
                 { id: "SCHEDULED", label: t("scheduled"), icon: <Calendar size={20} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
                 { id: "ANALYSIS", label: t("analysis"), icon: <ArrowUpRight size={20} />, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+                { id: "WALLET", label: t("wallet"), icon: <FaWallet size={20} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+                { id: "PROFILE", label: t("profile"), icon: <Settings size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
               ].map((action, i) => (
                 <button key={i} onClick={() => onNavigate(action.id)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-                  <div className={`w-12 h-12 rounded-xl ${action.color} border flex items-center justify-center shadow-lg`}>{action.icon}</div>
+                  <div className={`w-12 h-12 rounded-xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>{action.icon}</div>
                   <span className="text-xs text-theme-secondary font-medium">{action.label}</span>
                 </button>
               ))}
@@ -932,23 +934,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 {itemsToRender.map((transaction) => {
                                   const category = CATEGORIES.find((c) => c.id === transaction.category) || CATEGORIES[0];
                                   const isExpense = transaction.type === TransactionType.EXPENSE;
+                                  const isTransfer = transaction.type === TransactionType.TRANSFER;
                                   const isOriginalUSD = transaction.originalCurrency === Currency.USD;
                                   const mainAmount = transaction.amount;
                                   const mainSymbol = isOriginalUSD ? "$" : "Bs.";
                                   const secondaryAmount = isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount / transaction.exchangeRate;
                                   const secondarySymbol = isOriginalUSD ? "Bs." : "$";
+                                  
+                                  const fromAcc = accounts.find(a => a.id === transaction.accountId);
+                                  const toAcc = accounts.find(a => a.id === transaction.toAccountId);
+
                                   return (
                                     <div key={transaction.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group relative pr-14 bg-theme-surface">
                                       <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${category.color} bg-opacity-20`}>{category.icon}</div>
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isTransfer ? 'bg-indigo-500/20 text-indigo-400' : category.color + ' bg-opacity-20'}`}>
+                                          {isTransfer ? <ArrowRightLeft size={16} /> : category.icon}
+                                        </div>
                                         <div>
-                                          <p className="font-medium text-sm text-theme-primary">{transaction.note || t(category.name)}</p>
-                                          <p className="text-xs text-theme-secondary capitalize">{t(category.name.toLowerCase()) || category.name}</p>
+                                          <p className="font-medium text-sm text-theme-primary">
+                                            {isTransfer ? `${fromAcc?.name} → ${toAcc?.name}` : (transaction.note || t(category.name))}
+                                          </p>
+                                          <p className="text-xs text-theme-secondary capitalize">
+                                            {isTransfer ? t('transfer') : (t(category.name.toLowerCase()) || category.name)}
+                                          </p>
                                         </div>
                                       </div>
                                       <div className="text-right">
-                                        <p className={`font-bold text-sm ${isExpense ? "text-theme-primary" : "text-emerald-400"}`}>
-                                          {isExpense ? "-" : "+"}{mainSymbol}{isBalanceVisible ? mainAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "***"}
+                                        <p className={`font-bold text-sm ${isTransfer ? "text-indigo-400" : (isExpense ? "text-theme-primary" : "text-emerald-400")}`}>
+                                          {isTransfer ? "" : (isExpense ? "-" : "+")}{mainSymbol}{isBalanceVisible ? mainAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "***"}
                                         </p>
                                         <p className="text-xs text-theme-secondary font-mono group-hover:text-theme-primary transition-colors">
                                           ~{secondarySymbol} {isBalanceVisible ? secondaryAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "***"}

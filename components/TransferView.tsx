@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowDown, ArrowRight } from 'lucide-react';
-import { Account, TransactionType, Language, Currency } from '../types';
+import { Account, TransactionType, Language, Currency, Transaction } from '../types';
 import { getTranslation } from '../i18n';
+import { CATEGORIES } from '../constants';
 
 interface TransferViewProps {
   accounts: Account[];
+  transactions: Transaction[];
   onBack: () => void;
   onTransfer: (data: any) => void;
   lang: Language;
   exchangeRate: number;
 }
 
-export const TransferView: React.FC<TransferViewProps> = ({ accounts, onBack, onTransfer, lang, exchangeRate }) => {
+export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactions, onBack, onTransfer, lang, exchangeRate }) => {
   const [fromId, setFromId] = useState(accounts[0].id);
   const [toId, setToId] = useState(accounts.length > 1 ? accounts[1].id : accounts[0].id);
   const [amount, setAmount] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('transfer');
   const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
 
   const t = (key: any) => getTranslation(lang, key);
@@ -66,7 +69,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, onBack, on
       type: TransactionType.TRANSFER,
       accountId: fromId,
       toAccountId: toId,
-      category: 'transfer',
+      category: selectedCategory,
       note: `Transfer to ${toAccount?.name}`,
       date: new Date().toISOString()
     });
@@ -135,13 +138,69 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, onBack, on
             </div>
         )}
       </div>
+      
+      <div className="mt-6">
+        <label className="text-xs text-zinc-500 mb-3 block uppercase tracking-wider px-1">{t('category')}</label>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+            {[ { id: 'transfer', name: 'transfer', icon: <ArrowRight size={20} />, color: 'bg-indigo-500/20 text-indigo-400' }, ...CATEGORIES ].slice(0, 10).map(cat => (
+                <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`flex flex-col items-center gap-2 min-w-[80px] p-3 rounded-2xl border transition-all ${selectedCategory === cat.id ? 'bg-theme-bg border-theme-brand scale-105 shadow-lg' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+                >
+                    <div className={`w-10 h-10 rounded-xl ${cat.color} flex items-center justify-center`}>
+                        {cat.icon}
+                    </div>
+                    <span className="text-[10px] font-bold text-center truncate w-full uppercase">{t(cat.name)}</span>
+                </button>
+            ))}
+        </div>
+      </div>
 
       <button 
         onClick={handleTransfer}
-        className="mt-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-900/40 active:scale-95 transition-transform"
+        className="mt-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-900/40 active:scale-95 transition-transform"
       >
         {t('transferNow')}
       </button>
+
+      {/* Recent Transfers List */}
+      <div className="mt-12 mb-20">
+          <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">{t('recentTransactions')}</h3>
+          <div className="flex flex-col gap-3">
+              {(() => {
+                  const transfers = transactions?.filter((t: any) => t.type === TransactionType.TRANSFER).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5) || [];
+                  
+                  if (transfers.length === 0) {
+                      return <div className="p-8 text-center text-zinc-600 text-sm border-2 border-dashed border-white/5 rounded-3xl">{t('noTransactions')}</div>;
+                  }
+
+                  return transfers.map((tx: any) => {
+                      const fAcc = accounts.find(a => a.id === tx.accountId);
+                      const tAcc = accounts.find(a => a.id === tx.toAccountId);
+                      return (
+                        <div key={tx.id} className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                                    <ArrowRight size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-white">{fAcc?.name} → {tAcc?.name}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase">{new Date(tx.date).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm font-black text-indigo-400">{tx.originalCurrency === Currency.USD ? '$' : 'Bs.'} {tx.amount.toLocaleString()}</p>
+                                <p className="text-[10px] text-zinc-600 font-mono">
+                                    {tx.originalCurrency === Currency.USD ? 'Bs.' : '$'} {(tx.originalCurrency === Currency.USD ? tx.amount * tx.exchangeRate : tx.amount / tx.exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                                </p>
+                            </div>
+                        </div>
+                      );
+                  });
+              })()}
+          </div>
+      </div>
     </div>
   );
 };

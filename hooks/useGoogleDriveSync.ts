@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
+const GOOGLE_TOKEN_KEY = 'google_drive_token_v1';
 
 interface UseGoogleDriveSyncProps<T> {
   fileName: string;
@@ -33,6 +34,24 @@ export const useGoogleDriveSync = <T extends object>({
     localDataRef.current = localData;
   }, [localData]);
 
+  // Check for existing token on mount
+  useEffect(() => {
+    const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
+    if (savedTokenData) {
+      try {
+        const { token, expiresAt } = JSON.parse(savedTokenData);
+        if (Date.now() < expiresAt) {
+          // Token is still valid
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem(GOOGLE_TOKEN_KEY);
+        }
+      } catch (e) {
+        localStorage.removeItem(GOOGLE_TOKEN_KEY);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const loadGoogleScripts = () => {
       const script1 = document.createElement('script');
@@ -42,6 +61,17 @@ export const useGoogleDriveSync = <T extends object>({
           await (window as any).gapi.client.init({
             discoveryDocs: DISCOVERY_DOCS,
           });
+          
+          // If we have a stored token, apply it to gapi
+          const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
+          if (savedTokenData) {
+            const { token, expiresAt } = JSON.parse(savedTokenData);
+            if (Date.now() < expiresAt) {
+              (window as any).gapi.client.setToken({ access_token: token });
+              setIsAuthenticated(true);
+            }
+          }
+          
           setGapiInited(true);
         });
       };
@@ -57,6 +87,14 @@ export const useGoogleDriveSync = <T extends object>({
             if (response.error !== undefined) {
               throw (response);
             }
+            
+            // Save token to localStorage
+            const expiresAt = Date.now() + (response.expires_in * 1000);
+            localStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({
+              token: response.access_token,
+              expiresAt
+            }));
+            
             setIsAuthenticated(true);
           },
         });
@@ -70,7 +108,9 @@ export const useGoogleDriveSync = <T extends object>({
 
   const handleLogin = useCallback(() => {
     if (tokenClient) {
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      // Removing prompt: 'consent' so it only asks when necessary
+      // Google will still show the account picker if session is not active or prompt is needed
+      tokenClient.requestAccessToken({ prompt: '' });
     }
   }, [tokenClient]);
 
@@ -90,7 +130,25 @@ export const useGoogleDriveSync = <T extends object>({
 
     try {
       const gapi = (window as any).gapi;
-      const token = gapi.client.getToken().access_token;
+      let token = gapi.client.getToken()?.access_token;
+      
+      // If token missing from gapi but we are "authenticated", try to restore from localStorage
+      if (!token) {
+        const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
+        if (savedTokenData) {
+          const { token: savedToken, expiresAt } = JSON.parse(savedTokenData);
+          if (Date.now() < expiresAt) {
+            token = savedToken;
+            gapi.client.setToken({ access_token: token });
+          }
+        }
+      }
+
+      if (!token) {
+        setIsAuthenticated(false);
+        throw new Error("No active session");
+      }
+
       const currentLocalData = localDataRef.current as any;
       const fileId = await findFileId(gapi);
 
@@ -128,8 +186,12 @@ export const useGoogleDriveSync = <T extends object>({
       }
 
       if (onSyncSuccess) onSyncSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Export Error", error);
+      if (error?.status === 401) {
+        setIsAuthenticated(false);
+        localStorage.removeItem(GOOGLE_TOKEN_KEY);
+      }
       if (onSyncError) onSyncError(error);
     } finally {
       setIsSyncing(false);
@@ -143,7 +205,24 @@ export const useGoogleDriveSync = <T extends object>({
 
     try {
       const gapi = (window as any).gapi;
-      const token = gapi.client.getToken().access_token;
+      let token = gapi.client.getToken()?.access_token;
+
+      if (!token) {
+        const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
+        if (savedTokenData) {
+          const { token: savedToken, expiresAt } = JSON.parse(savedTokenData);
+          if (Date.now() < expiresAt) {
+            token = savedToken;
+            gapi.client.setToken({ access_token: token });
+          }
+        }
+      }
+
+      if (!token) {
+        setIsAuthenticated(false);
+        throw new Error("No active session");
+      }
+
       const fileId = await findFileId(gapi);
 
       if (fileId) {
@@ -159,8 +238,12 @@ export const useGoogleDriveSync = <T extends object>({
       } else {
         throw new Error("No backup file found in Google Drive");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Import Error", error);
+      if (error?.status === 401) {
+        setIsAuthenticated(false);
+        localStorage.removeItem(GOOGLE_TOKEN_KEY);
+      }
       if (onSyncError) onSyncError(error);
     } finally {
       setIsSyncing(false);

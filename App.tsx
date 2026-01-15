@@ -383,6 +383,22 @@ function AppContent() {
       );
   }
 
+  const handleConfirmScheduledPayment = (p: ScheduledPayment) => {
+      setEditingTransaction({
+          id: '',
+          amount: p.amount,
+          originalCurrency: p.currency,
+          exchangeRate: exchangeRate,
+          normalizedAmountUSD: p.currency === Currency.USD ? p.amount : p.amount / exchangeRate,
+          type: p.type || TransactionType.EXPENSE,
+          category: 'scheduled',
+          accountId: accounts[0]?.id || '',
+          note: p.name,
+          date: new Date().toISOString()
+      });
+      setShowAdd(true);
+  };
+
   return (
     <div className="h-screen w-full bg-theme-bg text-theme-primary font-sans flex flex-col items-center justify-center overflow-hidden">
       {/* Wrapper */}
@@ -408,6 +424,7 @@ function AppContent() {
           {currentView === 'TRANSFER' && (
             <TransferView
               accounts={accounts}
+              transactions={transactions}
               onBack={() => setCurrentView('DASHBOARD')}
               onTransfer={handleSaveTransaction}
               lang={userProfile.language}
@@ -420,6 +437,7 @@ function AppContent() {
               lang={userProfile.language}
               scheduledPayments={scheduledPayments}
               onUpdateScheduledPayments={setScheduledPayments}
+              onConfirmPayment={handleConfirmScheduledPayment}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}
@@ -462,6 +480,7 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
+              onConfirmPayment={handleConfirmScheduledPayment}
             />
           )}
           {currentView === 'PROFILE' && (

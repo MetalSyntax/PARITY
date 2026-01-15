@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal } from 'lucide-react';
+import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent } from 'lucide-react';
 import { Account, Currency } from './types';
 
 export const INITIAL_RATE = 50.50;
@@ -33,6 +33,7 @@ export const CATEGORIES = [
   { id: 'work', name: 'cat_work', icon: <Briefcase size={20} />, color: 'bg-slate-600/20 text-slate-300' },
   { id: 'freelance', name: 'cat_freelance', icon: <Globe size={20} />, color: 'bg-indigo-400/20 text-indigo-300' },
   { id: 'business', name: 'cat_business', icon: <Briefcase size={20} />, color: 'bg-blue-600/20 text-blue-400' },
+  { id: 'interest', name: 'cat_interest', icon: <Percent size={20} />, color: 'bg-indigo-600/20 text-indigo-400' },
   { id: 'other', name: 'cat_other', icon: <MoreHorizontal size={20} />, color: 'bg-gray-600/20 text-gray-300' },
 ];
 
@@ -197,6 +198,7 @@ export const SMART_CATEGORIES_EN: Record<string, string> = {
   'cash': 'bills', 
   'withdrawal': 'bills',
   'fee': 'bills',
+  'interest': 'interest',
 };
 
 export const SMART_CATEGORIES_ES: Record<string, string> = {
@@ -321,6 +323,8 @@ export const SMART_CATEGORIES_ES: Record<string, string> = {
   'ganancia': 'business',
   'otros': 'other',
   'varios': 'other',
+  'interes': 'interest',
+  'intereses': 'interest',
 };
 
 export const SMART_CATEGORIES_PT: Record<string, string> = {
@@ -441,6 +445,7 @@ export const SMART_CATEGORIES_PT: Record<string, string> = {
   'lucro': 'business',
   'outros': 'other',
   'varios': 'other',
+  'juros': 'interest',
 };
 
 export const getSmartCategories = (lang: string) => {

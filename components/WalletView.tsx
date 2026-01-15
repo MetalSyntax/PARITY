@@ -37,6 +37,7 @@ interface WalletViewProps {
   isBalanceVisible: boolean;
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
+  onConfirmPayment: (payment: ScheduledPayment) => void;
 }
 
 export const WalletView: React.FC<WalletViewProps> = ({ 
@@ -49,7 +50,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
     scheduledPayments, 
     isBalanceVisible, 
     onToggleBottomNav,
-    showConfirm
+    showConfirm,
+    onConfirmPayment
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isEditing, setIsEditing] = useState(false);
@@ -317,7 +319,13 @@ export const WalletView: React.FC<WalletViewProps> = ({
                               </div>
                               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                                 {scheduledIncomes.map(income => (
-                                    <div key={income.id} className="min-w-[140px] bg-theme-surface/50 border border-white/5 p-4 rounded-3xl flex flex-col gap-3 border-l-4 border-l-emerald-500 shadow-xl shadow-black/20">
+                                    <div key={income.id} className="min-w-[140px] bg-theme-surface/50 border border-white/5 p-4 rounded-3xl flex flex-col gap-3 border-l-4 border-l-emerald-500 shadow-xl shadow-black/20 relative group">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); onConfirmPayment(income); }}
+                                            className="absolute -top-2 -right-2 w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-transform z-10 opacity-0 group-hover:opacity-100"
+                                        >
+                                            <Plus size={16} />
+                                        </button>
                                         <div className="flex justify-between items-start">
                                             <span className="text-xs font-bold text-theme-primary truncate max-w-[100px]">{income.name}</span>
                                             <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">

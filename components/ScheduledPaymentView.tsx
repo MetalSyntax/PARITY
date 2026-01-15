@@ -9,6 +9,7 @@ interface ScheduledPaymentViewProps {
   lang: Language;
   scheduledPayments: ScheduledPayment[];
   onUpdateScheduledPayments: (payments: ScheduledPayment[]) => void;
+  onConfirmPayment: (payment: ScheduledPayment) => void;
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
   exchangeRate: number;
@@ -19,6 +20,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   lang, 
   scheduledPayments, 
   onUpdateScheduledPayments, 
+  onConfirmPayment,
   onToggleBottomNav,
   showConfirm,
   exchangeRate
@@ -233,7 +235,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="flex flex-col gap-3">
               {incomeSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} exchangeRate={exchangeRate} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} />
               ))}
               {incomeSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -251,7 +253,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="flex flex-col gap-3">
               {expenseSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} exchangeRate={exchangeRate} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} />
               ))}
               {expenseSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -279,17 +281,25 @@ interface ScheduledItemProps {
   t: (key: any) => any;
   onEdit: (p: ScheduledPayment) => void;
   onDelete: (id: string) => void;
+  onConfirm: (p: ScheduledPayment) => void;
   exchangeRate: number;
 }
 
-const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, exchangeRate }) => {
+const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate }) => {
   const isIncome = p.type === TransactionType.INCOME;
   
   return (
     <div className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors">
       <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 ${isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'} rounded-xl flex items-center justify-center`}>
+          <div className={`w-12 h-12 ${isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'} rounded-xl flex items-center justify-center relative`}>
             {isIncome ? <TrendingUp size={20} /> : <Calendar size={20} />}
+            <button 
+                onClick={(e) => { e.stopPropagation(); onConfirm(p); }}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-transform z-10"
+                title={t('confirm')}
+            >
+                <Plus size={14} />
+            </button>
           </div>
           <div>
               <h4 className="font-bold text-sm text-theme-primary">{p.name}</h4>

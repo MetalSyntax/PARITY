@@ -196,7 +196,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         onClick={onLogin}
                         className="w-full py-3 rounded-xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors border border-white/5 flex items-center justify-center gap-2"
                     >
-                        <span>{t('cloudConnected')}</span>
+                        <span>{t('cloudConnect')}</span>
                     </button>
                 ) : (
                     <>
