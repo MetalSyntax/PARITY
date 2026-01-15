@@ -15,7 +15,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { getTranslation } from './i18n';
 import './index.css';
 
-import { INITIAL_RATE, MOCK_ACCOUNTS } from './constants';
+import { INITIAL_RATE, MOCK_ACCOUNTS, CATEGORIES } from './constants';
 import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
@@ -300,6 +300,32 @@ function AppContent() {
 
     setShowAdd(false);
     setEditingTransaction(null);
+
+    // If this transaction came from a scheduled payment, update or remove it
+    if (data.scheduledId) {
+        setScheduledPayments(prev => {
+            const scheduled = prev.find(p => p.id === data.scheduledId);
+            if (!scheduled) return prev;
+
+            if (scheduled.frequency === 'One-Time') {
+                return prev.filter(p => p.id !== data.scheduledId);
+            }
+
+            return prev.map(p => {
+                if (p.id === data.scheduledId) {
+                    const nextDate = new Date(p.date);
+                    switch (p.frequency) {
+                        case 'Weekly': nextDate.setDate(nextDate.getDate() + 7); break;
+                        case 'Bi-weekly': nextDate.setDate(nextDate.getDate() + 14); break;
+                        case 'Monthly': nextDate.setMonth(nextDate.getMonth() + 1); break;
+                        case 'Yearly': nextDate.setFullYear(nextDate.getFullYear() + 1); break;
+                    }
+                    return { ...p, date: nextDate.toISOString().split('T')[0] };
+                }
+                return p;
+            });
+        });
+    }
   };
 
   const handleImportData = async (data: any, skipConfirm = false) => {
@@ -391,10 +417,11 @@ function AppContent() {
           exchangeRate: exchangeRate,
           normalizedAmountUSD: p.currency === Currency.USD ? p.amount : p.amount / exchangeRate,
           type: p.type || TransactionType.EXPENSE,
-          category: 'scheduled',
+          category: p.category || (p.type === TransactionType.INCOME ? 'income' : CATEGORIES[0].id),
           accountId: accounts[0]?.id || '',
           note: p.name,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          scheduledId: p.id
       });
       setShowAdd(true);
   };

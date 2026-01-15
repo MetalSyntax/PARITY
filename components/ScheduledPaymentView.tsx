@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check } from 'lucide-react';
 import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -35,6 +35,8 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   const [newDate, setNewDate] = useState('');
   const [newType, setNewType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [newFrequency, setNewFrequency] = useState<'Monthly' | 'Weekly' | 'Yearly' | 'Bi-weekly' | 'One-Time'>('Monthly');
+  const [newCategory, setNewCategory] = useState(CATEGORIES[0].id);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   
   useEffect(() => {
     onToggleBottomNav(!isAdding);
@@ -50,6 +52,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
         setNewDate(payment.date);
         setNewType(payment.type || TransactionType.EXPENSE);
         setNewFrequency(payment.frequency);
+        setNewCategory(payment.category || (payment.type === TransactionType.INCOME ? 'income' : CATEGORIES[0].id));
         setIsAdding(true);
       }
     }
@@ -65,7 +68,8 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
           currency: Currency.USD,
           date: newDate,
           frequency: newFrequency,
-          type: newType
+          type: newType,
+          category: newCategory
       };
 
       if (editingId) {
@@ -85,6 +89,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
       setNewDate('');
       setNewType(TransactionType.EXPENSE);
       setNewFrequency('Monthly');
+      setNewCategory(CATEGORIES[0].id);
   };
 
   const handleDelete = (id: string) => {
@@ -130,21 +135,23 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                     </button>
                   </div>
 
-                  <div>
-                      <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-3 block">{t('quickSelect') || 'Quick Select'}</label>
-                      <div className="grid grid-cols-4 gap-3">
-                        {CATEGORIES.slice(0, 8).map(cat => (
-                            <button 
-                                key={cat.id} 
-                                onClick={() => setNewName(t(cat.name))}
-                                className={`flex flex-col items-center justify-center p-3 rounded-2xl bg-theme-surface border transition-all ${newName === t(cat.name) ? 'border-theme-brand bg-theme-brand/5' : 'border-white/5 hover:border-white/10'}`}
-                            >
-                                <div className="text-xl mb-1">{cat.icon}</div>
-                                <span className="text-[10px] text-theme-secondary truncate w-full text-center">{t(cat.name)}</span>
-                            </button>
-                        ))}
-                      </div>
-                  </div>
+                   <div>
+                       <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-3 block">{t('category')}</label>
+                       <button 
+                           onClick={() => setShowCategoryModal(true)}
+                           className="w-full bg-theme-surface border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-theme-brand/30 transition-colors"
+                       >
+                          <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-xl ${CATEGORIES.find(c => c.id === newCategory)?.color || 'bg-white/5 text-theme-primary'} bg-opacity-20`}>
+                                  {CATEGORIES.find(c => c.id === newCategory)?.icon}
+                              </div>
+                              <span className="font-bold text-theme-primary">
+                                  {t(CATEGORIES.find(c => c.id === newCategory)?.name) || CATEGORIES.find(c => c.id === newCategory)?.name}
+                              </span>
+                          </div>
+                          <ChevronDown size={18} className="text-theme-secondary group-hover:text-theme-primary" />
+                       </button>
+                   </div>
 
                   <div className="space-y-4">
                     <div>
@@ -202,6 +209,44 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                     {editingId ? t('update') || 'Update' : t('save')}
                   </button>
               </div>
+
+              {/* Category Modal Integration */}
+              {showCategoryModal && (
+                <div className="fixed inset-0 bg-theme-bg z-[70] flex flex-col animate-in slide-in-from-bottom duration-300">
+                    <div className="p-4 border-b border-white/5 flex items-center justify-between bg-theme-surface">
+                        <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory')}</h2>
+                        <button onClick={() => setShowCategoryModal(false)} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors">
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <div className="overflow-y-auto p-4 flex-1 no-scrollbar">
+                        <div className="grid grid-cols-1 gap-3 pb-20">
+                            {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => {
+                                        setNewCategory(cat.id);
+                                        // Auto-prefill name if empty or still a category name
+                                        if (!newName || CATEGORIES.some(c => t(c.name) === newName)) {
+                                            setNewName(t(cat.name));
+                                        }
+                                        setShowCategoryModal(false);
+                                    }}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${newCategory === cat.id ? 'bg-theme-brand/10 border-theme-brand' : 'bg-theme-surface border-white/5 hover:bg-white/5'}`}
+                                >
+                                    <div className={`p-3 rounded-xl ${cat.color} bg-opacity-20`}>
+                                        {cat.icon}
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className="font-bold text-theme-primary">{t(cat.name)}</p>
+                                    </div>
+                                    {newCategory === cat.id && <Check size={20} className="text-theme-brand" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+               )}
           </div>
       );
   }
@@ -292,7 +337,7 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
     <div className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors">
       <div className="flex items-center gap-4">
           <div className={`w-12 h-12 ${isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'} rounded-xl flex items-center justify-center relative`}>
-            {isIncome ? <TrendingUp size={20} /> : <Calendar size={20} />}
+            {CATEGORIES.find(c => c.id === p.category)?.icon || (isIncome ? <TrendingUp size={20} /> : <Calendar size={20} />)}
             <button 
                 onClick={(e) => { e.stopPropagation(); onConfirm(p); }}
                 className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-transform z-10"
@@ -303,8 +348,8 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
           </div>
           <div>
               <h4 className="font-bold text-sm text-theme-primary">{p.name}</h4>
-              <p className="text-[10px] text-theme-secondary font-medium uppercase tracking-tighter">
-                {t('dueDate')}: {p.date} • {t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}
+              <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-tight">
+                {new Date(p.date.split('T')[0] + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} • {t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}
               </p>
           </div>
       </div>

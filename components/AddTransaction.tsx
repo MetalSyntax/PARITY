@@ -164,6 +164,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       toAccountId: type === TransactionType.TRANSFER ? toAccountId : undefined,
       note,
       date: new Date(date).toISOString(),
+      scheduledId: initialData?.scheduledId,
     });
   };
 

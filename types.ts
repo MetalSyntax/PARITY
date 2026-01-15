@@ -45,6 +45,7 @@ export interface Transaction {
   note: string;
   date: string; // ISO string
   updatedAt?: string;
+  scheduledId?: string;
 }
 
 export interface Category {
@@ -62,6 +63,7 @@ export interface ScheduledPayment {
     date: string;
     frequency: 'Monthly' | 'Weekly' | 'Yearly' | 'Bi-weekly' | 'One-Time';
     type?: TransactionType; // Optional for backward compatibility, defaults to EXPENSE
+    category?: string; // Optional for backward compatibility
 }
 
 export interface Budget {
