@@ -254,4 +254,6 @@ export const es = {
     bar: 'Barras',
     line: 'Líneas',
     pie: 'Pastel',
+    currency_perf: 'Rendimiento de la Moneda',
+    heatmap: 'Mapa de Calor',
 };

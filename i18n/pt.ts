@@ -233,4 +233,6 @@ export const pt = {
     customizeAnalysis: 'Personalizar Análise',
     dailySpending: 'Gasto Diário',
     categoryBreakdown: 'Resumo por Categoria',
+    currency_perf: 'Performance de Moeda',
+    heatmap: 'Mapa de Calor',
 };

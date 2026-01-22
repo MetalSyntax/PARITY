@@ -5,12 +5,15 @@ import {
   PieChart,
   ArrowUpRight,
   Plus,
-  Calendar,
+  Calendar1,
+  CalendarRange,
+  ChartArea,
   Eye,
   EyeOff,
   Lock,
   X,
   Settings,
+  ChartCandlestick,
   Activity,
   ChevronRight,
   TrendingDown,
@@ -592,20 +595,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-               onClick={() => onNavigate("CURRENCY_PERF")}
-               className="p-2.5 bg-theme-surface border border-white/5 rounded-xl text-blue-400 hover:text-blue-300 hover:scale-105 active:scale-95 transition-all"
-               title="Escudo de Inflación"
-            >
-              <Shield size={18} />
-            </button>
-            <button
-               onClick={() => onNavigate("HEATMAP")}
-               className="p-2.5 bg-theme-surface border border-white/5 rounded-xl text-orange-400 hover:text-orange-300 hover:scale-105 active:scale-95 transition-all"
-               title="Mapa de Calor"
-            >
-              <Calendar size={18} />
-            </button>
-            <button
               onClick={() => setShowCustomizer(true)}
               className="p-2.5 bg-theme-surface border border-white/5 rounded-xl text-theme-secondary hover:text-theme-brand transition-all"
             >
@@ -914,14 +903,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {
                   id: "SCHEDULED",
                   label: t("scheduled"),
-                  icon: <Calendar size={20} />,
+                  icon: <Calendar1 size={20} />,
                   color:
                     "bg-orange-500/10 text-orange-400 border-orange-500/20",
                 },
                 {
                   id: "ANALYSIS",
                   label: t("analysis"),
-                  icon: <ArrowUpRight size={20} />,
+                  icon: <ChartArea size={20} />,
                   color:
                     "bg-purple-500/10 text-purple-400 border-purple-500/20",
                 },
@@ -931,6 +920,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   icon: <FaWallet size={20} />,
                   color:
                     "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+                },
+                {
+                   id: "CURRENCY_PERF",
+                   label: t("currency_perf"),
+                   icon: <ChartCandlestick size={20} />,
+                   color: "bg-teal-500/10 text-teal-400 border-teal-500/20",
+                },
+                {
+                   id: "HEATMAP",
+                   label: t("heatmap"),
+                   icon: <CalendarRange size={20} />,
+                   color: "bg-red-500/10 text-red-400 border-red-500/20",
                 },
                 {
                   id: "PROFILE",

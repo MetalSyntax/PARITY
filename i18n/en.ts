@@ -247,4 +247,6 @@ export const en = {
     customizeAnalysis: 'Customize Analysis',
     dailySpending: 'Daily Spending',
     categoryBreakdown: 'Category Breakdown',
+    currency_perf: 'Currency Performance',
+    heatmap: 'Heatmap',
 };
