@@ -107,7 +107,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
 
   if (isAdding) {
       return (
-          <div className="h-full flex flex-col p-6 pb-32 animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-theme-bg overflow-y-auto no-scrollbar">
+          <div className="h-full flex flex-col p-6 pb-32 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto bg-theme-bg overflow-y-auto no-scrollbar">
               <div className="flex items-center gap-4 mb-8">
                   <button onClick={resetForm} className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors">
                       <ArrowLeft size={20} />
@@ -255,7 +255,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   const expenseSchedules = scheduledPayments.filter(p => p.type !== TransactionType.INCOME);
 
   return (
-    <div className="h-full flex flex-col p-6 pb-32 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-theme-bg">
+    <div className="h-full flex flex-col p-6 pb-32 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
             <button onClick={onBack} className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors">
@@ -278,7 +278,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               <TrendingUp size={14} className="text-emerald-400" />
               <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">{t('incomeSchedules') || 'Income Schedules'}</h3>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {incomeSchedules.map(p => (
                 <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} />
               ))}
@@ -296,7 +296,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               <TrendingDown size={14} className="text-red-400" />
               <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">{t('expenseSchedules') || 'Expense Schedules'}</h3>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {expenseSchedules.map(p => (
                 <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} />
               ))}

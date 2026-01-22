@@ -58,7 +58,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   }, [groupedTransactions]);
 
   return (
-    <div className="h-full flex flex-col bg-theme-bg overflow-hidden animate-in slide-in-from-right duration-300">
+    <div className="h-full flex flex-col bg-theme-bg overflow-hidden animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
       {/* Header */}
       <div className="p-6 pb-2">
         <div className="flex items-center gap-4 mb-6">
@@ -153,7 +153,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                     });
                   })()}
                 </h3>
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-1">
                   {groupedTransactions[date].map((transaction) => {
                     const category = CATEGORIES.find((c) => c.id === transaction.category) || CATEGORIES[0];
                     const isExpense = transaction.type === TransactionType.EXPENSE;

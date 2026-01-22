@@ -177,7 +177,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
   if (isEditing) {
       return (
-        <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-theme-bg">
+        <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-4xl lg:max-w-6xl mx-auto bg-theme-bg overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-xl font-bold text-theme-primary">{editingId ? t('editWallet') : t('newWallet')}</h1>
                 <button onClick={() => setIsEditing(false)} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-white"><X size={20} /></button>
@@ -225,7 +225,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-theme-bg overflow-hidden">
+    <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg overflow-hidden">
       
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
@@ -288,7 +288,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       </div>
                       
                       {activeSources.length > 0 ? (
-                          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-2">
                             {activeSources.map(source => (
                                 <div key={source.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-4 rounded-3xl flex flex-col gap-3 group hover:border-theme-brand/50 transition-colors">
                                     <div className="flex justify-between items-start">
@@ -320,7 +320,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                   <Calendar size={14} className="text-emerald-400" />
                                   <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('scheduledIncome')}</span>
                               </div>
-                              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-2">
                                 {scheduledIncomes.map(income => (
                                     <div key={income.id} className="min-w-[140px] bg-theme-surface/50 border border-white/5 p-4 rounded-3xl flex flex-col gap-3 border-l-4 border-l-emerald-500 shadow-xl shadow-black/20 relative group">
                                         <div className="flex justify-between items-start">
@@ -398,7 +398,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {accounts.length === 0 && (
                         <div className="text-center py-16 px-8 border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center gap-6 bg-theme-surface/20">
                             <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-4xl shadow-xl border border-white/5 animate-bounce">

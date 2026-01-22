@@ -144,7 +144,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const availableCategories = CATEGORIES.filter(c => !budgets.find(b => b.categoryId === c.id));
 
   return (
-    <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto">
+    <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -222,7 +222,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 pb-32">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-32">
                 {budgets.map(budget => {
                   let cat = CATEGORIES.find(c => c.id === budget.categoryId);
                   
@@ -397,7 +397,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 </button>
               </div>
 
-              <div className="flex flex-col gap-4 pb-32">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-32">
                   {goals.map(goal => {
                       const percent = Math.min((goal.savedAmount / goal.targetAmount) * 100, 100);
                       return (

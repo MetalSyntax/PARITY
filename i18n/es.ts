@@ -247,4 +247,11 @@ export const es = {
     customizeAnalysis: 'Personalizar Análisis',
     dailySpending: 'Gasto Diario',
     categoryBreakdown: 'Desglose por Categoría',
+    leakDetector: 'Detector de Fugas',
+    noLeaksDetected: '¡Cero fugas detectadas!',
+    healthySpendingDesc: 'Tus hábitos de gasto se ven saludables este mes.',
+    netFlow: 'Flujo Neto',
+    bar: 'Barras',
+    line: 'Líneas',
+    pie: 'Pastel',
 };

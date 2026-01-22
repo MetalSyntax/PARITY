@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Home, Target, User } from 'lucide-react';
+import { Plus, Wallet, Home, Target, User, Calendar as CalendarIcon } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { AddTransaction } from './components/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
@@ -11,6 +11,8 @@ import { ProfileView } from './components/ProfileView';
 import { Onboarding } from './components/Onboarding';
 import { ScheduledPaymentView } from './components/ScheduledPaymentView';
 import { TransactionsListView } from './components/TransactionsListView';
+import { CalendarHeatmapView } from './components/CalendarHeatmapView';
+import { CurrencyPerformanceView } from './components/CurrencyPerformanceView';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { getTranslation } from './i18n';
 import './index.css';
@@ -493,6 +495,7 @@ function AppContent() {
               exchangeRate={exchangeRate}
               isBalanceVisible={isBalanceVisible}
               onToggleBottomNav={setIsNavVisible}
+              onNavigate={setCurrentView}
             />
           )}
           {currentView === 'WALLET' && (
@@ -537,10 +540,26 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
             />
           )}
+          {currentView === 'HEATMAP' && (
+            <CalendarHeatmapView
+              onBack={() => setCurrentView('DASHBOARD')}
+              transactions={transactions}
+              lang={userProfile.language}
+              exchangeRate={exchangeRate}
+            />
+          )}
+          {currentView === 'CURRENCY_PERF' && (
+            <CurrencyPerformanceView
+              onBack={() => setCurrentView('DASHBOARD')}
+              transactions={transactions}
+              lang={userProfile.language}
+              exchangeRate={exchangeRate}
+            />
+          )}
         </div>
 
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
-        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
+        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
           <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-8 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
             <button
               onClick={() => setCurrentView('DASHBOARD')}

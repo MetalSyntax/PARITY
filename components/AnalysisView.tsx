@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ChevronDown, ChevronUp, PieChart, BarChart, Settings, Activity, TrendingUp, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, PieChart, BarChart, Settings, Activity, TrendingUp, X, ShieldAlert, Zap, AlertCircle, Coins, DollarSign, Shield } from 'lucide-react';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, ScheduledPayment } from '../types';
 import { getTranslation } from '../i18n';
@@ -25,19 +25,55 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const commonOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+        duration: 1200,
+        easing: 'easeInOutQuart' as const,
+        delay: (context: any) => {
+            let delay = 0;
+            if (context.type === 'data' && context.mode === 'default') {
+                delay = context.dataIndex * 150 + context.datasetIndex * 100;
+            }
+            return delay;
+        }
+    },
     plugins: {
-        legend: { display: false },
+        legend: { 
+            display: false,
+            labels: {
+                color: '#a1a1aa',
+                font: { size: 12 },
+                usePointStyle: true,
+                padding: 15
+            }
+        },
         tooltip: {
-            backgroundColor: '#18181b',
-            titleColor: '#e4e4e7',
+            backgroundColor: 'rgba(24, 24, 27, 0.9)',
+            titleColor: '#ffffff',
             bodyColor: '#e4e4e7',
             borderColor: 'rgba(255,255,255,0.1)',
             borderWidth: 1,
-            padding: 10,
-            displayColors: false,
+            padding: 12,
+            displayColors: true,
+            cornerRadius: 12,
+            titleFont: { size: 14, weight: 'bold' as const },
+            bodyFont: { size: 13 },
+            usePointStyle: true,
         }
     },
-    scales: { x: { display: false }, y: { display: false } },
+    scales: { 
+        x: { 
+            display: false,
+            grid: { display: false },
+            border: { display: false },
+            ticks: { color: '#71717a' }
+        }, 
+        y: { 
+            display: false,
+            grid: { display: false },
+            border: { display: false },
+            ticks: { color: '#71717a' }
+        } 
+    },
     interaction: { intersect: false, mode: 'index' as const },
 };
 
@@ -79,11 +115,14 @@ interface AnalysisViewProps {
   exchangeRate: number;
   isBalanceVisible: boolean;
   onToggleBottomNav: (visible: boolean) => void;
+  onNavigate: (view: any) => void;
 }
 
-export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang, scheduledPayments, exchangeRate, isBalanceVisible, onToggleBottomNav }) => {
+export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang, scheduledPayments, exchangeRate, isBalanceVisible, onToggleBottomNav, onNavigate }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [viewMode, setViewMode] = useState<'OVERVIEW' | 'INCOME'>('OVERVIEW');
+  const [mainChartType, setMainChartType] = useState<'BAR' | 'LINE'>('BAR');
+  const [displayInVES, setDisplayInVES] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -153,39 +192,77 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
   }, [showAnalysisCustomizer, onToggleBottomNav]);
 
   // Data helpers for charts
-  const monthKeys = Array.from(new Set(transactions.map(t => t.date.slice(0, 7)))).sort().slice(-6);
-  const netFlowData = {
-      labels: monthKeys,
-      datasets: [{
-          label: 'Net Flow',
-          data: monthKeys.map(m => {
-              const monthT = transactions.filter(t => t.date.startsWith(m));
-              const inc = monthT.filter(t => t.type === TransactionType.INCOME).reduce((a,c) => a+c.normalizedAmountUSD,0);
-              const exp = monthT.filter(t => t.type === TransactionType.EXPENSE).reduce((a,c) => a+c.normalizedAmountUSD,0);
-              return inc - exp;
-          }),
-          borderColor: '#8b5cf6',
-          backgroundColor: 'rgba(139, 92, 246, 0.2)',
-          tension: 0.4,
-          fill: true
-      }]
-  };
-
+  const monthKeys = React.useMemo(() => Array.from(new Set(transactions.map(t => t.date.slice(0, 7)))).sort().slice(-6), [transactions]);
+  
   const displayedSubs = scheduledPayments;
 
+  // Money Leak Detector Logic
+  const leaks = React.useMemo(() => {
+    const results: { type: 'impulse' | 'overspend' | 'recurrent'; title: string; category: string; amount: number; description: string }[] = [];
+    
+    // 1. Group by category
+    const catTotals: Record<string, { total: number, count: number, name: string }> = {};
+    monthlyTransactions.filter(t => t.type === TransactionType.EXPENSE).forEach(t => {
+        const cat = CATEGORIES.find(c => c.id === t.category);
+        if (!catTotals[t.category]) catTotals[t.category] = { total: 0, count: 0, name: cat?.name || t.category };
+        catTotals[t.category].total += t.normalizedAmountUSD;
+        catTotals[t.category].count += 1;
+    });
+
+    // Overspending (> 35% of total income)
+    Object.entries(catTotals).forEach(([id, data]) => {
+        if (totalIncome > 0 && data.total > totalIncome * 0.35) {
+            results.push({
+                type: 'overspend',
+                title: t('overspending'),
+                category: data.name,
+                amount: data.total,
+                description: `${((data.total/totalIncome)*100).toFixed(0)}% ${t('ofIncomeGoesHere') || 'de tus ingresos van aquí.'}`
+            });
+        }
+        // Impulse buys: many small transactions
+        if (data.count > 6 && data.total / data.count < 15) {
+            results.push({
+                type: 'impulse',
+                title: t('minorLeakage'),
+                category: data.name,
+                amount: data.total,
+                description: `${data.count} ${t('smallExpensesWarning') || 'gastos pequeños acumulados silenciosamente.'}`
+            });
+        }
+    });
+
+    return results;
+  }, [monthlyTransactions, totalIncome]);
+
+  const formatAmount = (usd: number) => {
+    if (!isBalanceVisible) return '******';
+    const val = displayInVES ? usd * exchangeRate : usd;
+    const symbol = displayInVES ? 'Bs. ' : '$';
+    return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   return (
-    <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto bg-theme-bg">
+    <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
             <button onClick={onBack} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
             <h1 className="text-xl font-bold text-theme-primary">{t('analysis')}</h1>
         </div>
-        <div className="flex items-center gap-3">
-        <div className="relative">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+            <button 
+                onClick={() => setDisplayInVES(!displayInVES)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+            >
+                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+            </button>
+
+            <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[90px] sm:min-w-[100px] justify-between relative"
               >
                 <span>{selectedMonth}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
@@ -219,12 +296,13 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                 </>
               )}
             </div>
-          <button 
-            onClick={() => setShowAnalysisCustomizer(true)}
-            className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-white transition-colors"
-          >
-            <Settings size={20} />
-          </button>
+
+            <button 
+                onClick={() => setShowAnalysisCustomizer(true)}
+                className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-white transition-colors"
+            >
+                <Settings size={20} />
+            </button>
         </div>
       </div>
 
@@ -236,11 +314,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                 <p className="text-theme-secondary text-sm">{t('netCashFlow')}</p>
                 <div className="flex flex-col">
                     <h2 className={`text-4xl font-bold flex items-center gap-2 ${netCashFlow >= 0 ? 'text-theme-primary' : 'text-red-400'}`}>
-                        {netCashFlow >= 0 ? '+' : '-'}{isBalanceVisible ? `$${Math.abs(netCashFlow).toFixed(2)}` : '******'}
+                        {netCashFlow >= 0 ? '+' : '-'}{formatAmount(Math.abs(netCashFlow))}
                     </h2>
                     {isBalanceVisible && (
                         <span className="text-sm font-mono text-theme-secondary mt-1">
-                            ≈ Bs. {(Math.abs(netCashFlow) * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {displayInVES ? `≈ $${Math.abs(netCashFlow).toFixed(2)}` : `≈ Bs. ${(Math.abs(netCashFlow) * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                         </span>
                     )}
                 </div>
@@ -248,64 +326,157 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
 
             {/* Income vs Expenses Chart */}
             {showIncomeVsExpenseC && (
-                <div className="bg-theme-surface rounded-3xl border border-white/10 p-6 relative mb-6 transition-all">
+                <div className="bg-theme-surface rounded-3xl border border-white/10 p-6 mb-6 relative transition-all">
                     <div className="flex justify-between items-center mb-10 relative z-10">
-                        <h3 className="font-bold text-lg text-theme-primary">{t('incomeVsExpenses')}</h3>
+                        <div className="flex items-center gap-4">
+                            <h3 className="font-bold text-lg text-theme-primary">{t('incomeVsExpenses')}</h3>
+                            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                                <button 
+                                    onClick={() => setMainChartType('BAR')}
+                                    className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${mainChartType === 'BAR' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
+                                >
+                                    {t('bar')}
+                                </button>
+                                <button 
+                                    onClick={() => setMainChartType('LINE')}
+                                    className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${mainChartType === 'LINE' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
+                                >
+                                    {t('line')}
+                                </button>
+                            </div>
+                        </div>
                         <button onClick={() => setShowDetails(!showDetails)} className="text-theme-brand text-xs font-bold flex items-center gap-1">
                             {t('viewDetails')} {showDetails ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
                         </button>
                     </div>
 
-                    <div className="relative h-[300px] w-full flex">
-                        <div className="flex flex-col justify-center h-full w-1/4">
-                            <div className="h-[60%] w-3 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full relative group">
-                                <div className="absolute top-full mt-2 left-0 text-emerald-400 font-bold text-sm">{t('income')}</div>
-                                <div className="absolute top-full mt-6 left-0">
-                                    <div className="text-theme-primary font-bold text-lg">{isBalanceVisible ? `$${totalIncome.toFixed(0)}` : '******'}</div>
-                                    {isBalanceVisible && <div className="text-theme-secondary text-[10px]">Bs.{(totalIncome * exchangeRate).toLocaleString(undefined, {notation: 'compact'})}</div>}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex-1 relative h-full">
-                            <svg className="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none">
-                                <defs>
-                                    {sortedCategories.map(cat => (
-                                        <linearGradient key={`grad-${cat.id}`} id={`grad-${cat.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" style={{stopColor:'#34d399', stopOpacity:0.5}} />
-                                            <stop offset="100%" style={{stopColor: tailwindToHex(cat.color), stopOpacity:0.5}} />
-                                        </linearGradient>
-                                    ))}
-                                </defs>
-                                {sortedCategories.map((cat, i) => {
-                                    const yStart = 150; 
-                                    const yEnd = 40 + (i * 60);
-                                    return (
-                                        <path 
-                                            key={cat.id}
-                                            d={`M 0 ${yStart} C 50 ${yStart}, 50 ${yEnd}, 100 ${yEnd}`}
-                                            stroke={`url(#grad-${cat.id})`}
-                                            strokeWidth={Math.max(cat.total / 10, 5)} 
-                                            fill="none"
-                                            className="opacity-60"
-                                        />
-                                    );
-                                })}
-                            </svg>
-                        </div>
-
-                        <div className="flex flex-col justify-start gap-6 h-full w-1/4 pt-8">
-                            {sortedCategories.map((cat) => (
-                                <div key={cat.id} className="flex items-center justify-end gap-2 relative">
-                                    <div className="text-right">
-                                        <div className="text-[10px] text-theme-secondary uppercase">{t(cat.name)}</div>
-                                        <div className="text-sm font-bold text-theme-primary">{isBalanceVisible ? `$${cat.total.toFixed(0)}` : '******'}</div>
-                                        {isBalanceVisible && <div className="text-[10px] text-zinc-500">Bs.{(cat.total * exchangeRate).toLocaleString(undefined, {notation: 'compact'})}</div>}
-                                    </div>
-                                    <div className={`w-2 h-8 rounded-full ${cat.color.replace('text-', 'bg-').split(' ')[0]}`}></div>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="relative h-[300px] w-full mt-4">
+                        {mainChartType === 'BAR' ? (
+                            <Bar 
+                                data={{
+                                    labels: [t('income'), t('expenses')],
+                                    datasets: [
+                                        {
+                                            label: t('income'),
+                                            data: [totalIncome, 0],
+                                            backgroundColor: 'rgba(52, 211, 153, 0.8)', // emerald-400
+                                            borderRadius: 12,
+                                            barThickness: 40,
+                                        },
+                                        ...sortedCategories.map((cat, idx) => ({
+                                            label: t(cat.name),
+                                            data: [0, cat.total],
+                                            backgroundColor: tailwindToHex(cat.color) + 'CC',
+                                            borderRadius: idx === 0 ? { topLeft: 12, bottomLeft: 12 } : idx === sortedCategories.length - 1 ? { topRight: 12, bottomRight: 12 } : 0,
+                                            barThickness: 40,
+                                        }))
+                                    ]
+                                }}
+                                options={{
+                                    ...commonOptions,
+                                    indexAxis: 'y' as const,
+                                    plugins: {
+                                        ...commonOptions.plugins,
+                                        legend: { 
+                                            display: true, 
+                                            position: 'bottom' as const,
+                                            labels: {
+                                                color: '#a1a1aa',
+                                                usePointStyle: true,
+                                                padding: 20,
+                                                font: { size: 10 }
+                                            }
+                                        },
+                                        tooltip: {
+                                            ...commonOptions.plugins.tooltip,
+                                            callbacks: {
+                                                label: function(context: any) {
+                                                    let label = context.dataset.label || '';
+                                                    if (label) label += ': ';
+                                                    if (context.parsed.x !== undefined) {
+                                                        label += formatAmount(context.parsed.x);
+                                                    }
+                                                    return label;
+                                                }
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: { 
+                                            stacked: true,
+                                            display: true, 
+                                            grid: { color: 'rgba(255,255,255,0.05)' },
+                                            border: { display: false },
+                                            ticks: { color: '#71717a', font: { size: 10 }, callback: (v: any) => displayInVES ? `${v/1000}k` : `$${v}` }
+                                        },
+                                        y: { 
+                                            stacked: true,
+                                            display: true, 
+                                            grid: { display: false },
+                                            border: { display: false },
+                                            ticks: { color: '#e4e4e7', font: { size: 12, weight: 'bold' } }
+                                        }
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <Line 
+                                data={{
+                                    labels: monthKeys,
+                                    datasets: [
+                                        {
+                                            label: t('income'),
+                                            data: monthKeys.map(m => transactions.filter(t => t.date.startsWith(m) && t.type === TransactionType.INCOME).reduce((a,c) => a+c.normalizedAmountUSD, 0)),
+                                            borderColor: '#34d399',
+                                            backgroundColor: (context: any) => {
+                                                const ctx = context.chart.ctx;
+                                                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                                                gradient.addColorStop(0, 'rgba(52, 211, 153, 0.3)');
+                                                gradient.addColorStop(1, 'rgba(52, 211, 153, 0)');
+                                                return gradient;
+                                            },
+                                            tension: 0.4,
+                                            fill: true,
+                                            pointRadius: 4,
+                                            pointBackgroundColor: '#34d399',
+                                        },
+                                        {
+                                            label: t('expenses'),
+                                            data: monthKeys.map(m => transactions.filter(t => t.date.startsWith(m) && t.type === TransactionType.EXPENSE).reduce((a,c) => a+c.normalizedAmountUSD, 0)),
+                                            borderColor: '#f87171',
+                                            backgroundColor: (context: any) => {
+                                                const ctx = context.chart.ctx;
+                                                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                                                gradient.addColorStop(0, 'rgba(248, 113, 113, 0.2)');
+                                                gradient.addColorStop(1, 'rgba(248, 113, 113, 0)');
+                                                return gradient;
+                                            },
+                                            tension: 0.4,
+                                            fill: true,
+                                            pointRadius: 4,
+                                            pointBackgroundColor: '#f87171',
+                                        }
+                                    ]
+                                }}
+                                options={{
+                                    ...commonOptions,
+                                    plugins: {
+                                        ...commonOptions.plugins,
+                                        legend: { display: true, position: 'bottom' as const, labels: { color: '#a1a1aa', font: { size: 10 } } },
+                                        tooltip: {
+                                            ...commonOptions.plugins.tooltip,
+                                            callbacks: {
+                                                label: (context: any) => `${context.dataset.label}: ${formatAmount(context.parsed.y)}`
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: { display: true, grid: { display: false }, ticks: { color: '#71717a', font: { size: 10 } } },
+                                        y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 }, callback: (value: any) => displayInVES ? `Bs.${value/1000}k` : `$${value}` } }
+                                    }
+                                }}
+                            />
+                        )}
                     </div>
                     
                     {showDetails && (
@@ -329,12 +500,191 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                 </div>
             )}
 
-            <div className="mb-4 flex justify-between items-center px-1">
+            {/* Extra Charts Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {showNetFlowC && (
+                    <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('monthlyNetFlow')}</h3>
+                            <button 
+                                onClick={() => {
+                                    setShowNetFlowC(false);
+                                    localStorage.setItem("analysis_show_net_flow", "false");
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
+                            >
+                                <X size={14} />
+                            </button>
+                          </div>
+                          <div className="h-48">
+                              <Bar 
+                                data={{
+                                    labels: monthKeys,
+                                    datasets: [{
+                                        label: t('netFlow'),
+                                        data: monthKeys.map(m => {
+                                            const monthT = transactions.filter(t => t.date.startsWith(m));
+                                            const inc = monthT.filter(t => t.type === TransactionType.INCOME).reduce((a,c) => a+c.normalizedAmountUSD,0);
+                                            const exp = monthT.filter(t => t.type === TransactionType.EXPENSE).reduce((a,c) => a+c.normalizedAmountUSD,0);
+                                            return inc - exp;
+                                        }),
+                                        backgroundColor: (context: any) => context.raw >= 0 ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)',
+                                        borderRadius: 8
+                                    }]
+                                }} 
+                                options={{
+                                    ...commonOptions, 
+                                    plugins: {
+                                        ...commonOptions.plugins,
+                                        tooltip: {
+                                            ...commonOptions.plugins.tooltip,
+                                            callbacks: {
+                                                label: (context: any) => `${context.dataset.label}: ${formatAmount(context.parsed.y)}`
+                                            }
+                                        }
+                                    },
+                                    scales: { 
+                                        y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 }, callback: (v: any) => displayInVES ? `${v/1000}k` : `$${v}` } },
+                                        x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 } } }
+                                    } 
+                                }} />
+                          </div>
+                      </div>
+                )}
+                {showCatTrendC && (
+                      <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('topSpendingCategories')}</h3>
+                            <button 
+                                onClick={() => {
+                                    setShowCatTrendC(false);
+                                    localStorage.setItem("analysis_show_cat_trend", "false");
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
+                            >
+                                <X size={14} />
+                            </button>
+                          </div>
+                          <div className="h-48">
+                              <Bar 
+                                  data={{
+                                      labels: sortedCategories.map(c => t(c.name)),
+                                      datasets: [{
+                                          label: t('amount'),
+                                          data: sortedCategories.map(c => c.total),
+                                          backgroundColor: sortedCategories.map(c => {
+                                              const hex = tailwindToHex(c.color);
+                                              return hex + 'B3'; // 70% opacity
+                                          }),
+                                          borderRadius: 8,
+                                          barThickness: 25
+                                      }]
+                                  }}
+                                  options={{
+                                      ...commonOptions,
+                                      plugins: {
+                                          ...commonOptions.plugins,
+                                          tooltip: {
+                                              ...commonOptions.plugins.tooltip,
+                                              callbacks: {
+                                                  label: (context: any) => `${context.label}: ${formatAmount(context.parsed.y)}`
+                                              }
+                                          }
+                                      },
+                                      scales: {
+                                          y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 9 }, callback: (v: any) => displayInVES ? `${v/1000}k` : `$${v}` } },
+                                          x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: '#71717a', font: { size: 9 }, maxRotation: 45, minRotation: 45 } }
+                                      }
+                                  }}
+                              />
+                          </div>
+                      </div>
+                )}
+                {showIncomeDistC && (
+                      <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('incomeDistribution')}</h3>
+                            <button 
+                                onClick={() => {
+                                    setShowIncomeDistC(false);
+                                    localStorage.setItem("analysis_show_income_dist", "false");
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
+                            >
+                                <X size={14} />
+                            </button>
+                          </div>
+                          <div className="h-48 flex justify-center">
+                              <div className="w-48 h-48">
+                                  <Doughnut 
+                                      data={{
+                                          labels: incomeCategories.map(c => t(c.name)),
+                                          datasets: [{
+                                              data: incomeCategories.map(c => c.total),
+                                              backgroundColor: incomeCategories.map(c => tailwindToHex(c.color) + 'CC'),
+                                              borderWidth: 0,
+                                              hoverOffset: 15
+                                          }]
+                                      }}
+                                      options={{
+                                          ...commonOptions,
+                                          cutout: '70%',
+                                          plugins: {
+                                              ...commonOptions.plugins,
+                                              tooltip: {
+                                                  ...commonOptions.plugins.tooltip,
+                                                  callbacks: {
+                                                      label: (context: any) => `${context.label}: ${formatAmount(context.raw)}`
+                                                  }
+                                              }
+                                          }
+                                      }}
+                                  />
+                              </div>
+                          </div>
+                      </div>
+                )}
+            </div>
+
+            {/* Money Leak Detector Section */}
+            <div className="mt-8 mb-8">
+                <div className="flex items-center gap-3 mb-6 px-1">
+                    <ShieldAlert size={20} className="text-theme-brand" />
+                    <h3 className="font-bold text-lg text-theme-primary">{t('leakDetector')}</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {leaks.length > 0 ? leaks.map((leak, idx) => (
+                        <div key={idx} className="bg-theme-surface p-5 rounded-3xl border border-white/5 hover:border-theme-brand/30 transition-all flex items-start gap-4 group">
+                            <div className={`p-3 rounded-2xl ${leak.type === 'overspend' ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400'} border border-white/5`}>
+                                {leak.type === 'overspend' ? <Zap size={20} /> : <AlertCircle size={20} />}
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-start mb-1">
+                                    <h4 className="font-bold text-theme-primary">{t(leak.category)}</h4>
+                                    <span className="font-mono text-sm font-bold text-rose-400">{formatAmount(leak.amount)}</span>
+                                </div>
+                                <p className="text-xs text-theme-secondary opacity-70 leading-relaxed font-bold uppercase tracking-tight">{leak.description}</p>
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="col-span-full py-8 px-6 bg-emerald-500/5 rounded-3xl border border-emerald-500/10 flex items-center gap-4">
+                             <TrendingUp size={24} className="text-emerald-400" />
+                             <div>
+                                 <p className="text-sm font-bold text-emerald-400">{t('noLeaksDetected')}</p>
+                                 <p className="text-xs text-theme-secondary">{t('healthySpendingDesc')}</p>
+                             </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="mb-6 flex justify-between items-center px-1 mt-6">
                 <h3 className="font-bold text-lg text-theme-primary">{t('upcomingSubscriptions')}</h3>
             </div>
             
             {/* Scheduled Payments List */}
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {scheduledPayments.length === 0 && (
                     <p className="text-theme-secondary text-sm ml-2">{t('noSubscriptions')}</p>
                 )}
@@ -361,62 +711,12 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                     );
                 })}
             </div>
-
-            {/* Extra Charts Section */}
-            <div className="flex flex-col gap-6 mt-6">
-                {showNetFlowC && (
-                    <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl">
-                          <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t('monthlyNetFlow')}</h3>
-                          <div className="h-48">
-                              <Line data={netFlowData} options={{...commonOptions, scales: { y: { display: true, ticks: { color: '#71717a'} } }}} />
-                          </div>
-                      </div>
-                )}
-                {showCatTrendC && (
-                      <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl">
-                          <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t('topSpendingCategories')}</h3>
-                          <div className="h-48">
-                              <Bar 
-                                  data={{
-                                      labels: sortedCategories.map(c => t(c.name)),
-                                      datasets: [{
-                                          data: sortedCategories.map(c => c.total),
-                                          backgroundColor: sortedCategories.map(c => tailwindToHex(c.color)),
-                                          borderRadius: 6
-                                      }]
-                                  }}
-                                  options={commonOptions}
-                              />
-                          </div>
-                      </div>
-                )}
-                {showIncomeDistC && (
-                      <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl">
-                          <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t('incomeDistribution')}</h3>
-                          <div className="h-48 flex justify-center">
-                              <div className="w-48 h-48">
-                                  <Doughnut 
-                                      data={{
-                                          labels: incomeCategories.map(c => t(c.name)),
-                                          datasets: [{
-                                              data: incomeCategories.map(c => c.total),
-                                              backgroundColor: incomeCategories.map(c => tailwindToHex(c.color)),
-                                              borderWidth: 0
-                                          }]
-                                      }}
-                                      options={commonOptions}
-                                  />
-                              </div>
-                          </div>
-                      </div>
-                )}
-            </div>
           </>
       ) : (
           <div className="animate-in slide-in-from-right duration-300">
               <h2 className="text-2xl font-bold mb-6 text-theme-primary">{t('incomeSources')}</h2>
               
-              <div className="grid grid-cols-1 gap-4 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                   {incomeCategories.map(cat => (
                       <div key={cat.id} className="bg-theme-surface p-6 rounded-3xl border border-white/5 relative overflow-hidden group hover:scale-[1.02] transition-transform">
                           <div className={`absolute left-0 top-0 bottom-0 w-2 ${cat.color.replace('text-', 'bg-').split(' ')[0] || 'bg-theme-brand'}`} />
