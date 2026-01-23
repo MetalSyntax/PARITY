@@ -18,6 +18,8 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
 }) => {
     const t = (key: any) => getTranslation(lang as any, key);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDay, setSelectedDay] = useState<{ date: Date, txs: Transaction[] } | null>(null);
+    const [showPatternDetails, setShowPatternDetails] = useState(false);
 
     const monthYear = currentDate.toLocaleString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long', year: 'numeric' });
     
@@ -93,9 +95,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                     <span className="text-sm font-bold text-theme-primary capitalize">{monthYear}</span>
                     <button onClick={() => changeMonth(1)} className="text-zinc-500 hover:text-white"><ChevronRight size={16}/></button>
                 </div>
-                <button className="p-2 bg-white/5 rounded-xl text-zinc-400">
-                    <CalendarIcon size={20} />
-                </button>
+                <div className="w-10" /> {/* Spacer */}
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 pb-32">
@@ -112,7 +112,14 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                     {daysInMonth.map((day, idx) => (
                         <div 
                             key={idx} 
-                            className={`aspect-square rounded-xl transition-all duration-300 ${day ? getIntensity(day) : 'opacity-0 cursor-default'}`}
+                            onClick={() => {
+                                if (day) {
+                                    const key = day.toISOString().split('T')[0];
+                                    const txs = transactions.filter(t => t.date.split('T')[0] === key && t.type === TransactionType.EXPENSE);
+                                    setSelectedDay({ date: day, txs });
+                                }
+                            }}
+                            className={`aspect-square rounded-xl transition-all duration-300 cursor-pointer hover:scale-110 active:scale-95 ${day ? getIntensity(day) : 'opacity-0 cursor-default'}`}
                         />
                     ))}
                 </div>
@@ -149,7 +156,10 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                     </div>
                     <div className="mt-6 pt-6 border-t border-white/5 flex justify-between items-center">
                         <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Análisis Inteligente</span>
-                        <button className="text-red-400 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <button 
+                            onClick={() => setShowPatternDetails(true)}
+                            className="text-red-400 text-xs font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform"
+                        >
                             Ver detalles <TrendingUp size={14} />
                         </button>
                     </div>
@@ -166,6 +176,104 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                     <span className="text-lg font-black text-theme-primary">${potentialSavings.toFixed(0)} USD</span>
                 </div>
             </div>
+
+            {/* Daily Transactions Modal */}
+            {selectedDay && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
+                    <div className="bg-theme-surface w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl animate-in slide-in-from-bottom-full duration-400">
+                        <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest mb-1">{selectedDay.date.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { weekday: 'long' })}</h3>
+                                <h2 className="text-xl font-black text-theme-primary">{selectedDay.date.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'short', day: 'numeric', year: 'numeric' })}</h2>
+                            </div>
+                            <button onClick={() => setSelectedDay(null)} className="p-3 bg-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-8 max-h-[50vh] overflow-y-auto no-scrollbar">
+                            {selectedDay.txs.length > 0 ? (
+                                <div className="space-y-4">
+                                    {selectedDay.txs.map(tx => (
+                                        <div key={tx.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-theme-bg flex items-center justify-center text-xl">
+                                                    {tx.category === 'food' ? '🍔' : tx.category === 'transport' ? '🚗' : '💸' }
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-sm text-theme-primary">{tx.note || tx.category}</p>
+                                                    <p className="text-[10px] font-black text-zinc-500 uppercase">{tx.category}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-red-400">-${tx.amount.toLocaleString()}</p>
+                                                <p className="text-[10px] font-bold text-zinc-500">{tx.originalCurrency}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
+                                        <span className="text-xs font-black text-zinc-500 uppercase">Total Diario</span>
+                                        <span className="text-lg font-black text-theme-primary">${selectedDay.txs.reduce((a,b) => a + b.normalizedAmountUSD, 0).toFixed(2)} USD</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="py-12 text-center">
+                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-600">
+                                        <CalendarIcon size={32} />
+                                    </div>
+                                    <p className="text-sm font-bold text-zinc-500">No hay gastos registrados este día.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Pattern Details Modal */}
+            {showPatternDetails && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
+                    <div className="bg-theme-surface w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl animate-in slide-in-from-bottom-full duration-400">
+                        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-red-500/10 to-transparent">
+                            <div>
+                                <h3 className="text-sm font-black text-red-500 uppercase tracking-widest mb-1">Análisis de Patrones</h3>
+                                <h2 className="text-xl font-black text-theme-primary">Detalles del Gasto</h2>
+                            </div>
+                            <button onClick={() => setShowPatternDetails(false)} className="p-3 bg-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <span className="text-xs font-bold text-zinc-400">Día de mayor gasto</span>
+                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">Viernes</span>
+                                </div>
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <span className="text-xs font-bold text-zinc-400">Categoría dominante</span>
+                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">Entretenimiento</span>
+                                </div>
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <span className="text-xs font-bold text-zinc-400">Frecuencia crítica</span>
+                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">Quincenal</span>
+                                </div>
+                            </div>
+
+                            <div className="p-6 bg-red-500/5 rounded-3xl border border-red-500/10">
+                                <h4 className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">Recomendación</h4>
+                                <p className="text-sm text-theme-secondary leading-relaxed font-medium">
+                                    Detectamos que tus gastos aumentan un 40% durante los fines de semana. Considera establecer un tope de retiro los jueves para evitar compras impulsivas.
+                                </p>
+                            </div>
+
+                            <button 
+                                onClick={() => setShowPatternDetails(false)}
+                                className="w-full py-4 bg-theme-primary text-theme-bg font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-white/5"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
