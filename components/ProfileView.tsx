@@ -112,7 +112,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 bg-theme-bg">
+    <div className="h-full flex flex-col p-6 mb-20 animate-in slide-in-from-right duration-300 bg-theme-bg">
       <div className="flex items-center gap-4 mb-8">
         <button onClick={onBack} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
         <h1 className="text-xl font-bold text-theme-primary">{t('profile')}</h1>
@@ -187,7 +187,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         {/* Google Drive Sync */}
         <div className="bg-theme-surface border border-white/5 rounded-2xl p-6 mt-4 relative overflow-hidden">
             <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
-                ☁️ {t('cloudSync')}
+              {t('cloudSync')}
             </h3>
             
             <div className="flex flex-col gap-3">
