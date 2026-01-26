@@ -779,7 +779,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
 
                 {id === "expenses" && showExpenseStructure && (
-                  <div className="bg-theme-surface p-8 rounded-[2rem] border border-white/5 shadow-xl group overflow-hidden relative">
+                  <div className="bg-theme-surface p-8 rounded-[2rem] border border-white/5 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-500 overflow-hidden relative">
                     <div className="flex justify-between items-start mb-8 relative z-10">
                       <div>
                         <div className="flex items-center gap-4 mb-1">
@@ -792,7 +792,114 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <button onClick={() => setExpenseChartType('BAR')} className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${expenseChartType === 'BAR' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('bar')}</button>
                           </div>
                         </div>
-                        <h2 className="text-2xl font-black text-theme-primary">{isBalanceVisible ? `$${expenseSummary.totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "******"}</h2>
+                        <h2 className="text-2xl font-black text-theme-primary">
+                          {isBalanceVisible ? (
+                            <>
+                              {`$${expenseSummary.totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                              <span className="text-sm font-normal text-theme-secondary ml-2">
+                                / {(expenseSummary.totalUSD * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })} Bs.
+                              </span>
+                            </>
+                          ) : "******"}
+                          <span className="text-xs text-theme-secondary ml-2 font-bold uppercase tracking-widest opacity-40">{t("totalExpenses")}</span>
+                        </h2>
+                      </div>
+                      <button onClick={() => onNavigate("ANALYSIS")} className="bg-white/5 p-2 rounded-xl text-theme-secondary hover:text-theme-brand transition-all border border-white/5">
+                        <ArrowUpRight size={18} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                      <div className="flex justify-center relative group h-48 w-48 mx-auto xl:mx-0">
+                        {expenseChartType === 'DOUGHNUT' ? (
+                          <Doughnut 
+                            data={{
+                              labels: expenseSummary.structure.map(s => t(s.name)),
+                              datasets: [{
+                                data: expenseSummary.structure.map(s => formatChartValue(s.amount)),
+                                backgroundColor: expenseSummary.structure.map(s => {
+                                  const baseColor = tailwindToHex(s.color);
+                                  return (selectedCategory && selectedCategory !== s.id) ? baseColor + '40' : baseColor;
+                                }),
+                                borderWidth: 0,
+                                hoverOffset: 10
+                              }]
+                            }}
+                            options={{
+                              ...commonOptions,
+                              cutout: '80%',
+                              onClick: (_, elements) => {
+                                if (elements.length > 0) {
+                                  const index = elements[0].index;
+                                  const catId = expenseSummary.structure[index].id;
+                                  setSelectedCategory(prev => prev === catId ? null : catId);
+                                } else {
+                                  setSelectedCategory(null);
+                                }
+                              },
+                              plugins: {
+                                ...commonOptions.plugins,
+                                tooltip: {
+                                  ...commonOptions.plugins.tooltip,
+                                  callbacks: {
+                                    label: (context: any) => `${context.label}: ${symbolMain}${context.raw.toLocaleString()}`
+                                  }
+                                }
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Bar 
+                            data={{
+                                labels: expenseSummary.structure.slice(0, 5).map(s => t(s.name)),
+                                datasets: [{
+                                    data: expenseSummary.structure.slice(0, 5).map(s => formatChartValue(s.amount)),
+                                    backgroundColor: expenseSummary.structure.slice(0, 5).map(s => tailwindToHex(s.color)),
+                                    borderRadius: 6,
+                                }]
+                            }}
+                            options={{
+                                ...commonOptions,
+                                indexAxis: 'y' as const,
+                                plugins: {
+                                    ...commonOptions.plugins,
+                                    tooltip: {
+                                        ...commonOptions.plugins.tooltip,
+                                        callbacks: { label: (context: any) => `${context.label}: ${symbolMain}${context.parsed.x.toLocaleString()}` }
+                                    }
+                                },
+                                scales: {
+                                    x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } },
+                                    y: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#e4e4e7", font: { size: 10 } } }
+                                }
+                            }}
+                          />
+                        )}
+                        {expenseChartType === 'DOUGHNUT' && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <div className="text-center">
+                              <p className="text-xs font-black text-theme-secondary uppercase tracking-widest opacity-40">{t("topSpend")}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        {expenseSummary.structure.slice(0, 4).map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => setSelectedCategory(selectedCategory === item.id ? null : item.id)}
+                            className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${selectedCategory === item.id ? 'bg-theme-bg border-theme-brand shadow-lg ' + item.color : 'bg-white/5 border-white/5 hover:border-white/10 text-theme-secondary'}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-xl ${item.bg} bg-opacity-20 flex items-center justify-center ${item.color}`}>{item.icon}</div>
+                              <span className="text-xs font-bold truncate max-w-[80px]">{t(item.name)}</span>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs font-black text-theme-primary">{isBalanceVisible ? `$${item.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "******"}</p>
+                              <p className="text-[9px] font-bold opacity-40">{item.percent.toFixed(1)}%</p>
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -825,40 +932,240 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {id === "transactions" && (
                   <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-white/5 min-h-[500px]">
                     <h2 className="text-sm font-semibold text-theme-secondary mb-6 px-2 md:px-0 uppercase tracking-wider">{t("recentTransactions")}</h2>
-                    <div className="flex flex-col gap-6">
-                      {transactions.length > 0 ? (
-                        /* Use original logic here but simplified for space */
-                        <p className="text-theme-secondary text-xs text-center">{t('viewDetails')}</p>
-                      ) : (
-                        <div className="text-center py-20 text-theme-secondary text-sm">{t("noTransactions")}</div>
-                      )}
-                    </div>
+                    {transactions.length === 0 ? (
+                      <div className="text-center py-20 text-theme-secondary text-sm">{t("noTransactions")}</div>
+                    ) : (
+                      <div className="flex flex-col gap-6">
+                        {(() => {
+                          let count = 0;
+                          const MAX_ITEMS = 5;
+                          const sortedDates = Object.keys(groupedTransactions).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+                          return (
+                            <>
+                              {sortedDates.map(date => {
+                                if (count >= MAX_ITEMS) return null;
+                                const dayTransactions = groupedTransactions[date].sort((a,b) => (b.id || '').localeCompare(a.id || ''));
+                                const itemsToRender = [];
+                                for (const t of dayTransactions) {
+                                  if (count < MAX_ITEMS) { itemsToRender.push(t); count++; }
+                                }
+                                if (itemsToRender.length === 0) return null;
+                                return (
+                                  <div key={date}>
+                                    <h3 className="text-xs font-bold text-zinc-500 sticky top-0 bg-background/95 backdrop-blur-sm md:bg-transparent py-2 px-2 z-10">
+                                      {(() => {
+                                        const dateObj = new Date(`${date}T12:00:00`);
+                                        const todayStr = new Date().toISOString().split('T')[0];
+                                        return date === todayStr ? t('today') : dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                                      })()}
+                                    </h3>
+                                    <div className="flex flex-col gap-2 mt-1">
+                                      {itemsToRender.map(transaction => {
+                                        const category = CATEGORIES.find(c => c.id === transaction.category) || CATEGORIES[0];
+                                        const isExpense = transaction.type === TransactionType.EXPENSE;
+                                        const isTransfer = transaction.type === TransactionType.TRANSFER;
+                                        const isOriginalUSD = transaction.originalCurrency === Currency.USD;
+                                        const mainAmount = transaction.amount;
+                                        const mainSymbol = isOriginalUSD ? '$' : 'Bs.';
+                                        const secondaryAmount = isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount / transaction.exchangeRate;
+                                        const secondarySymbol = isOriginalUSD ? 'Bs.' : '$';
+                                        
+                                        const fromAcc = accounts.find(a => a.id === transaction.accountId);
+                                        const toAcc = accounts.find(a => a.id === transaction.toAccountId);
+
+                                        return (
+                                          <div key={transaction.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group relative pr-14 bg-theme-surface">
+                                            <div className="flex items-center gap-4">
+                                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isTransfer ? 'bg-indigo-500/20 text-indigo-400' : category.color + ' bg-opacity-20'}`}>
+                                                {isTransfer ? <ArrowRightLeft size={16} /> : category.icon}
+                                              </div>
+                                              <div>
+                                                <p className="font-medium text-sm text-theme-primary">{isTransfer ? `${fromAcc?.name} → ${toAcc?.name}` : transaction.note || t(category.name)}</p>
+                                                <p className="text-xs text-theme-secondary capitalize">{isTransfer ? t('transfer') : t(category.name.toLowerCase()) || category.name}</p>
+                                              </div>
+                                            </div>
+                                            <div className="text-right">
+                                              <p className={`font-bold text-sm ${isTransfer ? 'text-indigo-400' : isExpense ? 'text-theme-primary' : 'text-emerald-400'}`}>
+                                                {isTransfer ? '' : isExpense ? '-' : '+'}{mainSymbol}{isBalanceVisible ? mainAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
+                                              </p>
+                                              <p className="text-xs text-theme-secondary font-mono group-hover:text-theme-primary transition-colors">
+                                                ~{secondarySymbol} {isBalanceVisible ? secondaryAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
+                                              </p>
+                                            </div>
+                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-white/5">
+                                              <button onClick={(e) => { e.stopPropagation(); onEditTransaction(transaction); }} className="p-2 hover:bg-white/10 rounded-lg text-blue-400">
+                                                <TrendingUp size={14} />
+                                              </button>
+                                              <button onClick={(e) => { e.stopPropagation(); onDeleteTransaction(transaction.id); }} className="p-2 hover:bg-white/10 rounded-lg text-red-500">
+                                                <Plus size={14} className="rotate-45" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              {transactions.length > 5 && (
+                                <button onClick={() => onNavigate('TRANSACTIONS')} className="w-full py-4 text-center text-sm font-bold text-theme-brand hover:text-theme-primary transition-colors border-t border-white/5 mt-2">{t('viewMore')}</button>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {id === "incomeVsExpense" && showIncomeVsExpense && (
-                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
-                    <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t("incomeVsExpenses")}</h3>
+                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("incomeVsExpenses")}</h3>
+                      <button 
+                          onClick={() => toggleWidget("incomeVs")}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
+                          title={t('hide')}
+                      >
+                          <X size={14} />
+                      </button>
+                    </div>
                     <div className="h-48">
-                      <Bar data={{ labels: [t("income"), t("expense")], datasets: [{ data: [100, 50], backgroundColor: ['rgba(52, 211, 153, 0.7)', 'rgba(248, 113, 113, 0.7)'], borderRadius: 12 }] }} options={commonOptions} />
+                      <Bar 
+                        data={{
+                          labels: [t("income"), t("expense"), t("netCashFlow")],
+                          datasets: [{
+                            data: [
+                              transactions.filter(t => t.type === TransactionType.INCOME).reduce((a,c) => a+formatChartValue(c.normalizedAmountUSD),0),
+                              transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((a,c) => a+formatChartValue(c.normalizedAmountUSD),0),
+                              transactions.reduce((a,c) => a + (c.type === TransactionType.INCOME ? formatChartValue(c.normalizedAmountUSD) : -formatChartValue(c.normalizedAmountUSD)), 0)
+                            ],
+                            backgroundColor: ['rgba(52, 211, 153, 0.7)', 'rgba(248, 113, 113, 0.7)', 'rgba(96, 165, 250, 0.7)'],
+                            borderRadius: 12,
+                            barThickness: 30,
+                          }]
+                        }} 
+                        options={{
+                          ...commonOptions,
+                          plugins: {
+                              ...commonOptions.plugins,
+                              tooltip: {
+                                  ...commonOptions.plugins.tooltip,
+                                  callbacks: { label: (context: any) => `${context.label}: ${symbolMain}${context.raw.toLocaleString()}` }
+                              }
+                          },
+                          scales: {
+                              x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } },
+                              y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }
+                          }
+                        }} 
+                      />
                     </div>
                   </div>
                 )}
 
                 {id === "dailySpending" && showDailySpending && (
-                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
-                    <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t("dailySpending")}</h3>
+                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("dailySpending")}</h3>
+                      <button 
+                        onClick={() => toggleWidget("daily")}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
+                        title={t('hide')}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                     <div className="h-48">
-                      <Line data={{ labels: ['Mon', 'Tue'], datasets: [{ data: [10, 20], borderColor: "#fb923c", tension: 0.4 }] }} options={commonOptions} />
+                      <Line 
+                        data={{
+                          labels: Array.from({length: 7}, (_, i) => {
+                            const d = new Date();
+                            d.setDate(d.getDate() - (6-i));
+                            return d.toLocaleDateString(undefined, { weekday: 'short' });
+                          }),
+                          datasets: [{
+                            label: t('dailySpending'),
+                            data: Array.from({length: 7}, (_, i) => {
+                                const d = new Date();
+                                d.setDate(d.getDate() - (6-i));
+                                const dateStr = d.toISOString().split('T')[0];
+                                return transactions.filter(t => t.date.startsWith(dateStr) && t.type === TransactionType.EXPENSE).reduce((a,c) => a + formatChartValue(c.normalizedAmountUSD), 0);
+                            }),
+                            borderColor: "#fb923c",
+                            backgroundColor: (context) => {
+                                const ctx = context.chart.ctx;
+                                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                                gradient.addColorStop(0, "rgba(251,146,60, 0.3)");
+                                gradient.addColorStop(1, "rgba(251,146,60, 0)");
+                                return gradient;
+                            },
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: "#fb923c",
+                          }]
+                        }} 
+                        options={{
+                          ...commonOptions,
+                          plugins: {
+                              ...commonOptions.plugins,
+                              tooltip: {
+                                  ...commonOptions.plugins.tooltip,
+                                  callbacks: { label: (context: any) => `${context.dataset.label}: ${symbolMain}${context.raw.toLocaleString()}` }
+                              }
+                          },
+                          scales: {
+                              x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } },
+                              y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }
+                          }
+                        }} 
+                      />
                     </div>
                   </div>
                 )}
 
                 {id === "categoryBreakdown" && showCategoryBreakdown && (
-                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
-                    <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-4">{t("categoryBreakdown")}</h3>
+                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("categoryBreakdown")}</h3>
+                      <button 
+                        onClick={() => toggleWidget("category")}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
+                        title={t('hide')}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                     <div className="h-48">
-                      <Bar data={{ labels: ['Cat1'], datasets: [{ data: [30], backgroundColor: 'rgba(96, 165, 250, 0.7)' }] }} options={{ ...commonOptions, indexAxis: 'y' }} />
+                      <Bar 
+                        data={{
+                          labels: expenseSummary.structure.slice(0, 5).map(s => t(s.name)),
+                          datasets: [{
+                            data: expenseSummary.structure.slice(0, 5).map(s => formatChartValue(s.amount)),
+                            backgroundColor: (context: any) => {
+                                const idx = context.dataIndex;
+                                return tailwindToHex(expenseSummary.structure[idx].color) + 'CC';
+                            },
+                            borderRadius: 8,
+                          }]
+                        }} 
+                        options={{
+                          ...commonOptions,
+                          indexAxis: 'y' as const,
+                          plugins: {
+                              ...commonOptions.plugins,
+                              tooltip: {
+                                  ...commonOptions.plugins.tooltip,
+                                  callbacks: { label: (context: any) => `${context.label}: ${symbolMain}${context.raw.toLocaleString()}` }
+                              }
+                          },
+                          scales: {
+                              x: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } },
+                              y: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#e4e4e7", font: { size: 10 } } }
+                          }
+                        }} 
+                      />
                     </div>
                   </div>
                 )}

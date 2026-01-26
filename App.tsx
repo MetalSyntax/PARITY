@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Home, Target, User, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Wallet, Home, ChartArea, User, Calendar as CalendarIcon } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { AddTransaction } from './components/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
@@ -596,7 +596,7 @@ function AppContent() {
               onClick={() => setCurrentView('ANALYSIS')}
               className={`p-3 transition-colors ${currentView === 'ANALYSIS' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
             >
-              <Target size={24} />
+              <ChartArea size={24} />
             </button>
             <button
               onClick={() => setCurrentView('PROFILE')}
