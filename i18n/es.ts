@@ -256,4 +256,9 @@ export const es = {
     pie: 'Pastel',
     currency_perf: 'Rendimiento de la Moneda',
     heatmap: 'Mapa de Calor',
+    overspending: 'Gasto excesivo',
+    ofIncomeGoesHere: 'de tus ingresos van aquí.',
+    minorLeakage: 'Pequeña fuga',
+    smallExpensesWarning: 'gastos pequeños acumulados silenciosamente.',
+    visualSettings: 'Ajustes Visuales',
 };

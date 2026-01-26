@@ -402,7 +402,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     {accounts.length === 0 && (
                         <div className="text-center py-16 px-8 border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center gap-6 bg-theme-surface/20">
                             <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-4xl shadow-xl border border-white/5 animate-bounce">
-                                💳
+                                <Wallet size={24} className="text-theme-secondary" />
                             </div>
                             <div>
                                 <h3 className="text-theme-primary font-black text-xl mb-2">{t('noWallets')}</h3>
