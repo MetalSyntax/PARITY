@@ -58,6 +58,30 @@ function AppContent() {
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: '', language: 'en' });
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState(false);
+  const [isDevMode, setIsDevMode] = useState(() => {
+    const saved = localStorage.getItem("isDevMode");
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+
+  const [devModeClicks, setDevModeClicks] = useState(0);
+  const [lastClickTime, setLastClickTime] = useState(0);
+
+  const handleDevModeTrigger = () => {
+    const now = Date.now();
+    if (now - lastClickTime < 1000) {
+      const newCount = devModeClicks + 1;
+      setDevModeClicks(newCount);
+      if (newCount >= 10) {
+        const newState = !isDevMode;
+        setIsDevMode(newState);
+        localStorage.setItem("isDevMode", JSON.stringify(newState));
+        setDevModeClicks(0);
+      }
+    } else {
+      setDevModeClicks(1);
+    }
+    setLastClickTime(now);
+  };
 
   // Popup Alert State
   const [alertConfig, setAlertConfig] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -407,6 +431,7 @@ function AppContent() {
             onStartFresh={handleStartFresh}
             onSyncFromCloud={handleOnboardingCloudSync}
             isSyncing={isSyncing}
+            isDevMode={isDevMode}
           />
       );
   }
@@ -448,6 +473,8 @@ function AppContent() {
               onToggleBottomNav={setIsNavVisible}
               isBalanceVisible={isBalanceVisible}
               setIsBalanceVisible={setIsBalanceVisible}
+              isDevMode={isDevMode}
+              onDevModeTrigger={handleDevModeTrigger}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -528,6 +555,8 @@ function AppContent() {
               onLogin={handleLogin}
               onExport={exportToCloud}
               onImport={importFromCloud}
+              isDevMode={isDevMode}
+              onDevModeTrigger={handleDevModeTrigger}
             />
           )}
           {currentView === 'TRANSACTIONS' && (

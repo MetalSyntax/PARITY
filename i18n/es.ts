@@ -261,4 +261,7 @@ export const es = {
     minorLeakage: 'Pequeña fuga',
     smallExpensesWarning: 'gastos pequeños acumulados silenciosamente.',
     visualSettings: 'Ajustes Visuales',
+    expenses: 'Gastos',
+    devMode: 'Modo Desarrollador',
+    experimentalFeature: 'Característica experimental limitada',
 };

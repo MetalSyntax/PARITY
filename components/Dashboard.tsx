@@ -186,6 +186,8 @@ interface DashboardProps {
   isBalanceVisible: boolean;
   setIsBalanceVisible: (visible: boolean) => void;
   onDeleteTransaction: (id: string) => void;
+  isDevMode: boolean;
+  onDevModeTrigger: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -200,6 +202,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onToggleBottomNav,
   isBalanceVisible,
   setIsBalanceVisible,
+  isDevMode,
+  onDevModeTrigger,
 }) => {
   const [primaryCurrency, setPrimaryCurrency] = useState<Currency>(
     Currency.USD,
@@ -249,6 +253,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const saved = localStorage.getItem("dash_right_order");
     return saved ? JSON.parse(saved) : ["transactions", "incomeVsExpense", "dailySpending", "categoryBreakdown"];
   });
+
+  const [touchedWidget, setTouchedWidget] = useState<string | null>(null);
 
   const leftControls = leftOrder.map(() => useDragControls());
   const rightControls = rightOrder.map(() => useDragControls());
@@ -598,17 +604,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="flex-1 overflow-y-auto no-scrollbar pb-32 w-full max-w-7xl mx-auto md:px-8">
         <div className="flex justify-between items-center px-6 md:px-0 pt-12 pb-4 flex-shrink-0">
           <div className="flex items-center gap-4">
-            <div
-              className="flex wrap items-center gap-3 cursor-pointer group"
-              onClick={() => onNavigate("PROFILE")}
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-theme-brand to-purple-500 border border-white/20 flex items-center justify-center text-sm font-bold text-white shadow-lg group-hover:scale-105 transition-transform">
+            <div className="flex wrap items-center gap-3 group relative">
+              <div 
+                onClick={onDevModeTrigger}
+                className="w-10 h-10 rounded-full bg-gradient-to-tr from-theme-brand to-purple-500 border border-white/20 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-pointer hover:scale-105 transition-transform"
+              >
                 {userProfile.name.slice(0, 2).toUpperCase()}
               </div>
-              <div>
-                <p className="text-[10px] text-theme-secondary uppercase tracking-widest font-bold">
-                  {t("welcome")}
-                </p>
+              <div
+                className="cursor-pointer"
+                onClick={() => onNavigate("PROFILE")}
+              >
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-theme-secondary uppercase tracking-widest font-bold">
+                    {t("welcome")}
+                  </p>
+                  {isDevMode && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-theme-brand/20 border border-theme-brand/30 text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
+                      {t('devMode')}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm font-black text-theme-primary">
                   {userProfile.name}
                 </p>
@@ -650,13 +666,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 value={id}
                 dragListener={false}
                 dragControls={leftControls[index]}
-                className="relative group"
+                className="relative group focus:outline-none"
+                onClick={() => {
+                  if (window.matchMedia("(max-width: 768px)").matches) {
+                    setTouchedWidget(touchedWidget === id ? null : id);
+                  }
+                }}
               >
                 <div 
                   onPointerDown={(e) => leftControls[index].start(e)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2 bg-theme-bg/80 rounded-lg border border-white/10 text-theme-secondary hidden md:flex"
+                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
-                  <GripVertical size={16} />
+                  <GripVertical size={20} />
                 </div>
                 {id === "balanceCard" && (
                   <div className="px-4 md:px-0">
@@ -920,13 +941,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 value={id}
                 dragListener={false}
                 dragControls={rightControls[index]}
-                className="relative group"
+                className="relative group focus:outline-none"
+                onClick={() => {
+                  if (window.matchMedia("(max-width: 768px)").matches) {
+                    setTouchedWidget(touchedWidget === id ? null : id);
+                  }
+                }}
               >
                 <div 
                   onPointerDown={(e) => rightControls[index].start(e)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2 bg-theme-bg/80 rounded-lg border border-white/10 text-theme-secondary hidden md:flex"
+                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
-                  <GripVertical size={16} />
+                  <GripVertical size={20} />
                 </div>
 
                 {id === "transactions" && (

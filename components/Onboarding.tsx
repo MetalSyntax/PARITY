@@ -8,9 +8,10 @@ interface OnboardingProps {
     onStartFresh: () => void;
     onSyncFromCloud: () => void;
     isSyncing: boolean;
+    isDevMode: boolean;
 }
 
-export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSyncFromCloud, isSyncing }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSyncFromCloud, isSyncing, isDevMode }) => {
     const [step, setStep] = useState(0);
     const t = (key: any) => getTranslation(lang, key);
 
@@ -92,18 +93,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
                             >
                                 {t('startFromScratch')}
                             </button>
-                            <button 
-                                onClick={onSyncFromCloud}
-                                disabled={isSyncing}
-                                className={`w-full py-4 rounded-2xl font-black transition-all border-2 flex items-center justify-center gap-2 ${
-                                    isSyncing 
-                                    ? 'bg-theme-brand/10 border-theme-brand/50 text-theme-brand animate-pulse' 
-                                    : 'bg-white/5 border-white/10 text-theme-primary hover:bg-white/10 hover:border-white/20'
-                                }`}
-                            >
-                                <CloudDownload size={20} className="text-theme-brand" />
-                                {isSyncing ? t('fetching') : t('restoreFromCloudLong')}
-                            </button>
+                            {isDevMode && (
+                                <button 
+                                    onClick={onSyncFromCloud}
+                                    disabled={isSyncing}
+                                    className={`w-full py-4 rounded-2xl font-black transition-all border-2 flex items-center justify-center gap-2 ${
+                                        isSyncing 
+                                        ? 'bg-theme-brand/10 border-theme-brand/50 text-theme-brand animate-pulse' 
+                                        : 'bg-white/5 border-white/10 text-theme-primary hover:bg-white/10 hover:border-white/20'
+                                    }`}
+                                >
+                                    <CloudDownload size={20} className="text-theme-brand" />
+                                    {isSyncing ? t('fetching') : t('restoreFromCloudLong')}
+                                </button>
+                            )}
                         </>
                     )}
                 </div>

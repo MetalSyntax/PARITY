@@ -19,6 +19,8 @@ interface ProfileViewProps {
   onLogin: () => void;
   onExport: () => void;
   onImport: () => void;
+  isDevMode: boolean;
+  onDevModeTrigger: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -34,7 +36,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   isAuthenticated,
   onLogin,
   onExport,
-  onImport
+  onImport,
+  isDevMode,
+  onDevModeTrigger
 }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
@@ -119,8 +123,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       <div className="flex flex-col items-center mb-8">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-theme-brand to-purple-500 flex items-center justify-center text-4xl font-bold mb-4 text-white">
+        <div 
+          onClick={onDevModeTrigger}
+          className="w-24 h-24 rounded-full bg-gradient-to-tr from-theme-brand to-purple-500 flex items-center justify-center text-4xl font-bold mb-4 text-white hover:scale-105 transition-transform cursor-pointer relative"
+        >
           {name.slice(0, 2).toUpperCase()}
+          {isDevMode && (
+            <div className="absolute -bottom-2 px-2 py-0.5 rounded-md bg-theme-brand border border-theme-brand text-[10px] font-black text-white uppercase tracking-tighter shadow-lg">
+              {t('devMode')}
+            </div>
+          )}
         </div>
       </div>
 
@@ -185,50 +197,55 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
         
         {/* Google Drive Sync */}
-        <div className="bg-theme-surface border border-white/5 rounded-2xl p-6 mt-4 relative overflow-hidden">
-            <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
-              {t('cloudSync')}
-            </h3>
-            
-            <div className="flex flex-col gap-3">
-                {!isAuthenticated ? (
-                    <button 
-                        onClick={onLogin}
-                        className="w-full py-3 rounded-xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors border border-white/5 flex items-center justify-center gap-2"
-                    >
-                        <span>{t('cloudConnect')}</span>
-                    </button>
-                ) : (
-                    <>
-                        <button 
-                            onClick={onExport}
-                            disabled={isSyncing}
-                            className={`w-full py-3 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
-                                isSyncing 
-                                ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand animate-pulse' 
-                                : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
-                            }`}
-                        >
-                            {isSyncing ? t('processing') : t('cloudExport')}
-                        </button>
-                        <button 
-                            onClick={onImport}
-                            disabled={isSyncing}
-                            className={`w-full py-3 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
-                                isSyncing 
-                                ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand animate-pulse' 
-                                : 'bg-blue-500/10 border-blue-500/50 text-blue-400 hover:bg-blue-500/20'
-                            }`}
-                        >
-                            {isSyncing ? t('processing') : t('cloudImport')}
-                        </button>
-                    </>
-                )}
-                <p className="text-[10px] text-zinc-500 text-center uppercase tracking-wider">
-                    {isAuthenticated ? t('cloudConnected') : t('cloudBackupDesc')}
-                </p>
-            </div>
-        </div>
+        {isDevMode && (
+          <div className="bg-theme-surface border border-theme-brand/30 rounded-2xl p-6 mt-4 relative overflow-hidden ring-1 ring-theme-brand/20">
+              <div className="absolute top-0 right-0 px-3 py-1 bg-theme-brand text-[8px] font-black text-white uppercase tracking-widest rounded-bl-xl">
+                 {t('experimentalFeature')}
+              </div>
+              <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
+                {t('cloudSync')}
+              </h3>
+              
+              <div className="flex flex-col gap-3">
+                  {!isAuthenticated ? (
+                      <button 
+                          onClick={onLogin}
+                          className="w-full py-3 rounded-xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors border border-white/5 flex items-center justify-center gap-2"
+                      >
+                          <span>{t('cloudConnect')}</span>
+                      </button>
+                  ) : (
+                      <>
+                          <button 
+                              onClick={onExport}
+                              disabled={isSyncing}
+                              className={`w-full py-3 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                                  isSyncing 
+                                  ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand animate-pulse' 
+                                  : 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20'
+                              }`}
+                          >
+                              {isSyncing ? t('processing') : t('cloudExport')}
+                          </button>
+                          <button 
+                              onClick={onImport}
+                              disabled={isSyncing}
+                              className={`w-full py-3 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 ${
+                                  isSyncing 
+                                  ? 'bg-theme-brand/20 border-theme-brand/50 text-theme-brand animate-pulse' 
+                                  : 'bg-blue-500/10 border-blue-500/50 text-blue-400 hover:bg-blue-500/20'
+                              }`}
+                          >
+                              {isSyncing ? t('processing') : t('cloudImport')}
+                          </button>
+                      </>
+                  )}
+                  <p className="text-[10px] text-zinc-500 text-center uppercase tracking-wider">
+                      {isAuthenticated ? t('cloudConnected') : t('cloudBackupDesc')}
+                  </p>
+              </div>
+          </div>
+        )}
       </div>
 
       <button 

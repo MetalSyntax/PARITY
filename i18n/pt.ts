@@ -246,4 +246,7 @@ export const pt = {
     bar: 'Barras',
     line: 'Linhas',
     visualSettings: 'Ajustes Visuais',
+    expenses: 'Gastos',
+    devMode: 'Modo Desenvolvedor',
+    experimentalFeature: 'Recurso experimental limitado',
 };

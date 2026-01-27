@@ -260,4 +260,7 @@ export const en = {
     bar: 'Bars',
     line: 'Lines',
     visualSettings: 'Visual Settings',
+    expenses: 'Expenses',
+    devMode: 'Developer Mode',
+    experimentalFeature: 'Limited experimental feature',
 };

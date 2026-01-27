@@ -332,7 +332,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                         <div>
                                             <p className="text-emerald-400 font-bold text-lg leading-none mb-1">{isBalanceVisible ? `+$${income.amount.toLocaleString()}` : '******'}</p>
                                             <p className="text-[9px] text-theme-secondary font-bold uppercase tracking-tight">
-                                              {new Date(income.date.split('T')[0] + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} • {t(income.frequency.toLowerCase()) || income.frequency}
+                                              {new Date(income.date.split('T')[0] + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} • {t(income.frequency === 'Bi-weekly' ? 'biweekly' : income.frequency === 'One-Time' ? 'oneTime' : income.frequency.toLowerCase()) || income.frequency}
                                             </p>
                                         </div>
                                     </div>

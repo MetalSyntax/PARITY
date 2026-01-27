@@ -179,6 +179,8 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
     const saved = localStorage.getItem("analysis_show_net_flow");
     return saved !== null ? JSON.parse(saved) : false;
   });
+
+  const [touchedWidget, setTouchedWidget] = useState<string | null>(null);
   const [showCatTrendC, setShowCatTrendC] = useState(() => {
     const saved = localStorage.getItem("analysis_show_cat_trend");
     return saved !== null ? JSON.parse(saved) : false;
@@ -347,13 +349,18 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                 value={id}
                 dragListener={false}
                 dragControls={analysisControls[index]}
-                className="relative group"
+                className="relative group focus:outline-none"
+                onClick={() => {
+                  if (window.matchMedia("(max-width: 768px)").matches) {
+                    setTouchedWidget(touchedWidget === id ? null : id);
+                  }
+                }}
               >
                 <div 
                   onPointerDown={(e) => analysisControls[index].start(e)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2 bg-theme-bg/80 rounded-lg border border-white/10 text-theme-secondary hidden md:flex"
+                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
-                  <GripVertical size={16} />
+                  <GripVertical size={20} />
                 </div>
 
                 {id === "incomeVsExpenses" && showIncomeVsExpenseC && (
@@ -734,7 +741,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                                     </div>
                                     <div className="flex-1">
                                         <h4 className="font-bold text-sm text-theme-primary">{sub.name}</h4>
-                                        <p className="text-theme-secondary text-xs">{isBalanceVisible ? `$${sub.amount}` : '******'} / {sub.frequency}</p>
+                                        <p className="text-theme-secondary text-xs">{isBalanceVisible ? `$${sub.amount}` : '******'} / {t(sub.frequency === 'Bi-weekly' ? 'biweekly' : sub.frequency === 'One-Time' ? 'oneTime' : sub.frequency.toLowerCase()) || sub.frequency}</p>
                                     </div>
                                     <div className="text-right">
                                         <div className={`text-[10px] ${badgeColor} px-2 py-0.5 rounded-full mb-1 inline-block`}>
