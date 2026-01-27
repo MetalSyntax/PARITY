@@ -297,7 +297,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Get PIN from storage or default
-  const getStoredPin = () => localStorage.getItem("dualflow_pin") || "0000";
+  const getStoredPin = () => localStorage.getItem("parity_pin") || "0000";
 
   const t = (key: any) => getTranslation(userProfile.language, key);
 
@@ -554,7 +554,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           name: cat?.name || "Other",
           icon: cat?.icon,
           color: cat?.color || "text-gray-500",
-          bg: cat?.color.replace("text-", "bg-") || "bg-gray-500",
+          bg: cat?.color ? cat.color.replace("text-", "bg-") : "bg-gray-500",
           amount,
           percent: totalUSD > 0 ? ((amount as number) / totalUSD) * 100 : 0,
         };
@@ -679,6 +679,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <GripVertical size={20} />
                 </div>
+                <button 
+                  onClick={() => setShowCustomizer(true)}
+                  className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                >
+                  <Settings size={20} />
+                </button>
                 {id === "balanceCard" && (
                   <div className="px-4 md:px-0">
                     <div className="bg-theme-surface rounded-[2.5rem] p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-2xl shadow-black/50 border border-white/5 bg-gradient-to-br from-theme-surface to-black/30 group">
@@ -743,7 +749,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <button onClick={() => setBalanceChartType('BAR')} className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${balanceChartType === 'BAR' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('bar')}</button>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold text-zinc-500 px-2 py-1 bg-white/5 rounded-lg">7D</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-zinc-500 px-2 py-1 bg-white/5 rounded-lg">7D</span>
+                        </div>
                       </div>
                       <div className="h-48 w-full">
                         {balanceChartType === 'LINE' ? (
@@ -954,6 +962,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <GripVertical size={20} />
                 </div>
+                <button 
+                  onClick={() => setShowCustomizer(true)}
+                  className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                >
+                  <Settings size={20} />
+                </button>
 
                 {id === "transactions" && (
                   <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-white/5 min-h-[500px]">
@@ -1048,13 +1062,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("incomeVsExpenses")}</h3>
-                      <button 
-                          onClick={() => toggleWidget("incomeVs")}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
-                          title={t('hide')}
-                      >
-                          <X size={14} />
-                      </button>
                     </div>
                     <div className="h-48">
                       <Bar 
@@ -1094,13 +1101,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("dailySpending")}</h3>
-                      <button 
-                        onClick={() => toggleWidget("daily")}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
-                        title={t('hide')}
-                      >
-                        <X size={14} />
-                      </button>
                     </div>
                     <div className="h-48">
                       <Line 
@@ -1155,13 +1155,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("categoryBreakdown")}</h3>
-                      <button 
-                        onClick={() => toggleWidget("category")}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
-                        title={t('hide')}
-                      >
-                        <X size={14} />
-                      </button>
                     </div>
                     <div className="h-48">
                       <Bar 
@@ -1169,10 +1162,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           labels: expenseSummary.structure.slice(0, 5).map(s => t(s.name)),
                           datasets: [{
                             data: expenseSummary.structure.slice(0, 5).map(s => formatChartValue(s.amount)),
-                            backgroundColor: (context: any) => {
-                                const idx = context.dataIndex;
-                                return tailwindToHex(expenseSummary.structure[idx].color) + 'CC';
-                            },
+                            backgroundColor: expenseSummary.structure.slice(0, 5).map(s => tailwindToHex(s.color) + 'CC'),
                             borderRadius: 8,
                           }]
                         }} 

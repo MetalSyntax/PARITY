@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search } from 'lucide-react';
 import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
 import { TransactionType, Currency, Account, Language, Transaction } from '../types';
 import { CATEGORIES, getSmartCategories } from '../constants';
@@ -59,6 +59,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [isListening, setIsListening] = useState(false);
   const [date, setDate] = useState(initialData ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
 
   const t = (key: any) => getTranslation(lang, key);
 
@@ -439,14 +440,46 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
        {showCategoryModal && (
         <div className="fixed inset-0 bg-theme-bg z-[60] flex flex-col animate-in slide-in-from-bottom duration-200">
             {/* Header */}
-            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-theme-surface">
-                <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory') || 'Select Category'}</h2>
-                <button onClick={() => setShowCategoryModal(false)} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><X size={20}/></button>
+            <div className="p-4 border-b border-white/5 bg-theme-surface">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory') || 'Select Category'}</h2>
+                    <button onClick={() => { setShowCategoryModal(false); setCategorySearch(''); }} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><X size={20}/></button>
+                </div>
+                {/* Search Bar */}
+                <div className="relative">
+                    <input 
+                        type="text"
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        placeholder={t('search') || 'Search...'}
+                        className="w-full bg-theme-bg border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-sm text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-brand transition-colors"
+                        autoFocus
+                    />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary" />
+                    {categorySearch && (
+                        <button 
+                            onClick={() => setCategorySearch('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-secondary hover:text-theme-primary"
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
+                </div>
             </div>
             
             <div className="overflow-y-auto p-4 flex-1">
                  <div className="flex flex-col gap-4 pb-10">
-                     {CATEGORIES.map(cat => {
+                     {CATEGORIES.filter(cat => {
+                         const translatedName = (t(cat.name) || cat.name).toLowerCase();
+                         const query = categorySearch.toLowerCase();
+                         if (translatedName.includes(query)) return true;
+                         
+                         const shortcuts = Object.entries(getSmartCategories(lang))
+                             .filter(([_, catId]) => catId === cat.id)
+                             .map(([key]) => key.toLowerCase());
+                         
+                         return shortcuts.some(s => s.includes(query));
+                     }).map(cat => {
                          const shortcuts = Object.entries(getSmartCategories(lang))
                              .filter(([_, catId]) => catId === cat.id)
                              .map(([key]) => key);
@@ -454,7 +487,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                          return (
                              <div key={cat.id} className="bg-theme-surface border border-white/5 rounded-2xl p-4">
                                  <button
-                                     onClick={() => { setCategoryId(cat.id); setShowCategoryModal(false); }}
+                                     onClick={() => { setCategoryId(cat.id); setShowCategoryModal(false); setCategorySearch(''); }}
                                      className={`w-full flex items-center gap-3 mb-3 p-2 rounded-xl transition-colors ${categoryId === cat.id ? 'bg-theme-brand/10 text-theme-brand' : 'hover:bg-white/5'}`}
                                  >
                                      <div className={`p-2 rounded-lg ${cat.color} bg-opacity-20`}>
@@ -475,6 +508,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                                      setCategoryId(cat.id); 
                                                      setNote(key.charAt(0).toUpperCase() + key.slice(1)); 
                                                      setShowCategoryModal(false); 
+                                                     setCategorySearch('');
                                                  }}
                                                  className="px-3 py-1.5 bg-theme-bg/50 border border-white/5 rounded-lg text-xs font-medium text-theme-secondary hover:bg-white/10 hover:text-theme-primary transition-colors capitalize"
                                              >

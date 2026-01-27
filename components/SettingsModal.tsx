@@ -12,9 +12,11 @@ interface SettingsModalProps {
   lang: Language;
   currentStorageType: StorageType;
   showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  autoLockEnabled: boolean;
+  onToggleAutoLock: (enabled: boolean) => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert, autoLockEnabled, onToggleAutoLock }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
   const [mode, setMode] = useState<'AUTO' | 'PARALLEL' | 'MANUAL'>('MANUAL');
@@ -61,7 +63,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
   };
 
   const handleChangePin = () => {
-      const currentStored = localStorage.getItem('dualflow_pin') || '0000';
+      const currentStored = localStorage.getItem('parity_pin') || '0000';
       if (oldPin !== currentStored) {
           showAlert('alert_incorrectPin', 'error');
           return;
@@ -70,7 +72,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
           showAlert('alert_pinLengthError', 'error');
           return;
       }
-      localStorage.setItem('dualflow_pin', newPin);
+      localStorage.setItem('parity_pin', newPin);
       setShowPinChange(false);
       setOldPin('');
       setNewPin('');
@@ -159,13 +161,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
              </h3>
              
              {!showPinChange ? (
-                 <button onClick={() => setShowPinChange(true)} className="w-full text-left p-4 bg-white/5 border border-white/5 hover:bg-white/10 rounded-xl transition-colors flex justify-between items-center group">
-                     <div>
-                         <p className="font-bold text-sm text-theme-primary">{t('changePin')}</p>
-                         <p className="text-xs text-theme-secondary">{t('currentPinLabel')}</p>
-                     </div>
-                     <span className="text-xs font-bold text-theme-brand group-hover:underline">{t('edit')}</span>
-                 </button>
+                  <div className="space-y-3">
+                      <button onClick={() => setShowPinChange(true)} className="w-full text-left p-4 bg-white/5 border border-white/5 hover:bg-white/10 rounded-xl transition-colors flex justify-between items-center group">
+                          <div>
+                              <p className="font-bold text-sm text-theme-primary">{t('changePin')}</p>
+                              <p className="text-xs text-theme-secondary">{t('currentPinLabel')}</p>
+                          </div>
+                          <span className="text-xs font-bold text-theme-brand group-hover:underline">{t('edit')}</span>
+                      </button>
+
+                      <div className="w-full p-4 bg-white/5 border border-white/5 rounded-xl transition-colors flex justify-between items-center">
+                          <div className="flex-1">
+                              <p className="font-bold text-sm text-theme-primary">{t('autoLock')}</p>
+                              <p className="text-[10px] leading-tight text-theme-secondary opacity-70 mt-1">{t('autoLockDesc')}</p>
+                          </div>
+                          <button
+                            onClick={() => onToggleAutoLock(!autoLockEnabled)}
+                            className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${autoLockEnabled ? "bg-theme-brand" : "bg-white/10"}`}
+                          >
+                            <div
+                                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${autoLockEnabled ? "left-7" : "left-1"}`}
+                            />
+                          </button>
+                      </div>
+                  </div>
              ) : (
                  <div className="bg-white/5 p-4 rounded-xl border border-white/5 animate-in fade-in">
                      <p className="font-bold text-sm text-theme-primary mb-3">{t('updatePin')}</p>

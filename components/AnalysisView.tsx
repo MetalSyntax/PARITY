@@ -362,6 +362,12 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                 >
                   <GripVertical size={20} />
                 </div>
+                <button 
+                  onClick={() => setShowAnalysisCustomizer(true)}
+                  className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                >
+                  <Settings size={20} />
+                </button>
 
                 {id === "incomeVsExpenses" && showIncomeVsExpenseC && (
                   <div className="bg-theme-surface rounded-3xl border border-white/10 p-6 relative transition-all">
@@ -544,15 +550,6 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                           <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
                                 <div className="flex justify-between items-center mb-4">
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('monthlyNetFlow')}</h3>
-                                  <button 
-                                      onClick={() => {
-                                          setShowNetFlowC(false);
-                                          localStorage.setItem("analysis_show_net_flow", "false");
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
-                                  >
-                                      <X size={14} />
-                                  </button>
                                 </div>
                                 <div className="h-48">
                                     <Bar 
@@ -593,15 +590,6 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                             <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
                                 <div className="flex justify-between items-center mb-4">
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('topSpendingCategories')}</h3>
-                                  <button 
-                                      onClick={() => {
-                                          setShowCatTrendC(false);
-                                          localStorage.setItem("analysis_show_cat_trend", "false");
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
-                                  >
-                                      <X size={14} />
-                                  </button>
                                 </div>
                                 <div className="h-48">
                                     <Bar 
@@ -642,15 +630,6 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
                             <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
                                 <div className="flex justify-between items-center mb-4">
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('incomeDistribution')}</h3>
-                                  <button 
-                                      onClick={() => {
-                                          setShowIncomeDistC(false);
-                                          localStorage.setItem("analysis_show_income_dist", "false");
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/5 rounded-lg text-zinc-500 transition-all"
-                                  >
-                                      <X size={14} />
-                                  </button>
                                 </div>
                                 <div className="h-48 flex justify-center">
                                     <div className="w-48 h-48">

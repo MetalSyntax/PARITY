@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Home, ChartArea, User, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { AddTransaction } from './components/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
@@ -25,7 +25,7 @@ import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-const STORAGE_KEY = 'dualflow_data_v3';
+const STORAGE_KEY = 'parity_data_v3';
 
 export default function App() {
   return (
@@ -65,6 +65,14 @@ function AppContent() {
 
   const [devModeClicks, setDevModeClicks] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
+
+  const [autoLockEnabled, setAutoLockEnabled] = useState(() => {
+    const saved = localStorage.getItem("autoLockEnabled");
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+  const [isAppLocked, setIsAppLocked] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
 
   const handleDevModeTrigger = () => {
     const now = Date.now();
@@ -161,6 +169,49 @@ function AppContent() {
     };
     load();
   }, [storageType]);
+
+  // PIN Lock initialization
+  useEffect(() => {
+    if (isLoaded && autoLockEnabled) {
+      setIsAppLocked(true);
+    }
+  }, [isLoaded, autoLockEnabled]);
+
+  // PIN Lock on Resume
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && autoLockEnabled) {
+        setIsAppLocked(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [autoLockEnabled]);
+
+  const handleToggleAutoLock = (enabled: boolean) => {
+    setAutoLockEnabled(enabled);
+    localStorage.setItem("autoLockEnabled", JSON.stringify(enabled));
+  };
+
+  const handleUnlock = (digit: string) => {
+    const currentStored = localStorage.getItem('parity_pin') || '0000';
+    if (pinInput.length < 4) {
+      const newPin = pinInput + digit;
+      setPinInput(newPin);
+      if (newPin.length === 4) {
+        if (newPin === currentStored) {
+          setIsAppLocked(false);
+          setPinInput("");
+          setPinError(false);
+        } else {
+          setTimeout(() => {
+            setPinError(true);
+            setPinInput("");
+          }, 200);
+        }
+      }
+    }
+  };
 
   // Save logic
   useEffect(() => {
@@ -436,6 +487,58 @@ function AppContent() {
       );
   }
 
+  if (isAppLocked) {
+    return (
+      <div className="h-screen w-full bg-black/95 flex items-center justify-center p-6 backdrop-blur-md z-[200]">
+        <div className="w-full max-w-xs flex flex-col items-center gap-8 animate-in zoom-in-95 duration-300">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-16 h-16 rounded-2xl bg-theme-surface border border-white/10 flex items-center justify-center text-theme-brand shadow-2xl shadow-brand/20 mb-4">
+              <Lock className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-bold text-theme-primary text-center">
+              {t("verifyIdentity")}
+            </h2>
+            <p className="text-theme-secondary text-sm text-center">
+              {t("enterPin")}
+            </p>
+          </div>
+          <div className="flex gap-4 mb-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`w-4 h-4 rounded-full transition-all duration-300 ${i < pinInput.length ? (pinError ? "bg-red-500 scale-110" : "bg-theme-brand scale-110") : "bg-white/10"}`}
+              />
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-6 w-full px-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+              <button
+                key={num}
+                onClick={() => handleUnlock(num.toString())}
+                className="w-full aspect-square rounded-full bg-theme-surface/30 hover:bg-theme-surface border border-white/5 text-2xl font-semibold text-theme-primary transition-all active:scale-95 flex items-center justify-center"
+              >
+                {num}
+              </button>
+            ))}
+            <div />
+            <button
+              onClick={() => handleUnlock("0")}
+              className="w-full aspect-square rounded-full bg-theme-surface/30 hover:bg-theme-surface border border-white/5 text-2xl font-semibold text-theme-primary transition-all active:scale-95 flex items-center justify-center"
+            >
+              0
+            </button>
+            <button
+              onClick={() => setPinInput((prev) => prev.slice(0, -1))}
+              className="w-full aspect-square rounded-full flex items-center justify-center text-theme-secondary hover:text-white"
+            >
+              <div className="text-xs font-bold uppercase">{t("delete")}</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleConfirmScheduledPayment = (p: ScheduledPayment) => {
       setEditingTransaction({
           id: '',
@@ -657,6 +760,8 @@ function AppContent() {
             lang={userProfile.language}
             currentStorageType={storageType}
             showAlert={showAlert}
+            autoLockEnabled={autoLockEnabled}
+            onToggleAutoLock={handleToggleAutoLock}
           />
         )}
 

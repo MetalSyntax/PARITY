@@ -2,7 +2,7 @@
 import { Account, Transaction, ScheduledPayment, UserProfile, Budget, Goal } from '../types';
 import { encryptData, decryptData } from './crypto';
 
-export const DB_NAME = 'dualflow_db';
+export const DB_NAME = 'parity_db';
 export const DB_VERSION = 2; // Bump version for migration
 export const STORE_NAME = 'app_data';
 // We will deprecate single DATA_KEY for IDB and use separate keys

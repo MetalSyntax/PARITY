@@ -70,7 +70,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       });
 
       const csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + "\n" + rows.join('\n');
-      downloadFile(csvContent, `dualflow_transactions_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+      downloadFile(csvContent, `parity_transactions_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
   };
 
   const handleBackupJSON = () => {
@@ -87,7 +87,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       };
       
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
-      downloadFile(dataStr, `dualflow_backup_${new Date().toISOString().split('T')[0]}.json`, 'text/json');
+      downloadFile(dataStr, `parity_backup_${new Date().toISOString().split('T')[0]}.json`, 'text/json');
   };
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {
