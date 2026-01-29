@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign } from 'lucide-react';
 import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -13,6 +13,8 @@ interface ScheduledPaymentViewProps {
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
   exchangeRate: number;
+  displayInVES: boolean;
+  onToggleDisplayCurrency: () => void;
 }
 
 export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ 
@@ -23,7 +25,9 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   onConfirmPayment,
   onToggleBottomNav,
   showConfirm,
-  exchangeRate
+  exchangeRate,
+  displayInVES,
+  onToggleDisplayCurrency
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isAdding, setIsAdding] = useState(false);
@@ -266,9 +270,18 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               <p className="text-xs text-theme-secondary font-medium">{t('manageSubscriptions') || 'Manage repeating transfers'}</p>
             </div>
         </div>
-        <button onClick={() => setIsAdding(true)} className="w-12 h-12 bg-theme-brand rounded-2xl text-white shadow-lg shadow-brand/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
-          <Plus size={24} />
-        </button>
+        <div className="flex items-center gap-2">
+            <button 
+                onClick={onToggleDisplayCurrency}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+            >
+                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+            </button>
+            <button onClick={() => setIsAdding(true)} className="w-12 h-12 bg-theme-brand rounded-2xl text-white shadow-lg shadow-brand/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+            <Plus size={24} />
+            </button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-8">
@@ -280,7 +293,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {incomeSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} displayInVES={displayInVES} />
               ))}
               {incomeSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -298,7 +311,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {expenseSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} displayInVES={displayInVES} />
               ))}
               {expenseSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -326,11 +339,11 @@ interface ScheduledItemProps {
   t: (key: any) => any;
   onEdit: (p: ScheduledPayment) => void;
   onDelete: (id: string) => void;
-  onConfirm: (p: ScheduledPayment) => void;
   exchangeRate: number;
+  displayInVES: boolean;
 }
 
-const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate }) => {
+const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate, displayInVES }) => {
   const isIncome = p.type === TransactionType.INCOME;
   
   return (
@@ -356,10 +369,11 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
       <div className="text-right flex items-center gap-3">
           <div className="flex flex-col items-end">
             <span className={`font-black text-sm ${isIncome ? 'text-emerald-400' : 'text-theme-primary'}`}>
-              {isIncome ? '+' : '-'}${p.amount.toLocaleString()}
+              {displayInVES ? 'Bs.' : (p.currency === Currency.USD ? '$' : 'Bs.')}
+              {(displayInVES ? (p.currency === Currency.VES ? p.amount : p.amount * exchangeRate) : (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <span className="text-[10px] text-zinc-500 font-mono">
-              Bs. {(p.amount * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              ~{displayInVES ? '$' : 'Bs.'} {(displayInVES ? (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate) : (p.currency === Currency.USD ? p.amount * exchangeRate : p.amount)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </span>
             <span className="text-[9px] text-theme-secondary font-bold uppercase">{t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}</span>
           </div>

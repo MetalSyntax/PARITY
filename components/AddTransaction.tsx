@@ -1,5 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCcw, Image as ImageIcon } from 'lucide-react';
+
+declare global {
+  interface Window {
+    Tesseract: any;
+  }
+}
+const Tesseract = window.Tesseract;
 import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
 import { TransactionType, Currency, Account, Language, Transaction } from '../types';
 import { CATEGORIES, getSmartCategories } from '../constants';
@@ -60,13 +67,151 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [date, setDate] = useState(initialData ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
+  const [showScanOptions, setShowScanOptions] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const startScanner = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } 
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setShowScanner(true);
+      }
+    } catch (err) {
+      showAlert('Camera access denied', 'error');
+    }
+  };
+
+  const stopScanner = useCallback(() => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
+      videoRef.current.srcObject = null;
+    }
+    setShowScanner(false);
+    setIsScanning(false);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    stopScanner();
+    onClose();
+  }, [onClose, stopScanner]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showScanner) stopScanner();
+        else if (showCategoryModal) setShowCategoryModal(false);
+        else if (showAccountSelector) setShowAccountSelector(null);
+        else handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      stopScanner();
+    };
+  }, [handleClose, stopScanner, showScanner, showCategoryModal, showAccountSelector]);
+
+  const processImage = async (imageSource: CanvasImageSource | string) => {
+    setIsScanning(true);
+    try {
+      const { data: { text } } = await Tesseract.recognize(imageSource, 'eng+spa');
+      
+      const totalKeywords = ['total', 'neto', 'suma', 'amount', 'grand total', 'valor total', 'importe total', 'pago total', 'pagar'];
+      const lines = text.split('\n');
+      let foundAmount = null;
+
+      for (const line of lines) {
+          const lowerLine = line.toLowerCase();
+          if (totalKeywords.some(kw => lowerLine.includes(kw))) {
+              const amountRegex = /(\d+[.,]\d{2})/g;
+              const matches = line.match(amountRegex);
+              if (matches && matches.length > 0) {
+                  foundAmount = matches[matches.length - 1];
+                  break;
+              }
+          }
+      }
+
+      if (!foundAmount) {
+          const amountRegex = /(\d+[.,]\d{2})/g;
+          const allMatches = text.match(amountRegex);
+          if (allMatches) {
+              const numbers = allMatches.map(m => {
+                  const val = parseFloat(m.replace(',', '.'));
+                  return isNaN(val) ? 0 : val;
+              });
+              if (numbers.length > 0) {
+                foundAmount = Math.max(...numbers).toString();
+              }
+          }
+      }
+      
+      if (foundAmount) {
+        const cleanedAmount = foundAmount.replace(',', '.');
+        setAmountStr(cleanedAmount);
+        showAlert(`${t('totalFound') || 'Total found'}: ${cleanedAmount}`, 'success');
+        stopScanner();
+      } else {
+        showAlert(t('totalNotFound') || 'Total not found in the invoice image', 'info');
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert('OCR Scan failed', 'error');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const captureAndScan = async () => {
+    if (!videoRef.current || !canvasRef.current || isScanning) return;
+    
+    const context = canvasRef.current.getContext('2d');
+    if (!context) return;
+    
+    canvasRef.current.width = videoRef.current.videoWidth;
+    canvasRef.current.height = videoRef.current.videoHeight;
+    context.drawImage(videoRef.current, 0, 0);
+    
+    await processImage(canvasRef.current);
+  };
+
+  const handleGallerySelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        const imageData = event.target?.result as string;
+        await processImage(imageData);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const t = (key: any) => getTranslation(lang, key);
 
   const handleSpeechInput = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      if (isListening && recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+        return;
+      }
+
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      
       recognition.lang = lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US';
       recognition.continuous = false;
       recognition.interimResults = false;
@@ -180,7 +325,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 </div>
                 <h3 className="text-xl font-bold text-theme-primary mb-2">{t('noAccounts')}</h3>
                 <p className="text-theme-secondary mb-6 text-sm">Please create a wallet first before adding transactions.</p>
-                <button onClick={onClose} className="w-full py-3 bg-theme-surface border border-white/10 hover:bg-white/5 rounded-xl font-bold text-theme-primary">
+                <button onClick={handleClose} className="w-full py-3 bg-theme-surface border border-white/10 hover:bg-white/5 rounded-xl font-bold text-theme-primary">
                     {t('close')}
                 </button>
             </div>
@@ -230,7 +375,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-4 relative">
-        <button onClick={onClose} className="p-2 bg-white/10 rounded-full text-theme-secondary hover:bg-white/20 transition-colors">
+        <button onClick={handleClose} className="p-2 bg-white/10 rounded-full text-theme-secondary hover:bg-white/20 transition-colors">
           <X size={20} />
         </button>
         
@@ -319,9 +464,53 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
              placeholder={t('notePlaceholder')}
              className="bg-transparent flex-1 px-4 py-3 text-sm text-theme-primary placeholder:text-theme-secondary outline-none w-full"
            />
-            <button onClick={handleSpeechInput} className={`bg-theme-brand hover:brightness-110 text-white p-2.5 rounded-xl transition-colors m-1 shadow-lg shadow-brand/20 ${isListening ? 'animate-pulse bg-red-500' : ''}`}>
-              <Mic size={18} />
-            </button>
+             <div className="flex gap-2 p-1">
+                <div className="relative">
+                    <button 
+                        onClick={() => setShowScanOptions(!showScanOptions)} 
+                        title="Scan Options" 
+                        className={`p-2.5 rounded-xl transition-all shadow-lg border ${showScanOptions || showScanner ? 'bg-theme-brand text-white border-theme-brand' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
+                    >
+                        <Camera size={18} />
+                    </button>
+                    
+                    {showScanOptions && (
+                        <div className="absolute bottom-full mb-2 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[180px] z-[60] animate-in fade-in slide-in-from-bottom-2">
+                            <button 
+                                onClick={() => { setShowScanOptions(false); startScanner(); }} 
+                                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors"
+                            >
+                                <Camera size={16} className="text-theme-brand" />
+                                <span className="font-bold">{t('openCamera') || 'Abrir Cámara'}</span>
+                            </button>
+                            
+                            <div className="relative">
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={(e) => { setShowScanOptions(false); handleGallerySelect(e); }} 
+                                    className="hidden" 
+                                    id="gallery-input-main" 
+                                />
+                                <label 
+                                    htmlFor="gallery-input-main" 
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+                                >
+                                    <ImageIcon size={16} className="text-theme-brand" />
+                                    <span className="font-bold">{t('attachImage') || 'Adjuntar Imagen'}</span>
+                                </label>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <button 
+                    onClick={handleSpeechInput} 
+                    className={`p-2.5 rounded-xl transition-all shadow-lg ${isListening ? 'bg-red-500 text-white animate-pulse shadow-red-500/20' : 'bg-theme-brand hover:brightness-110 text-white shadow-brand/20'}`}
+                >
+                    <Mic size={18} />
+                </button>
+            </div>
         </div>
 
         {/* Date and Category Selection */}
@@ -523,6 +712,80 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                  </div>
             </div>
         </div>
+       )}
+
+       {/* Camera Scanner Modal */}
+       {showScanner && (
+         <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-in fade-in duration-300">
+            <div className="flex-1 relative flex items-center justify-center bg-black">
+                <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    className="w-full h-full object-cover opacity-80"
+                />
+                
+                {/* Scanner Interface Overlay */}
+                <div className="absolute inset-0 border-[2px] border-theme-brand/30 pointer-events-none">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-theme-brand rounded-3xl shadow-[0_0_50px_rgba(var(--brand-rgb),0.3)]">
+                        <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-theme-brand -mt-1 -ml-1 rounded-tl-lg" />
+                        <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-theme-brand -mt-1 -mr-1 rounded-tr-lg" />
+                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-theme-brand -mb-1 -ml-1 rounded-bl-lg" />
+                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-theme-brand -mb-1 -mr-1 rounded-br-lg" />
+                        
+                        {isScanning && (
+                            <div className="absolute inset-0 bg-theme-brand/10 flex items-center justify-center animate-pulse">
+                                <Loader2 size={48} className="text-white animate-spin" />
+                            </div>
+                        )}
+                        
+                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-theme-brand/50 shadow-[0_0_10px_rgba(var(--brand-rgb),0.5)] animate-scan-line" />
+                    </div>
+                </div>
+
+                {/* Info Text */}
+                <div className="absolute bottom-[20%] left-0 right-0 text-center px-10">
+                    <p className="text-white font-bold text-sm bg-black/50 backdrop-blur-md py-3 rounded-2xl border border-white/10">
+                        {isScanning ? 'Analizando factura...' : 'Encuadra el TOTAL de la factura aquí'}
+                    </p>
+                </div>
+            </div>
+
+            {/* Controls */}
+            <div className="bg-zinc-950 p-8 flex items-center justify-between border-t border-white/5">
+                <button onClick={stopScanner} className="p-4 bg-white/5 text-zinc-400 rounded-2xl font-bold px-4 hover:bg-white/10 transition-colors flex flex-col items-center gap-1">
+                    <X size={20} />
+                    <span className="text-[10px] uppercase">{t('cancel')}</span>
+                </button>
+                
+                <button 
+                    onClick={captureAndScan} 
+                    disabled={isScanning}
+                    className="w-20 h-20 bg-theme-brand text-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(var(--brand-rgb),0.4)] hover:scale-110 active:scale-95 transition-all disabled:opacity-50"
+                >
+                    {isScanning ? <Loader2 size={32} className="animate-spin" /> : <Camera size={32} />}
+                </button>
+
+                <div className="relative">
+                    <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleGallerySelect} 
+                        className="hidden" 
+                        id="gallery-input" 
+                    />
+                    <label 
+                        htmlFor="gallery-input" 
+                        className="p-4 bg-white/5 text-zinc-400 rounded-2xl font-bold px-4 hover:bg-white/10 transition-colors flex flex-col items-center gap-1 cursor-pointer"
+                    >
+                        <ImageIcon size={20} />
+                        <span className="text-[10px] uppercase">{t('gallery') || 'Galería'}</span>
+                    </label>
+                </div>
+            </div>
+            
+            <canvas ref={canvasRef} className="hidden" />
+         </div>
        )}
     </div>
   );

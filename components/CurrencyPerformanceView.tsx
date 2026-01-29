@@ -84,11 +84,11 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
     return (
         <div className="flex flex-col h-full bg-black text-white animate-in slide-in-from-right duration-500 overflow-hidden">
             {/* Header */}
-            <div className="p-6 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-10">
+            <div className="p-6 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-10 font-bold">
                 <button onClick={onBack} className="p-2 hover:bg-white/5 rounded-xl text-zinc-400 transition-colors">
                     <ChevronLeft size={24} />
                 </button>
-                <h2 className="text-lg font-black tracking-tight">Rendimiento de Moneda</h2>
+                <h2 className="text-lg font-black tracking-tight">{t('currencyPerformance') || 'Rendimiento de Moneda'}</h2>
                 <div className="w-10 h-10" /> {/* Spacer */}
             </div>
 

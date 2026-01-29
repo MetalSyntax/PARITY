@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign } from 'lucide-react';
 import { Transaction, Language, Currency, TransactionType } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -11,6 +11,8 @@ interface TransactionsListViewProps {
   onDeleteTransaction: (id: string) => void;
   onEditTransaction: (t: Transaction) => void;
   isBalanceVisible: boolean;
+  displayInVES: boolean;
+  onToggleDisplayCurrency: () => void;
 }
 
 export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
@@ -20,6 +22,8 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   onDeleteTransaction,
   onEditTransaction,
   isBalanceVisible,
+  displayInVES,
+  onToggleDisplayCurrency
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,23 +74,32 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           </button>
           <h1 className="text-xl font-bold text-theme-primary">{t('transactions')}</h1>
           
-          <div className="ml-auto relative">
-             <select
-              className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-8"
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              value={selectedMonth}
+          <div className="ml-auto flex items-center gap-2">
+            <button 
+                onClick={onToggleDisplayCurrency}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-               {(() => {
-                   const months = new Set<string>();
-                   const current = new Date().toISOString().slice(0, 7);
-                   months.add(current);
-                   transactions.forEach(t => months.add(t.date.slice(0, 7)));
-                   return Array.from(months).sort().reverse().map(m => (
-                       <option key={m} value={m}>{m}</option>
-                   ));
-               })()}
-            </select>
-            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" />
+                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+            </button>
+            <div className="relative">
+               <select
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-8"
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                value={selectedMonth}
+              >
+                 {(() => {
+                     const months = new Set<string>();
+                     const current = new Date().toISOString().slice(0, 7);
+                     months.add(current);
+                     transactions.forEach(t => months.add(t.date.slice(0, 7)));
+                     return Array.from(months).sort().reverse().map(m => (
+                         <option key={m} value={m}>{m}</option>
+                     ));
+                 })()}
+              </select>
+              <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" />
+            </div>
           </div>
         </div>
 
@@ -193,18 +206,24 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                             }`}
                           >
                             {isIncome ? "+" : "-"}
-                            {mainSymbol}
+                            {displayInVES ? "Bs." : (isOriginalUSD ? "$" : "Bs.")}
                             {isBalanceVisible
-                              ? mainAmount.toLocaleString(undefined, {
+                              ? (displayInVES 
+                                  ? (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount)
+                                  : mainAmount
+                                ).toLocaleString(undefined, {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
                                 })
                               : "***"}
                           </p>
                           <p className="text-[10px] text-theme-secondary font-mono">
-                            ~{secondarySymbol}{" "}
+                            ~{displayInVES ? "$" : secondarySymbol}{" "}
                             {isBalanceVisible
-                              ? secondaryAmount.toLocaleString(
+                              ? (displayInVES 
+                                  ? (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate)
+                                  : secondaryAmount
+                                ).toLocaleString(
                                   undefined,
                                   {
                                     minimumFractionDigits: 2,

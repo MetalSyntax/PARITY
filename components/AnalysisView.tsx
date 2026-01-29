@@ -116,14 +116,25 @@ interface AnalysisViewProps {
   exchangeRate: number;
   isBalanceVisible: boolean;
   onToggleBottomNav: (visible: boolean) => void;
-  onNavigate: (view: any) => void;
+  displayInVES: boolean;
+  onToggleDisplayCurrency: () => void;
 }
 
-export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions, lang, scheduledPayments, exchangeRate, isBalanceVisible, onToggleBottomNav, onNavigate }) => {
+export const AnalysisView: React.FC<AnalysisViewProps> = ({ 
+    onBack, 
+    transactions, 
+    lang, 
+    scheduledPayments, 
+    exchangeRate, 
+    isBalanceVisible, 
+    onToggleBottomNav, 
+    onNavigate,
+    displayInVES,
+    onToggleDisplayCurrency
+}) => {
   const t = (key: any) => getTranslation(lang, key);
   const [viewMode, setViewMode] = useState<'OVERVIEW' | 'INCOME'>('OVERVIEW');
   const [mainChartType, setMainChartType] = useState<'BAR' | 'LINE'>('BAR');
-  const [displayInVES, setDisplayInVES] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -266,7 +277,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ onBack, transactions
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
             <button 
-                onClick={() => setDisplayInVES(!displayInVES)}
+                onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}

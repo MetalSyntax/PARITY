@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowDown, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowDown, ArrowRight, Coins, DollarSign } from 'lucide-react';
 import { Account, TransactionType, Language, Currency, Transaction } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -11,9 +11,11 @@ interface TransferViewProps {
   onTransfer: (data: any) => void;
   lang: Language;
   exchangeRate: number;
+  displayInVES: boolean;
+  onToggleDisplayCurrency: () => void;
 }
 
-export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactions, onBack, onTransfer, lang, exchangeRate }) => {
+export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactions, onBack, onTransfer, lang, exchangeRate, displayInVES, onToggleDisplayCurrency }) => {
   const [fromId, setFromId] = useState(accounts[0].id);
   const [toId, setToId] = useState(accounts.length > 1 ? accounts[1].id : accounts[0].id);
   const [amount, setAmount] = useState('');
@@ -78,9 +80,18 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
 
   return (
     <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl mx-auto">
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10"><ArrowLeft size={20} /></button>
-        <h1 className="text-xl font-bold">{t('transfer')}</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+            <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"><ArrowLeft size={20} /></button>
+            <h1 className="text-xl font-bold text-theme-primary">{t('transfer')}</h1>
+        </div>
+        <button 
+            onClick={onToggleDisplayCurrency}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+        >
+            {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
+            <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+        </button>
       </div>
 
       <div className="flex flex-col gap-4 relative">

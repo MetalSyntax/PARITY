@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CreditCard, Plus, X, Edit2, Trash2, Wallet, TrendingUp, TrendingDown, Layers, Calendar, ChevronDown } from 'lucide-react';
+import { ArrowLeft, CreditCard, Plus, X, Edit2, Trash2, Wallet, TrendingUp, TrendingDown, Layers, Calendar, ChevronDown, Coins, DollarSign } from 'lucide-react';
 import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -38,6 +38,8 @@ interface WalletViewProps {
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
   onConfirmPayment: (payment: ScheduledPayment) => void;
+  displayInVES: boolean;
+  onToggleDisplayCurrency: () => void;
 }
 
 export const WalletView: React.FC<WalletViewProps> = ({ 
@@ -51,7 +53,9 @@ export const WalletView: React.FC<WalletViewProps> = ({
     isBalanceVisible, 
     onToggleBottomNav,
     showConfirm,
-    onConfirmPayment
+    onConfirmPayment,
+    displayInVES,
+    onToggleDisplayCurrency
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isEditing, setIsEditing] = useState(false);
@@ -103,9 +107,20 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
   // Safe Conversions
   const safeRate = exchangeRate;
-  const vesIncome = (totalIncome || 0) * safeRate;
-  const vesNet = (netMonthly || 0) * safeRate;
 
+  const formatAmount = (usd: number) => {
+    if (!isBalanceVisible) return '******';
+    const val = displayInVES ? usd * safeRate : usd;
+    const symbol = displayInVES ? 'Bs. ' : '$';
+    return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const formatSecondary = (usd: number) => {
+    if (!isBalanceVisible) return '';
+    const val = displayInVES ? usd : usd * safeRate;
+    const symbol = displayInVES ? '$' : 'Bs.';
+    return `${symbol} ${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  };
 
   const scheduledIncomes = scheduledPayments.filter(p => p.type === TransactionType.INCOME);
 
@@ -254,9 +269,18 @@ export const WalletView: React.FC<WalletViewProps> = ({
                  </div>
             </div>
         </div>
-        {activeTab === 'WALLETS' && (
-            <button onClick={() => startEdit()} className="p-2 bg-theme-brand rounded-full text-white shadow-lg shadow-brand/20 hover:scale-105 transition-transform"><Plus size={20} /></button>
-        )}
+        <div className="flex items-center gap-2">
+            <button 
+                onClick={onToggleDisplayCurrency}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+            >
+                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+            </button>
+            {activeTab === 'WALLETS' && (
+                <button onClick={() => startEdit()} className="p-2 bg-theme-brand rounded-full text-white shadow-lg shadow-brand/20 hover:scale-105 transition-transform"><Plus size={20} /></button>
+            )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -298,9 +322,9 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                         </span>
                                     </div>
                                     <div>
-                                        <p className="text-theme-primary font-bold text-lg leading-none mb-1">{isBalanceVisible ? `$${source.total.toLocaleString()}` : '******'}</p>
+                                        <p className="text-theme-primary font-bold text-lg leading-none mb-1">{formatAmount(source.total)}</p>
                                         <p className="text-[10px] text-emerald-400 font-bold mb-1 opacity-70">
-                                            {isBalanceVisible ? `Bs. ${(source.total * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '******'}
+                                            {formatSecondary(source.total)}
                                         </p>
                                         <p className="text-theme-secondary text-[10px] uppercase font-bold tracking-tight truncate">{t(source.name)}</p>
                                     </div>
@@ -330,7 +354,10 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                             </div>
                                         </div>
                                         <div>
-                                            <p className="text-emerald-400 font-bold text-lg leading-none mb-1">{isBalanceVisible ? `+$${income.amount.toLocaleString()}` : '******'}</p>
+                                            <p className="text-emerald-400 font-bold text-lg leading-none mb-1">
+                                                {displayInVES ? `+` : `+$`}{formatAmount(income.amount).replace('$', '').replace('Bs. ', '')}
+                                                {displayInVES ? ' Bs.' : ''}
+                                            </p>
                                             <p className="text-[9px] text-theme-secondary font-bold uppercase tracking-tight">
                                               {new Date(income.date.split('T')[0] + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} • {t(income.frequency === 'Bi-weekly' ? 'biweekly' : income.frequency === 'One-Time' ? 'oneTime' : income.frequency.toLowerCase()) || income.frequency}
                                             </p>
@@ -351,8 +378,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
                           </div>
                           <p className="text-xs text-theme-secondary uppercase tracking-wider mb-2 font-bold">{t('totalMonthlyIncome')}</p>
                           <div className="mb-6">
-                              <h3 className="text-2xl font-black text-emerald-400">{isBalanceVisible ? `+$${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '******'}</h3>
-                              {isBalanceVisible && <p className="text-xs text-emerald-400/60 font-mono font-bold">≈ Bs. {vesIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>}
+                              <h3 className="text-2xl font-black text-emerald-400">{formatAmount(totalIncome)}</h3>
+                              {isBalanceVisible && <p className="text-xs text-emerald-400/60 font-mono font-bold">≈ {formatSecondary(totalIncome)}</p>}
                           </div>
                           
                           <div className="space-y-3">
@@ -380,8 +407,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
                             <p className="text-[10px] text-zinc-500 leading-tight font-medium">{t('incomeExpenseDiff')}</p>
                           </div>
                           <div className="mt-8">
-                              <h3 className="text-3xl font-black text-theme-primary">{isBalanceVisible ? `$${netMonthly.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '******'}</h3>
-                              {isBalanceVisible && <p className="text-xs text-theme-secondary font-mono font-bold">≈ Bs. {vesNet.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>}
+                              <h3 className="text-3xl font-black text-theme-primary">{formatAmount(netMonthly)}</h3>
+                              {isBalanceVisible && <p className="text-xs text-theme-secondary font-mono font-bold">≈ {formatSecondary(netMonthly)}</p>}
                           </div>
                           <div className={`text-[10px] font-black mt-4 px-3 py-1.5 rounded-full w-fit uppercase tracking-wider ${netMonthly >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                               {netMonthly >= 0 ? `+ ${t('positiveFlow')}` : `- ${t('negativeFlow')}`}
@@ -445,8 +472,10 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                 <span className="bg-theme-bg px-3 py-1 rounded-lg text-[10px] font-black font-mono text-zinc-400 border border-white/5 w-fit shadow-inner">{acc.currency}</span>
                             </div>
                             <h3 className="text-4xl font-black text-theme-primary tracking-tighter">
-                                <span className="text-2xl text-theme-secondary opacity-40 mr-1">{acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : 'Bs.'}</span>
-                                {isBalanceVisible ? acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
+                                <span className="text-2xl text-theme-secondary opacity-40 mr-1">
+                                  {displayInVES ? 'Bs.' : (acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : acc.currency)}
+                                </span>
+                                {isBalanceVisible ? (displayInVES ? (acc.currency === Currency.VES ? acc.balance : acc.balance * exchangeRate) : acc.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
                             </h3>
                         </div>
                       </div>

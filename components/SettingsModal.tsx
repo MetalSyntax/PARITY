@@ -14,9 +14,10 @@ interface SettingsModalProps {
   showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
   autoLockEnabled: boolean;
   onToggleAutoLock: (enabled: boolean) => void;
+  isDevMode?: boolean;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert, autoLockEnabled, onToggleAutoLock }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert, autoLockEnabled, onToggleAutoLock, isDevMode }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
   const [mode, setMode] = useState<'AUTO' | 'PARALLEL' | 'MANUAL'>('MANUAL');
@@ -130,16 +131,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
                 </div>
              </button>
              
-             {/*<button 
-                onClick={() => handleFetchRate('PARALLEL')}
-                className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${mode === 'PARALLEL' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
-             >
-                <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><TrendingUp size={20} className="text-amber-400" /></div>
-                <div>
-                   <p className="font-bold text-sm text-theme-primary">{t('parallelRate')}</p>
-                   <p className="text-xs text-theme-secondary">{isFetching && mode === 'PARALLEL' ? t('fetching') : t('averageParallel')}</p>
+             {isDevMode && (
+              <div className="bg-theme-surface border border-theme-brand/30 rounded-2xl p-0 relative overflow-hidden ring-1 ring-theme-brand/20">
+              <div className="absolute top-0 right-0 px-3 py-1 bg-theme-brand text-[8px] font-black text-white uppercase tracking-widest rounded-bl-xl">
+                  {t('experimentalFeature')}
+              </div>
+               <button 
+                  onClick={() => handleFetchRate('PARALLEL')}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${mode === 'PARALLEL' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
+               >
+                  <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><TrendingUp size={20} className="text-amber-400" /></div>
+                  <div>
+                    <p className="font-bold text-sm text-theme-primary">{t('parallelRate')}</p>
+                    <p className="text-xs text-theme-secondary">{isFetching && mode === 'PARALLEL' ? t('fetching') : t('averageParallel')}</p>
+                  </div>
+               </button>
                 </div>
-             </button>*/}
+             )}
 
              <button onClick={() => setMode('MANUAL')} className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${mode === 'MANUAL' ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-white/5 border-transparent'}`}>
                 <div className="w-10 h-10 rounded-full bg-theme-bg flex items-center justify-center"><Lock size={20} className="text-purple-400" /></div>

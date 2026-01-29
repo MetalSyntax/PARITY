@@ -22,7 +22,9 @@ import {
   BarChart,
   Shield,
   Wallet,
-  GripVertical
+  GripVertical,
+  Coins,
+  DollarSign
 } from "lucide-react";
 import { motion, Reorder, useDragControls } from "framer-motion";
 import {
@@ -185,9 +187,9 @@ interface DashboardProps {
   onToggleBottomNav: (visible: boolean) => void;
   isBalanceVisible: boolean;
   setIsBalanceVisible: (visible: boolean) => void;
-  onDeleteTransaction: (id: string) => void;
-  isDevMode: boolean;
   onDevModeTrigger: () => void;
+  displayInVES: boolean;
+  onToggleDisplayCurrency: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -204,10 +206,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
   setIsBalanceVisible,
   isDevMode,
   onDevModeTrigger,
+  displayInVES,
+  onToggleDisplayCurrency
 }) => {
-  const [primaryCurrency, setPrimaryCurrency] = useState<Currency>(
-    Currency.USD,
-  );
+
+  const formatAmount = (usd: number) => {
+    if (!isBalanceVisible) return "******";
+    const val = displayInVES ? usd * exchangeRate : usd;
+    const symbol = displayInVES ? "Bs. " : "$";
+    return `${symbol}${val.toLocaleString(undefined, {
+      maximumFractionDigits: 0,
+    })}`;
+  };
+
+  const formatSecondaryAmount = (usd: number) => {
+    if (!isBalanceVisible) return "";
+    const val = displayInVES ? usd : usd * exchangeRate;
+    const symbol = displayInVES ? "$" : "Bs.";
+    return `${val.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${symbol}`;
+  };
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
@@ -313,33 +330,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const totalBalanceVES = totalBalanceUSD * exchangeRate;
 
-  const displayMain =
-    primaryCurrency === Currency.USD ? totalBalanceUSD : totalBalanceVES;
-  const displaySecondary =
-    primaryCurrency === Currency.USD ? totalBalanceVES : totalBalanceUSD;
-  const symbolMain = primaryCurrency === Currency.USD ? "$" : "Bs.";
-  const symbolSecondary = primaryCurrency === Currency.USD ? "Bs." : "$";
-
   const formatChartValue = (usd: number) => {
-    return primaryCurrency === Currency.VES ? usd * exchangeRate : usd;
+    return displayInVES ? usd * exchangeRate : usd;
   };
+
+  const getSymbol = () => (displayInVES ? "Bs." : "$");
 
   const formatChartAmount = (usd: number) => {
     if (!isBalanceVisible) return '******';
-    const amount = formatChartValue(usd);
-    return `${symbolMain}${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return formatAmount(usd);
   };
 
   useEffect(() => {
     onToggleBottomNav(!(showPinModal || showCustomizer));
   }, [showPinModal, showCustomizer, onToggleBottomNav]);
 
-  const toggleCurrency = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setPrimaryCurrency((prev) =>
-      prev === Currency.USD ? Currency.VES : Currency.USD,
-    );
-  };
 
   const handlePrivacyToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -679,21 +684,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <GripVertical size={20} />
                 </div>
-                <button 
-                  onClick={() => setShowCustomizer(true)}
-                  className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
-                >
-                  <Settings size={20} />
-                </button>
+                {['balanceChart', 'expenses', 'incomeVsExpense', 'dailySpending', 'categoryBreakdown'].includes(id) && (
+                  <button 
+                    onClick={() => setShowCustomizer(true)}
+                    className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                  >
+                    <Settings size={20} />
+                  </button>
+                )}
                 {id === "balanceCard" && (
                   <div className="px-4 md:px-0">
                     <div className="bg-theme-surface rounded-[2.5rem] p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-2xl shadow-black/50 border border-white/5 bg-gradient-to-br from-theme-surface to-black/30 group">
                       <div className="absolute top-8 right-8 flex gap-3 z-20">
                         <button
-                          onClick={(e) => { e.stopPropagation(); toggleCurrency(e); }}
-                          className="p-2.5 rounded-xl bg-theme-bg border border-white/5 text-theme-secondary hover:text-theme-brand transition-all"
+                          onClick={(e) => { e.stopPropagation(); onToggleDisplayCurrency(); }}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-bg text-theme-secondary hover:text-theme-primary'}`}
                         >
-                          <ArrowRightLeft size={16} />
+                          {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
+                          <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handlePrivacyToggle(e); }}
@@ -711,16 +719,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <h1 className="text-5xl font-black tracking-tighter text-theme-primary leading-tight">
                             {isBalanceVisible ? (
                               <>
-                                <span className="text-2xl text-theme-secondary opacity-40 mr-1">{symbolMain}</span>
-                                {displayMain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {formatAmount(totalBalanceUSD)}
                               </>
                             ) : (
                               <span className="tracking-widest">******</span>
                             )}
                           </h1>
                           <div className="flex items-center gap-3">
-                            <p className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-white/5 rounded-lg border border-white/5">
-                              {isBalanceVisible ? `${symbolSecondary} ${displaySecondary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "******"}
+                             <p className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                              {isBalanceVisible ? formatSecondaryAmount(totalBalanceUSD) : "******"}
                             </p>
                             {isBalanceVisible && (
                               <div className={`p-1 flex items-center gap-1 rounded-full text-[10px] font-black ${balanceHistory.trendPercent >= 0 ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
@@ -824,9 +831,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <h2 className="text-2xl font-black text-theme-primary">
                           {isBalanceVisible ? (
                             <>
-                              {`$${expenseSummary.totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                              {formatAmount(expenseSummary.totalUSD)}
                               <span className="text-sm font-normal text-theme-secondary ml-2">
-                                / {(expenseSummary.totalUSD * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })} Bs.
+                                / {formatSecondaryAmount(expenseSummary.totalUSD)}
                               </span>
                             </>
                           ) : "******"}
@@ -871,7 +878,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 tooltip: {
                                   ...commonOptions.plugins.tooltip,
                                   callbacks: {
-                                    label: (context: any) => `${context.label}: ${symbolMain}${context.raw.toLocaleString()}`
+                                    label: (context: any) => `${context.label}: ${getSymbol()}${context.raw.toLocaleString()}`
                                   }
                                 }
                               }
@@ -894,7 +901,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     ...commonOptions.plugins,
                                     tooltip: {
                                         ...commonOptions.plugins.tooltip,
-                                        callbacks: { label: (context: any) => `${context.label}: ${symbolMain}${context.parsed.x.toLocaleString()}` }
+                                        callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.parsed.x.toLocaleString()}` }
                                     }
                                 },
                                 scales: {
@@ -924,7 +931,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               <span className="text-xs font-bold truncate max-w-[80px]">{t(item.name)}</span>
                             </div>
                             <div className="text-right">
-                              <p className="text-xs font-black text-theme-primary">{isBalanceVisible ? `$${item.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "******"}</p>
+                              <p className="text-xs font-black text-theme-primary">{formatAmount(item.amount)}</p>
                               <p className="text-[9px] font-bold opacity-40">{item.percent.toFixed(1)}%</p>
                             </div>
                           </button>
@@ -962,12 +969,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <GripVertical size={20} />
                 </div>
-                <button 
-                  onClick={() => setShowCustomizer(true)}
-                  className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
-                >
-                  <Settings size={20} />
-                </button>
+                {['balanceChart', 'expenses', 'incomeVsExpense', 'dailySpending', 'categoryBreakdown'].includes(id) && (
+                  <button 
+                    onClick={() => setShowCustomizer(true)}
+                    className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                  >
+                    <Settings size={20} />
+                  </button>
+                )}
 
                 {id === "transactions" && (
                   <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-white/5 min-h-[500px]">
@@ -1005,10 +1014,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                         const isExpense = transaction.type === TransactionType.EXPENSE;
                                         const isTransfer = transaction.type === TransactionType.TRANSFER;
                                         const isOriginalUSD = transaction.originalCurrency === Currency.USD;
-                                        const mainAmount = transaction.amount;
-                                        const mainSymbol = isOriginalUSD ? '$' : 'Bs.';
-                                        const secondaryAmount = isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount / transaction.exchangeRate;
-                                        const secondarySymbol = isOriginalUSD ? 'Bs.' : '$';
+                                        const isMainVES = displayInVES;
+                                        const displayMain = isMainVES 
+                                          ? (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount)
+                                          : (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate);
+                                        const displayMainSymbol = isMainVES ? 'Bs.' : '$';
+                                        
+                                        const displaySecondary = isMainVES
+                                          ? (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate)
+                                          : (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount);
+                                        const displaySecondarySymbol = isMainVES ? '$' : 'Bs.';
                                         
                                         const fromAcc = accounts.find(a => a.id === transaction.accountId);
                                         const toAcc = accounts.find(a => a.id === transaction.toAccountId);
@@ -1026,10 +1041,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                             </div>
                                             <div className="text-right">
                                               <p className={`font-bold text-sm ${isTransfer ? 'text-indigo-400' : isExpense ? 'text-theme-primary' : 'text-emerald-400'}`}>
-                                                {isTransfer ? '' : isExpense ? '-' : '+'}{mainSymbol}{isBalanceVisible ? mainAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
+                                                {isTransfer ? '' : isExpense ? '-' : '+'}{displayMainSymbol}{isBalanceVisible ? displayMain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
                                               </p>
                                               <p className="text-xs text-theme-secondary font-mono group-hover:text-theme-primary transition-colors">
-                                                ~{secondarySymbol} {isBalanceVisible ? secondaryAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
+                                                ~{displaySecondarySymbol} {isBalanceVisible ? displaySecondary.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
                                               </p>
                                             </div>
                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-white/5">
@@ -1084,7 +1099,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               ...commonOptions.plugins,
                               tooltip: {
                                   ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.label}: ${symbolMain}${context.raw.toLocaleString()}` }
+                                  callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.raw.toLocaleString()}` }
                               }
                           },
                           scales: {
@@ -1138,7 +1153,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               ...commonOptions.plugins,
                               tooltip: {
                                   ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.dataset.label}: ${symbolMain}${context.raw.toLocaleString()}` }
+                                  callbacks: { label: (context: any) => `${context.dataset.label}: ${getSymbol()}${context.raw.toLocaleString()}` }
                               }
                           },
                           scales: {
@@ -1173,7 +1188,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               ...commonOptions.plugins,
                               tooltip: {
                                   ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.label}: ${symbolMain}${context.raw.toLocaleString()}` }
+                                  callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.raw.toLocaleString()}` }
                               }
                           },
                           scales: {

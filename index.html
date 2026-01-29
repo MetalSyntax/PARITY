@@ -1,33 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Parity</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="icon" href="assets/favicon.png" type="image/png">
-   <script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
+    <script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
+    <script>
       tailwind.config = {
-        darkMode: 'class',
+        darkMode: "class",
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
             },
             colors: {
-              background: '#050505', // OLED Black
-              surface: '#121212',
-              glass: 'rgba(255, 255, 255, 0.05)',
-              glassBorder: 'rgba(255, 255, 255, 0.1)',
-              primary: '#6366f1', // Indigo
-              income: '#34d399', // Emerald 400
-              expense: '#fb7185', // Rose 400
-            }
-          }
-        }
-      }
+              background: "#050505", // OLED Black
+              surface: "#121212",
+              glass: "rgba(255, 255, 255, 0.05)",
+              glassBorder: "rgba(255, 255, 255, 0.1)",
+              primary: "#6366f1", // Indigo
+              income: "#34d399", // Emerald 400
+              expense: "#fb7185", // Rose 400
+            },
+          },
+        },
+      };
     </script>
     <style>
       body {
@@ -49,8 +56,15 @@
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.08);
       }
+      @keyframes scan {
+        0% { top: 0%; }
+        100% { top: 100%; }
+      }
+      .animate-scan-line {
+        animation: scan 2s linear infinite;
+      }
     </style>
-  <script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -15,6 +15,7 @@ import { CalendarHeatmapView } from './components/CalendarHeatmapView';
 import { CurrencyPerformanceView } from './components/CurrencyPerformanceView';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { getTranslation } from './i18n';
+import { motion } from 'framer-motion';
 import './index.css';
 
 import { INITIAL_RATE, MOCK_ACCOUNTS, CATEGORIES } from './constants';
@@ -56,6 +57,17 @@ function AppContent() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: '', language: 'en' });
+  const [displayInVES, setDisplayInVES] = useState(() => {
+    const saved = localStorage.getItem("displayInVES");
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+
+  const toggleDisplayCurrency = () => {
+    const next = !displayInVES;
+    setDisplayInVES(next);
+    localStorage.setItem("displayInVES", JSON.stringify(next));
+  };
+
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [isDevMode, setIsDevMode] = useState(() => {
@@ -473,6 +485,47 @@ function AppContent() {
       }
   };
 
+  // --- Mobile Gesture & History Navigation ---
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (showAdd) {
+        setShowAdd(false);
+        setEditingTransaction(null);
+        window.history.pushState(null, '');
+      } else if (showSettings) {
+        setShowSettings(false);
+        window.history.pushState(null, '');
+      } else if (currentView !== 'DASHBOARD') {
+        setCurrentView('DASHBOARD');
+        window.history.pushState(null, '');
+      }
+    };
+
+    // Initialize history if needed
+    if (window.history.state === null) {
+      window.history.replaceState({ root: true }, '');
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isLoaded, currentView, showAdd, showSettings]);
+
+  // Re-push state when moving away from dashboard to enable 'back'
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (currentView !== 'DASHBOARD' || showAdd || showSettings) {
+      // Small delay to avoid accidental double push
+      const timer = setTimeout(() => {
+        if (window.history.state?.view !== currentView) {
+          window.history.pushState({ view: currentView }, '');
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [currentView, showAdd, showSettings, isLoaded]);
+
   if (!isLoaded) return null;
 
   if (isFirstTime) {
@@ -562,7 +615,22 @@ function AppContent() {
       <div className="w-full h-full bg-theme-bg relative shadow-2xl overflow-hidden flex flex-col">
 
         {/* Main Content Router */}
-        <div className="flex-1 relative z-0 overflow-y-auto flex flex-col">
+        <motion.div 
+          className="flex-1 relative z-0 overflow-y-auto flex flex-col mb-6"
+          onPanEnd={(_, info) => {
+            // Swipe right from left edge (approx)
+            if (info.offset.x > 80 && Math.abs(info.offset.y) < 50) {
+              if (showAdd) {
+                setShowAdd(false);
+                setEditingTransaction(null);
+              } else if (showSettings) {
+                setShowSettings(false);
+              } else if (currentView !== 'DASHBOARD') {
+                setCurrentView('DASHBOARD');
+              }
+            }
+          }}
+        >
           {currentView === 'DASHBOARD' && (
             <Dashboard
               accounts={accounts}
@@ -578,6 +646,8 @@ function AppContent() {
               setIsBalanceVisible={setIsBalanceVisible}
               isDevMode={isDevMode}
               onDevModeTrigger={handleDevModeTrigger}
+              displayInVES={displayInVES}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -588,6 +658,8 @@ function AppContent() {
               onTransfer={handleSaveTransaction}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
+              displayInVES={displayInVES}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
           {currentView === 'SCHEDULED' && (
@@ -600,6 +672,8 @@ function AppContent() {
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}
+              displayInVES={displayInVES}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
           {currentView === 'BUDGET' && (
@@ -614,6 +688,8 @@ function AppContent() {
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}
+              displayInVES={displayInVES}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
           {currentView === 'ANALYSIS' && (
@@ -626,6 +702,8 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
               onToggleBottomNav={setIsNavVisible}
               onNavigate={setCurrentView}
+              displayInVES={displayInVES}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
           {currentView === 'WALLET' && (
@@ -641,6 +719,8 @@ function AppContent() {
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               onConfirmPayment={handleConfirmScheduledPayment}
+              displayInVES={displayInVES}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
           {currentView === 'PROFILE' && (
@@ -670,6 +750,8 @@ function AppContent() {
               onDeleteTransaction={handleDeleteTransaction}
               onEditTransaction={(tx) => { setEditingTransaction(tx); setShowAdd(true); }}
               isBalanceVisible={isBalanceVisible}
+              displayInVES={displayInVES}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
           {currentView === 'HEATMAP' && (
@@ -678,6 +760,8 @@ function AppContent() {
               transactions={transactions}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
+              displayInVES={displayInVES}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
           {currentView === 'CURRENCY_PERF' && (
@@ -688,11 +772,11 @@ function AppContent() {
               exchangeRate={exchangeRate}
             />
           )}
-        </div>
+        </motion.div>
 
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
         {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
-          <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-8 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
+          <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-4 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
             <button
               onClick={() => setCurrentView('DASHBOARD')}
               className={`p-3 transition-colors ${currentView === 'DASHBOARD' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
@@ -762,6 +846,7 @@ function AppContent() {
             showAlert={showAlert}
             autoLockEnabled={autoLockEnabled}
             onToggleAutoLock={handleToggleAutoLock}
+            isDevMode={isDevMode}
           />
         )}
 

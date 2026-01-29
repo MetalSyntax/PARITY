@@ -116,9 +116,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col p-6 mb-20 animate-in slide-in-from-right duration-300 bg-theme-bg">
+    <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 bg-theme-bg">
       <div className="flex items-center gap-4 mb-8">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
+        <button onClick={onBack} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"><ArrowLeft size={20} /></button>
         <h1 className="text-xl font-bold text-theme-primary">{t('profile')}</h1>
       </div>
 

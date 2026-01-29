@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign } from 'lucide-react';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
@@ -47,6 +47,8 @@ interface BudgetViewProps {
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
   exchangeRate: number;
+  displayInVES: boolean;
+  onToggleDisplayCurrency: () => void;
 }
 
 export const BudgetView: React.FC<BudgetViewProps> = ({ 
@@ -59,9 +61,23 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     onUpdateGoals,
     onToggleBottomNav,
     showConfirm,
-    exchangeRate
+    exchangeRate,
+    displayInVES,
+    onToggleDisplayCurrency
 }) => {
   const t = (key: any) => getTranslation(lang, key);
+
+  const formatAmount = (usd: number, decimals: number = 0) => {
+    const val = displayInVES ? usd * exchangeRate : usd;
+    const symbol = displayInVES ? 'Bs. ' : '$';
+    return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  };
+
+  const formatSecondary = (usd: number) => {
+    const val = displayInVES ? usd : usd * exchangeRate;
+    const symbol = displayInVES ? '$' : 'Bs.';
+    return `${symbol} ${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  };
   const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>('ENVELOPES');
   const [isManaging, setIsManaging] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -152,6 +168,13 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
              <h1 className="text-xl font-bold text-theme-primary">{t('budgetsAndGoals')}</h1>
         </div>
         <div className="flex items-center gap-2">
+            <button 
+                onClick={onToggleDisplayCurrency}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+            >
+                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+            </button>
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
@@ -272,10 +295,10 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                   <Trash2 size={18} />
                               </button>
                           ) : (
-                              <div className="text-right">
-                                  <p className="text-lg font-bold text-theme-primary">${spent.toFixed(0)}</p>
-                                  <p className="text-[10px] text-zinc-500">Bs. {(spent * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                                  <p className="text-xs text-theme-secondary">{t('of')} ${budget.limit}</p>
+                               <div className="text-right">
+                                  <p className="text-lg font-bold text-theme-primary">{formatAmount(spent)}</p>
+                                  <p className="text-[10px] text-zinc-500">{formatSecondary(spent)}</p>
+                                  <p className="text-xs text-theme-secondary">{t('of')} {formatAmount(budget.limit)}</p>
                               </div>
                           )}
                       </div>
@@ -287,7 +310,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                       ) : (
                           <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2">
                               <span className="text-xs text-theme-secondary uppercase">{t('limit')}:</span>
-                              <span className="text-theme-secondary font-bold">$</span>
+                              <span className="text-theme-secondary font-bold">{displayInVES ? 'Bs.' : '$'}</span>
                               <input 
                                   type="number" 
                                   value={budget.limit} 
@@ -418,8 +441,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
                                   <div className="flex justify-between items-end mb-2">
                                       <div>
-                                          <span className="text-2xl font-bold block">${goal.savedAmount.toLocaleString()}</span>
-                                          <span className="text-xs text-zinc-400 font-mono">Bs. {(goal.savedAmount * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                          <span className="text-2xl font-bold block">{formatAmount(goal.savedAmount)}</span>
+                                          <span className="text-xs text-zinc-400 font-mono">{formatSecondary(goal.savedAmount)}</span>
                                       </div>
                                       <span className="text-xs font-mono text-zinc-400 mb-1">{percent.toFixed(0)}%</span>
                                   </div>
