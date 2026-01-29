@@ -254,6 +254,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       >
         {t('saveProfile')}
       </button>
+
+      <div className="text-center mt-4 text-xs font-mono text-theme-secondary opacity-50">
+          v1.0.18
+      </div>
     </div>
   );
 };
