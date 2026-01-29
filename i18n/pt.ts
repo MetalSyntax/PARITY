@@ -142,7 +142,7 @@ export const pt = {
     autoLock: 'Bloquear com PIN ao sair',
     autoLockDesc: 'Exigir PIN toda vez que o aplicativo for aberto ou retomado.',
     autoLockDelay: 'Atraso de Bloqueio',
-    delayImmediately: 'Imediatamente',
+    delayImmediately: 'Imediato',
     delay1Min: '1 Minuto',
     delay5Min: '5 Minutos',
     delay15Min: '15 Minutos',

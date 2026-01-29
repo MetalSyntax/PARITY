@@ -549,7 +549,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
              value={note}
              onChange={(e) => setNote(e.target.value)}
              placeholder={t('notePlaceholder')}
-             className="bg-transparent flex-1 px-4 py-3 text-sm text-theme-primary placeholder:text-theme-secondary outline-none w-full"
+             className="bg-transparent flex-1 px-4 py-3 text-sm text-theme-primary placeholder:text-theme-secondary outline-none w-full select-text"
            />
              <div className="flex gap-2 p-1">
                 <div className="relative">

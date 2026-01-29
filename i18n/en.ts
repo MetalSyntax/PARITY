@@ -147,7 +147,7 @@ export const en = {
     autoLock: 'Lock with PIN on App Exit',
     autoLockDesc: 'Require PIN every time the app is opened or resumed.',
     autoLockDelay: 'Auto-lock Delay',
-    delayImmediately: 'Immediately',
+    delayImmediately: 'Immediate',
     delay1Min: '1 Minute',
     delay5Min: '5 Minutes',
     delay15Min: '15 Minutes',

@@ -606,7 +606,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden relative bg-theme-bg">
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-32 w-full max-w-7xl mx-auto md:px-8">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-32 w-full max-w-7xl mx-auto md:px-8 overscroll-y-auto">
         <div className="flex justify-between items-center px-6 md:px-0 pt-12 pb-4 flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="flex wrap items-center gap-3 group relative">

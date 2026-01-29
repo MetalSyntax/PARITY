@@ -16,11 +16,14 @@
   --danger: #ef4444;
   --border: rgba(255, 255, 255, 0.1);
 }
-
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  user-select: none;
+background-color: var(--bg-primary);
+color: var(--text-primary);
+user-select: none;
+touch-action: pan-x pan-y;
+overscroll-behavior-y: none; /* Prevent pull-to-refresh */
+-webkit-user-select: none;
+-webkit-touch-callout: none;
 }
 
 /* Custom Utilities for usage with variables */
