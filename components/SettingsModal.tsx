@@ -12,12 +12,13 @@ interface SettingsModalProps {
   lang: Language;
   currentStorageType: StorageType;
   showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
-  autoLockEnabled: boolean;
   onToggleAutoLock: (enabled: boolean) => void;
+  autoLockDelay: number;
+  onSetAutoLockDelay: (delay: number) => void;
   isDevMode?: boolean;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert, autoLockEnabled, onToggleAutoLock, isDevMode }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert, autoLockEnabled, onToggleAutoLock, autoLockDelay, onSetAutoLockDelay, isDevMode }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
   const [mode, setMode] = useState<'AUTO' | 'PARALLEL' | 'MANUAL'>('MANUAL');
@@ -178,19 +179,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
                           <span className="text-xs font-bold text-theme-brand group-hover:underline">{t('edit')}</span>
                       </button>
 
-                      <div className="w-full p-4 bg-white/5 border border-white/5 rounded-xl transition-colors flex justify-between items-center">
-                          <div className="flex-1">
-                              <p className="font-bold text-sm text-theme-primary">{t('autoLock')}</p>
-                              <p className="text-[10px] leading-tight text-theme-secondary opacity-70 mt-1">{t('autoLockDesc')}</p>
+                      <div className="w-full p-4 bg-white/5 border border-white/5 rounded-xl transition-colors">
+                          <div className="flex justify-between items-center mb-4">
+                              <div className="flex-1">
+                                  <p className="font-bold text-sm text-theme-primary">{t('autoLock')}</p>
+                                  <p className="text-[10px] leading-tight text-theme-secondary opacity-70 mt-1">{t('autoLockDesc')}</p>
+                              </div>
+                              <button
+                                onClick={() => onToggleAutoLock(!autoLockEnabled)}
+                                className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${autoLockEnabled ? "bg-theme-brand" : "bg-white/10"}`}
+                              >
+                                <div
+                                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${autoLockEnabled ? "left-7" : "left-1"}`}
+                                />
+                              </button>
                           </div>
-                          <button
-                            onClick={() => onToggleAutoLock(!autoLockEnabled)}
-                            className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${autoLockEnabled ? "bg-theme-brand" : "bg-white/10"}`}
-                          >
-                            <div
-                                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${autoLockEnabled ? "left-7" : "left-1"}`}
-                            />
-                          </button>
+                          
+                          {autoLockEnabled && (
+                              <div className="pt-4 border-t border-white/5">
+                                  <p className="text-[10px] font-bold text-theme-secondary uppercase mb-3 tracking-wider">{t('autoLockDelay')}</p>
+                                  <div className="grid grid-cols-4 gap-2">
+                                      {[0, 60, 300, 900].map((delay) => (
+                                          <button
+                                              key={delay}
+                                              onClick={() => onSetAutoLockDelay(delay)}
+                                              className={`py-2 px-1 rounded-lg text-[10px] font-bold transition-all border ${autoLockDelay === delay ? 'bg-theme-brand border-transparent text-white' : 'bg-black/20 border-white/5 text-theme-secondary'}`}
+                                          >
+                                              {delay === 0 ? t('delayImmediately') : 
+                                               delay === 60 ? t('delay1Min') : 
+                                               delay === 300 ? t('delay5Min') : t('delay15Min')}
+                                          </button>
+                                      ))}
+                                  </div>
+                              </div>
+                          )}
                       </div>
                   </div>
              ) : (

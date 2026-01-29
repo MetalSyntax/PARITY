@@ -69,6 +69,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [categorySearch, setCategorySearch] = useState('');
   const [showScanOptions, setShowScanOptions] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropBox, setCropBox] = useState({ x: 20, y: 30, width: 60, height: 40 }); // Relative %
+  const imgRef = useRef<HTMLImageElement>(null);
   const recognitionRef = useRef<any>(null);
 
   const handleClose = useCallback(() => {
@@ -78,7 +82,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showCategoryModal) setShowCategoryModal(false);
+        if (showCropModal) {
+            setShowCropModal(false);
+            setSelectedImage(null);
+        } else if (showCategoryModal) setShowCategoryModal(false);
         else if (showAccountSelector) setShowAccountSelector(null);
         else handleClose();
       }
@@ -89,7 +96,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
     };
   }, [handleClose, showCategoryModal, showAccountSelector]);
 
-  const processImage = async (imageSource: CanvasImageSource | string) => {
+  const processImage = async (imageSource: HTMLCanvasElement | string) => {
     setIsScanning(true);
     try {
       const { data: { text } } = await Tesseract.recognize(imageSource, 'eng+spa');
@@ -100,7 +107,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       let foundAmount = null;
       let detectedCurrency: Currency | null = null;
 
-      // detect currency from whole text first
+      // Detect currency from whole text first
       const lowerText = text.toLowerCase();
       if (lowerText.includes('bs') || lowerText.includes('ves') || lowerText.includes('bolivares') || lowerText.includes('bolívares')) {
           detectedCurrency = Currency.VES;
@@ -108,42 +115,43 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
           detectedCurrency = Currency.USD;
       }
 
-      for (const line of lines) {
+      for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
           const lowerLine = line.toLowerCase();
+          
           if (totalKeywords.some(kw => lowerLine.includes(kw))) {
-              // Priority for total line currency detection
               if (lowerLine.includes('bs') || lowerLine.includes('ves')) detectedCurrency = Currency.VES;
               else if (lowerLine.includes('$') || lowerLine.includes('usd')) detectedCurrency = Currency.USD;
 
-              // Improved regex: matches numbers like 1,234.56 or 1.234,56 or 1234.56
               const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2}))|(\d+[.,]\d{1,2})|(\d+)/g;
               const matches = line.match(amountRegex);
+              
               if (matches && matches.length > 0) {
-                  // Usually the total is the last number on the "Total" line
                   foundAmount = matches[matches.length - 1];
                   break;
+              } else if (i + 1 < lines.length) {
+                  const nextLineMatches = lines[i+1].match(amountRegex);
+                  if (nextLineMatches && nextLineMatches.length > 0) {
+                      foundAmount = nextLineMatches[nextLineMatches.length - 1];
+                      break;
+                  }
               }
           }
       }
 
       if (!foundAmount) {
-          const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2}))|(\d+[.,]\d{1,2})/g;
+          const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2}))|(\d+[.,]\d{1,2})|(\d+)/g;
           const allMatches = text.match(amountRegex);
+          
           if (allMatches) {
               const numbers = allMatches.map(m => {
-                  // Basic normalization: remove thousands separators, set . as decimal
                   let cleaned = m.replace(/\s/g, '');
                   if (cleaned.includes(',') && cleaned.includes('.')) {
-                      // format like 1,234.56 or 1.234,56
                       const lastDot = cleaned.lastIndexOf('.');
                       const lastComma = cleaned.lastIndexOf(',');
-                      if (lastDot > lastComma) {
-                          cleaned = cleaned.replace(/,/g, ''); // 1,234.56 -> 1234.56
-                      } else {
-                          cleaned = cleaned.replace(/\./g, '').replace(',', '.'); // 1.234,56 -> 1234.56
-                      }
+                      if (lastDot > lastComma) cleaned = cleaned.replace(/,/g, '');
+                      else cleaned = cleaned.replace(/\./g, '').replace(',', '.');
                   } else if (cleaned.includes(',')) {
-                      // format like 1234,56
                       cleaned = cleaned.replace(',', '.');
                   }
                   const val = parseFloat(cleaned);
@@ -156,8 +164,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       }
       
       if (foundAmount) {
-        // Re-calculate or just use the val if we were in the non-keywords loop
-        // To be safe, let's normalize the foundAmount one last time
         let forFinal = foundAmount.replace(/\s/g, '');
         if (forFinal.includes(',') && forFinal.includes('.')) {
             const lastDot = forFinal.lastIndexOf('.');
@@ -176,15 +182,41 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         } else {
             showAlert(`${t('totalFound') || 'Total found'}: ${cleanedAmount}`, 'success');
         }
-        stopScanner();
+        setShowCropModal(false);
+        setSelectedImage(null);
       } else {
-        showAlert(t('totalNotFound') || 'Total not found in the invoice image', 'info');
+        showAlert(t('totalNotFound') || 'Total not found in the selected area', 'info');
       }
     } catch (err) {
       console.error("OCR Error:", err);
       showAlert('OCR Scan failed', 'error');
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  const handleApplyCrop = () => {
+    if (!imgRef.current || !selectedImage) return;
+
+    const canvas = document.createElement('canvas');
+    const img = imgRef.current;
+    
+    // Calculate actual pixel coordinates
+    const scaleX = img.naturalWidth / img.clientWidth;
+    const scaleY = img.naturalHeight / img.clientHeight;
+    
+    const x = (cropBox.x * img.clientWidth / 100) * scaleX;
+    const y = (cropBox.y * img.clientHeight / 100) * scaleY;
+    const width = (cropBox.width * img.clientWidth / 100) * scaleX;
+    const height = (cropBox.height * img.clientHeight / 100) * scaleY;
+
+    canvas.width = width;
+    canvas.height = height;
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+        ctx.drawImage(img, x, y, width, height, 0, 0, width, height);
+        processImage(canvas);
     }
   };
 
@@ -199,7 +231,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
     const reader = new FileReader();
     reader.onload = async (event) => {
         const imageData = event.target?.result as string;
-        await processImage(imageData);
+        setSelectedImage(imageData);
+        setShowCropModal(true);
     };
     reader.readAsDataURL(file);
   };
@@ -730,6 +763,175 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         </div>
        )}
 
+       {/* Manual Selection / Crop Modal */}
+       {showCropModal && selectedImage && (
+           <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col p-4 animate-in fade-in zoom-in-95 duration-200">
+               <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-white font-bold text-sm uppercase tracking-widest">{t('selectTotalSection') || 'Selecciona el TOTAL'}</h3>
+                   <button onClick={() => { setShowCropModal(false); setSelectedImage(null); }} className="p-2 bg-white/10 rounded-full text-white">
+                       <X size={20} />
+                   </button>
+               </div>
+               
+               <div className="flex-1 relative overflow-hidden bg-zinc-900 rounded-2xl flex items-center justify-center border border-white/10">
+                   <img 
+                        ref={imgRef}
+                        src={selectedImage} 
+                        className="max-w-full max-h-full object-contain pointer-events-none" 
+                        alt="Crop Preview" 
+                   />
+                   
+                   {/* Selection Overlay */}
+                   <div 
+                        className="absolute border-2 border-theme-brand shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] cursor-move rounded-lg"
+                        style={{
+                            left: `${cropBox.x}%`,
+                            top: `${cropBox.y}%`,
+                            width: `${cropBox.width}%`,
+                            height: `${cropBox.height}%`
+                        }}
+                        onTouchStart={(e) => {
+                            const touch = e.touches[0];
+                            const startX = touch.clientX;
+                            const startY = touch.clientY;
+                            const initialX = cropBox.x;
+                            const initialY = cropBox.y;
+                            
+                            const onMove = (moveEvent: TouchEvent) => {
+                                const moveTouch = moveEvent.touches[0];
+                                const dx = ((moveTouch.clientX - startX) / window.innerWidth) * 100;
+                                const dy = ((moveTouch.clientY - startY) / window.innerHeight) * 100;
+                                setCropBox(prev => ({
+                                    ...prev,
+                                    x: Math.max(0, Math.min(100 - prev.width, initialX + dx)),
+                                    y: Math.max(0, Math.min(100 - prev.height, initialY + dy))
+                                }));
+                            };
+                            
+                            const onEnd = () => {
+                                window.removeEventListener('touchmove', onMove);
+                                window.removeEventListener('touchend', onEnd);
+                            };
+                            
+                            window.addEventListener('touchmove', onMove);
+                            window.addEventListener('touchend', onEnd);
+                        }}
+                        onMouseDown={(e) => {
+                            const startX = e.clientX;
+                            const startY = e.clientY;
+                            const initialX = cropBox.x;
+                            const initialY = cropBox.y;
+                            
+                            const onMove = (moveEvent: MouseEvent) => {
+                                const dx = ((moveEvent.clientX - startX) / window.innerWidth) * 100;
+                                const dy = ((moveEvent.clientY - startY) / window.innerHeight) * 100;
+                                setCropBox(prev => ({
+                                    ...prev,
+                                    x: Math.max(0, Math.min(100 - prev.width, initialX + dx)),
+                                    y: Math.max(0, Math.min(100 - prev.height, initialY + dy))
+                                }));
+                            };
+                            
+                            const onEnd = () => {
+                                window.removeEventListener('mousemove', onMove);
+                                window.removeEventListener('mouseup', onEnd);
+                            };
+                            
+                            window.addEventListener('mousemove', onMove);
+                            window.addEventListener('mouseup', onEnd);
+                        }}
+                   >
+                       <div className="absolute inset-0 border-2 border-white/30 rounded-lg animate-pulse" />
+                       <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-theme-brand/50 animate-scan-line" />
+                       
+                       {/* Resize Handle (Bottom Right) */}
+                       <div 
+                            className="absolute bottom-0 right-0 w-8 h-8 flex items-center justify-center cursor-nwse-resize"
+                            onTouchStart={(e) => {
+                                e.stopPropagation();
+                                const touch = e.touches[0];
+                                const startX = touch.clientX;
+                                const startY = touch.clientY;
+                                const initialW = cropBox.width;
+                                const initialH = cropBox.height;
+                                
+                                const onMove = (moveEvent: TouchEvent) => {
+                                    const moveTouch = moveEvent.touches[0];
+                                    const dw = ((moveTouch.clientX - startX) / window.innerWidth) * 100;
+                                    const dh = ((moveTouch.clientY - startY) / window.innerHeight) * 100;
+                                    setCropBox(prev => ({
+                                        ...prev,
+                                        width: Math.max(10, Math.min(100 - prev.x, initialW + dw)),
+                                        height: Math.max(5, Math.min(100 - prev.y, initialH + dh))
+                                    }));
+                                };
+                                
+                                const onEnd = () => {
+                                    window.removeEventListener('touchmove', onMove);
+                                    window.removeEventListener('touchend', onEnd);
+                                };
+                                
+                                window.addEventListener('touchmove', onMove);
+                                window.addEventListener('touchend', onEnd);
+                            }}
+                            onMouseDown={(e) => {
+                                e.stopPropagation();
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const initialW = cropBox.width;
+                                const initialH = cropBox.height;
+                                
+                                const onMove = (moveEvent: MouseEvent) => {
+                                    const dw = ((moveEvent.clientX - startX) / window.innerWidth) * 100;
+                                    const dh = ((moveEvent.clientY - startY) / window.innerHeight) * 100;
+                                    setCropBox(prev => ({
+                                        ...prev,
+                                        width: Math.max(10, Math.min(100 - prev.x, initialW + dw)),
+                                        height: Math.max(5, Math.min(100 - prev.y, initialH + dh))
+                                    }));
+                                };
+                                
+                                const onEnd = () => {
+                                    window.removeEventListener('mousemove', onMove);
+                                    window.removeEventListener('mouseup', onEnd);
+                                };
+                                
+                                window.addEventListener('mousemove', onMove);
+                                window.addEventListener('mouseup', onEnd);
+                            }}
+                       >
+                           <div className="w-3 h-3 bg-white rounded-full shadow-lg" />
+                       </div>
+                   </div>
+               </div>
+
+               <div className="mt-4 flex gap-3">
+                   <button 
+                        onClick={() => { setShowCropModal(false); setSelectedImage(null); }}
+                        className="flex-1 py-4 bg-white/5 text-theme-secondary font-bold rounded-2xl hover:bg-white/10 transition-colors uppercase text-xs"
+                   >
+                       {t('cancel')}
+                   </button>
+                   <button 
+                        onClick={handleApplyCrop}
+                        disabled={isScanning}
+                        className="flex-[2] py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-lg shadow-brand/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all uppercase text-xs"
+                   >
+                       {isScanning ? (
+                           <>
+                               <Loader2 size={18} className="animate-spin" />
+                               {t('analyzing') || 'Analizando...'}
+                           </>
+                       ) : (
+                           <>
+                               <RefreshCcw size={18} />
+                               {t('processSelection') || 'Analizar Selección'}
+                           </>
+                       )}
+                   </button>
+               </div>
+           </div>
+       )}
     </div>
   );
 };

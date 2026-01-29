@@ -82,6 +82,11 @@ function AppContent() {
     const saved = localStorage.getItem("autoLockEnabled");
     return saved !== null ? JSON.parse(saved) : false;
   });
+  const [autoLockDelay, setAutoLockDelay] = useState(() => {
+    const saved = localStorage.getItem("autoLockDelay");
+    return saved !== null ? JSON.parse(saved) : 0;
+  });
+  const [backgroundTime, setBackgroundTime] = useState<number | null>(null);
   const [isAppLocked, setIsAppLocked] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
@@ -192,13 +197,29 @@ function AppContent() {
   // PIN Lock on Resume
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && autoLockEnabled) {
-        setIsAppLocked(true);
+      if (document.visibilityState === 'hidden') {
+        setBackgroundTime(Date.now());
+      } else if (document.visibilityState === 'visible' && autoLockEnabled) {
+        if (backgroundTime !== null) {
+          const elapsed = (Date.now() - backgroundTime) / 1000;
+          if (elapsed >= autoLockDelay) {
+            setIsAppLocked(true);
+          }
+        } else {
+           // Fallback for first time or if backgroundTime was lost
+           setIsAppLocked(true);
+        }
+        setBackgroundTime(null);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [autoLockEnabled]);
+  }, [autoLockEnabled, autoLockDelay, backgroundTime]);
+
+  const handleSetAutoLockDelay = (delay: number) => {
+    setAutoLockDelay(delay);
+    localStorage.setItem("autoLockDelay", JSON.stringify(delay));
+  };
 
   const handleToggleAutoLock = (enabled: boolean) => {
     setAutoLockEnabled(enabled);
@@ -846,6 +867,8 @@ function AppContent() {
             showAlert={showAlert}
             autoLockEnabled={autoLockEnabled}
             onToggleAutoLock={handleToggleAutoLock}
+            autoLockDelay={autoLockDelay}
+            onSetAutoLockDelay={handleSetAutoLockDelay}
             isDevMode={isDevMode}
           />
         )}
