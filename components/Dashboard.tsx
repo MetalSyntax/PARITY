@@ -620,15 +620,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 className="cursor-pointer"
                 onClick={() => onNavigate("PROFILE")}
               >
-                <div className="flex items-center gap-2">
-                  <p className="text-[10px] text-theme-secondary uppercase tracking-widest font-bold">
-                    {t("welcome")}
-                  </p>
-                  {isDevMode && (
+                {isDevMode && (
                     <span className="px-1.5 py-0.5 rounded-md bg-theme-brand/20 border border-theme-brand/30 text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
                       {t('devMode')}
                     </span>
                   )}
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-theme-secondary uppercase tracking-widest font-bold">
+                    {t("welcome")}
+                  </p>
+                  
                 </div>
                 <p className="text-sm font-black text-theme-primary">
                   {userProfile.name}
