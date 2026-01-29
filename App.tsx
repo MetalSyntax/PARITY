@@ -695,6 +695,7 @@ function AppContent() {
               exchangeRate={exchangeRate}
               displayInVES={displayInVES}
               onToggleDisplayCurrency={toggleDisplayCurrency}
+              isBalanceVisible={isBalanceVisible}
             />
           )}
           {currentView === 'BUDGET' && (
@@ -711,6 +712,7 @@ function AppContent() {
               exchangeRate={exchangeRate}
               displayInVES={displayInVES}
               onToggleDisplayCurrency={toggleDisplayCurrency}
+              isBalanceVisible={isBalanceVisible}
             />
           )}
           {currentView === 'ANALYSIS' && (
@@ -783,6 +785,7 @@ function AppContent() {
               exchangeRate={exchangeRate}
               displayInVES={displayInVES}
               onToggleDisplayCurrency={toggleDisplayCurrency}
+              isBalanceVisible={isBalanceVisible}
             />
           )}
           {currentView === 'CURRENCY_PERF' && (
@@ -791,6 +794,7 @@ function AppContent() {
               transactions={transactions}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
+              isBalanceVisible={isBalanceVisible}
             />
           )}
         </motion.div>

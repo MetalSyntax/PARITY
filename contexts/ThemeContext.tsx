@@ -24,12 +24,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     // Apply theme variables
-    const colors = themeData.themes[currentTheme].colors;
+    const theme = themeData.themes[currentTheme];
+    const colors = theme.colors as Record<string, string>;
     const root = document.documentElement;
     
     Object.entries(colors).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
+
+    // Update meta theme-color for mobile browsers (Android & iOS)
+    // Using --bg-primary to match the main app background for a seamless status bar
+    const metaThemeColor = document.querySelector("meta[name='theme-color']");
+    if (metaThemeColor && colors['--bg-primary']) {
+      metaThemeColor.setAttribute("content", colors['--bg-primary']);
+    }
 
     localStorage.setItem('app_theme', currentTheme);
   }, [currentTheme]);

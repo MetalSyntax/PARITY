@@ -41,6 +41,12 @@
         background-color: #050505;
         color: #ffffff;
         -webkit-tap-highlight-color: transparent;
+        overscroll-behavior-y: none;
+        overflow: hidden; /* Critical for preventing body scroll bounce */
+      }
+      html {
+        overscroll-behavior-y: none;
+        overflow: hidden;
       }
       /* Hide scrollbar for clean UI */
       .no-scrollbar::-webkit-scrollbar {

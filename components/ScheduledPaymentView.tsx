@@ -15,6 +15,7 @@ interface ScheduledPaymentViewProps {
   exchangeRate: number;
   displayInVES: boolean;
   onToggleDisplayCurrency: () => void;
+  isBalanceVisible: boolean;
 }
 
 export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ 
@@ -27,9 +28,18 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   showConfirm,
   exchangeRate,
   displayInVES,
-  onToggleDisplayCurrency
+  onToggleDisplayCurrency,
+  isBalanceVisible
 }) => {
   const t = (key: any) => getTranslation(lang, key);
+  
+  const formatAmount = (usd: number) => {
+    if (!isBalanceVisible) return '******';
+    const val = displayInVES ? usd * exchangeRate : usd;
+    const symbol = displayInVES ? 'Bs. ' : '$';
+    return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
@@ -293,7 +303,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {incomeSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} displayInVES={displayInVES} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} displayInVES={displayInVES} isBalanceVisible={isBalanceVisible} />
               ))}
               {incomeSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -311,7 +321,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {expenseSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} displayInVES={displayInVES} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} displayInVES={displayInVES} isBalanceVisible={isBalanceVisible} />
               ))}
               {expenseSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -341,9 +351,10 @@ interface ScheduledItemProps {
   onDelete: (id: string) => void;
   exchangeRate: number;
   displayInVES: boolean;
+  isBalanceVisible: boolean;
 }
 
-const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate, displayInVES }) => {
+const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate, displayInVES, isBalanceVisible }) => {
   const isIncome = p.type === TransactionType.INCOME;
   
   return (
@@ -369,11 +380,19 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
       <div className="text-right flex items-center gap-3">
           <div className="flex flex-col items-end">
             <span className={`font-black text-sm ${isIncome ? 'text-emerald-400' : 'text-theme-primary'}`}>
-              {displayInVES ? 'Bs.' : (p.currency === Currency.USD ? '$' : 'Bs.')}
-              {(displayInVES ? (p.currency === Currency.VES ? p.amount : p.amount * exchangeRate) : (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {isBalanceVisible ? (
+                  <>
+                    {displayInVES ? 'Bs.' : (p.currency === Currency.USD ? '$' : 'Bs.')}
+                    {(displayInVES ? (p.currency === Currency.VES ? p.amount : p.amount * exchangeRate) : (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </>
+              ) : '******'}
             </span>
             <span className="text-[10px] text-zinc-500 font-mono">
-              ~{displayInVES ? '$' : 'Bs.'} {(displayInVES ? (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate) : (p.currency === Currency.USD ? p.amount * exchangeRate : p.amount)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              {isBalanceVisible ? (
+                  <>
+                  ~{displayInVES ? '$' : 'Bs.'} {(displayInVES ? (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate) : (p.currency === Currency.USD ? p.amount * exchangeRate : p.amount)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </>
+              ) : '******'}
             </span>
             <span className="text-[9px] text-theme-secondary font-bold uppercase">{t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}</span>
           </div>

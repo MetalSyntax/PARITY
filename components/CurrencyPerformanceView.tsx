@@ -9,15 +9,23 @@ interface CurrencyPerformanceViewProps {
     exchangeRate: number;
     lang: string;
     onBack: () => void;
+    isBalanceVisible: boolean;
 }
 
 export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = ({
     transactions,
     exchangeRate,
     lang,
-    onBack
+    onBack,
+    isBalanceVisible
 }) => {
     const t = (key: any) => getTranslation(lang as any, key);
+
+    const formatAmount = (usd: number) => {
+        if (!isBalanceVisible) return '******';
+        const val = usd; // This view doesn't use displayInVES
+        return `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
 
     // Calculate Average User Purchase Rate
     const avgUserRate = useMemo(() => {
@@ -103,7 +111,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             <h3 className="font-extrabold text-theme-primary text-xl">Escudo de Inflación</h3>
                         </div>
                         <span className="bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-full text-[10px] font-black border border-blue-500/20">
-                            +{rateDiff.toFixed(1)}% vs IPC
+                            {isBalanceVisible ? `+${rateDiff.toFixed(1)}% vs IPC` : '******'}
                         </span>
                     </div>
 
@@ -134,7 +142,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     <div className="bg-blue-500 p-6 rounded-[2rem] shadow-lg shadow-blue-500/20">
                         <p className="text-[10px] font-black text-blue-100/70 uppercase mb-2">Tu Tasa Promedio</p>
                         <div className="flex items-end gap-1 mb-3">
-                            <span className="text-3xl font-black text-white">{avgUserRate.toFixed(2)}</span>
+                            <span className="text-3xl font-black text-white">{formatAmount(avgUserRate)}</span>
                             <span className="text-xs font-bold text-blue-200 mb-1.5">Bs/$</span>
                         </div>
                         <div className="inline-flex items-center gap-1 bg-white/20 px-2 py-1 rounded-lg text-[10px] font-black text-white">
@@ -146,7 +154,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     <div className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem]">
                         <p className="text-[10px] font-black text-zinc-500 uppercase mb-2">Tasa Mercado</p>
                         <div className="flex items-end gap-1 mb-3">
-                            <span className="text-3xl font-black text-white">{exchangeRate.toFixed(2)}</span>
+                            <span className="text-3xl font-black text-white">{formatAmount(exchangeRate)}</span>
                             <span className="text-xs font-bold text-zinc-500 mb-1.5">Bs/$</span>
                         </div>
                         <div className="flex items-center gap-1 text-zinc-500">
@@ -164,7 +172,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             <p className="text-[10px] font-bold text-zinc-500 uppercase">Últimos 7 días</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-emerald-400 font-black">+1.50 Bs</p>
+                            <p className="text-emerald-400 font-black">{isBalanceVisible ? '+1.50 Bs' : '******'}</p>
                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Ganancia/Dólar</p>
                         </div>
                     </div>
@@ -181,7 +189,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     <h4 className="text-2xl font-black text-white mb-2">¡Bien jugado!</h4>
                     <p className="text-sm text-zinc-400 leading-relaxed font-bold">
                         Gastaste cuando el <span className="text-theme-brand">dólar estaba barato</span>. <br/>
-                        Tu estrategia de cambio ahorró <span className="text-emerald-400">Bs. 3,450</span> este mes.
+                        Tu estrategia de cambio ahorró <span className="text-emerald-400">{isBalanceVisible ? 'Bs. 3,450' : '******'}</span> este mes.
                     </p>
                 </div>
             </div>

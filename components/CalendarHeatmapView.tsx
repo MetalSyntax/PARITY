@@ -10,6 +10,7 @@ interface CalendarHeatmapViewProps {
     exchangeRate: number;
     displayInVES: boolean;
     onToggleDisplayCurrency: () => void;
+    isBalanceVisible: boolean;
 }
 
 export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({ 
@@ -18,12 +19,20 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
     onBack,
     exchangeRate,
     displayInVES,
-    onToggleDisplayCurrency
+    onToggleDisplayCurrency,
+    isBalanceVisible
 }) => {
     const t = (key: any) => getTranslation(lang as any, key);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState<{ date: Date, txs: Transaction[] } | null>(null);
     const [showPatternDetails, setShowPatternDetails] = useState(false);
+
+    const formatAmount = (usd: number) => {
+        if (!isBalanceVisible) return '******';
+        const val = displayInVES ? usd * exchangeRate : usd;
+        const symbol = displayInVES ? 'Bs. ' : '$';
+        return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
 
     const monthYear = currentDate.toLocaleString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long', year: 'numeric' });
     
@@ -162,7 +171,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                             <h3 className="font-black text-lg text-theme-primary mb-1">Patrón de Gasto</h3>
                             <p className="text-xs text-theme-secondary leading-relaxed opacity-80">
                                 Tus viernes son días de gasto fuerte. <br/>
-                                <span className="font-bold">Promedio: {displayInVES ? 'Bs.' : '$'} {Math.round(displayInVES ? maxSpend * 0.8 * exchangeRate : maxSpend * 0.8).toLocaleString()} {displayInVES ? '' : 'USD'}</span> / {displayInVES ? '$' : 'Bs.'} {Math.round(displayInVES ? maxSpend * 0.8 : maxSpend * 0.8 * exchangeRate).toLocaleString()}
+                                <span className="font-bold">Promedio: {formatAmount(maxSpend * 0.8)}</span> {isBalanceVisible && `/ ${displayInVES ? '$' : 'Bs.'} ${Math.round(displayInVES ? maxSpend * 0.8 : maxSpend * 0.8 * exchangeRate).toLocaleString()}`}
                             </p>
                         </div>
                     </div>
@@ -185,7 +194,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                         </div>
                         <span className="text-xs font-bold text-theme-secondary opacity-80">Ahorro potencial este mes</span>
                     </div>
-                    <span className="text-lg font-black text-theme-primary">{displayInVES ? 'Bs.' : '$'} {(displayInVES ? potentialSavings * exchangeRate : potentialSavings).toFixed(0)} {displayInVES ? '' : 'USD'}</span>
+                    <span className="text-lg font-black text-theme-primary">{formatAmount(potentialSavings)}</span>
                 </div>
             </div>
 
@@ -217,14 +226,16 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-sm font-black text-red-400">-{displayInVES ? 'Bs.' : '$'} {(displayInVES ? (tx.originalCurrency === Currency.USD ? tx.amount * exchangeRate : tx.amount) : (tx.originalCurrency === Currency.USD ? tx.amount : tx.amount / exchangeRate)).toLocaleString()}</p>
-                                                <p className="text-[10px] font-bold text-zinc-500">~{displayInVES ? '$' : 'Bs.'} {(displayInVES ? (tx.originalCurrency === Currency.USD ? tx.amount : tx.amount / exchangeRate) : (tx.originalCurrency === Currency.USD ? tx.amount * exchangeRate : tx.amount)).toLocaleString()}</p>
+                                                <p className="text-sm font-black text-red-400">-{formatAmount(tx.normalizedAmountUSD)}</p>
+                                                {isBalanceVisible && (
+                                                    <p className="text-[10px] font-bold text-zinc-500">~{displayInVES ? '$' : 'Bs.'} {(displayInVES ? (tx.originalCurrency === Currency.USD ? tx.amount : tx.amount / exchangeRate) : (tx.originalCurrency === Currency.USD ? tx.amount * exchangeRate : tx.amount)).toLocaleString()}</p>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
                                     <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
                                         <span className="text-xs font-black text-zinc-500 uppercase">Total Diario</span>
-                                        <span className="text-lg font-black text-theme-primary">{displayInVES ? 'Bs.' : '$'} {(displayInVES ? selectedDay.txs.reduce((a,b) => a + b.normalizedAmountUSD, 0) * exchangeRate : selectedDay.txs.reduce((a,b) => a + b.normalizedAmountUSD, 0)).toFixed(2)} {displayInVES ? '' : 'USD'}</span>
+                                        <span className="text-lg font-black text-theme-primary">{formatAmount(selectedDay.txs.reduce((a,b) => a + b.normalizedAmountUSD, 0))}</span>
                                     </div>
                                 </div>
                             ) : (

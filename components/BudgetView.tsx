@@ -49,6 +49,7 @@ interface BudgetViewProps {
   exchangeRate: number;
   displayInVES: boolean;
   onToggleDisplayCurrency: () => void;
+  isBalanceVisible: boolean;
 }
 
 export const BudgetView: React.FC<BudgetViewProps> = ({ 
@@ -63,17 +64,20 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     showConfirm,
     exchangeRate,
     displayInVES,
-    onToggleDisplayCurrency
+    onToggleDisplayCurrency,
+    isBalanceVisible
 }) => {
   const t = (key: any) => getTranslation(lang, key);
 
   const formatAmount = (usd: number, decimals: number = 0) => {
+    if (!isBalanceVisible) return '******';
     const val = displayInVES ? usd * exchangeRate : usd;
     const symbol = displayInVES ? 'Bs. ' : '$';
     return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   };
 
   const formatSecondary = (usd: number) => {
+    if (!isBalanceVisible) return '******';
     const val = displayInVES ? usd : usd * exchangeRate;
     const symbol = displayInVES ? '$' : 'Bs.';
     return `${symbol} ${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;

@@ -16,14 +16,16 @@
   --danger: #ef4444;
   --border: rgba(255, 255, 255, 0.1);
 }
-body {
-background-color: var(--bg-primary);
-color: var(--text-primary);
-user-select: none;
-touch-action: pan-x pan-y;
-overscroll-behavior-y: none; /* Prevent pull-to-refresh */
--webkit-user-select: none;
--webkit-touch-callout: none;
+html, body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  user-select: none;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-y: none; /* Prevent pull-to-refresh globally */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  height: 100%;
+  overflow: hidden; /* Prevent body scroll, handle scroll in children */
 }
 
 /* Custom Utilities for usage with variables */
