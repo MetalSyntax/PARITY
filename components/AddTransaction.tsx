@@ -71,8 +71,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [isScanning, setIsScanning] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showCropModal, setShowCropModal] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
   const [cropBox, setCropBox] = useState({ x: 20, y: 30, width: 60, height: 40 }); // Relative %
   const imgRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const recognitionRef = useRef<any>(null);
 
   const handleClose = useCallback(() => {
@@ -82,7 +85,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showCropModal) {
+        if (showCameraModal) {
+            stopCamera();
+        } else if (showCropModal) {
             setShowCropModal(false);
             setSelectedImage(null);
         } else if (showCategoryModal) setShowCategoryModal(false);
@@ -220,8 +225,51 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
     }
   };
 
-  const stopScanner = () => {
-      // Compatibility helper
+  const startCamera = async () => {
+    setShowCameraModal(true);
+    // Wait for modal to render
+    setTimeout(async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+            });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            console.error("Camera access error:", err);
+            showAlert('Camera access denied', 'error');
+            setShowCameraModal(false);
+        }
+    }, 100);
+  };
+
+  const stopCamera = () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream;
+          stream.getTracks().forEach(track => track.stop());
+          videoRef.current.srcObject = null;
+      }
+      setShowCameraModal(false);
+  };
+
+  const capturePhoto = () => {
+      if (!videoRef.current) return;
+      
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = canvas.toDataURL('image/jpeg');
+          
+          stopCamera();
+          setSelectedImage(imageData);
+          setShowCropModal(true);
+      }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -516,21 +564,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     {showScanOptions && (
                         <div className="absolute bottom-full mb-2 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[200px] z-[60] animate-in fade-in slide-in-from-bottom-2">
                             <div className="relative">
-                                <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    capture="environment"
-                                    onChange={(e) => { setShowScanOptions(false); handleFileSelect(e); }} 
-                                    className="hidden" 
-                                    id="camera-capture-input" 
-                                />
-                                <label 
-                                    htmlFor="camera-capture-input" 
+                                <button
+                                    onClick={() => { setShowScanOptions(false); startCamera(); }} 
                                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
                                 >
                                     <Camera size={16} className="text-theme-brand" />
                                     <span className="font-bold">{t('openCamera') || 'Abrir Cámara'}</span>
-                                </label>
+                                </button>
                             </div>
                             
                             <div className="relative">
@@ -929,6 +969,48 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                            </>
                        )}
                    </button>
+               </div>
+           </div>
+       )}
+       {/* Custom Camera Modal */}
+       {showCameraModal && (
+           <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-in fade-in duration-300">
+               <div className="flex-1 relative flex items-center justify-center bg-black overflow-hidden">
+                   <video 
+                       ref={videoRef} 
+                       autoPlay 
+                       playsInline 
+                       className="w-full h-full object-cover"
+                   />
+                   
+                   {/* Camera UI Overlay */}
+                   <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
+                       <div className="w-full flex justify-end">
+                            {/* Top controls if needed */}
+                       </div>
+                       <div className="w-full flex justify-center pb-10">
+                           <div className="w-16 h-16 border-2 border-white/30 rounded-lg pointer-events-none" />
+                           <p className="absolute bottom-24 text-white/70 text-xs font-bold bg-black/50 px-3 py-1 rounded-full">
+                               {t('selectArea') || 'Tap button to capture'}
+                           </p>
+                       </div>
+                   </div>
+               </div>
+
+               {/* Camera Controls */}
+               <div className="bg-zinc-950 p-8 flex items-center justify-between border-t border-white/5 pb-12">
+                   <button onClick={stopCamera} className="p-4 bg-white/5 text-zinc-400 rounded-full font-bold hover:bg-white/10 transition-colors">
+                       <X size={24} />
+                   </button>
+                   
+                   <button 
+                       onClick={capturePhoto} 
+                       className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95 transition-all border-4 border-zinc-900 ring-2 ring-white"
+                   >
+                       <div className="w-16 h-16 bg-white rounded-full border-2 border-zinc-300" />
+                   </button>
+
+                   <div className="w-[56px]" /> {/* Spacer for symmetry */}
                </div>
            </div>
        )}
