@@ -67,50 +67,18 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [date, setDate] = useState(initialData ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
-  const [showScanner, setShowScanner] = useState(false);
   const [showScanOptions, setShowScanOptions] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  const startScanner = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } 
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setShowScanner(true);
-      }
-    } catch (err) {
-      showAlert('Camera access denied', 'error');
-    }
-  };
-
-  const stopScanner = useCallback(() => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => {
-        track.stop();
-        track.enabled = false;
-      });
-      videoRef.current.srcObject = null;
-    }
-    setShowScanner(false);
-    setIsScanning(false);
-  }, []);
-
   const handleClose = useCallback(() => {
-    stopScanner();
     onClose();
-  }, [onClose, stopScanner]);
+  }, [onClose]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showScanner) stopScanner();
-        else if (showCategoryModal) setShowCategoryModal(false);
+        if (showCategoryModal) setShowCategoryModal(false);
         else if (showAccountSelector) setShowAccountSelector(null);
         else handleClose();
       }
@@ -118,25 +86,40 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
     window.addEventListener('keydown', handleEsc);
     return () => {
       window.removeEventListener('keydown', handleEsc);
-      stopScanner();
     };
-  }, [handleClose, stopScanner, showScanner, showCategoryModal, showAccountSelector]);
+  }, [handleClose, showCategoryModal, showAccountSelector]);
 
   const processImage = async (imageSource: CanvasImageSource | string) => {
     setIsScanning(true);
     try {
       const { data: { text } } = await Tesseract.recognize(imageSource, 'eng+spa');
+      console.log("OCR Result:", text);
       
-      const totalKeywords = ['total', 'neto', 'suma', 'amount', 'grand total', 'valor total', 'importe total', 'pago total', 'pagar'];
+      const totalKeywords = ['total', 'neto', 'suma', 'amount', 'grand total', 'valor total', 'importe total', 'pago total', 'pagar', 'total a pagar'];
       const lines = text.split('\n');
       let foundAmount = null;
+      let detectedCurrency: Currency | null = null;
+
+      // detect currency from whole text first
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('bs') || lowerText.includes('ves') || lowerText.includes('bolivares') || lowerText.includes('bolívares')) {
+          detectedCurrency = Currency.VES;
+      } else if (lowerText.includes('$') || lowerText.includes('usd') || lowerText.includes('dolar') || lowerText.includes('dólar')) {
+          detectedCurrency = Currency.USD;
+      }
 
       for (const line of lines) {
           const lowerLine = line.toLowerCase();
           if (totalKeywords.some(kw => lowerLine.includes(kw))) {
-              const amountRegex = /(\d+[.,]\d{2})/g;
+              // Priority for total line currency detection
+              if (lowerLine.includes('bs') || lowerLine.includes('ves')) detectedCurrency = Currency.VES;
+              else if (lowerLine.includes('$') || lowerLine.includes('usd')) detectedCurrency = Currency.USD;
+
+              // Improved regex: matches numbers like 1,234.56 or 1.234,56 or 1234.56
+              const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2}))|(\d+[.,]\d{1,2})|(\d+)/g;
               const matches = line.match(amountRegex);
               if (matches && matches.length > 0) {
+                  // Usually the total is the last number on the "Total" line
                   foundAmount = matches[matches.length - 1];
                   break;
               }
@@ -144,11 +127,26 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       }
 
       if (!foundAmount) {
-          const amountRegex = /(\d+[.,]\d{2})/g;
+          const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2}))|(\d+[.,]\d{1,2})/g;
           const allMatches = text.match(amountRegex);
           if (allMatches) {
               const numbers = allMatches.map(m => {
-                  const val = parseFloat(m.replace(',', '.'));
+                  // Basic normalization: remove thousands separators, set . as decimal
+                  let cleaned = m.replace(/\s/g, '');
+                  if (cleaned.includes(',') && cleaned.includes('.')) {
+                      // format like 1,234.56 or 1.234,56
+                      const lastDot = cleaned.lastIndexOf('.');
+                      const lastComma = cleaned.lastIndexOf(',');
+                      if (lastDot > lastComma) {
+                          cleaned = cleaned.replace(/,/g, ''); // 1,234.56 -> 1234.56
+                      } else {
+                          cleaned = cleaned.replace(/\./g, '').replace(',', '.'); // 1.234,56 -> 1234.56
+                      }
+                  } else if (cleaned.includes(',')) {
+                      // format like 1234,56
+                      cleaned = cleaned.replace(',', '.');
+                  }
+                  const val = parseFloat(cleaned);
                   return isNaN(val) ? 0 : val;
               });
               if (numbers.length > 0) {
@@ -158,35 +156,43 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       }
       
       if (foundAmount) {
-        const cleanedAmount = foundAmount.replace(',', '.');
+        // Re-calculate or just use the val if we were in the non-keywords loop
+        // To be safe, let's normalize the foundAmount one last time
+        let forFinal = foundAmount.replace(/\s/g, '');
+        if (forFinal.includes(',') && forFinal.includes('.')) {
+            const lastDot = forFinal.lastIndexOf('.');
+            const lastComma = forFinal.lastIndexOf(',');
+            if (lastDot > lastComma) forFinal = forFinal.replace(/,/g, '');
+            else forFinal = forFinal.replace(/\./g, '').replace(',', '.');
+        } else if (forFinal.includes(',')) {
+            forFinal = forFinal.replace(',', '.');
+        }
+
+        const cleanedAmount = forFinal;
         setAmountStr(cleanedAmount);
-        showAlert(`${t('totalFound') || 'Total found'}: ${cleanedAmount}`, 'success');
+        if (detectedCurrency) {
+            setCurrency(detectedCurrency);
+            showAlert(`${t('totalFound') || 'Total found'}: ${detectedCurrency === Currency.USD ? '$' : 'Bs. '}${cleanedAmount}`, 'success');
+        } else {
+            showAlert(`${t('totalFound') || 'Total found'}: ${cleanedAmount}`, 'success');
+        }
         stopScanner();
       } else {
         showAlert(t('totalNotFound') || 'Total not found in the invoice image', 'info');
       }
     } catch (err) {
-      console.error(err);
+      console.error("OCR Error:", err);
       showAlert('OCR Scan failed', 'error');
     } finally {
       setIsScanning(false);
     }
   };
 
-  const captureAndScan = async () => {
-    if (!videoRef.current || !canvasRef.current || isScanning) return;
-    
-    const context = canvasRef.current.getContext('2d');
-    if (!context) return;
-    
-    canvasRef.current.width = videoRef.current.videoWidth;
-    canvasRef.current.height = videoRef.current.videoHeight;
-    context.drawImage(videoRef.current, 0, 0);
-    
-    await processImage(canvasRef.current);
+  const stopScanner = () => {
+      // Compatibility helper
   };
 
-  const handleGallerySelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -469,26 +475,36 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     <button 
                         onClick={() => setShowScanOptions(!showScanOptions)} 
                         title="Scan Options" 
-                        className={`p-2.5 rounded-xl transition-all shadow-lg border ${showScanOptions || showScanner ? 'bg-theme-brand text-white border-theme-brand' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
+                        className={`p-2.5 rounded-xl transition-all shadow-lg border ${showScanOptions || isScanning ? 'bg-theme-brand text-white border-theme-brand' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
                     >
-                        <Camera size={18} />
+                        {isScanning ? <Loader2 size={18} className="animate-spin text-white" /> : <Camera size={18} />}
                     </button>
                     
                     {showScanOptions && (
-                        <div className="absolute bottom-full mb-2 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[180px] z-[60] animate-in fade-in slide-in-from-bottom-2">
-                            <button 
-                                onClick={() => { setShowScanOptions(false); startScanner(); }} 
-                                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors"
-                            >
-                                <Camera size={16} className="text-theme-brand" />
-                                <span className="font-bold">{t('openCamera') || 'Abrir Cámara'}</span>
-                            </button>
+                        <div className="absolute bottom-full mb-2 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[200px] z-[60] animate-in fade-in slide-in-from-bottom-2">
+                            <div className="relative">
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    capture="environment"
+                                    onChange={(e) => { setShowScanOptions(false); handleFileSelect(e); }} 
+                                    className="hidden" 
+                                    id="camera-capture-input" 
+                                />
+                                <label 
+                                    htmlFor="camera-capture-input" 
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+                                >
+                                    <Camera size={16} className="text-theme-brand" />
+                                    <span className="font-bold">{t('openCamera') || 'Abrir Cámara'}</span>
+                                </label>
+                            </div>
                             
                             <div className="relative">
                                 <input 
                                     type="file" 
                                     accept="image/*" 
-                                    onChange={(e) => { setShowScanOptions(false); handleGallerySelect(e); }} 
+                                    onChange={(e) => { setShowScanOptions(false); handleFileSelect(e); }} 
                                     className="hidden" 
                                     id="gallery-input-main" 
                                 />
@@ -714,79 +730,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         </div>
        )}
 
-       {/* Camera Scanner Modal */}
-       {showScanner && (
-         <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-in fade-in duration-300">
-            <div className="flex-1 relative flex items-center justify-center bg-black">
-                <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    className="w-full h-full object-cover opacity-80"
-                />
-                
-                {/* Scanner Interface Overlay */}
-                <div className="absolute inset-0 border-[2px] border-theme-brand/30 pointer-events-none">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-theme-brand rounded-3xl shadow-[0_0_50px_rgba(var(--brand-rgb),0.3)]">
-                        <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-theme-brand -mt-1 -ml-1 rounded-tl-lg" />
-                        <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-theme-brand -mt-1 -mr-1 rounded-tr-lg" />
-                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-theme-brand -mb-1 -ml-1 rounded-bl-lg" />
-                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-theme-brand -mb-1 -mr-1 rounded-br-lg" />
-                        
-                        {isScanning && (
-                            <div className="absolute inset-0 bg-theme-brand/10 flex items-center justify-center animate-pulse">
-                                <Loader2 size={48} className="text-white animate-spin" />
-                            </div>
-                        )}
-                        
-                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-theme-brand/50 shadow-[0_0_10px_rgba(var(--brand-rgb),0.5)] animate-scan-line" />
-                    </div>
-                </div>
-
-                {/* Info Text */}
-                <div className="absolute bottom-[20%] left-0 right-0 text-center px-10">
-                    <p className="text-white font-bold text-sm bg-black/50 backdrop-blur-md py-3 rounded-2xl border border-white/10">
-                        {isScanning ? 'Analizando factura...' : 'Encuadra el TOTAL de la factura aquí'}
-                    </p>
-                </div>
-            </div>
-
-            {/* Controls */}
-            <div className="bg-zinc-950 p-8 flex items-center justify-between border-t border-white/5">
-                <button onClick={stopScanner} className="p-4 bg-white/5 text-zinc-400 rounded-2xl font-bold px-4 hover:bg-white/10 transition-colors flex flex-col items-center gap-1">
-                    <X size={20} />
-                    <span className="text-[10px] uppercase">{t('cancel')}</span>
-                </button>
-                
-                <button 
-                    onClick={captureAndScan} 
-                    disabled={isScanning}
-                    className="w-20 h-20 bg-theme-brand text-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(var(--brand-rgb),0.4)] hover:scale-110 active:scale-95 transition-all disabled:opacity-50"
-                >
-                    {isScanning ? <Loader2 size={32} className="animate-spin" /> : <Camera size={32} />}
-                </button>
-
-                <div className="relative">
-                    <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleGallerySelect} 
-                        className="hidden" 
-                        id="gallery-input" 
-                    />
-                    <label 
-                        htmlFor="gallery-input" 
-                        className="p-4 bg-white/5 text-zinc-400 rounded-2xl font-bold px-4 hover:bg-white/10 transition-colors flex flex-col items-center gap-1 cursor-pointer"
-                    >
-                        <ImageIcon size={20} />
-                        <span className="text-[10px] uppercase">{t('gallery') || 'Galería'}</span>
-                    </label>
-                </div>
-            </div>
-            
-            <canvas ref={canvasRef} className="hidden" />
-         </div>
-       )}
     </div>
   );
 };
