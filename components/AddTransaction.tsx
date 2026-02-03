@@ -57,6 +57,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       ? initialData.toAccountId 
       : (accounts.length > 1 ? accounts[1].id : (accounts.length > 0 ? accounts[0].id : ''))
   );
+  const [manualExchangeRate, setManualExchangeRate] = useState<string>(initialData?.exchangeRate?.toString() || exchangeRate.toString());
+
   
   const [categoryId, setCategoryId] = useState<string>(initialData ? initialData.category : CATEGORIES[0].id);
   const [isCalculatorMode, setIsCalculatorMode] = useState(false);
@@ -390,7 +392,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       id: initialData?.id, // Pass ID if editing
       amount: finalAmount,
       originalCurrency: currency,
-      exchangeRate: exchangeRate, 
+      exchangeRate: type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency 
+        ? parseFloat(manualExchangeRate) 
+        : exchangeRate, 
       type,
       category: categoryId,
       accountId: fromAccountId,
@@ -541,6 +545,35 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
              </div>
            </div>
         </div>
+
+        {/* Manual Exchange Rate for Multi-currency Transfer */}
+        {type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
+            <div className="flex flex-col items-center mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="bg-theme-surface border border-theme-brand/30 rounded-2xl p-4 w-full flex items-center justify-between gap-4">
+                    <div className="flex flex-col">
+                       <span className="text-[10px] uppercase font-bold text-theme-secondary tracking-wider mb-1">{t('exchangeRate') || 'Exchange Rate'}</span>
+                       <div className="flex items-center gap-2">
+                           <span className="text-xs font-bold text-theme-primary">1 {getActiveAccount(fromAccountId).currency} =</span>
+                           <input 
+                               type="number"
+                               value={manualExchangeRate}
+                               onChange={(e) => setManualExchangeRate(e.target.value)}
+                               className="bg-theme-bg border border-white/10 rounded-lg px-3 py-1.5 text-sm font-mono text-theme-brand w-24 focus:border-theme-brand outline-none transition-colors"
+                           />
+                           <span className="text-xs font-bold text-theme-primary">{getActiveAccount(toAccountId).currency}</span>
+                       </div>
+                    </div>
+                    <div className="p-3 bg-theme-brand/10 rounded-xl text-theme-brand">
+                       <RefreshCcw size={20} />
+                    </div>
+                </div>
+                <p className="text-[10px] text-theme-secondary mt-2">
+                   {t('totalTarget') || 'Total to receive'}: <span className="text-theme-primary font-bold">
+                       {((parseFloat(amountStr) || 0) * (parseFloat(manualExchangeRate) || 0)).toLocaleString()} {getActiveAccount(toAccountId).currency}
+                   </span>
+                </p>
+            </div>
+        )}
 
         {/* Input Field */}
         <div className="bg-theme-surface border border-white/5 rounded-2xl p-1 flex items-center mb-6">

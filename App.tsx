@@ -15,8 +15,10 @@ import { CalendarHeatmapView } from './components/CalendarHeatmapView';
 import { CurrencyPerformanceView } from './components/CurrencyPerformanceView';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { getTranslation } from './i18n';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import './index.css';
+// @ts-ignore
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { INITIAL_RATE, MOCK_ACCOUNTS, CATEGORIES } from './constants';
 import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig } from './types';
@@ -41,6 +43,25 @@ function AppContent() {
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(true);
+  
+  // PWA Registration with Prompt
+  const {
+    offlineReady: [offlineReady, setOfflineReady],
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered:', r);
+      // Check for updates every hour
+      r && setInterval(() => {
+        r.update();
+      }, 60 * 60 * 1000);
+    },
+    onRegisterError(error) {
+      console.log('SW registration error', error);
+    },
+  });
+
   const [isBalanceVisible, setIsBalanceVisible] = useState(() => {
     const saved = localStorage.getItem("isBalanceVisible");
     return saved !== null ? JSON.parse(saved) : true;
@@ -669,6 +690,18 @@ function AppContent() {
               onDevModeTrigger={handleDevModeTrigger}
               displayInVES={displayInVES}
               onToggleDisplayCurrency={toggleDisplayCurrency}
+              needUpdate={needRefresh}
+              updateServiceWorker={updateServiceWorker}
+              onCheckUpdate={() => {
+                // Manually trigger a check via the service worker registration
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.ready.then(registration => {
+                    registration.update().then(() => {
+                      showAlert('Buscando actualizaciones...', 'info');
+                    });
+                  });
+                }
+              }}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -886,6 +919,43 @@ function AppContent() {
                     'bg-theme-surface/80 border-white/10 text-theme-primary'
                 }`}>
                     <span className="text-sm font-bold tracking-tight">{alertConfig.message}</span>
+                </div>
+            </div>
+        )}
+
+        {/* PWA Update / Offline Toast */}
+        {(needRefresh || offlineReady) && (
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-full duration-500 w-[90%] max-w-sm">
+                <div className="bg-theme-surface/90 backdrop-blur-2xl border border-theme-brand/30 p-4 rounded-[2rem] shadow-2xl flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-theme-brand/20 flex items-center justify-center text-theme-brand">
+                             <Plus className={`w-6 h-6 ${needRefresh ? 'rotate-45' : ''}`} />
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="text-sm font-black text-theme-primary">
+                                {needRefresh ? t('updateAvailable') || 'Nueva versión disponible' : t('appOfflineReady') || 'App lista para usar offline'}
+                            </h4>
+                            <p className="text-xs text-theme-secondary">
+                                {needRefresh ? t('updateDesc') || 'Actualiza para disfrutar de las últimas mejoras.' : t('offlineDesc') || 'Puedes seguir usando Parity sin conexión.'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => { setNeedRefresh(false); setOfflineReady(false); }}
+                            className="flex-1 py-3 rounded-xl bg-white/5 text-theme-secondary text-xs font-bold hover:bg-white/10 transition-colors"
+                        >
+                            {t('close') || 'Cerrar'}
+                        </button>
+                        {needRefresh && (
+                            <button 
+                                onClick={() => updateServiceWorker(true)}
+                                className="flex-[2] py-3 rounded-xl bg-theme-brand text-white text-xs font-bold shadow-lg shadow-theme-brand/30 hover:brightness-110 active:scale-95 transition-all"
+                            >
+                                {t('updateNow') || 'Actualizar Ahora'}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         )}

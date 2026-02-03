@@ -24,7 +24,9 @@ import {
   Wallet,
   GripVertical,
   Coins,
-  DollarSign
+  DollarSign,
+  RefreshCw,
+  ArrowDownToLine
 } from "lucide-react";
 import { motion, Reorder, useDragControls } from "framer-motion";
 import {
@@ -190,6 +192,9 @@ interface DashboardProps {
   onDevModeTrigger: () => void;
   displayInVES: boolean;
   onToggleDisplayCurrency: () => void;
+  needUpdate: boolean;
+  updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
+  onCheckUpdate: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -207,7 +212,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   isDevMode,
   onDevModeTrigger,
   displayInVES,
-  onToggleDisplayCurrency
+  onToggleDisplayCurrency,
+  needUpdate,
+  updateServiceWorker,
+  onCheckUpdate
 }) => {
 
   const formatAmount = (usd: number) => {
@@ -646,6 +654,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-white transition-colors"
           >
             <Settings size={20} />
+          </button>
+          
+          <button
+            onClick={onCheckUpdate}
+            className={`p-2 rounded-full transition-all flex items-center justify-center relative ${needUpdate ? 'bg-theme-brand text-white shadow-lg shadow-theme-brand/20 animate-pulse' : 'bg-white/5 text-theme-secondary hover:text-theme-primary'}`}
+            title={needUpdate ? t('updateAvailable') : t('checkUpdates') || 'Buscar actualizaciones'}
+          >
+            {needUpdate ? <ArrowDownToLine size={20} /> : <RefreshCw size={20} />}
+            {needUpdate && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-theme-bg rounded-full" />
+            )}
           </button>
             <button
               onClick={onOpenSettings}
