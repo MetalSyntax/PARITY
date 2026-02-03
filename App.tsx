@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { AddTransaction } from './components/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
@@ -81,6 +81,10 @@ function AppContent() {
   const [displayInVES, setDisplayInVES] = useState(() => {
     const saved = localStorage.getItem("displayInVES");
     return saved !== null ? JSON.parse(saved) : false;
+  });
+  const [navbarFavorites, setNavbarFavorites] = useState<ViewState[]>(() => {
+    const saved = localStorage.getItem("navbarFavorites");
+    return saved ? JSON.parse(saved) : ['WALLET', 'ANALYSIS', 'PROFILE'];
   });
 
   const toggleDisplayCurrency = () => {
@@ -292,6 +296,11 @@ function AppContent() {
     
     save();
   }, [exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals, isLoaded, storageType]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    localStorage.setItem("navbarFavorites", JSON.stringify(navbarFavorites));
+  }, [navbarFavorites, isLoaded]);
 
 
 
@@ -796,6 +805,8 @@ function AppContent() {
               onImport={importFromCloud}
               isDevMode={isDevMode}
               onDevModeTrigger={handleDevModeTrigger}
+              navbarFavorites={navbarFavorites}
+              onUpdateNavbarFavorites={setNavbarFavorites}
             />
           )}
           {currentView === 'TRANSACTIONS' && (
@@ -841,12 +852,23 @@ function AppContent() {
             >
               <Home size={24} />
             </button>
-            <button
-              onClick={() => setCurrentView('WALLET')}
-              className={`p-3 transition-colors ${currentView === 'WALLET' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
-            >
-              <Wallet size={24} />
-            </button>
+            {/* Dynamic favorites - First half */}
+            {navbarFavorites.slice(0, 1).map(view => (
+               <button
+                  key={view}
+                  onClick={() => setCurrentView(view)}
+                  className={`p-3 transition-colors ${currentView === view ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
+                >
+                  {view === 'WALLET' && <Wallet size={24} />}
+                  {view === 'ANALYSIS' && <ChartArea size={24} />}
+                  {view === 'PROFILE' && <User size={24} />}
+                  {view === 'BUDGET' && <PieChart size={24} />}
+                  {view === 'SCHEDULED' && <CalendarIcon size={24} />}
+                  {view === 'TRANSACTIONS' && <Receipt size={24} />}
+                  {view === 'HEATMAP' && <Activity size={24} />}
+                  {view === 'CURRENCY_PERF' && <TrendingUp size={24} />}
+                </button>
+            ))}
 
             {/* FAB container */}
             <div className="relative -top-6">
@@ -866,18 +888,23 @@ function AppContent() {
               </button>
             </div>
 
-            <button
-              onClick={() => setCurrentView('ANALYSIS')}
-              className={`p-3 transition-colors ${currentView === 'ANALYSIS' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
-            >
-              <ChartArea size={24} />
-            </button>
-            <button
-              onClick={() => setCurrentView('PROFILE')}
-              className={`p-3 transition-colors ${currentView === 'PROFILE' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
-            >
-              <User size={24} />
-            </button>
+            {/* Dynamic favorites - Second half */}
+            {navbarFavorites.slice(1).map(view => (
+               <button
+                  key={view}
+                  onClick={() => setCurrentView(view)}
+                  className={`p-3 transition-colors ${currentView === view ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
+                >
+                  {view === 'WALLET' && <Wallet size={24} />}
+                  {view === 'ANALYSIS' && <ChartArea size={24} />}
+                  {view === 'PROFILE' && <User size={24} />}
+                  {view === 'BUDGET' && <PieChart size={24} />}
+                  {view === 'SCHEDULED' && <CalendarIcon size={24} />}
+                  {view === 'TRANSACTIONS' && <Receipt size={24} />}
+                  {view === 'HEATMAP' && <Activity size={24} />}
+                  {view === 'CURRENCY_PERF' && <TrendingUp size={24} />}
+                </button>
+            ))}
           </div>
         )}
 

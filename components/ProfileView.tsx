@@ -21,6 +21,8 @@ interface ProfileViewProps {
   onImport: () => void;
   isDevMode: boolean;
   onDevModeTrigger: () => void;
+  navbarFavorites: string[];
+  onUpdateNavbarFavorites: (favs: any[]) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -38,7 +40,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onExport,
   onImport,
   isDevMode,
-  onDevModeTrigger
+  onDevModeTrigger,
+  navbarFavorites,
+  onUpdateNavbarFavorites
 }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
@@ -165,6 +169,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                </button>
              ))}
            </div>
+        </div>
+
+        <div>
+           <label className="text-xs text-theme-secondary mb-2 block flex items-center gap-2">
+            <Globe size={12} /> {t('navbarFavorites') || 'Accesos Rápidos'} ({navbarFavorites.length}/3)
+          </label>
+           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+             {[
+               { id: 'WALLET', name: t('wallet') },
+               { id: 'ANALYSIS', name: t('analysis') },
+               { id: 'PROFILE', name: t('profile') },
+               { id: 'BUDGET', name: t('envelopes') },
+               { id: 'SCHEDULED', name: t('scheduled') },
+               { id: 'TRANSACTIONS', name: t('transactions') },
+               { id: 'HEATMAP', name: t('heatmap') },
+               { id: 'CURRENCY_PERF', name: t('currencyPerformance') }
+             ].map((view) => (
+               <button
+                 key={view.id}
+                 onClick={() => {
+                   if (navbarFavorites.includes(view.id)) {
+                      onUpdateNavbarFavorites(navbarFavorites.filter(f => f !== view.id));
+                   } else if (navbarFavorites.length < 3) {
+                      onUpdateNavbarFavorites([...navbarFavorites, view.id]);
+                   }
+                 }}
+                 className={`p-2 rounded-xl border text-[10px] font-bold transition-all ${navbarFavorites.includes(view.id) ? 'bg-theme-brand border-theme-brand text-white shadow-lg' : 'bg-theme-surface border-white/10 text-theme-secondary opacity-60'}`}
+               >
+                 {view.name}
+               </button>
+             ))}
+           </div>
+           <p className="text-[9px] text-theme-secondary mt-2 opacity-60">Selecciona hasta 3 vistas para personalizar tu barra inferior.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

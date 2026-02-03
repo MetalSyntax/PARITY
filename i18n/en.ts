@@ -179,6 +179,7 @@ export const en = {
     cat_coffee: 'Coffee',
     cat_home: 'Housing',
     cat_bills: 'Bills',
+    cat_internet: 'Internet & Connectivity',
     cat_health: 'Health',
     cat_entertainment: 'Entertainment',
     cat_travel: 'Travel',
@@ -197,6 +198,7 @@ export const en = {
     cat_electronics: 'Electronics',
     cat_subscription: 'Subscriptions',
     cat_services: 'Services',
+    cat_commission: 'Commissions & Fees',
     cat_personal: 'Personal Care',
     cat_charity: 'Charity',
     cat_income: 'Income',
@@ -288,4 +290,6 @@ export const en = {
     offlineDesc: 'You can continue using Parity without an internet connection.',
     updateNow: 'Update Now',
     checkUpdates: 'Check for updates',
+    navbarFavorites: 'Quick Access Custom',
+    searchCategories: 'Search categories...',
 };

@@ -92,6 +92,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [showCustomEnvelopeModal, setShowCustomEnvelopeModal] = useState(false); 
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [categorySearch, setCategorySearch] = useState('');
 
   React.useEffect(() => {
     onToggleBottomNav(!(showGoalModal || showAddBudgetModal || showCustomEnvelopeModal));
@@ -349,15 +350,28 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                          <Plus size={20} /> {t('createCustomEnvelope')}
                      </button>
                      <p className="text-xs text-theme-secondary uppercase font-bold mb-3">{t('chooseCategory')}</p>
-                     
-                     <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px]">
-                        {availableCategories.length === 0 ? (
-                            <p className="text-center text-theme-secondary py-4">{t('allCategoriesUsed')}</p>
+                      
+                      <div className="relative mb-4">
+                        <input
+                           type="text"
+                           placeholder={t('searchCategories') || 'Buscar categorías...'}
+                           value={categorySearch}
+                           onChange={(e) => setCategorySearch(e.target.value)}
+                           className="w-full bg-theme-surface border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-theme-brand/50 transition-all font-bold text-white placeholder:text-zinc-600"
+                        />
+                      </div>
+                                          <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px]">
+                        {availableCategories
+                          .filter(cat => t(cat.name).toLowerCase().includes(categorySearch.toLowerCase()))
+                          .length === 0 ? (
+                            <p className="text-center text-theme-secondary py-4">{t('noCategoriesFound') || 'No se encontraron categorías'}</p>
                         ) : (
-                            availableCategories.map(cat => (
+                            availableCategories
+                            .filter(cat => t(cat.name).toLowerCase().includes(categorySearch.toLowerCase()))
+                            .map(cat => (
                                 <button 
                                     key={cat.id} 
-                                    onClick={() => { handleAddBudget(cat.id); setShowAddBudgetModal(false); }}
+                                    onClick={() => { handleAddBudget(cat.id); setShowAddBudgetModal(false); setCategorySearch(''); }}
                                     className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors text-left border border-white/5"
                                 >
                                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${cat.color} bg-opacity-20`}>

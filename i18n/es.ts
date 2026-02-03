@@ -179,6 +179,7 @@ export const es = {
     cat_coffee: 'Café',
     cat_home: 'Hogar',
     cat_bills: 'Facturas',
+    cat_internet: 'Internet y Datos',
     cat_health: 'Salud',
     cat_entertainment: 'Entretenimiento',
     cat_travel: 'Viajes',
@@ -197,6 +198,7 @@ export const es = {
     cat_electronics: 'Electrónica',
     cat_subscription: 'Suscripciones',
     cat_services: 'Servicios',
+    cat_commission: 'Comisiones y Tasas',
     cat_personal: 'Cuidado Personal',
     cat_charity: 'Caridad',
     cat_income: 'Ingresos',
@@ -289,4 +291,6 @@ export const es = {
     offlineDesc: 'Puedes seguir usando Parity sin conexión.',
     updateNow: 'Actualizar Ahora',
     checkUpdates: 'Buscar actualizaciones',
+    navbarFavorites: 'Accesos Rápidos Custom',
+    searchCategories: 'Buscar categorías...',
 };
