@@ -99,7 +99,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
                                     disabled={isSyncing}
                                     className={`w-full py-4 rounded-2xl font-black transition-all border-2 flex items-center justify-center gap-2 ${
                                         isSyncing 
-                                        ? 'bg-theme-brand/10 border-theme-brand/50 text-theme-brand animate-pulse' 
+                                        ? 'bg-theme-brand/10 border-theme-soft/50 text-theme-brand animate-pulse' 
                                         : 'bg-white/5 border-white/10 text-theme-primary hover:bg-white/10 hover:border-white/20'
                                     }`}
                                 >

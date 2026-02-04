@@ -629,7 +629,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onClick={() => onNavigate("PROFILE")}
               >
                 {isDevMode && (
-                    <span className="px-1.5 py-0.5 rounded-md bg-theme-brand/20 border border-theme-brand/30 text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
+                    <span className="flex x-1.5 py-0.5 rounded-md bg-theme-brand/20 border border-theme-soft text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
                       {t('devMode')}
                     </span>
                   )}
@@ -651,14 +651,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center gap-2">
             <button
             onClick={() => setShowCustomizer(true)}
-            className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-white transition-colors"
+            className="p-2 bg-theme-soft rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
           >
             <Settings size={20} />
           </button>
           
           <button
             onClick={onCheckUpdate}
-            className={`p-2 rounded-full transition-all flex items-center justify-center relative ${needUpdate ? 'bg-theme-brand text-white shadow-lg shadow-theme-brand/20 animate-pulse' : 'bg-white/5 text-theme-secondary hover:text-theme-primary'}`}
+            className={`p-2 rounded-full transition-all flex items-center justify-center relative ${needUpdate ? 'bg-theme-brand text-white shadow-lg shadow-theme-brand/20 animate-pulse' : 'bg-theme-soft text-theme-secondary hover:text-theme-primary'}`}
             title={needUpdate ? t('updateAvailable') : t('checkUpdates') || 'Buscar actualizaciones'}
           >
             {needUpdate ? <ArrowDownToLine size={20} /> : <RefreshCw size={20} />}
@@ -668,12 +668,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
             <button
               onClick={onOpenSettings}
-              className="bg-white/5 border border-white/10 hover:bg-white/10 transition-colors px-3 py-1.5 rounded-full flex items-center gap-2"
+              className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-3 py-1.5 rounded-full flex items-center gap-2"
             >
-              <span className="text-xs font-mono text-emerald-400">
+              <span className="text-xs font-mono text-emerald-500 font-bold">
                 1 USD = {exchangeRate.toFixed(2)}
               </span>
-              <TrendingUp size={12} className="text-emerald-400" />
+              <TrendingUp size={12} className="text-emerald-500" />
             </button>
           </div>
         </div>
@@ -700,32 +700,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
               >
                 <div 
                   onPointerDown={(e) => leftControls[index].start(e)}
-                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-surface/90 backdrop-blur-md rounded-xl border border-theme-soft text-theme-secondary flex touch-none shadow-xl ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
                   <GripVertical size={20} />
                 </div>
                 {['balanceChart', 'expenses', 'incomeVsExpense', 'dailySpending', 'categoryBreakdown'].includes(id) && (
                   <button 
                     onClick={() => setShowCustomizer(true)}
-                    className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                    className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-surface/90 backdrop-blur-md rounded-xl border border-theme-soft text-theme-secondary flex touch-none shadow-xl ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                   >
                     <Settings size={20} />
                   </button>
                 )}
                 {id === "balanceCard" && (
                   <div className="px-4 md:px-0">
-                    <div className="bg-theme-surface rounded-[2.5rem] p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-2xl shadow-black/50 border border-white/5 bg-gradient-to-br from-theme-surface to-black/30 group">
+                    <div className="bg-theme-surface rounded-[2.5rem] p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-theme border border-theme-soft bg-gradient-to-br from-theme-surface to-theme-bg group">
                       <div className="absolute top-8 right-8 flex gap-3 z-20">
                         <button
                           onClick={(e) => { e.stopPropagation(); onToggleDisplayCurrency(); }}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-bg text-theme-secondary hover:text-theme-primary'}`}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-theme-soft transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-bg text-theme-secondary hover:text-theme-primary'}`}
                         >
                           {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
                           <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handlePrivacyToggle(e); }}
-                          className="p-2.5 rounded-xl bg-theme-bg border border-white/5 text-theme-secondary hover:text-theme-brand transition-all"
+                          className="p-2.5 rounded-xl bg-theme-bg border border-theme-soft text-theme-secondary hover:text-theme-brand transition-all shadow-sm"
                         >
                           {isBalanceVisible ? <Eye size={16} /> : <EyeOff size={16} />}
                         </button>
@@ -746,7 +746,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             )}
                           </h1>
                           <div className="flex items-center gap-3">
-                             <p className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                             <p className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-lg border border-theme-soft">
                               {isBalanceVisible ? formatSecondaryAmount(totalBalanceUSD) : "******"}
                             </p>
                             {isBalanceVisible && (
@@ -764,20 +764,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 {id === "balanceChart" && showBalanceChart && (
                   <div className="px-4 md:px-0">
-                    <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
+                    <div className="bg-theme-surface p-6 rounded-[2rem] border border-theme-soft shadow-theme relative overflow-hidden group">
                       <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
                             <Activity size={14} className="text-theme-brand" />
                             <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest">{t("balanceHistory")}</h3>
                           </div>
-                          <div className="flex bg-white/5 p-1 mr-5 rounded-lg border border-white/10">
+                          <div className="flex bg-theme-soft p-1 mr-5 rounded-lg border border-theme-soft">
                             <button onClick={() => setBalanceChartType('LINE')} className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${balanceChartType === 'LINE' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('line')}</button>
                             <button onClick={() => setBalanceChartType('BAR')} className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${balanceChartType === 'BAR' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('bar')}</button>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-zinc-500 px-2 py-1 bg-white/5 rounded-lg">7D</span>
+                          <span className="text-[10px] font-bold text-theme-secondary px-2 py-1 bg-theme-soft rounded-lg">7D</span>
                         </div>
                       </div>
                       <div className="h-48 w-full">
@@ -798,10 +798,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                     <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                       {accounts.map((acc) => (
-                        <div key={acc.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-3 rounded-xl flex flex-col gap-2">
+                        <div key={acc.id} className="min-w-[140px] bg-theme-surface border border-theme-soft p-3 rounded-xl flex flex-col gap-2 shadow-sm">
                           <div className="flex justify-between items-start">
                             <div className="text-xl text-theme-primary">{renderAccountIcon(acc.icon, 20)}</div>
-                            <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-theme-secondary">{acc.currency}</span>
+                            <span className="text-[10px] bg-theme-soft px-1.5 py-0.5 rounded text-theme-secondary">{acc.currency}</span>
                           </div>
                           <div>
                             <p className="text-theme-primary font-bold text-sm">{isBalanceVisible ? acc.balance.toLocaleString() : "****"}</p>
@@ -809,7 +809,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </div>
                         </div>
                       ))}
-                      <button onClick={() => onNavigate("WALLET")} className="min-w-[50px] bg-white/5 border border-white/5 rounded-xl flex items-center justify-center text-theme-secondary hover:text-theme-primary hover:bg-white/10 transition-colors"><Plus size={20} /></button>
+                      <button onClick={() => onNavigate("WALLET")} className="min-w-[50px] bg-theme-soft border border-theme-soft rounded-xl flex items-center justify-center text-theme-secondary hover:text-theme-primary hover:shadow-md transition-colors"><Plus size={20} /></button>
                     </div>
                   </div>
                 )}
@@ -826,7 +826,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={20} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
                       { id: "PROFILE", label: t("profile"), icon: <Settings size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
                     ].map((action, i) => (
-                      <button key={i} onClick={() => onNavigate(action.id)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                      <button key={i} onClick={() => onNavigate(action.id)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">
                         <div className={`w-12 h-12 rounded-xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>{action.icon}</div>
                         <span className="text-xs text-theme-secondary font-medium">{action.label}</span>
                       </button>
@@ -835,7 +835,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
 
                 {id === "expenses" && showExpenseStructure && (
-                  <div className="bg-theme-surface p-8 rounded-[2rem] border border-white/5 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-500 overflow-hidden relative">
+                  <div className="bg-theme-surface p-8 mx-6 rounded-[2rem] border border-theme-soft shadow-theme animate-in fade-in slide-in-from-bottom-2 duration-500 overflow-hidden relative">
                     <div className="flex justify-between items-start mb-8 relative z-10">
                       <div>
                         <div className="flex items-center gap-4 mb-1">
@@ -843,7 +843,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <PieChart size={14} className="text-theme-brand" />
                             <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest">{t("structure")}</h3>
                           </div>
-                          <div className="flex bg-white/5 p-1 mr-5 rounded-lg border border-white/10">
+                          <div className="flex bg-theme-soft p-1 mr-5 rounded-lg border border-theme-soft">
                             <button onClick={() => setExpenseChartType('DOUGHNUT')} className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${expenseChartType === 'DOUGHNUT' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('pie')}</button>
                             <button onClick={() => setExpenseChartType('BAR')} className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${expenseChartType === 'BAR' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('bar')}</button>
                           </div>
@@ -860,7 +860,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <span className="text-xs text-theme-secondary ml-2 font-bold uppercase tracking-widest opacity-40">{t("totalExpenses")}</span>
                         </h2>
                       </div>
-                      <button onClick={() => onNavigate("ANALYSIS")} className="bg-white/5 p-2 rounded-xl text-theme-secondary hover:text-theme-brand transition-all border border-white/5">
+                      <button onClick={() => onNavigate("ANALYSIS")} className="bg-theme-soft p-2 rounded-xl text-theme-secondary hover:text-theme-brand transition-all border border-theme-soft">
                         <ArrowUpRight size={18} />
                       </button>
                     </div>
@@ -944,15 +944,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <button
                             key={item.id}
                             onClick={() => setSelectedCategory(selectedCategory === item.id ? null : item.id)}
-                            className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${selectedCategory === item.id ? 'bg-theme-bg border-theme-brand shadow-lg ' + item.color : 'bg-white/5 border-white/5 hover:border-white/10 text-theme-secondary'}`}
+                            className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${selectedCategory === item.id ? 'bg-theme-bg border-theme-soft shadow-lg ' + item.color : 'bg-theme-soft border-theme-soft hover:border-theme-soft text-theme-secondary'}`}
                           >
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-xl ${item.bg} bg-opacity-20 flex items-center justify-center ${item.color}`}>{item.icon}</div>
-                              <span className="text-xs font-bold truncate max-w-[80px]">{t(item.name)}</span>
+                              <div className={`w-8 h-8 rounded-lg ${item.color.replace('text-', 'bg-').split(' ')[0]}/10 flex items-center justify-center`}>
+                                <item.icon size={14} />
+                              </div>
+                              <span className="text-xs font-bold">{t(item.name as any)}</span>
                             </div>
                             <div className="text-right">
-                              <p className="text-xs font-black text-theme-primary">{formatAmount(item.amount)}</p>
-                              <p className="text-[9px] font-bold opacity-40">{item.percent.toFixed(1)}%</p>
+                              <p className="text-xs font-black">{formatAmount(item.value)}</p>
+                              <p className="text-[9px] font-bold opacity-40">{item.percentage.toFixed(1)}%</p>
                             </div>
                           </button>
                         ))}
@@ -985,21 +987,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
               >
                 <div 
                   onPointerDown={(e) => rightControls[index].start(e)}
-                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-theme-soft text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
                   <GripVertical size={20} />
                 </div>
                 {['balanceChart', 'expenses', 'incomeVsExpense', 'dailySpending', 'categoryBreakdown'].includes(id) && (
                   <button 
                     onClick={() => setShowCustomizer(true)}
-                    className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                    className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-theme-soft text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                   >
                     <Settings size={20} />
                   </button>
                 )}
 
                 {id === "transactions" && (
-                  <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-white/5 min-h-[500px]">
+                  <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-theme-soft min-h-[500px]">
                     <h2 className="text-sm font-semibold text-theme-secondary mb-6 px-2 md:px-0 uppercase tracking-wider">{t("recentTransactions")}</h2>
                     {transactions.length === 0 ? (
                       <div className="text-center py-20 text-theme-secondary text-sm">{t("noTransactions")}</div>
@@ -1047,43 +1049,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                         
                                         const fromAcc = accounts.find(a => a.id === transaction.accountId);
                                         const toAcc = accounts.find(a => a.id === transaction.toAccountId);
+                                        const accName = fromAcc?.name || 'Unknown';
 
-                                        return (
-                                          <div key={transaction.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group relative pr-14 bg-theme-surface">
-                                            <div className="flex items-center gap-4">
-                                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isTransfer ? 'bg-indigo-500/20 text-indigo-400' : category.color + ' bg-opacity-20'}`}>
-                                                {isTransfer ? <ArrowRightLeft size={16} /> : category.icon}
-                                              </div>
-                                              <div>
-                                                <p className="font-medium text-sm text-theme-primary">{isTransfer ? `${fromAcc?.name} → ${toAcc?.name}` : transaction.note || t(category.name)}</p>
-                                                <p className="text-xs text-theme-secondary capitalize">{isTransfer ? t('transfer') : t(category.name.toLowerCase()) || category.name}</p>
-                                              </div>
-                                            </div>
-                                            <div className="text-right">
-                                              <p className={`font-bold text-sm ${isTransfer ? 'text-indigo-400' : isExpense ? 'text-theme-primary' : 'text-emerald-400'}`}>
-                                                {isTransfer ? '' : isExpense ? '-' : '+'}{displayMainSymbol}{isBalanceVisible ? displayMain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
-                                              </p>
-                                              <p className="text-xs text-theme-secondary font-mono group-hover:text-theme-primary transition-colors">
-                                                ~{displaySecondarySymbol} {isBalanceVisible ? displaySecondary.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
-                                              </p>
-                                            </div>
-                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-white/5">
-                                              <button onClick={(e) => { e.stopPropagation(); onEditTransaction(transaction); }} className="p-2 hover:bg-white/10 rounded-lg text-blue-400">
-                                                <TrendingUp size={14} />
-                                              </button>
-                                              <button onClick={(e) => { e.stopPropagation(); onDeleteTransaction(transaction.id); }} className="p-2 hover:bg-white/10 rounded-lg text-red-500">
-                                                <Plus size={14} className="rotate-45" />
-                                              </button>
-                                            </div>
-                                          </div>
-                                        );
+                                         return (
+                                           <div key={transaction.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-theme-soft transition-colors group relative pr-14 bg-theme-surface border border-theme-soft mb-2">
+                                             <div className="flex items-center gap-4">
+                                               <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border border-theme-soft ${
+                                                 isTransfer ? 'bg-indigo-500/10 text-indigo-400' : 
+                                                 isExpense ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'
+                                               }`}>
+                                                 {isTransfer ? <ArrowRightLeft size={20} /> : category.icon}
+                                               </div>
+                                               <div>
+                                                 <div className="flex items-center gap-2">
+                                                   <p className="text-sm font-black text-theme-primary line-clamp-1">
+                                                     {isTransfer ? `${fromAcc?.name} → ${toAcc?.name}` : transaction.note || t(category.name as any)}
+                                                   </p>
+                                                   {transaction.exchangeRate !== exchangeRate && !isTransfer && (
+                                                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" title="Custom Rate Used" />
+                                                   )}
+                                                 </div>
+                                                 <div className="flex items-center gap-2 mt-0.5">
+                                                   <p className="text-[10px] font-bold text-theme-secondary opacity-50 uppercase tracking-tighter">
+                                                     {transaction.originalCurrency} • {accName}
+                                                   </p>
+                                                   <span className="text-[10px] text-theme-secondary opacity-30">•</span>
+                                                   <p className="text-[10px] font-bold text-theme-secondary opacity-50">{new Date(transaction.date).toLocaleDateString()}</p>
+                                                 </div>
+                                               </div>
+                                             </div>
+                                             <div className="text-right">
+                                               <p className={`text-sm font-black ${
+                                                 isTransfer ? 'text-indigo-400' : isExpense ? 'text-red-500' : 'text-emerald-500'
+                                               }`}>
+                                                 {isTransfer ? '' : isExpense ? '-' : '+'}{displayMainSymbol}{isBalanceVisible ? displayMain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
+                                               </p>
+                                               <p className="text-[10px] font-bold text-theme-secondary opacity-40">
+                                                 ~{displaySecondarySymbol}{isBalanceVisible ? displaySecondary.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
+                                               </p>
+                                             </div>
+
+                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-theme-soft">
+                                               <button onClick={() => onEditTransaction(transaction)} className="p-2 text-theme-secondary hover:text-theme-brand"><Settings size={14}/></button>
+                                               <button onClick={() => onDeleteTransaction(transaction.id)} className="p-2 text-theme-secondary hover:text-red-500"><X size={14}/></button>
+                                             </div>
+                                           </div>
+                                         );
                                       })}
                                     </div>
                                   </div>
                                 );
                               })}
                               {transactions.length > 5 && (
-                                <button onClick={() => onNavigate('TRANSACTIONS')} className="w-full py-4 text-center text-sm font-bold text-theme-brand hover:text-theme-primary transition-colors border-t border-white/5 mt-2">{t('viewMore')}</button>
+                                <button onClick={() => onNavigate('TRANSACTIONS')} className="w-full py-4 text-center text-sm font-bold text-theme-brand hover:text-theme-primary transition-colors border-t border-theme-soft mt-2">{t('viewMore')}</button>
                               )}
                             </>
                           );
@@ -1094,9 +1112,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
 
                 {id === "incomeVsExpense" && showIncomeVsExpense && (
-                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("incomeVsExpenses")}</h3>
+                  <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-theme-soft min-h-[500px]">
+                    <div className="flex items-center justify-between mb-6 px-4 md:px-0">
+                      <h3 className="text-sm font-black text-theme-primary uppercase tracking-widest flex items-center gap-3">
+                        <ArrowRightLeft size={16} className="text-theme-brand" /> {t('recentTransactions')}
+                      </h3>
+                      <button onClick={() => onNavigate('TRANSACTIONS')} className="p-2 bg-theme-soft rounded-lg text-theme-secondary hover:text-theme-brand transition-all">
+                        <Settings size={14} />
+                      </button>
                     </div>
                     <div className="h-48">
                       <Bar 
@@ -1241,7 +1264,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </button>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-white/5">
+              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                 <div className="flex items-center gap-3">
                   <Activity size={18} className="text-theme-brand" />
                   <span className="text-sm font-bold text-theme-primary">
@@ -1257,7 +1280,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   />
                 </button>
               </div>
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-white/5">
+              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                 <div className="flex items-center gap-3">
                   <PieChart size={18} className="text-theme-brand" />
                   <span className="text-sm font-bold text-theme-primary">
@@ -1273,7 +1296,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   />
                 </button>
               </div>
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-white/5">
+              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                 <div className="flex items-center gap-3">
                   <BarChart size={18} className="text-theme-brand" />
                   <span className="text-sm font-bold text-theme-primary">
@@ -1289,7 +1312,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   />
                 </button>
               </div>
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-white/5">
+              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                 <div className="flex items-center gap-3">
                   <TrendingUp size={18} className="text-theme-brand" />
                   <span className="text-sm font-bold text-theme-primary">
@@ -1305,7 +1328,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   />
                 </button>
               </div>
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-white/5">
+              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                 <div className="flex items-center gap-3">
                   <BarChart size={18} className="text-theme-brand rotate-90" />
                   <span className="text-sm font-bold text-theme-primary">
@@ -1359,7 +1382,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   key={num}
                   onClick={() => handlePinDigit(num.toString())}
-                  className="w-full aspect-square rounded-full bg-theme-surface/30 hover:bg-theme-surface border border-white/5 text-2xl font-semibold text-theme-primary transition-all active:scale-95 flex items-center justify-center"
+                  className="w-full aspect-square rounded-full bg-theme-soft hover:bg-theme-surface border border-theme-soft text-2xl font-black text-theme-primary transition-all active:scale-95 flex items-center justify-center shadow-sm"
                 >
                   {num}
                 </button>

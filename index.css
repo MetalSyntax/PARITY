@@ -16,7 +16,8 @@
   --danger: #ef4444;
   --border: rgba(255, 255, 255, 0.1);
 }
-html, body {
+html,
+body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   user-select: none;
@@ -50,8 +51,23 @@ html, body {
 .border-theme {
   border-color: var(--border);
 }
+.border-theme-soft {
+  border-color: color-mix(in sRGB, var(--text-primary), transparent 90%);
+}
 .bg-theme-brand {
   background-color: var(--primary);
+}
+.bg-theme-soft {
+  background-color: color-mix(in sRGB, var(--text-primary), transparent 95%);
+}
+.shadow-theme {
+  box-shadow: var(--shadow);
+}
+
+/* Global transitions for theme switching */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
 }
 
 /* Animation Utils */

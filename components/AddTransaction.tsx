@@ -445,7 +445,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                              }}
                              className={`p-4 rounded-xl flex items-center justify-between border ${
                                  (showAccountSelector === 'FROM' ? fromAccountId : toAccountId) === acc.id 
-                                 ? 'border-theme-brand bg-theme-brand/10' 
+                                 ? 'border-theme-soft bg-theme-brand/10' 
                                  : 'border-white/5 bg-white/5'
                              }`}
                           >
@@ -549,7 +549,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         {/* Manual Exchange Rate for Multi-currency Transfer */}
         {type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
             <div className="flex flex-col items-center mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="bg-theme-surface border border-theme-brand/30 rounded-2xl p-4 w-full flex items-center justify-between gap-4">
+                <div className="bg-theme-surface border border-theme-soft/30 rounded-2xl p-4 w-full flex items-center justify-between gap-4">
                     <div className="flex flex-col">
                        <span className="text-[10px] uppercase font-bold text-theme-secondary tracking-wider mb-1">{t('exchangeRate') || 'Exchange Rate'}</span>
                        <div className="flex items-center gap-2">
@@ -558,7 +558,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                type="number"
                                value={manualExchangeRate}
                                onChange={(e) => setManualExchangeRate(e.target.value)}
-                               className="bg-theme-bg border border-white/10 rounded-lg px-3 py-1.5 text-sm font-mono text-theme-brand w-24 focus:border-theme-brand outline-none transition-colors"
+                               className="bg-theme-bg border border-white/10 rounded-lg px-3 py-1.5 text-sm font-mono text-theme-brand w-24 focus:border-theme-soft outline-none transition-colors"
                            />
                            <span className="text-xs font-bold text-theme-primary">{getActiveAccount(toAccountId).currency}</span>
                        </div>
@@ -589,7 +589,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     <button 
                         onClick={() => setShowScanOptions(!showScanOptions)} 
                         title="Scan Options" 
-                        className={`p-2.5 rounded-xl transition-all shadow-lg border ${showScanOptions || isScanning ? 'bg-theme-brand text-white border-theme-brand' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
+                        className={`p-2.5 rounded-xl transition-all shadow-lg border ${showScanOptions || isScanning ? 'bg-theme-brand text-white border-theme-soft' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
                     >
                         {isScanning ? <Loader2 size={18} className="animate-spin text-white" /> : <Camera size={18} />}
                     </button>
@@ -644,7 +644,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         type="date" 
                         value={date} 
                         onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 pl-10 text-theme-primary outline-none focus:border-theme-brand transition-colors text-sm font-bold"
+                        className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 pl-10 text-theme-primary outline-none focus:border-theme-soft transition-colors text-sm font-bold"
                     />
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none">
                         <Sparkles size={16} className="text-theme-brand" />
@@ -657,7 +657,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                      <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('category') || 'Category'}</label>
                      <button 
                          onClick={() => setShowCategoryModal(true)}
-                         className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 flex items-center justify-between group hover:border-theme-brand transition-colors h-[46px]"
+                         className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 flex items-center justify-between group hover:border-theme-soft transition-colors h-[46px]"
                      >
                         <div className="flex items-center gap-2 overflow-hidden">
                             <span className={`${CATEGORIES.find(c => c.id === categoryId)?.color || 'text-theme-primary'}`}>
@@ -763,7 +763,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
                         placeholder={t('search') || 'Search...'}
-                        className="w-full bg-theme-bg border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-sm text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-brand transition-colors"
+                        className="w-full bg-theme-bg border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-sm text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-soft transition-colors"
                         autoFocus
                     />
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary" />
@@ -856,7 +856,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                    
                    {/* Selection Overlay */}
                    <div 
-                        className="absolute border-2 border-theme-brand shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] cursor-move rounded-lg"
+                        className="absolute border-2 border-theme-soft shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] cursor-move rounded-lg"
                         style={{
                             left: `${cropBox.x}%`,
                             top: `${cropBox.y}%`,

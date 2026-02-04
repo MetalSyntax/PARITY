@@ -84,7 +84,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
             </button>
             <div className="relative">
                <select
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-8"
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-8"
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 value={selectedMonth}
               >
@@ -110,7 +110,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
             <input
               type="text"
               placeholder={t('searchTransactions')}
-              className="w-full bg-theme-surface border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-brand/50 transition-colors"
+              className="w-full bg-theme-surface border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-soft/50 transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -123,7 +123,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                 onClick={() => setFilterType(type)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
                   filterType === type
-                    ? 'bg-theme-brand border-theme-brand text-white shadow-lg shadow-brand/20'
+                    ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-brand/20'
                     : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary'
                 }`}
               >

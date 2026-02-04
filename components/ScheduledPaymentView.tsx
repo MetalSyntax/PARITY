@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -153,7 +154,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-3 block">{t('category')}</label>
                        <button 
                            onClick={() => setShowCategoryModal(true)}
-                           className="w-full bg-theme-surface border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-theme-brand/30 transition-colors"
+                           className="w-full bg-theme-surface border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-theme-soft/30 transition-colors"
                        >
                           <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-xl ${CATEGORIES.find(c => c.id === newCategory)?.color || 'bg-white/5 text-theme-primary'} bg-opacity-20`}>
@@ -171,7 +172,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                     <div>
                       <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('name')}</label>
                       <input 
-                        className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-brand/30 transition-colors" 
+                        className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
                         placeholder={t('paymentNamePlaceholder')} 
                         value={newName} 
                         onChange={e => setNewName(e.target.value)} 
@@ -182,7 +183,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                       <div>
                         <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('amount')}</label>
                         <input 
-                          className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-brand/30 transition-colors" 
+                          className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
                           type="number" 
                           placeholder="0.00"
                           value={newAmount} 
@@ -192,7 +193,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                       <div>
                         <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('frequency')}</label>
                         <select 
-                          className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-brand/30 transition-colors appearance-none"
+                          className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors appearance-none"
                           value={newFrequency}
                           onChange={e => setNewFrequency(e.target.value as any)}
                         >
@@ -208,7 +209,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                     <div>
                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('startDate') || 'Start Date'}</label>
                        <input 
-                        className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-brand/30 transition-colors" 
+                        className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
                         type="date" 
                         value={newDate} 
                         onChange={e => setNewDate(e.target.value)} 
@@ -246,7 +247,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                                         }
                                         setShowCategoryModal(false);
                                     }}
-                                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${newCategory === cat.id ? 'bg-theme-brand/10 border-theme-brand' : 'bg-theme-surface border-white/5 hover:bg-white/5'}`}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${newCategory === cat.id ? 'bg-theme-brand/10 border-theme-soft' : 'bg-theme-surface border-white/5 hover:bg-white/5'}`}
                                 >
                                     <div className={`p-3 rounded-xl ${cat.color} bg-opacity-20`}>
                                         {cat.icon}
@@ -272,25 +273,37 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
     <div className="h-full flex flex-col p-6 pb-32 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors">
+             <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onBack} 
+                className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+             >
                 <ArrowLeft size={20} />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-theme-primary">{t('scheduled')}</h1>
-              <p className="text-xs text-theme-secondary font-medium">{t('manageSubscriptions') || 'Manage repeating transfers'}</p>
-            </div>
+             </motion.button>
+             <div>
+               <h1 className="text-xl font-bold text-theme-primary">{t('scheduled')}</h1>
+               <p className="text-xs text-theme-secondary font-medium">{t('manageSubscriptions') || 'Manage repeating transfers'}</p>
+             </div>
         </div>
         <div className="flex items-center gap-2">
-            <button 
+            <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
                 <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
-            </button>
-            <button onClick={() => setIsAdding(true)} className="w-12 h-12 bg-theme-brand rounded-2xl text-white shadow-lg shadow-brand/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
-            <Plus size={24} />
-            </button>
+            </motion.button>
+            <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsAdding(true)} 
+                className="w-12 h-12 bg-theme-brand rounded-2xl text-white shadow-lg shadow-brand/20 flex items-center justify-center"
+            >
+                <Plus size={24} />
+            </motion.button>
         </div>
       </div>
 
@@ -358,21 +371,29 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
   const isIncome = p.type === TransactionType.INCOME;
   
   return (
-    <div className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors">
+    <motion.div 
+      layout
+      className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors"
+    >
       <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 ${isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'} rounded-xl flex items-center justify-center relative`}>
+          <motion.div 
+            whileHover={{ scale: 1.1 }}
+            className={`w-12 h-12 ${isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'} rounded-xl flex items-center justify-center relative`}
+          >
             {CATEGORIES.find(c => c.id === p.category)?.icon || (isIncome ? <TrendingUp size={20} /> : <Calendar size={20} />)}
-            <button 
+            <motion.button 
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.8 }}
                 onClick={(e) => { e.stopPropagation(); onConfirm(p); }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-transform z-10"
+                className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg transition-transform z-10"
                 title={t('confirm')}
             >
                 <Plus size={14} />
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
           <div>
               <h4 className="font-bold text-sm text-theme-primary">{p.name}</h4>
-              <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-tight">
+              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
                 {new Date(p.date.split('T')[0] + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} • {t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}
               </p>
           </div>
@@ -394,23 +415,26 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
                   </>
               ) : '******'}
             </span>
-            <span className="text-[9px] text-theme-secondary font-bold uppercase">{t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}</span>
           </div>
           <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => onEdit(p)} 
               className="p-1.5 bg-theme-bg border border-white/5 rounded-lg text-theme-brand hover:bg-theme-brand hover:text-white transition-colors"
             >
               <Edit2 size={12} />
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => onDelete(p.id)} 
               className="p-1.5 bg-theme-bg border border-white/5 rounded-lg text-red-400 hover:bg-red-500 hover:text-white transition-colors"
             >
               <Trash2 size={12} />
-            </button>
+            </motion.button>
           </div>
       </div>
-    </div>
+    </motion.div>
   )
 };

@@ -286,5 +286,11 @@ export const pt = {
     updateNow: 'Atualizar Agora',
     checkUpdates: 'Buscar atualizações',
     navbarFavorites: 'Acessos Rápidos Personalizados',
+    navbarFavoritesDesc: 'Selecione até 3 visualizações para sua barra de navegação.',
     searchCategories: 'Buscar categorias...',
+    dataManagement: 'Gestão de Dados',
+    exportCSV: 'Exportar CSV',
+    backup: 'Backup JSON',
+    cloudSyncDesc: 'Sincronização experimental com Drive',
+    experimental: 'Experimental',
 };

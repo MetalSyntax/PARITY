@@ -953,7 +953,7 @@ function AppContent() {
         {/* PWA Update / Offline Toast */}
         {(needRefresh || offlineReady) && (
             <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-full duration-500 w-[90%] max-w-sm">
-                <div className="bg-theme-surface/90 backdrop-blur-2xl border border-theme-brand/30 p-4 rounded-[2rem] shadow-2xl flex flex-col gap-4">
+                <div className="bg-theme-surface/90 backdrop-blur-2xl border border-theme-soft/30 p-4 rounded-[2rem] shadow-2xl flex flex-col gap-4">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-theme-brand/20 flex items-center justify-center text-theme-brand">
                              <Plus className={`w-6 h-6 ${needRefresh ? 'rotate-45' : ''}`} />

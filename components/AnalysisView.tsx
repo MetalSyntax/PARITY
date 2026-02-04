@@ -272,22 +272,31 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
+            <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onBack} 
+                className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"
+            >
+                <ArrowLeft size={20} />
+            </motion.button>
             <h1 className="text-xl font-bold text-theme-primary">{t('analysis')}</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-            <button 
+            <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
                 <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
-            </button>
+            </motion.button>
 
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[90px] sm:min-w-[100px] justify-between relative"
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[90px] sm:min-w-[100px] justify-between relative"
               >
                 <span>{selectedMonth}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
@@ -367,18 +376,22 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                   }
                 }}
               >
-                <div 
+                <motion.div 
                   onPointerDown={(e) => analysisControls[index].start(e)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9, cursor: 'grabbing' }}
                   className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
                   <GripVertical size={20} />
-                </div>
-                <button 
+                </motion.div>
+                <motion.button 
+                  whileHover={{ rotate: 90, scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setShowAnalysisCustomizer(true)}
                   className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
                   <Settings size={20} />
-                </button>
+                </motion.button>
 
                 {id === "incomeVsExpenses" && showIncomeVsExpenseC && (
                   <div className="bg-theme-surface rounded-3xl border border-white/10 p-6 relative transition-all">
@@ -386,23 +399,30 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                           <div className="flex items-center gap-4">
                               <h3 className="font-bold text-lg text-theme-primary">{t('incomeVsExpenses')}</h3>
                               <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-                                  <button 
+                                  <motion.button 
+                                      whileTap={{ scale: 0.95 }}
                                       onClick={() => setMainChartType('BAR')}
                                       className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${mainChartType === 'BAR' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
                                   >
                                       {t('bar')}
-                                  </button>
-                                  <button 
+                                  </motion.button>
+                                  <motion.button 
+                                      whileTap={{ scale: 0.95 }}
                                       onClick={() => setMainChartType('LINE')}
                                       className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${mainChartType === 'LINE' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
                                   >
                                       {t('line')}
-                                  </button>
+                                  </motion.button>
                               </div>
                           </div>
-                          <button onClick={() => setShowDetails(!showDetails)} className="text-theme-brand text-xs font-bold flex items-center gap-1">
+                          <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setShowDetails(!showDetails)} 
+                            className="text-theme-brand text-xs font-bold flex items-center gap-1"
+                          >
                               {t('viewDetails')} {showDetails ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
-                          </button>
+                          </motion.button>
                       </div>
 
                       <div className="relative h-[300px] w-full mt-4">
@@ -598,7 +618,10 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                             </div>
                       )}
                       {showCatTrendC && (
-                            <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
+                             <motion.div 
+                                whileHover={{ scale: 1.02 }}
+                                className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group"
+                            >
                                 <div className="flex justify-between items-center mb-4">
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('topSpendingCategories')}</h3>
                                 </div>
@@ -635,7 +658,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                         }}
                                     />
                                 </div>
-                            </div>
+                            </motion.div>
                       )}
                       {showIncomeDistC && (
                             <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
@@ -684,7 +707,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {leaks.length > 0 ? leaks.map((leak, idx) => (
-                              <div key={idx} className="bg-theme-surface p-5 rounded-3xl border border-white/5 hover:border-theme-brand/30 transition-all flex items-start gap-4 group">
+                              <div key={idx} className="bg-theme-surface p-5 rounded-3xl border border-white/5 hover:border-theme-soft/30 transition-all flex items-start gap-4 group">
                                   <div className={`p-3 rounded-2xl ${leak.type === 'overspend' ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400'} border border-white/5`}>
                                       {leak.type === 'overspend' ? <Zap size={20} /> : <AlertCircle size={20} />}
                                   </div>

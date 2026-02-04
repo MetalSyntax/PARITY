@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CreditCard, Plus, X, Edit2, Trash2, Wallet, TrendingUp, TrendingDown, Layers, Calendar, ChevronDown, Coins, DollarSign } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -201,19 +202,19 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <div className="flex flex-col gap-6">
                 <div>
                     <label className="text-xs text-zinc-500 mb-2 block">{t('name')}</label>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-brand" value={name} onChange={e => setName(e.target.value)} placeholder="My Wallet" />
+                    <input className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-soft" value={name} onChange={e => setName(e.target.value)} placeholder="My Wallet" />
                 </div>
                 <div>
                     <label className="text-xs text-zinc-500 mb-2 block">{t('language') === 'Idioma' ? 'Moneda' : 'Currency'}</label>
                     <div className="flex gap-2">
                         {[Currency.USD, Currency.EUR, Currency.VES, Currency.USDT].map(c => (
-                            <button key={c} onClick={() => setCurrency(c)} className={`px-4 py-2 rounded-lg border ${currency === c ? 'bg-theme-brand border-theme-brand text-white' : 'bg-white/5 border-white/10 text-theme-secondary'}`}>{c}</button>
+                            <button key={c} onClick={() => setCurrency(c)} className={`px-4 py-2 rounded-lg border ${currency === c ? 'bg-theme-brand border-theme-soft text-white' : 'bg-white/5 border-white/10 text-theme-secondary'}`}>{c}</button>
                         ))}
                     </div>
                 </div>
                 <div>
                     <label className="text-xs text-zinc-500 mb-2 block">{t('initialBalance')}</label>
-                    <input type="number" className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-brand" value={balance} onChange={e => setBalance(e.target.value)} />
+                    <input type="number" className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-soft" value={balance} onChange={e => setBalance(e.target.value)} />
                 </div>
                 <div>
                     <label className="text-xs text-zinc-500 mb-2 block">Icon</label>
@@ -222,7 +223,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                             <button 
                                 key={key} 
                                 onClick={() => setIcon(key)} 
-                                className={`p-3 rounded-xl transition-all border ${icon === key ? 'bg-theme-brand border-theme-brand text-white' : 'bg-white/5 border-white/10 text-theme-secondary hover:bg-white/10'}`}
+                                className={`p-3 rounded-xl transition-all border ${icon === key ? 'bg-theme-brand border-theme-soft text-white' : 'bg-white/5 border-white/10 text-theme-secondary hover:bg-white/10'}`}
                             >
                                 {renderAccountIcon(key, 20)}
                             </button>
@@ -231,7 +232,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                 </div>
                 <div>
                     <label className="text-xs text-zinc-500 mb-2 block">{t('payrollClient')} {t('optional')}</label>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-brand" value={payrollClient} onChange={e => setPayrollClient(e.target.value)} placeholder="e.g. Acme Corp" />
+                    <input className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-soft" value={payrollClient} onChange={e => setPayrollClient(e.target.value)} placeholder="e.g. Acme Corp" />
                 </div>
                 <button onClick={handleSave} className="bg-theme-brand text-white font-bold py-4 rounded-xl mt-4 shadow-lg hover:brightness-110 transition-all">{t('saveWallet')}</button>
             </div>
@@ -245,10 +246,17 @@ export const WalletView: React.FC<WalletViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"><ArrowLeft size={20} /></button>
-            <div>
-                 <h1 className="text-xl font-bold text-theme-primary">{t('wallet')} & {t('income')}</h1>
-                 <div className="flex items-center gap-1 group relative w-fit">
+             <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onBack} 
+                className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+             >
+                <ArrowLeft size={20} />
+             </motion.button>
+             <div>
+                <h1 className="text-xl font-bold text-theme-primary">{t('wallet')} & {t('income')}</h1>
+                <div className="flex items-center gap-1 group relative w-fit">
                     <p className="text-[10px] text-theme-brand font-bold uppercase tracking-widest">{currentMonthName}</p>
                     <ChevronDown size={10} className="text-theme-brand" />
                     <select
@@ -266,39 +274,50 @@ export const WalletView: React.FC<WalletViewProps> = ({
                             ));
                         })()}
                     </select>
-                 </div>
-            </div>
+                </div>
+             </div>
         </div>
         <div className="flex items-center gap-2">
-            <button 
+            <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
                 <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
-            </button>
+            </motion.button>
             {activeTab === 'WALLETS' && (
-                <button onClick={() => startEdit()} className="p-2 bg-theme-brand rounded-full text-white shadow-lg shadow-brand/20 hover:scale-105 transition-transform"><Plus size={20} /></button>
+                <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => startEdit()} 
+                    className="p-2 bg-theme-brand rounded-full text-white shadow-lg shadow-brand/20"
+                >
+                    <Plus size={20} />
+                </motion.button>
             )}
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex p-1 bg-theme-surface rounded-2xl border border-white/5 mb-8 flex-shrink-0">
-          <button 
+          <motion.button 
+            whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab('INCOME')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'INCOME' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
           >
               <TrendingUp size={16} className={activeTab === 'INCOME' ? 'text-theme-brand' : ''} />
               {t('income')}
-          </button>
-          <button 
+          </motion.button>
+          <motion.button 
+            whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab('WALLETS')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'WALLETS' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
           >
               <Wallet size={16} className={activeTab === 'WALLETS' ? 'text-theme-brand' : ''} />
               {t('wallet')}
-          </button>
+          </motion.button>
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
@@ -314,7 +333,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       {activeSources.length > 0 ? (
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-2">
                             {activeSources.map(source => (
-                                <div key={source.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-4 rounded-3xl flex flex-col gap-3 group hover:border-theme-brand/50 transition-colors">
+                                <div key={source.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-4 rounded-3xl flex flex-col gap-3 group hover:border-theme-soft/50 transition-colors">
                                     <div className="flex justify-between items-start">
                                         <span className="text-2xl filter drop-shadow-lg">{source.icon}</span>
                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${source.color.includes('green') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-zinc-400'}`}>
@@ -441,14 +460,21 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     {accounts.map(acc => {
                       const stripClass = acc.color ? `bg-gradient-to-b ${acc.color}` : 'bg-theme-brand';
                       return (
-                      <div key={acc.id} className="bg-theme-surface p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all flex-shrink-0 shadow-xl hover:shadow-black/40">
+                      <motion.div 
+                        layout
+                        key={acc.id} 
+                        className="bg-theme-surface p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all flex-shrink-0 shadow-xl hover:shadow-black/40"
+                      >
                         <div className={`absolute left-0 top-0 bottom-0 w-2.5 ${stripClass}`} />
                         
                         <div className="flex justify-between items-start mb-8">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-[1.25rem] bg-theme-bg flex items-center justify-center text-theme-brand border border-white/5 shadow-inner">
+                                <motion.div 
+                                    whileHover={{ rotate: 10 }}
+                                    className="w-14 h-14 rounded-[1.25rem] bg-theme-bg flex items-center justify-center text-theme-brand border border-white/5 shadow-inner"
+                                >
                                     {renderAccountIcon(acc.icon, 28)}
-                                </div>
+                                </motion.div>
                                 <div>
                                     <h3 className="font-black text-xl text-theme-primary">{acc.name}</h3>
                                     {acc.payrollClient && (
@@ -461,8 +487,22 @@ export const WalletView: React.FC<WalletViewProps> = ({
                             </div>
                             
                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                                <button onClick={() => startEdit(acc)} className="p-2.5 bg-theme-bg border border-white/5 rounded-xl text-theme-secondary hover:text-theme-brand transition-colors"><Edit2 size={18} /></button>
-                                <button onClick={() => handleDelete(acc.id)} className="p-2.5 bg-theme-bg border border-white/5 rounded-xl text-red-400 hover:text-white hover:bg-red-500 transition-all"><Trash2 size={18} /></button>
+                                <motion.button 
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => startEdit(acc)} 
+                                    className="p-2.5 bg-theme-bg border border-white/5 rounded-xl text-theme-secondary hover:text-theme-brand transition-colors"
+                                >
+                                    <Edit2 size={18} />
+                                </motion.button>
+                                <motion.button 
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => handleDelete(acc.id)} 
+                                    className="p-2.5 bg-theme-bg border border-white/5 rounded-xl text-red-400 hover:text-white hover:bg-red-500 transition-all"
+                                >
+                                    <Trash2 size={18} />
+                                </motion.button>
                             </div>
                         </div>
 
@@ -478,7 +518,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                 {isBalanceVisible ? (displayInVES ? (acc.currency === Currency.VES ? acc.balance : acc.balance * exchangeRate) : acc.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
                             </h3>
                         </div>
-                      </div>
+                      </motion.div>
                     )})}
                   </div>
               </div>

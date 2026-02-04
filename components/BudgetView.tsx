@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
@@ -169,7 +170,14 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-             <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-theme-secondary hover:text-theme-primary"><ArrowLeft size={20} /></button>
+             <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onBack} 
+                className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-theme-secondary hover:text-theme-primary"
+             >
+                <ArrowLeft size={20} />
+             </motion.button>
              <h1 className="text-xl font-bold text-theme-primary">{t('budgetsAndGoals')}</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -183,8 +191,10 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-brand/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
-              >
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
+              style={{
+                display: 'ruby'
+              }}>
                 <span>{selectedMonth}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
               </button>
@@ -238,19 +248,29 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
               <div className="mb-6 flex justify-between items-center">
                 <h2 className="text-lg font-bold text-theme-primary">{t('digitalEnvelopes')}</h2>
                 <div className="flex gap-2">
-                    <button 
+                    <motion.button 
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => setIsManaging(!isManaging)}
                         className={`text-sm font-medium px-3 py-1 rounded-full transition-colors ${isManaging ? 'bg-theme-brand text-white' : 'text-theme-brand hover:bg-white/5'}`}
                     >
                         {isManaging ? t('done') : t('manage')}
-                    </button>
+                    </motion.button>
                     {isManaging && (
-                         <button onClick={() => setShowAddBudgetModal(true)} className="bg-theme-brand text-white p-1 rounded-full"><Plus size={16} /></button>
+                         <motion.button 
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            whileHover={{ rotate: 90 }}
+                            onClick={() => setShowAddBudgetModal(true)} 
+                            className="bg-theme-brand text-white p-1 rounded-full"
+                         >
+                            <Plus size={16} />
+                         </motion.button>
                     )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-32">
+              <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-32">
                 {budgets.map(budget => {
                   let cat = CATEGORIES.find(c => c.id === budget.categoryId);
                   
@@ -277,28 +297,58 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                   if (percent > 90) statusColor = 'bg-red-500';
 
                   return (
-                    <div key={budget.categoryId} className="bg-theme-surface p-5 rounded-2xl border border-white/5 shadow-lg relative group">
+                    <motion.div 
+                      layout
+                      key={budget.categoryId} 
+                      className="bg-theme-surface p-5 rounded-2xl border border-white/5 shadow-lg relative group overflow-hidden"
+                    >
                       <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${cat.color.replace('text', 'bg').split('-')[0] + '-500/20'} border border-white/5`}>
+                              <motion.div 
+                                whileHover={{ rotate: [0, -10, 10, 0] }}
+                                className={`w-12 h-12 rounded-xl flex items-center justify-center ${cat.color.replace('text', 'bg').split('-')[0] + '-500/20'} border border-white/5`}
+                              >
                                 {typeof cat.icon === 'string' ? renderIcon(cat.icon, ENVELOPE_ICONS, 24) : cat.icon}
-                              </div>
+                              </motion.div>
                               <div className="flex-1">
                                   <h3 className="font-bold text-base text-theme-primary">{t(cat.name)}</h3>
+                                  <AnimatePresence mode="wait">
                                   {!isManaging && (
                                       percent > 90 ? (
-                                          <p className="text-red-400 text-xs flex items-center gap-1">⚠️ {Math.round(percent)}% {t('limitReached')}</p>
+                                          <motion.p 
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -5 }}
+                                            key="warning"
+                                            className="text-red-400 text-xs flex items-center gap-1"
+                                          >
+                                            ⚠️ {Math.round(percent)}% {t('limitReached')}
+                                          </motion.p>
                                       ) : (
-                                          <p className="text-emerald-400 text-xs">{t('onTrack')}</p>
+                                          <motion.p 
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -5 }}
+                                            key="ok"
+                                            className="text-emerald-400 text-xs"
+                                          >
+                                            {t('onTrack')}
+                                          </motion.p>
                                       )
                                   )}
+                                  </AnimatePresence>
                               </div>
                           </div>
                           
                           {isManaging ? (
-                              <button onClick={() => handleDeleteBudget(budget.categoryId)} className="p-2 bg-red-500/10 text-red-500 rounded-lg">
+                              <motion.button 
+                                whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleDeleteBudget(budget.categoryId)} 
+                                className="p-2 bg-red-500/10 text-red-500 rounded-lg"
+                              >
                                   <Trash2 size={18} />
-                              </button>
+                              </motion.button>
                           ) : (
                                <div className="text-right">
                                   <p className="text-lg font-bold text-theme-primary">{formatAmount(spent)}</p>
@@ -310,10 +360,19 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                       
                       {!isManaging ? (
                           <div className="h-2.5 w-full bg-[#1e1e1e] rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${statusColor} shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all duration-500`} style={{ width: `${percent}%` }} />
+                            <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${percent}%` }}
+                                transition={{ duration: 1, ease: "easeOut" }}
+                                className={`h-full rounded-full ${statusColor} shadow-[0_0_10px_rgba(0,0,0,0.5)]`} 
+                            />
                           </div>
                       ) : (
-                          <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2">
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2"
+                          >
                               <span className="text-xs text-theme-secondary uppercase">{t('limit')}:</span>
                               <span className="text-theme-secondary font-bold">{displayInVES ? 'Bs.' : '$'}</span>
                               <input 
@@ -322,9 +381,9 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                   onChange={(e) => handleUpdateLimit(budget.categoryId, e.target.value)}
                                   className="bg-transparent font-bold text-white w-full outline-none border-b border-white/10 focus:border-indigo-500"
                               />
-                          </div>
+                          </motion.div>
                       )}
-                    </div>
+                    </motion.div>
                   );
                 })}
                 
@@ -333,22 +392,38 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                          {t('noEnvelopes')}
                      </div>
                 )}
-              </div>
+              </motion.div>
           </div>
       )}
 
       {/* Add Budget Modal */}
-      {showAddBudgetModal && (
-          <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-             <div className="bg-theme-surface w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+       <AnimatePresence>
+       {showAddBudgetModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          >
+             <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-theme-surface w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+             >
                 <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                     <h3 className="font-bold text-theme-primary">{t('addEnvelopeTitle')}</h3>
                     <button onClick={() => setShowAddBudgetModal(false)} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </div>
-                <div className="p-4">
-                     <button onClick={() => { setShowAddBudgetModal(false); setShowCustomEnvelopeModal(true); }} className="w-full p-4 bg-theme-brand text-white rounded-xl font-bold mb-4 flex items-center justify-center gap-2">
+                <div className="p-4 overflow-y-auto no-scrollbar">
+                     <motion.button 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => { setShowAddBudgetModal(false); setShowCustomEnvelopeModal(true); }} 
+                        className="w-full p-4 bg-theme-brand text-white rounded-xl font-bold mb-4 flex items-center justify-center gap-2 shadow-lg shadow-brand/20"
+                     >
                          <Plus size={20} /> {t('createCustomEnvelope')}
-                     </button>
+                     </motion.button>
                      <p className="text-xs text-theme-secondary uppercase font-bold mb-3">{t('chooseCategory')}</p>
                       
                       <div className="relative mb-4">
@@ -357,35 +432,32 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                            placeholder={t('searchCategories') || 'Buscar categorías...'}
                            value={categorySearch}
                            onChange={(e) => setCategorySearch(e.target.value)}
-                           className="w-full bg-theme-surface border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-theme-brand/50 transition-all font-bold text-white placeholder:text-zinc-600"
+                           className="w-full bg-theme-surface border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-theme-soft/50 transition-all font-bold text-white placeholder:text-zinc-600"
                         />
                       </div>
-                                          <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px]">
+                      <div className="flex flex-col gap-2">
                         {availableCategories
                           .filter(cat => t(cat.name).toLowerCase().includes(categorySearch.toLowerCase()))
-                          .length === 0 ? (
-                            <p className="text-center text-theme-secondary py-4">{t('noCategoriesFound') || 'No se encontraron categorías'}</p>
-                        ) : (
-                            availableCategories
-                            .filter(cat => t(cat.name).toLowerCase().includes(categorySearch.toLowerCase()))
-                            .map(cat => (
-                                <button 
+                          .map(cat => (
+                                <motion.button 
+                                    whileHover={{ x: 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
                                     key={cat.id} 
                                     onClick={() => { handleAddBudget(cat.id); setShowAddBudgetModal(false); setCategorySearch(''); }}
-                                    className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-colors text-left border border-white/5"
+                                    className="flex items-center gap-3 p-3 rounded-xl transition-colors text-left border border-white/5"
                                 >
                                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${cat.color} bg-opacity-20`}>
                                         {cat.icon}
                                     </div>
                                     <span className="font-bold text-theme-primary">{t(cat.name)}</span>
-                                </button>
+                                </motion.button>
                             ))
-                        )}
+                        }
                     </div>
                 </div>
-             </div>
-          </div>
-      )}
+             </motion.div>
+          </motion.div>
+       )}
+       </AnimatePresence>
 
       {/* Custom Envelope Modal */}
       {showCustomEnvelopeModal && (

@@ -291,5 +291,11 @@ export const en = {
     updateNow: 'Update Now',
     checkUpdates: 'Check for updates',
     navbarFavorites: 'Quick Access Custom',
+    navbarFavoritesDesc: 'Select up to 3 views for your bottom navbar.',
     searchCategories: 'Search categories...',
+    dataManagement: 'Data Management',
+    exportCSV: 'Export CSV',
+    backup: 'Backup JSON',
+    cloudSyncDesc: 'Experimental sync with Drive',
+    experimental: 'Experimental',
 };

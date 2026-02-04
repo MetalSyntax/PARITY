@@ -32,6 +32,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.style.setProperty(key, value);
     });
 
+    // Sync Chart.js defaults if Chart is available globally
+    if ((window as any).Chart) {
+      const Chart = (window as any).Chart;
+      Chart.defaults.color = colors['--chart-text'];
+      Chart.defaults.borderColor = colors['--chart-grid'];
+      Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.9)';
+      Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+      Chart.defaults.plugins.tooltip.bodyColor = '#a1a1aa';
+      Chart.defaults.plugins.tooltip.borderColor = 'rgba(255, 255, 255, 0.1)';
+      Chart.defaults.plugins.tooltip.borderWidth = 1;
+      
+      // Force refresh charts
+      Object.values(Chart.instances).forEach((chart: any) => chart.update());
+    }
+
     // Update meta theme-color for mobile browsers (Android & iOS)
     // Using --bg-primary to match the main app background for a seamless status bar
     const metaThemeColor = document.querySelector("meta[name='theme-color']");

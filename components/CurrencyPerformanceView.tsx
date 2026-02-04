@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { ChevronLeft, Shield, TrendingUp, TrendingDown, Clock, CheckCircle2, LineChart, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Line } from 'react-chartjs-2';
 import { Transaction, Currency, TransactionType } from '../types';
 import { getTranslation } from '../i18n';
@@ -93,21 +94,32 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
         <div className="flex flex-col h-full bg-black text-white animate-in slide-in-from-right duration-500 overflow-hidden">
             {/* Header */}
             <div className="p-6 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-10 font-bold">
-                <button onClick={onBack} className="p-2 hover:bg-white/5 rounded-xl text-zinc-400 transition-colors">
+                <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={onBack} 
+                    className="p-2 hover:bg-white/5 rounded-xl text-zinc-400 transition-colors"
+                >
                     <ChevronLeft size={24} />
-                </button>
+                </motion.button>
                 <h2 className="text-lg font-black tracking-tight">{t('currencyPerformance') || 'Rendimiento de Moneda'}</h2>
                 <div className="w-10 h-10" /> {/* Spacer */}
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 pb-32">
                 {/* Inflation Shield Card */}
-                <div className="bg-zinc-900/50 p-6 rounded-[2.5rem] border border-white/5 mb-8 mt-4">
+                <motion.div 
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-zinc-900/50 p-6 rounded-[2.5rem] border border-white/5 mb-8 mt-4"
+                >
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                            <motion.div 
+                                whileHover={{ rotate: 10 }}
+                                className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20"
+                            >
                                 <Shield size={20} />
-                            </div>
+                            </motion.div>
                             <h3 className="font-extrabold text-theme-primary text-xl">Escudo de Inflación</h3>
                         </div>
                         <span className="bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-full text-[10px] font-black border border-blue-500/20">
@@ -119,7 +131,12 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     
                     {/* Progress Bar */}
                     <div className="h-4 w-full bg-zinc-800 rounded-full overflow-hidden flex mb-6 shadow-inner">
-                        <div className="h-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)] transition-all duration-1000" style={{ width: `${shieldStats.saved}%` }} />
+                        <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${shieldStats.saved}%` }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="h-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]" 
+                        />
                         <div className="h-full bg-rose-500" style={{ width: `${shieldStats.loss}%` }} />
                     </div>
 
@@ -133,13 +150,16 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             <div className="w-2 h-2 rounded-full bg-rose-500" />
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 px-1">Análisis de Mercado</p>
 
                 {/* Market Grid */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-blue-500 p-6 rounded-[2rem] shadow-lg shadow-blue-500/20">
+                    <motion.div 
+                        whileHover={{ scale: 1.05 }}
+                        className="bg-blue-500 p-6 rounded-[2rem] shadow-lg shadow-blue-500/20"
+                    >
                         <p className="text-[10px] font-black text-blue-100/70 uppercase mb-2">Tu Tasa Promedio</p>
                         <div className="flex items-end gap-1 mb-3">
                             <span className="text-3xl font-black text-white">{formatAmount(avgUserRate)}</span>
@@ -149,9 +169,12 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             <TrendingDown size={12} />
                             -2.8%
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem]">
+                    <motion.div 
+                        whileHover={{ scale: 1.05 }}
+                        className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem]"
+                    >
                         <p className="text-[10px] font-black text-zinc-500 uppercase mb-2">Tasa Mercado</p>
                         <div className="flex items-end gap-1 mb-3">
                             <span className="text-3xl font-black text-white">{formatAmount(exchangeRate)}</span>
@@ -161,7 +184,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             <Clock size={12} />
                             <span className="text-[10px] font-bold">Hace 10min</span>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
 
                 {/* Volatility Chart */}
