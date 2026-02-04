@@ -298,4 +298,8 @@ export const en = {
     backup: 'Backup JSON',
     cloudSyncDesc: 'Experimental sync with Drive',
     experimental: 'Experimental',
+    biometrics: 'Biometric Login',
+    biometricsDesc: 'Use Fingerprint or Face ID to unlock.',
+    biometricsNotSupported: 'Biometrics not supported on this browser/device.',
+    notSupported: 'Not Supported',
 };

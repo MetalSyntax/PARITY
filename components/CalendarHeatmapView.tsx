@@ -137,11 +137,11 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                     className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
                 >
                     {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                    <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+                    <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
                 </motion.button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 pb-32">
+            <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-32">
                 <div className="mb-8 mt-2">
                     <h1 className="text-3xl font-black text-theme-primary mb-1">Mapa de Calor</h1>
                     <p className="text-sm text-theme-secondary opacity-70">Intensidad de gastos diarios</p>

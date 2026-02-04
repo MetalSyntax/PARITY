@@ -106,7 +106,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 <div className="w-10 h-10" /> {/* Spacer */}
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 pb-32">
+            <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-32">
                 {/* Inflation Shield Card */}
                 <motion.div 
                     whileHover={{ scale: 1.02 }}

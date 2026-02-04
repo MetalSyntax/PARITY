@@ -293,4 +293,8 @@ export const pt = {
     backup: 'Backup JSON',
     cloudSyncDesc: 'Sincronização experimental com Drive',
     experimental: 'Experimental',
+    biometrics: 'Login Biométrico',
+    biometricsDesc: 'Use Impressão Digital ou Face ID para desbloquear.',
+    biometricsNotSupported: 'Biometria não suportada neste navegador/dispositivo.',
+    notSupported: 'Não Suportado',
 };

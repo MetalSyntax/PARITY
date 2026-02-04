@@ -294,7 +294,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+                <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
             </motion.button>
             <motion.button 
                 whileHover={{ scale: 1.1 }}

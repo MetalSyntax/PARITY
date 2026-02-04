@@ -1,69 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import {
-  ArrowRightLeft,
-  TrendingUp,
-  PieChart,
-  ArrowUpRight,
-  Plus,
-  Calendar1,
-  CalendarRange,
-  ChartArea,
-  Eye,
-  EyeOff,
-  Lock,
-  X,
-  Settings,
-  ChartCandlestick,
-  Activity,
-  ChevronRight,
-  TrendingDown,
-  Layout,
-  Receipt,
-  BarChart,
-  Shield,
-  Wallet,
-  GripVertical,
-  Coins,
-  DollarSign,
-  RefreshCw,
-  ArrowDownToLine
-} from "lucide-react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine } from "lucide-react";
 import { motion, Reorder, useDragControls } from "framer-motion";
-import {
-  Transaction,
-  Account,
-  Currency,
-  UserProfile,
-  TransactionType,
-} from "../types";
+import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
 import { getTranslation } from "../i18n";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-  BarElement,
-  Filler,
-} from "chart.js";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler } from "chart.js";
 import { Line, Doughnut, Bar } from "react-chartjs-2";
-import {
-  FaWallet,
-  FaBuildingColumns,
-  FaCreditCard,
-  FaMoneyBillWave,
-  FaBitcoin,
-  FaPaypal,
-  FaCcVisa,
-  FaCcMastercard,
-  FaMobileScreen,
-  FaPiggyBank,
-} from "react-icons/fa6";
+import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from "react-icons/fa6";
 
 ChartJS.register(
   CategoryScale,
@@ -721,7 +664,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-theme-soft transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-bg text-theme-secondary hover:text-theme-primary'}`}
                         >
                           {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                          <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+                          <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handlePrivacyToggle(e); }}
@@ -824,7 +767,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       { id: "WALLET", label: t("wallet"), icon: <Wallet size={20} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
                       { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={20} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
                       { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={20} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
-                      { id: "PROFILE", label: t("profile"), icon: <Settings size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
+                      { id: "PROFILE", label: t("profile"), icon: <User size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
                     ].map((action, i) => (
                       <button key={i} onClick={() => onNavigate(action.id)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">
                         <div className={`w-12 h-12 rounded-xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>{action.icon}</div>

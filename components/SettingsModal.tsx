@@ -17,10 +17,12 @@ interface SettingsModalProps {
   onToggleAutoLock: (enabled: boolean) => void;
   autoLockDelay: number;
   onSetAutoLockDelay: (delay: number) => void;
+  biometricsEnabled: boolean;
+  onToggleBiometrics: (enabled: boolean) => void;
   isDevMode?: boolean;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert, autoLockEnabled, onToggleAutoLock, autoLockDelay, onSetAutoLockDelay, isDevMode }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert, autoLockEnabled, onToggleAutoLock, autoLockDelay, onSetAutoLockDelay, biometricsEnabled, onToggleBiometrics, isDevMode }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
   const [mode, setMode] = useState<'AUTO' | 'PARALLEL' | 'MANUAL'>('MANUAL');
@@ -33,6 +35,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
 
   // Rate Fetching State
   const [isFetching, setIsFetching] = useState(false);
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+
+  React.useEffect(() => {
+    if (window.PublicKeyCredential) {
+      window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(setIsBiometricSupported);
+    }
+  }, []);
 
   const handleFetchRate = async (targetMode: 'AUTO' | 'PARALLEL') => {
       setMode(targetMode);
@@ -128,7 +137,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
             <div className="flex flex-col gap-3">
                <button 
                    onClick={() => handleFetchRate('AUTO')}
-                   className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${mode === 'AUTO' ? 'bg-theme-brand/5 border-theme-soft/40 ring-1 ring-theme-brand/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
+                   className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${mode === 'AUTO' ? 'bg-theme-brand/5 border-theme-soft ring-1 ring-theme-brand/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
                >
                   <div className="w-12 h-12 rounded-2xl bg-theme-surface flex items-center justify-center shadow-sm border border-theme-soft"><Globe size={22} className="text-emerald-500" /></div>
                   <div>
@@ -157,7 +166,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
 
                <button 
                   onClick={() => setMode('MANUAL')} 
-                  className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${mode === 'MANUAL' ? 'bg-theme-brand/5 border-theme-soft/40 ring-1 ring-theme-brand/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${mode === 'MANUAL' ? 'bg-theme-brand/5 border-theme-soft ring-1 ring-theme-brand/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
                >
                   <div className="w-12 h-12 rounded-2xl bg-theme-surface flex items-center justify-center shadow-sm border border-theme-soft"><Lock size={22} className="text-purple-500" /></div>
                   <div>
@@ -220,6 +229,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
                               </div>
                           )}
                       </div>
+
+                      <div className="w-full p-4 bg-theme-bg border border-theme-soft rounded-2xl transition-all shadow-sm">
+                          <div className="flex justify-between items-center mb-1">
+                              <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-black text-sm text-theme-primary">{t('biometrics')}</p>
+                                    {!isBiometricSupported && <span className="text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-black uppercase">{t('notSupported')}</span>}
+                                  </div>
+                                  <p className="text-[10px] font-bold leading-tight text-theme-secondary opacity-50 mt-1">{t('biometricsDesc')}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                    if (!isBiometricSupported && !biometricsEnabled) {
+                                        showAlert('biometricsNotSupported', 'error');
+                                        return;
+                                    }
+                                    onToggleBiometrics(!biometricsEnabled);
+                                }}
+                                className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${biometricsEnabled ? "bg-theme-brand shadow-lg shadow-theme-brand/20" : "bg-theme-soft"}`}
+                              >
+                                <div
+                                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${biometricsEnabled ? "left-7" : "left-1"}`}
+                                />
+                              </button>
+                          </div>
+                      </div>
                   </div>
              ) : (
                   <div className="bg-theme-bg p-5 rounded-2xl border border-theme-soft/30 animate-in fade-in slide-in-from-top-2 shadow-xl">
@@ -272,7 +307,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
                     onChange={(e) => setRate(parseFloat(e.target.value))}
                     className="text-3xl font-black text-theme-primary bg-transparent text-center w-full outline-none focus:text-theme-brand transition-colors tracking-tighter"
                  />
-                 <span className="text-[9px] font-black text-theme-secondary opacity-40 uppercase tracking-[0.2em] -mt-1">VES / USD</span>
+                 <span className="text-[9px] font-black text-theme-secondary opacity-40 uppercase tracking-[0.2em] -mt-1">Bs. / USD</span>
                </div>
                
                <motion.button 

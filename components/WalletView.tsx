@@ -208,7 +208,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     <label className="text-xs text-zinc-500 mb-2 block">{t('language') === 'Idioma' ? 'Moneda' : 'Currency'}</label>
                     <div className="flex gap-2">
                         {[Currency.USD, Currency.EUR, Currency.VES, Currency.USDT].map(c => (
-                            <button key={c} onClick={() => setCurrency(c)} className={`px-4 py-2 rounded-lg border ${currency === c ? 'bg-theme-brand border-theme-soft text-white' : 'bg-white/5 border-white/10 text-theme-secondary'}`}>{c}</button>
+                            <button key={c} onClick={() => setCurrency(c)} className={`px-4 py-2 rounded-lg border ${currency === c ? 'bg-theme-brand border-theme-soft text-white' : 'bg-white/5 border-white/10 text-theme-secondary'}`}>{c === Currency.VES ? 'Bs.' : c}</button>
                         ))}
                     </div>
                 </div>
@@ -285,7 +285,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+                <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
             </motion.button>
             {activeTab === 'WALLETS' && (
                 <motion.button 
@@ -509,11 +509,11 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         <div className="flex justify-between items-end">
                             <div className="flex flex-col gap-2">
                                 <span className="text-theme-secondary text-[10px] font-bold uppercase tracking-widest opacity-60">{t('availableBalance')}</span>
-                                <span className="bg-theme-bg px-3 py-1 rounded-lg text-[10px] font-black font-mono text-zinc-400 border border-white/5 w-fit shadow-inner">{acc.currency}</span>
+                                <span className="bg-theme-bg px-3 py-1 rounded-lg text-[10px] font-black font-mono text-zinc-400 border border-white/5 w-fit shadow-inner">{acc.currency === Currency.VES ? 'Bs.' : acc.currency}</span>
                             </div>
                             <h3 className="text-4xl font-black text-theme-primary tracking-tighter">
                                 <span className="text-2xl text-theme-secondary opacity-40 mr-1">
-                                  {displayInVES ? 'Bs.' : (acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : acc.currency)}
+                                  {displayInVES ? 'Bs.' : (acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : (acc.currency === Currency.VES ? 'Bs.' : acc.currency))}
                                 </span>
                                 {isBalanceVisible ? (displayInVES ? (acc.currency === Currency.VES ? acc.balance : acc.balance * exchangeRate) : acc.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
                             </h3>

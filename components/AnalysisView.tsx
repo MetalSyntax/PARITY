@@ -5,21 +5,8 @@ import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, ScheduledPayment } from '../types';
 import { getTranslation } from '../i18n';
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-  BarElement,
-  Filler
-} from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler } from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
-
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler);
 
@@ -290,7 +277,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayInVES ? 'VES' : 'USD'}</span>
+                <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
             </motion.button>
 
             <div className="relative">

@@ -429,7 +429,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       {/* Account Selector Modal */}
       {showAccountSelector && (
           <div className="absolute inset-0 bg-black/90 z-50 flex flex-col justify-end animate-in fade-in duration-200">
-              <div className="bg-theme-surface rounded-t-3xl p-6 h-[70%] overflow-y-auto">
+              <div className="bg-theme-surface rounded-t-3xl p-6 h-[70%] overflow-y-auto no-scrollbar">
                   <div className="flex justify-between items-center mb-6">
                       <h3 className="font-bold text-xl text-theme-primary">{t('selectAccount')}</h3>
                       <button onClick={() => setShowAccountSelector(null)} className="p-2 bg-white/10 rounded-full text-theme-secondary"><X size={20}/></button>
@@ -516,7 +516,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                onClick={() => setCurrency(prev => prev === Currency.USD ? Currency.VES : Currency.USD)}
                className="flex items-center gap-1 bg-theme-surface hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition-all"
              >
-               <span className="text-sm font-bold text-theme-brand">{currency}</span>
+               <span className="text-sm font-bold text-theme-brand">{currency === Currency.VES ? 'Bs.' : currency}</span>
                <ChevronDown size={14} className="text-theme-secondary" />
              </button>
 
@@ -778,7 +778,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 </div>
             </div>
             
-            <div className="overflow-y-auto p-4 flex-1">
+            <div className="overflow-y-auto no-scrollbar p-4 flex-1">
                  <div className="flex flex-col gap-4 pb-10">
                      {CATEGORIES.filter(cat => {
                          const translatedName = (t(cat.name) || cat.name).toLowerCase();

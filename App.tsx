@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp } from 'lucide-react';
+import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1 } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { AddTransaction } from './components/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
@@ -110,6 +110,10 @@ function AppContent() {
   const [autoLockDelay, setAutoLockDelay] = useState(() => {
     const saved = localStorage.getItem("autoLockDelay");
     return saved !== null ? JSON.parse(saved) : 0;
+  });
+  const [biometricsEnabled, setBiometricsEnabled] = useState(() => {
+    const saved = localStorage.getItem("biometricsEnabled");
+    return saved !== null ? JSON.parse(saved) : false;
   });
   const [backgroundTime, setBackgroundTime] = useState<number | null>(null);
   const [isAppLocked, setIsAppLocked] = useState(false);
@@ -250,6 +254,54 @@ function AppContent() {
     setAutoLockEnabled(enabled);
     localStorage.setItem("autoLockEnabled", JSON.stringify(enabled));
   };
+
+  const handleToggleBiometrics = (enabled: boolean) => {
+    setBiometricsEnabled(enabled);
+    localStorage.setItem("biometricsEnabled", JSON.stringify(enabled));
+  };
+
+  const handleBiometricUnlock = async () => {
+    if (!biometricsEnabled) return;
+    
+    try {
+        // Simplified WebAuthn check for platform authenticator
+        if (window.PublicKeyCredential) {
+            const isAvailable = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+            if (isAvailable) {
+                // We use a fixed challenge for local-only verification
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                const options: any = {
+                    publicKey: {
+                        challenge,
+                        timeout: 60000,
+                        userVerification: 'required',
+                        allowCredentials: [] // On some platforms this triggers the system prompt
+                    }
+                };
+                
+                // This will trigger the system Biometric/FaceID/Fingerprint prompt
+                // Note: Since we don't store credentials on a server, we're essentially
+                // asking the device "is the user who they say they are?".
+                // If it resolves without error, user is verified.
+                await navigator.credentials.get(options);
+                setIsAppLocked(false);
+                setPinInput("");
+                setPinError(false);
+            }
+        }
+    } catch (e) {
+        console.error("Biometric authentication failed", e);
+    }
+  };
+
+  // Trigger Biometrics automatically when locked
+  useEffect(() => {
+    if (isAppLocked && biometricsEnabled) {
+        handleBiometricUnlock();
+    }
+  }, [isAppLocked, biometricsEnabled]);
 
   const handleUnlock = (digit: string) => {
     const currentStored = localStorage.getItem('parity_pin') || '0000';
@@ -638,6 +690,17 @@ function AppContent() {
               <div className="text-xs font-bold uppercase">{t("delete")}</div>
             </button>
           </div>
+          {biometricsEnabled && (
+            <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleBiometricUnlock}
+                className="mt-4 flex items-center gap-2 px-6 py-3 bg-theme-surface/30 border border-white/5 rounded-2xl text-theme-primary font-bold transition-all"
+            >
+                <Activity size={20} className="text-theme-brand" />
+                <span>{t('biometrics')}</span>
+            </motion.button>
+          )}
         </div>
       </div>
     );
@@ -667,7 +730,7 @@ function AppContent() {
 
         {/* Main Content Router */}
         <motion.div 
-          className="flex-1 relative z-0 overflow-y-auto flex flex-col mb-6"
+          className="flex-1 relative z-0 overflow-y-auto flex flex-col mb-0"
           onPanEnd={(_, info) => {
             // Swipe right from left edge (approx)
             if (info.offset.x > 80 && Math.abs(info.offset.y) < 50) {
@@ -863,10 +926,10 @@ function AppContent() {
                   {view === 'ANALYSIS' && <ChartArea size={24} />}
                   {view === 'PROFILE' && <User size={24} />}
                   {view === 'BUDGET' && <PieChart size={24} />}
-                  {view === 'SCHEDULED' && <CalendarIcon size={24} />}
+                  {view === 'SCHEDULED' && <Calendar1 size={24} />}
                   {view === 'TRANSACTIONS' && <Receipt size={24} />}
-                  {view === 'HEATMAP' && <Activity size={24} />}
-                  {view === 'CURRENCY_PERF' && <TrendingUp size={24} />}
+                  {view === 'HEATMAP' && <CalendarRange size={24} />}
+                  {view === 'CURRENCY_PERF' && <ChartCandlestick size={24} />}
                 </button>
             ))}
 
@@ -933,6 +996,8 @@ function AppContent() {
             onToggleAutoLock={handleToggleAutoLock}
             autoLockDelay={autoLockDelay}
             onSetAutoLockDelay={handleSetAutoLockDelay}
+            biometricsEnabled={biometricsEnabled}
+            onToggleBiometrics={handleToggleBiometrics}
             isDevMode={isDevMode}
           />
         )}

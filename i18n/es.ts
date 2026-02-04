@@ -299,4 +299,8 @@ export const es = {
     backup: 'Respaldo JSON',
     cloudSyncDesc: 'Sincronización experimental con Drive',
     experimental: 'Experimental',
+    biometrics: 'Ingreso Biométrico',
+    biometricsDesc: 'Usa Huella o Face ID para entrar.',
+    biometricsNotSupported: 'Biometría no soportada en este navegador/dispositivo.',
+    notSupported: 'No Soportado',
 };

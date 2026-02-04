@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, 
-  Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2,
-  Database, HardDrive, Info, Settings2
-} from 'lucide-react';
+import { ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, Database, HardDrive, Info, Settings2 } from 'lucide-react';
 import { UserProfile, Language, Transaction, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { StorageType } from '../services/db';
@@ -53,10 +49,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const t = (key: any) => getTranslation(lang, key);
 
   const containerVariants = {
-    hidden: { opacity: 0, x: 20 },
+    hidden: { opacity: 0, y: 10 },
     visible: { 
       opacity: 1, 
-      x: 0,
+      y: 0,
       transition: { 
         duration: 0.4,
         staggerChildren: 0.05
@@ -136,7 +132,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="h-full flex flex-col p-6 bg-theme-bg overflow-y-auto pb-safe"
+      className="h-full flex flex-col p-6 bg-theme-bg overflow-y-auto overflow-x-hidden no-scrollbar pb-safe"
     >
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -233,6 +229,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </label>
           <div className="grid grid-cols-2 gap-2">
             {[
+              { id: 'PROFILE', name: t('profile') },
               { id: 'WALLET', name: t('wallet') },
               { id: 'ANALYSIS', name: t('analysis') },
               { id: 'BUDGET', name: t('envelopes') },
@@ -371,7 +368,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="w-1.5 h-1.5 rounded-full bg-theme-brand animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-primary">Parity Intelligence</span>
           </div>
-          <p className="text-[10px] font-mono">v1.0.19</p>
+          <p className="text-[10px] font-mono">v1.0.20</p>
         </motion.div>
       </div>
     </motion.div>
