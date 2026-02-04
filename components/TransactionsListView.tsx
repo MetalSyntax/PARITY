@@ -158,7 +158,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                     if (date === todayStr) return t('today');
                     if (date === yesterdayStr) return t('yesterday');
                     
-                    return dateObj.toLocaleDateString(undefined, { 
+                    return dateObj?.toLocaleDateString(undefined, { 
                       weekday: 'short', 
                       month: 'short', 
                       day: 'numeric',
@@ -211,7 +211,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                               ? (displayInVES 
                                   ? (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount)
                                   : mainAmount
-                                ).toLocaleString(undefined, {
+                                )?.toLocaleString(undefined, {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
                                 })
@@ -223,7 +223,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                               ? (displayInVES 
                                   ? (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate)
                                   : secondaryAmount
-                                ).toLocaleString(
+                                )?.toLocaleString(
                                   undefined,
                                   {
                                     minimumFractionDigits: 2,

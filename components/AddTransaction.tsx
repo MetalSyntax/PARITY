@@ -456,7 +456,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                       <div className="text-xs text-theme-secondary">{acc.currency}</div>
                                   </div>
                               </div>
-                              <div className="font-mono text-sm text-theme-primary">{acc.balance.toLocaleString()}</div>
+                              <div className="font-mono text-sm text-theme-primary">{acc.balance?.toLocaleString()}</div>
                           </button>
                       ))}
                   </div>
@@ -569,7 +569,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 </div>
                 <p className="text-[10px] text-theme-secondary mt-2">
                    {t('totalTarget') || 'Total to receive'}: <span className="text-theme-primary font-bold">
-                       {((parseFloat(amountStr) || 0) * (parseFloat(manualExchangeRate) || 0)).toLocaleString()} {getActiveAccount(toAccountId).currency}
+                       {((parseFloat(amountStr) || 0) * (parseFloat(manualExchangeRate) || 0))?.toLocaleString()} {getActiveAccount(toAccountId).currency}
                    </span>
                 </p>
             </div>

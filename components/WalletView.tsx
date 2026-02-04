@@ -113,14 +113,14 @@ export const WalletView: React.FC<WalletViewProps> = ({
     if (!isBalanceVisible) return '******';
     const val = displayInVES ? usd * safeRate : usd;
     const symbol = displayInVES ? 'Bs. ' : '$';
-    return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatSecondary = (usd: number) => {
     if (!isBalanceVisible) return '';
     const val = displayInVES ? usd : usd * safeRate;
     const symbol = displayInVES ? '$' : 'Bs.';
-    return `${symbol} ${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    return `${symbol} ${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
 
   const scheduledIncomes = scheduledPayments.filter(p => p.type === TransactionType.INCOME);
@@ -402,16 +402,16 @@ export const WalletView: React.FC<WalletViewProps> = ({
                           </div>
                           
                           <div className="space-y-3">
-                              <div className="flex justify-between text-xs">
+                                  <div className="flex justify-between text-xs">
                                   <span className="text-theme-secondary font-medium">{t('savingsEst')}</span>
-                                  <span className="text-theme-primary font-bold">{isBalanceVisible ? `$${savings.toLocaleString()}` : '******'}</span>
+                                  <span className="text-theme-primary font-bold">{isBalanceVisible ? `$${savings?.toLocaleString()}` : '******'}</span>
                               </div>
                               <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
                                   <div className="h-full bg-blue-500 w-[20%] rounded-full" /> 
                               </div>
                               <div className="flex justify-between text-xs">
                                   <span className="text-theme-secondary font-medium">{t('commissions')}</span>
-                                  <span className="text-red-400 font-bold">{isBalanceVisible ? `-$${commissions.toLocaleString()}` : '******'}</span>
+                                  <span className="text-red-400 font-bold">{isBalanceVisible ? `-$${commissions?.toLocaleString()}` : '******'}</span>
                               </div>
                           </div>
                       </div>
@@ -515,7 +515,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                 <span className="text-2xl text-theme-secondary opacity-40 mr-1">
                                   {displayInVES ? 'Bs.' : (acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : (acc.currency === Currency.VES ? 'Bs.' : acc.currency))}
                                 </span>
-                                {isBalanceVisible ? (displayInVES ? (acc.currency === Currency.VES ? acc.balance : acc.balance * exchangeRate) : acc.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
+                                {isBalanceVisible ? (displayInVES ? (acc.currency === Currency.VES ? acc.balance : acc.balance * exchangeRate) : acc.balance)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
                             </h3>
                         </div>
                       </motion.div>

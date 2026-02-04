@@ -25,7 +25,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
     const formatAmount = (usd: number) => {
         if (!isBalanceVisible) return '******';
         const val = usd; // This view doesn't use displayInVES
-        return `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `$${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // Calculate Average User Purchase Rate
@@ -123,7 +123,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             <h3 className="font-extrabold text-theme-primary text-xl">Escudo de Inflación</h3>
                         </div>
                         <span className="bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-full text-[10px] font-black border border-blue-500/20">
-                            {isBalanceVisible ? `+${rateDiff.toFixed(1)}% vs IPC` : '******'}
+                            {isBalanceVisible ? `+${rateDiff?.toFixed(1)}% vs IPC` : '******'}
                         </span>
                     </div>
 

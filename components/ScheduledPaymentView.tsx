@@ -38,7 +38,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
     if (!isBalanceVisible) return '******';
     const val = displayInVES ? usd * exchangeRate : usd;
     const symbol = displayInVES ? 'Bs. ' : '$';
-    return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const [isAdding, setIsAdding] = useState(false);
@@ -394,7 +394,7 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
           <div>
               <h4 className="font-bold text-sm text-theme-primary">{p.name}</h4>
               <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
-                {new Date(p.date.split('T')[0] + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} • {t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}
+                {new Date(p.date.split('T')[0] + 'T12:00:00')?.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} • {t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}
               </p>
           </div>
       </div>
@@ -404,14 +404,14 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
               {isBalanceVisible ? (
                   <>
                     {displayInVES ? 'Bs.' : (p.currency === Currency.USD ? '$' : 'Bs.')}
-                    {(displayInVES ? (p.currency === Currency.VES ? p.amount : p.amount * exchangeRate) : (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {(displayInVES ? (p.currency === Currency.VES ? p.amount : p.amount * exchangeRate) : (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate))?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </>
               ) : '******'}
             </span>
             <span className="text-[10px] text-zinc-500 font-mono">
               {isBalanceVisible ? (
                   <>
-                  ~{displayInVES ? '$' : 'Bs.'} {(displayInVES ? (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate) : (p.currency === Currency.USD ? p.amount * exchangeRate : p.amount)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  ~{displayInVES ? '$' : 'Bs.'} {(displayInVES ? (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate) : (p.currency === Currency.USD ? p.amount * exchangeRate : p.amount))?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </>
               ) : '******'}
             </span>

@@ -165,7 +165,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!isBalanceVisible) return "******";
     const val = displayInVES ? usd * exchangeRate : usd;
     const symbol = displayInVES ? "Bs. " : "$";
-    return `${symbol}${val.toLocaleString(undefined, {
+    return `${symbol}${val?.toLocaleString(undefined, {
       maximumFractionDigits: 0,
     })}`;
   };
@@ -174,7 +174,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!isBalanceVisible) return "";
     const val = displayInVES ? usd : usd * exchangeRate;
     const symbol = displayInVES ? "$" : "Bs.";
-    return `${val.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${symbol}`;
+    return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${symbol}`;
   };
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState("");
@@ -365,7 +365,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           new Date(t.date) >= sevenDaysAgo &&
           t.type !== TransactionType.TRANSFER,
       )
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a).getTime());
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     // Scale helpers
     const getX = (ts: number) => ((ts - startTime) / timeRange) * 100;
@@ -614,7 +614,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-3 py-1.5 rounded-full flex items-center gap-2"
             >
               <span className="text-xs font-mono text-emerald-500 font-bold">
-                1 USD = {exchangeRate.toFixed(2)}
+                1 USD = {exchangeRate?.toFixed(2)}
               </span>
               <TrendingUp size={12} className="text-emerald-500" />
             </button>
@@ -695,7 +695,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             {isBalanceVisible && (
                               <div className={`p-1 flex items-center gap-1 rounded-full text-[10px] font-black ${balanceHistory.trendPercent >= 0 ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
                                 {balanceHistory.trendPercent >= 0 ? <ArrowUpRight size={10} /> : <TrendingDown size={10} />}
-                                {Math.abs(balanceHistory.trendPercent).toFixed(1)}%
+                                {Math.abs(balanceHistory.trendPercent || 0)?.toFixed(1)}%
                               </div>
                             )}
                           </div>
@@ -747,7 +747,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <span className="text-[10px] bg-theme-soft px-1.5 py-0.5 rounded text-theme-secondary">{acc.currency}</span>
                           </div>
                           <div>
-                            <p className="text-theme-primary font-bold text-sm">{isBalanceVisible ? acc.balance.toLocaleString() : "****"}</p>
+                            <p className="text-theme-primary font-bold text-sm">{isBalanceVisible ? acc.balance?.toLocaleString() : "****"}</p>
                             <p className="text-theme-secondary text-xs truncate">{acc.name}</p>
                           </div>
                         </div>
@@ -864,7 +864,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     ...commonOptions.plugins,
                                     tooltip: {
                                         ...commonOptions.plugins.tooltip,
-                                        callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.parsed.x.toLocaleString()}` }
+                                        callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.parsed.x?.toLocaleString()}` }
                                     }
                                 },
                                 scales: {
@@ -891,13 +891,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           >
                             <div className="flex items-center gap-3">
                               <div className={`w-8 h-8 rounded-lg ${item.color.replace('text-', 'bg-').split(' ')[0]}/10 flex items-center justify-center`}>
-                                <item.icon size={14} />
+                                {item.icon}
                               </div>
                               <span className="text-xs font-bold">{t(item.name as any)}</span>
                             </div>
                             <div className="text-right">
-                              <p className="text-xs font-black">{formatAmount(item.value)}</p>
-                              <p className="text-[9px] font-bold opacity-40">{item.percentage.toFixed(1)}%</p>
+                              <p className="text-xs font-black">{formatAmount(item.amount)}</p>
+                              <p className="text-[9px] font-bold opacity-40">{item.percent?.toFixed(1)}%</p>
                             </div>
                           </button>
                         ))}
@@ -1025,10 +1025,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                                <p className={`text-sm font-black ${
                                                  isTransfer ? 'text-indigo-400' : isExpense ? 'text-red-500' : 'text-emerald-500'
                                                }`}>
-                                                 {isTransfer ? '' : isExpense ? '-' : '+'}{displayMainSymbol}{isBalanceVisible ? displayMain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
+                                                 {isTransfer ? '' : isExpense ? '-' : '+'}{displayMainSymbol}{isBalanceVisible ? displayMain?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
                                                </p>
                                                <p className="text-[10px] font-bold text-theme-secondary opacity-40">
-                                                 ~{displaySecondarySymbol}{isBalanceVisible ? displaySecondary.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
+                                                 ~{displaySecondarySymbol}{isBalanceVisible ? displaySecondary?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
                                                </p>
                                              </div>
 
@@ -1085,7 +1085,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               ...commonOptions.plugins,
                               tooltip: {
                                   ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.raw.toLocaleString()}` }
+                                  callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.raw?.toLocaleString()}` }
                               }
                           },
                           scales: {
@@ -1139,7 +1139,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               ...commonOptions.plugins,
                               tooltip: {
                                   ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.dataset.label}: ${getSymbol()}${context.raw.toLocaleString()}` }
+                                  callbacks: { label: (context: any) => `${context.dataset.label}: ${getSymbol()}${context.raw?.toLocaleString()}` }
                               }
                           },
                           scales: {
@@ -1174,7 +1174,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               ...commonOptions.plugins,
                               tooltip: {
                                   ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.raw.toLocaleString()}` }
+                                  callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.raw?.toLocaleString()}` }
                               }
                           },
                           scales: {

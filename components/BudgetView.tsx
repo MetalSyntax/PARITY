@@ -74,14 +74,14 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     if (!isBalanceVisible) return '******';
     const val = displayInVES ? usd * exchangeRate : usd;
     const symbol = displayInVES ? 'Bs. ' : '$';
-    return `${symbol}${val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   };
 
   const formatSecondary = (usd: number) => {
     if (!isBalanceVisible) return '******';
     const val = displayInVES ? usd : usd * exchangeRate;
     const symbol = displayInVES ? '$' : 'Bs.';
-    return `${symbol} ${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    return `${symbol} ${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
   const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>('ENVELOPES');
   const [isManaging, setIsManaging] = useState(false);
@@ -522,7 +522,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                   <div className="flex justify-between items-start mb-8">
                                       <div>
                                           <h3 className="text-xl font-bold text-white mb-1">{goal.name}</h3>
-                                          <p className="text-xs text-zinc-400">{t('deadline')}: {new Date(goal.deadline).toLocaleDateString()}</p>
+                                          <p className="text-xs text-zinc-400">{t('deadline')}: {new Date(goal.deadline)?.toLocaleDateString()}</p>
                                       </div>
                                       <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-xl shadow-inner border border-white/10 text-white">
                                           {renderIcon(goal.icon, GOAL_ICONS, 20)}
