@@ -890,7 +890,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${selectedCategory === item.id ? 'bg-theme-bg border-theme-soft shadow-lg ' + item.color : 'bg-theme-soft border-theme-soft hover:border-theme-soft text-theme-secondary'}`}
                           >
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-lg ${item.color.replace('text-', 'bg-').split(' ')[0]}/10 flex items-center justify-center`}>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.color}`}>
                                 {item.icon}
                               </div>
                               <span className="text-xs font-bold">{t(item.name as any)}</span>
@@ -998,8 +998,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                            <div key={transaction.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-theme-soft transition-colors group relative pr-14 bg-theme-surface border border-theme-soft mb-2">
                                              <div className="flex items-center gap-4">
                                                <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border border-theme-soft ${
-                                                 isTransfer ? 'bg-indigo-500/10 text-indigo-400' : 
-                                                 isExpense ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'
+                                                 isTransfer ? 'bg-indigo-500/10 text-indigo-400' : category.color
                                                }`}>
                                                  {isTransfer ? <ArrowRightLeft size={20} /> : category.icon}
                                                </div>

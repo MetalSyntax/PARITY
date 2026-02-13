@@ -191,54 +191,6 @@ export const WalletView: React.FC<WalletViewProps> = ({
       });
   };
 
-  if (isEditing) {
-      return (
-        <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-4xl lg:max-w-6xl mx-auto bg-theme-bg overflow-y-auto no-scrollbar">
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="text-xl font-bold text-theme-primary">{editingId ? t('editWallet') : t('newWallet')}</h1>
-                <button onClick={() => setIsEditing(false)} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-white"><X size={20} /></button>
-            </div>
-            
-            <div className="flex flex-col gap-6">
-                <div>
-                    <label className="text-xs text-zinc-500 mb-2 block">{t('name')}</label>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-soft" value={name} onChange={e => setName(e.target.value)} placeholder="My Wallet" />
-                </div>
-                <div>
-                    <label className="text-xs text-zinc-500 mb-2 block">{t('language') === 'Idioma' ? 'Moneda' : 'Currency'}</label>
-                    <div className="flex gap-2">
-                        {[Currency.USD, Currency.EUR, Currency.VES, Currency.USDT].map(c => (
-                            <button key={c} onClick={() => setCurrency(c)} className={`px-4 py-2 rounded-lg border ${currency === c ? 'bg-theme-brand border-theme-soft text-white' : 'bg-white/5 border-white/10 text-theme-secondary'}`}>{c === Currency.VES ? 'Bs.' : c}</button>
-                        ))}
-                    </div>
-                </div>
-                <div>
-                    <label className="text-xs text-zinc-500 mb-2 block">{t('initialBalance')}</label>
-                    <input type="number" className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-soft" value={balance} onChange={e => setBalance(e.target.value)} />
-                </div>
-                <div>
-                    <label className="text-xs text-zinc-500 mb-2 block">Icon</label>
-                    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                        {Object.keys(ACCOUNT_ICONS).map(key => (
-                            <button 
-                                key={key} 
-                                onClick={() => setIcon(key)} 
-                                className={`p-3 rounded-xl transition-all border ${icon === key ? 'bg-theme-brand border-theme-soft text-white' : 'bg-white/5 border-white/10 text-theme-secondary hover:bg-white/10'}`}
-                            >
-                                {renderAccountIcon(key, 20)}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div>
-                    <label className="text-xs text-zinc-500 mb-2 block">{t('payrollClient')} {t('optional')}</label>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-theme-primary outline-none focus:border-theme-soft" value={payrollClient} onChange={e => setPayrollClient(e.target.value)} placeholder="e.g. Acme Corp" />
-                </div>
-                <button onClick={handleSave} className="bg-theme-brand text-white font-bold py-4 rounded-xl mt-4 shadow-lg hover:brightness-110 transition-all">{t('saveWallet')}</button>
-            </div>
-        </div>
-      );
-  }
 
   return (
     <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg overflow-hidden">
@@ -524,6 +476,104 @@ export const WalletView: React.FC<WalletViewProps> = ({
               </div>
           )}
       </div>
+
+      {/* Wallet Edit Modal */}
+      <AnimatePresence>
+        {isEditing && (
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-end justify-center sm:items-center p-0 sm:p-4"
+            >
+                <motion.div 
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="bg-theme-surface w-full max-w-sm rounded-t-[32px] sm:rounded-[32px] border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                >
+                    <div className="p-6 border-b border-theme-soft flex justify-between items-center bg-theme-surface/50 shrink-0">
+                        <h2 className="text-xl font-black text-theme-primary tracking-tight">{editingId ? t('editWallet') : t('newWallet')}</h2>
+                        <button onClick={() => setIsEditing(false)} className="p-2 hover:bg-theme-soft rounded-full transition-colors">
+                            <X size={20} className="text-theme-secondary" />
+                        </button>
+                    </div>
+
+                    <div className="p-6 overflow-y-auto no-scrollbar space-y-6 flex-1">
+                        <div>
+                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('name')}</label>
+                            <input 
+                                className="w-full bg-theme-bg border border-white/10 rounded-2xl p-4 text-theme-primary outline-none focus:border-theme-soft transition-colors" 
+                                value={name} 
+                                onChange={e => setName(e.target.value)} 
+                                placeholder="My Wallet" 
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('currency') || 'Currency'}</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {[Currency.USD, Currency.EUR, Currency.VES, Currency.USDT].map(c => (
+                                    <button 
+                                        key={c} 
+                                        onClick={() => setCurrency(c)} 
+                                        className={`py-3 rounded-xl border text-xs font-black transition-all ${currency === c ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-theme-brand/20' : 'bg-theme-bg border-white/10 text-theme-secondary hover:bg-theme-soft'}`}
+                                    >
+                                        {c === Currency.VES ? 'Bs.' : c}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('initialBalance')}</label>
+                            <input 
+                                type="number" 
+                                className="w-full bg-theme-bg border border-white/10 rounded-2xl p-4 text-theme-primary outline-none focus:border-theme-soft transition-colors" 
+                                value={balance} 
+                                onChange={e => setBalance(e.target.value)} 
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">Icon</label>
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                                {Object.keys(ACCOUNT_ICONS).map(key => (
+                                    <button 
+                                        key={key} 
+                                        onClick={() => setIcon(key)} 
+                                        className={`p-4 rounded-xl transition-all border shrink-0 ${icon === key ? 'bg-theme-brand border-theme-soft text-white shadow-lg' : 'bg-theme-bg border-white/10 text-theme-secondary hover:bg-theme-soft'}`}
+                                    >
+                                        {renderAccountIcon(key, 22)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('payrollClient')} {t('optional')}</label>
+                            <input 
+                                className="w-full bg-theme-bg border border-white/10 rounded-2xl p-4 text-theme-primary outline-none focus:border-theme-soft transition-colors" 
+                                value={payrollClient} 
+                                onChange={e => setPayrollClient(e.target.value)} 
+                                placeholder="e.g. Acme Corp" 
+                            />
+                        </div>
+                    </div>
+
+                    <div className="p-6 bg-theme-surface shrink-0">
+                        <button 
+                            onClick={handleSave} 
+                            className="w-full bg-theme-brand text-white font-black py-4 rounded-2xl shadow-xl hover:brightness-110 active:scale-[0.98] transition-all"
+                        >
+                            {t('saveWallet')}
+                        </button>
+                    </div>
+                </motion.div>
+            </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

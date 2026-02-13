@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Transaction, Language, Currency, TransactionType } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -28,7 +29,9 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   const t = (key: any) => getTranslation(lang, key);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<TransactionType | 'ALL'>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string | 'ALL'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -39,11 +42,12 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         categoryName.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesType = filterType === 'ALL' || tx.type === filterType;
+      const matchesCategory = selectedCategory === 'ALL' || tx.category === selectedCategory;
       const matchesMonth = tx.date.startsWith(selectedMonth);
       
-      return matchesSearch && matchesType && matchesMonth;
+      return matchesSearch && matchesType && matchesCategory && matchesMonth;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, searchQuery, filterType, lang, selectedMonth]);
+  }, [transactions, searchQuery, filterType, selectedCategory, lang, selectedMonth]);
 
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, Transaction[]> = {};
@@ -84,7 +88,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
             </button>
             <div className="relative">
                <select
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-8"
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-6"
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 value={selectedMonth}
               >
@@ -103,33 +107,49 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           </div>
         </div>
 
-        {/* Search and Filters */}
         <div className="flex flex-col gap-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-secondary" size={18} />
-            <input
-              type="text"
-              placeholder={t('searchTransactions')}
-              className="w-full bg-theme-surface border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-soft/50 transition-colors"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-secondary" size={18} />
+              <input
+                type="text"
+                placeholder={t('searchTransactions')}
+                className="w-full bg-theme-surface border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-soft/50 transition-colors"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={() => setShowFilterModal(true)}
+              className={`p-3 rounded-2xl border transition-all flex items-center justify-center relative ${
+                selectedCategory !== 'ALL' 
+                  ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-brand/20' 
+                  : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary'
+              }`}
+            >
+              <Filter size={20} />
+              {selectedCategory !== 'ALL' && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-theme-brand" />
+              )}
+            </button>
           </div>
           
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-            {(['ALL', TransactionType.INCOME, TransactionType.EXPENSE, TransactionType.TRANSFER] as const).map((type) => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                  filterType === type
-                    ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-brand/20'
-                    : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary'
-                }`}
-              >
-                {type === 'ALL' ? t('all') : t(type.toLowerCase())}
-              </button>
-            ))}
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              {(['ALL', TransactionType.INCOME, TransactionType.EXPENSE, TransactionType.TRANSFER] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                    filterType === type
+                      ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-brand/20'
+                      : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary'
+                  }`}
+                >
+                  {type === 'ALL' ? t('allTypes') || t('all') : t(type.toLowerCase())}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -264,6 +284,87 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Category Filter Modal */}
+      <AnimatePresence>
+        {showFilterModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="bg-theme-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                <div className="flex items-center gap-3">
+                  <Filter size={18} className="text-theme-brand" />
+                  <h3 className="font-bold text-theme-primary">{t('filterByCategory')}</h3>
+                </div>
+                <button 
+                  onClick={() => setShowFilterModal(false)} 
+                  className="p-2 hover:bg-white/10 rounded-full text-theme-secondary transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto no-scrollbar">
+                <div className="flex flex-col gap-2">
+                  <motion.button
+                    whileHover={{ x: 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    onClick={() => { setSelectedCategory('ALL'); setShowFilterModal(false); }}
+                    className={`flex items-center gap-3 p-4 rounded-2xl border transition-all text-left ${
+                      selectedCategory === 'ALL'
+                        ? 'bg-theme-brand border-theme-soft text-white shadow-lg'
+                        : 'bg-white/5 border-white/5 text-theme-secondary hover:text-theme-primary'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                      <Filter size={18} />
+                    </div>
+                    <span className="font-bold text-sm tracking-wide uppercase">{t('allCategories') || t('all')}</span>
+                  </motion.button>
+
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {CATEGORIES.map((cat) => (
+                      <motion.button
+                        key={cat.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => { setSelectedCategory(cat.id); setShowFilterModal(false); }}
+                        className={`flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border transition-all text-center ${
+                          selectedCategory === cat.id
+                            ? 'bg-theme-brand border-theme-soft text-white shadow-lg'
+                            : 'bg-white/5 border-white/5 text-theme-secondary hover:text-theme-primary'
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${cat.color} bg-opacity-20 shadow-inner text-xl`}>
+                          {cat.icon}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider">{t(cat.name.toLowerCase()) || cat.name}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white/5 border-t border-white/5">
+                <button
+                  onClick={() => setShowFilterModal(false)}
+                  className="w-full py-4 bg-theme-surface border border-white/10 rounded-2xl font-black uppercase tracking-widest text-xs text-theme-primary hover:bg-white/10 transition-all"
+                >
+                  {t('close')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

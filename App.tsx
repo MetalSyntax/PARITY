@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1 } from 'lucide-react';
+import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { AddTransaction } from './components/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
@@ -13,6 +13,7 @@ import { ScheduledPaymentView } from './components/ScheduledPaymentView';
 import { TransactionsListView } from './components/TransactionsListView';
 import { CalendarHeatmapView } from './components/CalendarHeatmapView';
 import { CurrencyPerformanceView } from './components/CurrencyPerformanceView';
+import { LegalBanner } from './components/LegalBanner';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { getTranslation } from './i18n';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -255,43 +256,93 @@ function AppContent() {
     localStorage.setItem("autoLockEnabled", JSON.stringify(enabled));
   };
 
-  const handleToggleBiometrics = (enabled: boolean) => {
-    setBiometricsEnabled(enabled);
-    localStorage.setItem("biometricsEnabled", JSON.stringify(enabled));
+  const handleToggleBiometrics = async (enabled: boolean) => {
+    if (enabled) {
+      try {
+        if (window.PublicKeyCredential) {
+          const isAvailable = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          if (!isAvailable) {
+            showAlert('biometricsNotSupported', 'error');
+            return;
+          }
+
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          const userId = new Uint8Array(16);
+          window.crypto.getRandomValues(userId);
+
+          const options: any = {
+            publicKey: {
+              challenge,
+              rp: { name: "Parity", id: window.location.hostname },
+              user: {
+                id: userId,
+                name: userProfile.name || "User",
+                displayName: userProfile.name || "User"
+              },
+              pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+              authenticatorSelection: {
+                authenticatorAttachment: 'platform',
+                userVerification: 'required',
+                residentKey: 'required'
+              },
+              timeout: 60000
+            }
+          };
+
+          const credential: any = await navigator.credentials.create(options);
+          if (credential) {
+            const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+            localStorage.setItem("biometric_cred_id", credId);
+            setBiometricsEnabled(true);
+            localStorage.setItem("biometricsEnabled", JSON.stringify(true));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to register biometrics", e);
+      }
+    } else {
+      setBiometricsEnabled(false);
+      localStorage.setItem("biometricsEnabled", JSON.stringify(false));
+      localStorage.removeItem("biometric_cred_id");
+    }
   };
 
   const handleBiometricUnlock = async () => {
     if (!biometricsEnabled) return;
     
+    const credIdStr = localStorage.getItem("biometric_cred_id");
+    
     try {
-        // Simplified WebAuthn check for platform authenticator
         if (window.PublicKeyCredential) {
-            const isAvailable = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-            if (isAvailable) {
-                // We use a fixed challenge for local-only verification
-                const challenge = new Uint8Array(32);
-                window.crypto.getRandomValues(challenge);
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
 
-                const options: any = {
-                    publicKey: {
-                        challenge,
-                        timeout: 60000,
-                        userVerification: 'required',
-                        allowCredentials: [] // On some platforms this triggers the system prompt
-                    }
-                };
-                
-                // This will trigger the system Biometric/FaceID/Fingerprint prompt
-                // Note: Since we don't store credentials on a server, we're essentially
-                // asking the device "is the user who they say they are?".
-                // If it resolves without error, user is verified.
-                await navigator.credentials.get(options);
-                setIsAppLocked(false);
-                setPinInput("");
-                setPinError(false);
+            const options: any = {
+                publicKey: {
+                    challenge,
+                    timeout: 60000,
+                    userVerification: 'required',
+                    allowCredentials: []
+                }
+            };
+
+            if (credIdStr) {
+                const credId = Uint8Array.from(atob(credIdStr), c => c.charCodeAt(0));
+                options.publicKey.allowCredentials = [{
+                    id: credId,
+                    type: 'public-key'
+                }];
             }
+            
+            await navigator.credentials.get(options);
+            setIsAppLocked(false);
+            setPinInput("");
+            setPinError(false);
         }
     } catch (e) {
+        // If the specific credential fails or is not found, we might want to allow 
+        // the user to try again or use PIN. We don't want to lock them out.
         console.error("Biometric authentication failed", e);
     }
   };
@@ -697,7 +748,7 @@ function AppContent() {
                 onClick={handleBiometricUnlock}
                 className="mt-4 flex items-center gap-2 px-6 py-3 bg-theme-surface/30 border border-white/5 rounded-2xl text-theme-primary font-bold transition-all"
             >
-                <Activity size={20} className="text-theme-brand" />
+                <Fingerprint size={20} className="text-theme-brand" />
                 <span>{t('biometrics')}</span>
             </motion.button>
           )}
@@ -1081,6 +1132,8 @@ function AppContent() {
                 </div>
             </div>
         )}
+
+        <LegalBanner lang={userProfile.language} />
       </div>
     </div>
   );

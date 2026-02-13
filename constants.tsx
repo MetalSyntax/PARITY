@@ -1,8 +1,8 @@
 import React from 'react';
-import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent } from 'lucide-react';
+import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent, HandCoins } from 'lucide-react';
 import { Account, Currency } from './types';
 
-export const INITIAL_RATE = 50.50;
+export const INITIAL_RATE = 350.50;
 
 export const MOCK_ACCOUNTS: Account[] = [];
 
@@ -36,6 +36,7 @@ export const CATEGORIES = [
   { id: 'freelance', name: 'cat_freelance', icon: <Globe size={20} />, color: 'bg-indigo-400/20 text-indigo-300' },
   { id: 'business', name: 'cat_business', icon: <Briefcase size={20} />, color: 'bg-blue-600/20 text-blue-400' },
   { id: 'interest', name: 'cat_interest', icon: <TrendingUp size={20} />, color: 'bg-indigo-600/20 text-indigo-400' },
+  { id: 'loans', name: 'cat_loans', icon: <HandCoins size={20} />, color: 'bg-emerald-700/20 text-emerald-500' },
   { id: 'other', name: 'cat_other', icon: <MoreHorizontal size={20} />, color: 'bg-gray-600/20 text-gray-300' },
 ];
 
@@ -161,6 +162,10 @@ export const SMART_CATEGORIES_EN: Record<string, string> = {
   // OTHER (15+)
   'misc': 'other', 'general': 'other', 'miscellaneous': 'other', 'unknown': 'other', 'uncategorized': 'other',
   'random': 'other', 'other-expense': 'other', 'atm-withdrawal': 'other', 'cash-out': 'other', 'transfer-out': 'other',
+  // LOANS (15+)
+  'loan': 'loans', 'credit': 'loans', 'debt': 'loans', 'financing': 'loans', 'repayment': 'loans',
+  'lending': 'loans', 'borrowing': 'loans', 'mortgage-pay': 'loans', 'credit-card-pay': 'loans', 'loan-interest': 'loans',
+  'installment': 'loans', 'payday': 'loans', 'creditor': 'loans', 'overdraft-pay': 'loans', 'principal': 'loans',
   'payment-other': 'other', 'etc': 'other', 'various': 'other', 'stuff': 'other', 'unspecified': 'other',
 };
 
@@ -267,6 +272,10 @@ export const SMART_CATEGORIES_ES: Record<string, string> = {
   // OTROS (15+)
   'varios': 'other', 'misc': 'other', 'otros-gastos': 'other', 'efectivo': 'other', 'retiro-cajero': 'other',
   'desconocido': 'other', 'sin-categoria': 'other', 'pago-movil': 'other', 'transferencia-enviada': 'other', 'ajuste': 'other',
+  // PRESTAMOS (15+)
+  'prestamo': 'loans', 'credito': 'loans', 'deuda': 'loans', 'financiamiento': 'loans', 'abono': 'loans',
+  'cuota-pago': 'loans', 'pagare': 'loans', 'hipoteca-pago': 'loans', 'tarjeta-credito': 'loans', 'interes-prestamo': 'loans',
+  'reembolso-loan': 'loans', 'acreedor': 'loans', 'linea-credito': 'loans', 'amortizacion': 'loans', 'fianza': 'loans',
   'comision-bancaria-other': 'other', 'genericos': 'other', 'bolsa-otros': 'other', 'random-es': 'other', 'extra': 'other',
 };
 
@@ -361,6 +370,10 @@ export const SMART_CATEGORIES_PT: Record<string, string> = {
   'cliente-pt': 'freelance', 'venda-business': 'business', 'lucro': 'business', 'juros-ganhos': 'interest', 'presente-pt': 'gift',
   'outros': 'other', 'varios-pt': 'other', 'misc-pt': 'other', 'dinheiro': 'other', 'saque': 'other',
   'caixa': 'other', 'desconhecido-pt': 'other', 'ajuste-pt': 'other', 'transferência-enviada': 'other', 'pix-enviado': 'other',
+  // EMPRESTIMOS (15+)
+  'emprestimo': 'loans', 'credito': 'loans', 'divida': 'loans', 'financiamento': 'loans', 'parcela': 'loans',
+  'amortizacao': 'loans', 'hipoteca-pgto': 'loans', 'cartao-credito': 'loans', 'juros-emprestimo': 'loans', 'prestacao': 'loans',
+  'quitacao': 'loans', 'credor': 'loans', 'linea-credito-pt': 'loans', 'fiador': 'loans',
 };
 
 export const getSmartCategories = (lang: string) => {

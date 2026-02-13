@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ChevronDown, ChevronUp, PieChart, BarChart, Settings, Activity, TrendingUp, X, ShieldAlert, Zap, AlertCircle, Coins, DollarSign, Shield, GripVertical, CalendarRange, ChartCandlestick } from 'lucide-react';
-import { motion, Reorder, useDragControls } from 'framer-motion';
+import { motion, Reorder, useDragControls, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, ScheduledPayment } from '../types';
 import { getTranslation } from '../i18n';
@@ -765,7 +765,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                   {incomeCategories.map(cat => (
                       <div key={cat.id} className="bg-theme-surface p-6 rounded-3xl border border-white/5 relative overflow-hidden group hover:scale-[1.02] transition-transform">
-                          <div className={`absolute left-0 top-0 bottom-0 w-2 ${cat.color.replace('text-', 'bg-').split(' ')[0] || 'bg-theme-brand'}`} />
+                          <div className={`absolute left-0 top-0 bottom-0 w-2 ${cat.color}`} />
                           <div className="flex justify-between items-center mb-2">
                              <div className="flex items-center gap-3">
                                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-xl">
@@ -782,7 +782,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                           </div>
                           
                           <div className="mt-4 h-2 w-full bg-theme-bg rounded-full overflow-hidden">
-                              <div className={`h-full ${cat.color.replace('text-', 'bg-').split(' ')[0] || 'bg-theme-brand'}`} style={{ width: `${(cat.total / totalIncome) * 100}%` }} />
+                              <div className={`h-full ${cat.color}`} style={{ width: `${(cat.total / totalIncome) * 100}%` }} />
                           </div>
                       </div>
                   ))}
@@ -796,9 +796,21 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
       )}
 
       {/* Customizer Modal */}
+      <AnimatePresence>
         {showAnalysisCustomizer && (
-            <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-full duration-400">
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm"
+            >
+                <motion.div 
+                    initial={{ y: '100%' }}
+                    animate={{ y: 0 }}
+                    exit={{ y: '100%' }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl"
+                >
                    <div className="flex justify-between items-center mb-8">
                        <div>
                            <h3 className="text-xl font-black text-theme-primary">{t('customizeAnalysis')}</h3>
@@ -868,9 +880,10 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                    <button onClick={() => setShowAnalysisCustomizer(false)} className="w-full py-4 mt-8 bg-theme-brand text-white font-black rounded-2xl shadow-lg shadow-brand/20 active:scale-[0.98] transition-all">
                        {t('done')}
                    </button>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
         )}
+      </AnimatePresence>
     </div>
   );
 };

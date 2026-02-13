@@ -72,6 +72,7 @@ export interface Budget {
     customName?: string;
     customIcon?: string;
     customColor?: string;
+    parentCategoryId?: string;
 }
 
 export interface Goal {

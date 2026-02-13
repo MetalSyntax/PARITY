@@ -120,152 +120,6 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
       setEditingId(payment.id);
   };
 
-  if (isAdding) {
-      return (
-          <div className="h-full flex flex-col p-6 pb-32 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto bg-theme-bg overflow-y-auto no-scrollbar">
-              <div className="flex items-center gap-4 mb-8">
-                  <button onClick={resetForm} className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors">
-                      <ArrowLeft size={20} />
-                  </button>
-                  <h1 className="text-xl font-bold text-theme-primary">
-                    {editingId ? t('editScheduled') || 'Edit Scheduled' : t('addScheduled') || 'Add Scheduled'}
-                  </h1>
-              </div>
-              <div className="flex flex-col gap-6 pb-10">
-                  {/* Type Toggle */}
-                  <div className="flex p-1 bg-theme-surface rounded-2xl border border-white/5">
-                    <button
-                        onClick={() => setNewType(TransactionType.EXPENSE)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${newType === TransactionType.EXPENSE ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
-                    >
-                        <TrendingDown size={18} className="text-red-400" />
-                        {t('expense')}
-                    </button>
-                    <button
-                        onClick={() => setNewType(TransactionType.INCOME)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${newType === TransactionType.INCOME ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
-                    >
-                        <TrendingUp size={18} className="text-emerald-400" />
-                        {t('income')}
-                    </button>
-                  </div>
-
-                   <div>
-                       <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-3 block">{t('category')}</label>
-                       <button 
-                           onClick={() => setShowCategoryModal(true)}
-                           className="w-full bg-theme-surface border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-theme-soft/30 transition-colors"
-                       >
-                          <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-xl ${CATEGORIES.find(c => c.id === newCategory)?.color || 'bg-white/5 text-theme-primary'} bg-opacity-20`}>
-                                  {CATEGORIES.find(c => c.id === newCategory)?.icon}
-                              </div>
-                              <span className="font-bold text-theme-primary">
-                                  {t(CATEGORIES.find(c => c.id === newCategory)?.name) || CATEGORIES.find(c => c.id === newCategory)?.name}
-                              </span>
-                          </div>
-                          <ChevronDown size={18} className="text-theme-secondary group-hover:text-theme-primary" />
-                       </button>
-                   </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('name')}</label>
-                      <input 
-                        className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
-                        placeholder={t('paymentNamePlaceholder')} 
-                        value={newName} 
-                        onChange={e => setNewName(e.target.value)} 
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('amount')}</label>
-                        <input 
-                          className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
-                          type="number" 
-                          placeholder="0.00"
-                          value={newAmount} 
-                          onChange={e => setNewAmount(e.target.value)} 
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('frequency')}</label>
-                        <select 
-                          className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors appearance-none"
-                          value={newFrequency}
-                          onChange={e => setNewFrequency(e.target.value as any)}
-                        >
-                          <option value="Weekly">{t('weekly')}</option>
-                          <option value="Bi-weekly">{t('biweekly')}</option>
-                          <option value="Monthly">{t('monthly')}</option>
-                          <option value="Yearly">{t('yearly')}</option>
-                          <option value="One-Time">{t('oneTime')}</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                       <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('startDate') || 'Start Date'}</label>
-                       <input 
-                        className="w-full bg-theme-surface border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
-                        type="date" 
-                        value={newDate} 
-                        onChange={e => setNewDate(e.target.value)} 
-                       />
-                    </div>
-                  </div>
-                  
-                  <button 
-                    onClick={handleAdd} 
-                    className="bg-theme-brand p-5 rounded-2xl font-bold text-white shadow-xl shadow-brand/20 hover:brightness-110 active:scale-[0.98] transition-all mt-4"
-                  >
-                    {editingId ? t('update') || 'Update' : t('save')}
-                  </button>
-              </div>
-
-              {/* Category Modal Integration */}
-              {showCategoryModal && (
-                <div className="fixed inset-0 bg-theme-bg z-[70] flex flex-col animate-in slide-in-from-bottom duration-300">
-                    <div className="p-4 border-b border-white/5 flex items-center justify-between bg-theme-surface">
-                        <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory')}</h2>
-                        <button onClick={() => setShowCategoryModal(false)} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors">
-                            <X size={20} />
-                        </button>
-                    </div>
-                    <div className="overflow-y-auto p-4 flex-1 no-scrollbar">
-                        <div className="grid grid-cols-1 gap-3 pb-20">
-                            {CATEGORIES.map(cat => (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => {
-                                        setNewCategory(cat.id);
-                                        // Auto-prefill name if empty or still a category name
-                                        if (!newName || CATEGORIES.some(c => t(c.name) === newName)) {
-                                            setNewName(t(cat.name));
-                                        }
-                                        setShowCategoryModal(false);
-                                    }}
-                                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${newCategory === cat.id ? 'bg-theme-brand/10 border-theme-soft' : 'bg-theme-surface border-white/5 hover:bg-white/5'}`}
-                                >
-                                    <div className={`p-3 rounded-xl ${cat.color} bg-opacity-20`}>
-                                        {cat.icon}
-                                    </div>
-                                    <div className="flex-1 text-left">
-                                        <p className="font-bold text-theme-primary">{t(cat.name)}</p>
-                                    </div>
-                                    {newCategory === cat.id && <Check size={20} className="text-theme-brand" />}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-               )}
-          </div>
-      );
-  }
-
   const incomeSchedules = scheduledPayments.filter(p => p.type === TransactionType.INCOME);
   const expenseSchedules = scheduledPayments.filter(p => p.type !== TransactionType.INCOME);
 
@@ -353,6 +207,183 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
           )}
       </div>
+
+      {/* Add/Edit Modal */}
+      <AnimatePresence>
+          {isAdding && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-end justify-center sm:items-center p-0 sm:p-4"
+              >
+                  <motion.div 
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="bg-theme-surface w-full max-w-xl rounded-t-[32px] sm:rounded-[32px] border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                  >
+                      <div className="p-6 border-b border-theme-soft flex justify-between items-center bg-theme-surface/50 shrink-0">
+                          <h2 className="text-xl font-black text-theme-primary tracking-tight">
+                              {editingId ? t('editScheduled') : t('addScheduled')}
+                          </h2>
+                          <button onClick={resetForm} className="p-2 hover:bg-theme-soft rounded-full transition-colors">
+                              <X size={20} className="text-theme-secondary" />
+                          </button>
+                      </div>
+
+                      <div className="p-6 overflow-y-auto no-scrollbar space-y-6 flex-1">
+                          {/* Type Toggle */}
+                          <div className="flex p-1 bg-theme-bg rounded-2xl border border-white/5">
+                            <button
+                                onClick={() => setNewType(TransactionType.EXPENSE)}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${newType === TransactionType.EXPENSE ? 'bg-theme-surface text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+                            >
+                                <TrendingDown size={18} className="text-red-400" />
+                                {t('expense')}
+                            </button>
+                            <button
+                                onClick={() => setNewType(TransactionType.INCOME)}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${newType === TransactionType.INCOME ? 'bg-theme-surface text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+                            >
+                                <TrendingUp size={18} className="text-emerald-400" />
+                                {t('income')}
+                            </button>
+                          </div>
+
+                          <div>
+                              <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-3 block">{t('category')}</label>
+                              <button 
+                                  onClick={() => setShowCategoryModal(true)}
+                                  className="w-full bg-theme-bg border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-theme-soft/30 transition-colors"
+                              >
+                                 <div className="flex items-center gap-3">
+                                     <div className={`p-2 rounded-xl ${CATEGORIES.find(c => c.id === newCategory)?.color || 'bg-white/5 text-theme-primary'} bg-opacity-20`}>
+                                         {CATEGORIES.find(c => c.id === newCategory)?.icon}
+                                     </div>
+                                     <span className="font-bold text-theme-primary">
+                                         {t(CATEGORIES.find(c => c.id === newCategory)?.name) || CATEGORIES.find(c => c.id === newCategory)?.name}
+                                     </span>
+                                 </div>
+                                 <ChevronDown size={18} className="text-theme-secondary group-hover:text-theme-primary" />
+                              </button>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('name')}</label>
+                              <input 
+                                className="w-full bg-theme-bg border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
+                                placeholder={t('paymentNamePlaceholder')} 
+                                value={newName} 
+                                onChange={e => setNewName(e.target.value)} 
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('amount')}</label>
+                                <input 
+                                  className="w-full bg-theme-bg border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
+                                  type="number" 
+                                  placeholder="0.00"
+                                  value={newAmount} 
+                                  onChange={e => setNewAmount(e.target.value)} 
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('frequency')}</label>
+                                <div className="relative">
+                                    <select 
+                                      className="w-full bg-theme-bg border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors appearance-none"
+                                      value={newFrequency}
+                                      onChange={e => setNewFrequency(e.target.value as any)}
+                                    >
+                                      <option value="Weekly">{t('weekly')}</option>
+                                      <option value="Bi-weekly">{t('biweekly')}</option>
+                                      <option value="Monthly">{t('monthly')}</option>
+                                      <option value="Yearly">{t('yearly')}</option>
+                                      <option value="One-Time">{t('oneTime')}</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" size={16} />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                               <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('startDate') || 'Start Date'}</label>
+                               <input 
+                                className="w-full bg-theme-bg border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
+                                type="date" 
+                                value={newDate} 
+                                onChange={e => setNewDate(e.target.value)} 
+                               />
+                            </div>
+                          </div>
+                      </div>
+
+                      <div className="p-6 bg-theme-surface shrink-0">
+                          <button 
+                            onClick={handleAdd} 
+                            className="w-full bg-theme-brand p-5 rounded-2xl font-bold text-white shadow-xl shadow-brand/20 hover:brightness-110 active:scale-[0.98] transition-all"
+                          >
+                            {editingId ? t('update') : t('save')}
+                          </button>
+                      </div>
+                  </motion.div>
+              </motion.div>
+          )}
+      </AnimatePresence>
+
+      {/* Category Modal */}
+      <AnimatePresence>
+          {showCategoryModal && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-md z-[70] flex items-end justify-center sm:items-center p-0 sm:p-4"
+              >
+                  <motion.div 
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "100%" }}
+                    className="bg-theme-surface w-full max-w-sm rounded-t-[32px] sm:rounded-[32px] border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[80vh]"
+                  >
+                        <div className="p-6 border-b border-theme-soft flex justify-between items-center bg-theme-surface/50 shrink-0">
+                            <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory')}</h2>
+                            <button onClick={() => setShowCategoryModal(false)} className="p-2 hover:bg-theme-soft rounded-full transition-colors">
+                                <X size={20} className="text-theme-secondary" />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto p-4 flex-1 no-scrollbar space-y-2">
+                            {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => {
+                                        setNewCategory(cat.id);
+                                        if (!newName || CATEGORIES.some(c => t(c.name) === newName)) {
+                                            setNewName(t(cat.name));
+                                        }
+                                        setShowCategoryModal(false);
+                                    }}
+                                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${newCategory === cat.id ? 'bg-theme-brand/10 border-theme-soft' : 'bg-theme-bg border-white/5 hover:bg-white/5'}`}
+                                >
+                                    <div className={`p-3 rounded-xl ${cat.color} bg-opacity-20`}>
+                                        {cat.icon}
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className="font-bold text-theme-primary">{t(cat.name)}</p>
+                                    </div>
+                                    {newCategory === cat.id && <Check size={20} className="text-theme-brand" />}
+                                </button>
+                            ))}
+                        </div>
+                  </motion.div>
+              </motion.div>
+          )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -362,6 +393,7 @@ interface ScheduledItemProps {
   t: (key: any) => any;
   onEdit: (p: ScheduledPayment) => void;
   onDelete: (id: string) => void;
+  onConfirm: (payment: ScheduledPayment) => void; // Added onConfirm which was missing in original interface
   exchangeRate: number;
   displayInVES: boolean;
   isBalanceVisible: boolean;
