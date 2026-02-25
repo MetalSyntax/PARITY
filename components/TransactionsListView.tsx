@@ -217,6 +217,11 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                             <p className="text-xs text-theme-secondary capitalize">
                               {t(category.name.toLowerCase()) || category.name}
                             </p>
+                            {transaction.fee && transaction.fee > 0 && (
+                                <p className="text-[9px] text-red-400 font-bold uppercase mt-1">
+                                    {t('commissions')}: {transaction.fee.toLocaleString()} {transaction.originalCurrency === Currency.USD ? '$' : 'Bs.'}
+                                </p>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">

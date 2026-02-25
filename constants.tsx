@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent, HandCoins } from 'lucide-react';
+import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent, HandCoins, ArrowRightLeft } from 'lucide-react';
 import { Account, Currency } from './types';
 
 export const INITIAL_RATE = 350.50;
@@ -7,6 +7,7 @@ export const INITIAL_RATE = 350.50;
 export const MOCK_ACCOUNTS: Account[] = [];
 
 export const CATEGORIES = [
+  { id: 'transfer', name: 'cat_transfer', icon: <ArrowRightLeft size={20} />, color: 'bg-indigo-500/20 text-indigo-400' },
   { id: 'food', name: 'cat_food', icon: <ShoppingCart size={20} />, color: 'bg-orange-500/20 text-orange-400' },
   { id: 'transport', name: 'cat_transport', icon: <Car size={20} />, color: 'bg-blue-500/20 text-blue-400' },
   { id: 'coffee', name: 'cat_coffee', icon: <Coffee size={20} />, color: 'bg-amber-700/20 text-amber-500' },

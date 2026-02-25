@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig } from '../types';
@@ -781,7 +781,12 @@ const GoalForm = ({ initialData, onSave, onDelete, t }: { initialData: Goal | nu
             </div>
             <div>
                 <label className="text-xs text-zinc-500 mb-1 block">{t('deadline')}</label>
-                <input type="date" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={date} onChange={e => setDate(e.target.value)} />
+            <div className="relative">
+                <input type="date" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 pl-10 text-white outline-none focus:border-indigo-500" value={date} onChange={e => setDate(e.target.value)} />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">
+                    <Calendar size={18} />
+                </div>
+            </div>
             </div>
             <div>
                 <label className="text-xs text-zinc-500 mb-1 block">{t('icon')}</label>

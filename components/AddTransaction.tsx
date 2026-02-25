@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCcw, Image as ImageIcon } from 'lucide-react';
+import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCcw, Image as ImageIcon, Calendar } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -58,9 +58,21 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       : (accounts.length > 1 ? accounts[1].id : (accounts.length > 0 ? accounts[0].id : ''))
   );
   const [manualExchangeRate, setManualExchangeRate] = useState<string>(initialData?.exchangeRate?.toString() || exchangeRate.toString());
+  const [commission, setCommission] = useState<string>(initialData?.fee?.toString() || '0');
 
   
   const [categoryId, setCategoryId] = useState<string>(initialData ? initialData.category : CATEGORIES[0].id);
+
+  // Auto-set category for transfers
+  useEffect(() => {
+    if (initialData) return;
+    if (type === TransactionType.TRANSFER) {
+      setCategoryId('transfer');
+    } else if (categoryId === 'transfer') {
+      // Revert to food (index 1) if switching away from transfer
+      setCategoryId(CATEGORIES[1].id);
+    }
+  }, [type, initialData, categoryId]);
   const [isCalculatorMode, setIsCalculatorMode] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAccountSelector, setShowAccountSelector] = useState<'FROM' | 'TO' | null>(null);
@@ -401,6 +413,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       toAccountId: type === TransactionType.TRANSFER ? toAccountId : undefined,
       note,
       date: new Date(date).toISOString(),
+      fee: type === TransactionType.TRANSFER ? parseFloat(commission) || 0 : 0,
       scheduledId: initialData?.scheduledId,
     });
   };
@@ -546,32 +559,57 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
            </div>
         </div>
 
-        {/* Manual Exchange Rate for Multi-currency Transfer */}
-        {type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
-            <div className="flex flex-col items-center mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="bg-theme-surface border border-theme-soft/30 rounded-2xl p-4 w-full flex items-center justify-between gap-4">
-                    <div className="flex flex-col">
-                       <span className="text-[10px] uppercase font-bold text-theme-secondary tracking-wider mb-1">{t('exchangeRate') || 'Exchange Rate'}</span>
-                       <div className="flex items-center gap-2">
-                           <span className="text-xs font-bold text-theme-primary">1 {getActiveAccount(fromAccountId).currency} =</span>
-                           <input 
-                               type="number"
-                               value={manualExchangeRate}
-                               onChange={(e) => setManualExchangeRate(e.target.value)}
-                               className="bg-theme-bg border border-white/10 rounded-lg px-3 py-1.5 text-sm font-mono text-theme-brand w-24 focus:border-theme-soft outline-none transition-colors"
-                           />
-                           <span className="text-xs font-bold text-theme-primary">{getActiveAccount(toAccountId).currency}</span>
-                       </div>
-                    </div>
-                    <div className="p-3 bg-theme-brand/10 rounded-xl text-theme-brand">
-                       <RefreshCcw size={20} />
+        {/* Transaction Details for Transfer */}
+        {type === TransactionType.TRANSFER && (
+            <div className="flex flex-row gap-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex gap-4">
+                    {/* Manual Exchange Rate for Multi-currency Transfer */}
+                    {getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
+                        <div className="flex-1 bg-theme-surface rounded-2xl p-4 flex flex-col justify-center">
+                            <span className="text-[10px] uppercase font-bold text-theme-secondary tracking-wider mb-2">{t('exchangeRate')}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-theme-primary">1 {getActiveAccount(fromAccountId).currency} =</span>
+                                <input 
+                                    type="number"
+                                    value={manualExchangeRate}
+                                    onChange={(e) => setManualExchangeRate(e.target.value)}
+                                    className="bg-theme-bg border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-theme-brand w-20 focus:border-theme-soft outline-none transition-colors"
+                                />
+                                <span className="text-[10px] font-bold text-theme-primary">{getActiveAccount(toAccountId).currency}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Commission Field */}
+                    <div className="flex-1 bg-theme-surface rounded-2xl p-4 flex flex-col justify-center">
+                        <span className="text-[10px] uppercase font-bold text-theme-secondary tracking-wider mb-2">{t('commissions')}</span>
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="number"
+                                value={commission}
+                                onChange={(e) => setCommission(e.target.value)}
+                                placeholder="0.00"
+                                className="bg-theme-bg border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-theme-brand w-full focus:border-theme-soft outline-none transition-colors"
+                            />
+                            <span className="text-[10px] font-bold text-theme-primary">{getActiveAccount(fromAccountId).currency}</span>
+                        </div>
                     </div>
                 </div>
-                <p className="text-[10px] text-theme-secondary mt-2">
-                   {t('totalTarget') || 'Total to receive'}: <span className="text-theme-primary font-bold">
-                       {((parseFloat(amountStr) || 0) * (parseFloat(manualExchangeRate) || 0))?.toLocaleString()} {getActiveAccount(toAccountId).currency}
-                   </span>
-                </p>
+
+                <div className="bg-theme-brand/5 rounded-2xl p-3 flex items-center justify-between">
+                    <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-tight">
+                       {t('totalTarget') || 'Total to receive'}
+                    </p>
+                    <span className="text-sm font-black text-theme-brand">
+                       {(() => {
+                           const amount = parseFloat(amountStr) || 0;
+                           const comm = parseFloat(commission) || 0;
+                           const rate = getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency ? (parseFloat(manualExchangeRate) || 0) : 1;
+                           const total = (amount - comm) * rate;
+                           return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                       })()} {getActiveAccount(toAccountId).currency}
+                    </span>
+                </div>
             </div>
         )}
 
@@ -646,8 +684,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         onChange={(e) => setDate(e.target.value)}
                         className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 pl-10 text-theme-primary outline-none focus:border-theme-soft transition-colors text-sm font-bold"
                     />
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none">
-                        <Sparkles size={16} className="text-theme-brand" />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white pointer-events-none opacity-50">
+                        <Calendar size={16} />
                     </div>
                  </div>
              </div>

@@ -21,6 +21,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
   const [toId, setToId] = useState(accounts.length > 1 ? accounts[1].id : accounts[0].id);
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('transfer');
+  const [fee, setFee] = useState('');
   const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
 
   const t = (key: any) => getTranslation(lang, key);
@@ -40,17 +41,20 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
         return;
     }
 
+    const f = parseFloat(fee) || 0;
+    const netVal = val - f;
+
     if (fromAccount.currency === toAccount.currency) {
-        setConvertedAmount(val);
+        setConvertedAmount(netVal);
         return;
     }
 
     // Simplified conversion logic focusing on USD <-> VES
-    let res = val;
+    let res = netVal;
     
     // Convert TO USD base first (conceptual)
-    let usdBase = val;
-    if (fromAccount.currency === Currency.VES) usdBase = val / exchangeRate;
+    let usdBase = netVal;
+    if (fromAccount.currency === Currency.VES) usdBase = netVal / exchangeRate;
     
     // Convert FROM USD base to target
     if (toAccount.currency === Currency.VES) res = usdBase * exchangeRate;
@@ -58,7 +62,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
     else res = usdBase; // Treat EUR/USDT as 1:1 USD for now
     
     setConvertedAmount(res);
-  }, [amount, fromId, toId, exchangeRate, accounts]);
+  }, [amount, fee, fromId, toId, exchangeRate, accounts]);
 
 
   const handleTransfer = () => {
@@ -74,6 +78,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
       toAccountId: toId,
       category: selectedCategory,
       note: `Transfer to ${toAccount?.name}`,
+      fee: parseFloat(fee) || 0,
       date: new Date().toISOString()
     });
     onBack();
@@ -158,17 +163,33 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
         </div>
         
         <AnimatePresence>
-            {convertedAmount !== null && fromAccount?.currency !== toAccount?.currency && (
+            {convertedAmount !== null && (
                 <motion.div 
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2 text-indigo-400 overflow-hidden"
+                    className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-4 overflow-hidden"
                 >
-                    <ArrowRight size={16} />
-                    <span className="font-mono text-lg">
-                        ≈ {convertedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {toAccount?.currency}
-                    </span>
+                    <div className="flex items-center justify-between">
+                        <label className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">{t('commissions')}</label>
+                        <div className="flex items-center gap-2 bg-white/5 rounded-lg px-2 py-1">
+                            <input 
+                                type="number" 
+                                value={fee}
+                                onChange={(e) => setFee(e.target.value)}
+                                placeholder="0.00"
+                                className="bg-transparent text-sm font-bold text-red-400 outline-none w-16 text-right"
+                            />
+                            <span className="text-[10px] text-zinc-500 font-bold">{fromAccount?.currency}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-indigo-400">
+                        <ArrowRight size={16} />
+                        <span className="font-mono text-lg font-bold">
+                            {t('totalTarget') || 'Total to receive'}: {convertedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {toAccount?.currency}
+                        </span>
+                    </div>
                 </motion.div>
             )}
         </AnimatePresence>
@@ -177,7 +198,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
       <div className="mt-6">
         <label className="text-xs text-zinc-500 mb-3 block uppercase tracking-wider px-1">{t('category')}</label>
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            {[ { id: 'transfer', name: 'transfer', icon: <ArrowRight size={20} />, color: 'bg-indigo-500/20 text-indigo-400' }, ...CATEGORIES ].slice(0, 10).map(cat => (
+            {CATEGORIES.slice(0, 10).map(cat => (
                 <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}

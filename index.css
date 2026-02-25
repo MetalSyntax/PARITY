@@ -78,3 +78,8 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Make calendar icon white in date inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

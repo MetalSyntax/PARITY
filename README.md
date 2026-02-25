@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.18`
+# PARITY 💸 `v1.0.21`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -63,7 +63,15 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 
 ## 📜 Changelog
 
-### v1.0.18
+### v1.0.21
+
+- **Features & Security:**
+  - `feat`: add dedicated "Transfer" category with automatic switching in transactions
+  - `feat`: implement biometric/fingerprint reveal for masked balances in the Dashboard
+  - `feat`: enhance Dashboard PIN modal with biometric support
+  - `feat`: synchronize versioning across README, package, and UI
+
+### v1.0.20
 
 - **UI/UX & Theming:**
   - `feat`: enhance UI consistency, theme handling, and disable mobile gestures

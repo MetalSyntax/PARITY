@@ -313,12 +313,17 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
 
                             <div>
                                <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('startDate') || 'Start Date'}</label>
-                               <input 
-                                className="w-full bg-theme-bg border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
-                                type="date" 
-                                value={newDate} 
-                                onChange={e => setNewDate(e.target.value)} 
-                               />
+                               <div className="relative">
+                                   <input 
+                                    className="w-full bg-theme-bg border border-white/5 p-4 pl-12 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 
+                                    type="date" 
+                                    value={newDate} 
+                                    onChange={e => setNewDate(e.target.value)} 
+                                   />
+                                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">
+                                       <Calendar size={18} />
+                                   </div>
+                               </div>
                             </div>
                           </div>
                       </div>

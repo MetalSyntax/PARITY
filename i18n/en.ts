@@ -179,6 +179,7 @@ export const en = {
     of: 'of',
     projectNamePlaceholder: 'e.g. My Project',
     goalNamePlaceholder: 'e.g. New Laptop',
+    cat_transfer: 'Transfer',
     cat_food: 'Food',
     cat_transport: 'Transport',
     cat_coffee: 'Coffee',

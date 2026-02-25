@@ -308,8 +308,8 @@ function AppContent() {
     }
   };
 
-  const handleBiometricUnlock = async () => {
-    if (!biometricsEnabled) return;
+  const verifyBiometrics = async (): Promise<boolean> => {
+    if (!biometricsEnabled) return false;
     
     const credIdStr = localStorage.getItem("biometric_cred_id");
     
@@ -336,14 +336,19 @@ function AppContent() {
             }
             
             await navigator.credentials.get(options);
-            setIsAppLocked(false);
-            setPinInput("");
-            setPinError(false);
+            return true;
         }
     } catch (e) {
-        // If the specific credential fails or is not found, we might want to allow 
-        // the user to try again or use PIN. We don't want to lock them out.
         console.error("Biometric authentication failed", e);
+    }
+    return false;
+  };
+
+  const handleBiometricUnlock = async () => {
+    if (await verifyBiometrics()) {
+        setIsAppLocked(false);
+        setPinInput("");
+        setPinError(false);
     }
   };
 
@@ -535,6 +540,18 @@ function AppContent() {
             else addition = data.amount;
           }
         }
+        
+        // Apply fee deduction if any
+        if (data.fee > 0) {
+            // Fee is assumed to be in the original currency
+            let feeInTarget = data.fee;
+            if (data.originalCurrency !== acc.currency) {
+                if (data.originalCurrency === Currency.USD && acc.currency === Currency.VES) feeInTarget = data.fee * data.exchangeRate;
+                else if (data.originalCurrency === Currency.VES && acc.currency === Currency.USD) feeInTarget = data.fee / data.exchangeRate;
+            }
+            addition -= feeInTarget;
+        }
+
         return { ...acc, balance: acc.balance + addition };
       }
 
@@ -825,6 +842,8 @@ function AppContent() {
                   });
                 }
               }}
+              biometricsEnabled={biometricsEnabled}
+              onVerifyBiometrics={verifyBiometrics}
             />
           )}
           {currentView === 'TRANSFER' && (

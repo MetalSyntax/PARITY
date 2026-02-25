@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine } from "lucide-react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine, Fingerprint } from "lucide-react";
 import { motion, Reorder, useDragControls } from "framer-motion";
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
@@ -138,6 +138,8 @@ interface DashboardProps {
   needUpdate: boolean;
   updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
   onCheckUpdate: () => void;
+  biometricsEnabled?: boolean;
+  onVerifyBiometrics?: () => Promise<boolean>;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -158,7 +160,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onToggleDisplayCurrency,
   needUpdate,
   updateServiceWorker,
-  onCheckUpdate
+  onCheckUpdate,
+  biometricsEnabled,
+  onVerifyBiometrics
 }) => {
 
   const formatAmount = (usd: number) => {
@@ -297,12 +301,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [showPinModal, showCustomizer, onToggleBottomNav]);
 
 
-  const handlePrivacyToggle = (e: React.MouseEvent) => {
+  const handlePrivacyToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isBalanceVisible) {
       setIsBalanceVisible(false);
       localStorage.setItem("isBalanceVisible", "false");
     } else {
+      if (biometricsEnabled && onVerifyBiometrics) {
+        const success = await onVerifyBiometrics();
+        if (success) {
+          setIsBalanceVisible(true);
+          localStorage.setItem("isBalanceVisible", "true");
+          return;
+        }
+      }
       setShowPinModal(true);
     }
   };
@@ -1350,6 +1362,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
             >
               {t("cancel")}
             </button>
+
+            {biometricsEnabled && onVerifyBiometrics && (
+              <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={async () => {
+                    const success = await onVerifyBiometrics();
+                    if (success) {
+                      setIsBalanceVisible(true);
+                      localStorage.setItem("isBalanceVisible", "true");
+                      closePinModal();
+                    }
+                  }}
+                  className="mt-6 flex items-center gap-2 px-6 py-3 bg-theme-surface/30 border border-white/5 rounded-2xl text-theme-primary font-bold transition-all shadow-sm"
+              >
+                  <Fingerprint size={20} className="text-theme-brand" />
+                  <span>{t('biometrics')}</span>
+              </motion.button>
+            )}
           </div>
         </div>
       )}
