@@ -11,6 +11,7 @@ import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, 
 import { TransactionType, Currency, Account, Language, Transaction } from '../types';
 import { CATEGORIES, getSmartCategories } from '../constants';
 import { getTranslation } from '../i18n';
+import { div } from 'framer-motion/client';
 
 // Icon Map for Financial Services
 const ACCOUNT_ICONS: Record<string, React.ElementType> = {
@@ -561,11 +562,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
         {/* Transaction Details for Transfer */}
         {type === TransactionType.TRANSFER && (
-            <div className="flex flex-row gap-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex flex-col-reverse gap-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex gap-4">
                     {/* Manual Exchange Rate for Multi-currency Transfer */}
                     {getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
-                        <div className="flex-1 bg-theme-surface rounded-2xl p-4 flex flex-col justify-center">
+                        <div className="w-[60%] bg-theme-surface rounded-2xl p-4 flex flex-col justify-center">
                             <span className="text-[10px] uppercase font-bold text-theme-secondary tracking-wider mb-2">{t('exchangeRate')}</span>
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-theme-primary">1 {getActiveAccount(fromAccountId).currency} =</span>
@@ -573,7 +574,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                     type="number"
                                     value={manualExchangeRate}
                                     onChange={(e) => setManualExchangeRate(e.target.value)}
-                                    className="bg-theme-bg border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-theme-brand w-20 focus:border-theme-soft outline-none transition-colors"
+                                    className="bg-theme-bg border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-theme-brand w-[50%] focus:border-theme-soft outline-none transition-colors"
                                 />
                                 <span className="text-[10px] font-bold text-theme-primary">{getActiveAccount(toAccountId).currency}</span>
                             </div>
@@ -581,7 +582,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     )}
 
                     {/* Commission Field */}
-                    <div className="flex-1 bg-theme-surface rounded-2xl p-4 flex flex-col justify-center">
+                    <div className="w-[40%] bg-theme-surface rounded-2xl p-4 flex flex-col justify-center">
                         <span className="text-[10px] uppercase font-bold text-theme-secondary tracking-wider mb-2">{t('commissions')}</span>
                         <div className="flex items-center gap-2">
                             <input 
@@ -589,7 +590,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                 value={commission}
                                 onChange={(e) => setCommission(e.target.value)}
                                 placeholder="0.00"
-                                className="bg-theme-bg border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-theme-brand w-full focus:border-theme-soft outline-none transition-colors"
+                                className="bg-theme-bg border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-theme-brand w-[40%] focus:border-theme-soft outline-none transition-colors"
                             />
                             <span className="text-[10px] font-bold text-theme-primary">{getActiveAccount(fromAccountId).currency}</span>
                         </div>
@@ -677,38 +678,33 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         <div className="flex gap-4 mb-4">
              <div className="flex-1">
                  <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('date') || 'Date'}</label>
-                 <div className="relative">
+                 <div>
                     <input 
                         type="date" 
                         value={date} 
                         onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 pl-10 text-theme-primary outline-none focus:border-theme-soft transition-colors text-sm font-bold"
+                        className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 pl-3 text-theme-primary outline-none focus:border-theme-soft transition-colors text-sm font-bold"
                     />
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white pointer-events-none opacity-50">
-                        <Calendar size={16} />
-                    </div>
                  </div>
              </div>
              
-             {type !== TransactionType.TRANSFER && (
-                 <div className="flex-1">
-                     <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('category') || 'Category'}</label>
-                     <button 
-                         onClick={() => setShowCategoryModal(true)}
-                         className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 flex items-center justify-between group hover:border-theme-soft transition-colors h-[46px]"
-                     >
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <span className={`${CATEGORIES.find(c => c.id === categoryId)?.color || 'text-theme-primary'}`}>
-                                {CATEGORIES.find(c => c.id === categoryId)?.icon}
-                            </span>
-                            <span className="text-xs font-bold text-theme-primary truncate">
-                                {t(CATEGORIES.find(c => c.id === categoryId)?.name) || CATEGORIES.find(c => c.id === categoryId)?.name}
-                            </span>
-                        </div>
-                        <ChevronDown size={14} className="text-theme-secondary group-hover:text-theme-primary flex-shrink-0" />
-                     </button>
-                 </div>
-             )}
+             <div className="flex-1">
+                 <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('category') || 'Category'}</label>
+                 <button 
+                     onClick={() => setShowCategoryModal(true)}
+                     className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 flex items-center justify-between group hover:border-theme-soft transition-colors h-[46px]"
+                 >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <span className={`${CATEGORIES.find(c => c.id === categoryId)?.color || 'text-theme-primary'}`}>
+                            {CATEGORIES.find(c => c.id === categoryId)?.icon}
+                        </span>
+                        <span className="text-xs font-bold text-theme-primary truncate">
+                            {t(CATEGORIES.find(c => c.id === categoryId)?.name) || CATEGORIES.find(c => c.id === categoryId)?.name}
+                        </span>
+                    </div>
+                    <ChevronDown size={14} className="text-theme-secondary group-hover:text-theme-primary flex-shrink-0" />
+                 </button>
+             </div>
         </div>
       </div>
 
@@ -819,6 +815,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             <div className="overflow-y-auto no-scrollbar p-4 flex-1">
                  <div className="flex flex-col gap-4 pb-10">
                      {CATEGORIES.filter(cat => {
+                         if (type === TransactionType.TRANSFER) return cat.id === 'transfer';
                          const translatedName = (t(cat.name) || cat.name).toLowerCase();
                          const query = categorySearch.toLowerCase();
                          if (translatedName.includes(query)) return true;

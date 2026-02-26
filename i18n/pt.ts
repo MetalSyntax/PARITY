@@ -119,6 +119,7 @@ export const pt = {
     totalMonthlyIncome: 'Renda Mensal Total',
     savingsEst: 'Poupança (Est.)',
     commissions: 'Comissões',
+    noCommission: 'Sem comissão',
     totalNetMonthly: 'Líquido Mensal Total',
     incomeExpenseDiff: 'Receitas - Despesas',
     positiveFlow: 'Fluxo Positivo',

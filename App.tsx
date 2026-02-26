@@ -153,8 +153,8 @@ function AppContent() {
       setConfirmConfig(config);
   };
 
-  const { handleLogin, exportToCloud, importFromCloud, isSyncing, isAuthenticated } = useGoogleDriveSync({
-    fileName: 'parity_backup_v1.json',
+  const { handleLogin, exportToCloud, importFromCloud, listCloudBackups, isSyncing, isAuthenticated } = useGoogleDriveSync({
+    fileName: `parity_backup_${new Date().toISOString().split('T')[0]}.json`,
     localData: {
         userId: userProfile.name, // Extra metadata
         lastBackup: new Date().toISOString(),
@@ -165,7 +165,11 @@ function AppContent() {
     },
     googleClientId: GOOGLE_CLIENT_ID,
     onSyncSuccess: () => showAlert('alert_syncSuccess', 'success'),
-    onSyncError: (e) => showAlert('alert_syncError', 'error')
+    onSyncError: (e) => showAlert('alert_syncError', 'error'),
+    onLoginError: (msg) => {
+        setAlertConfig({ message: msg, type: 'error' });
+        setTimeout(() => setAlertConfig(null), 3000);
+    }
   });
 
 
@@ -940,6 +944,7 @@ function AppContent() {
               onDevModeTrigger={handleDevModeTrigger}
               navbarFavorites={navbarFavorites}
               onUpdateNavbarFavorites={setNavbarFavorites}
+              listCloudBackups={listCloudBackups}
             />
           )}
           {currentView === 'TRANSACTIONS' && (

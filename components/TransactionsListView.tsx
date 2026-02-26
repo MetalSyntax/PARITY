@@ -69,7 +69,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
     <div className="h-full flex flex-col bg-theme-bg overflow-hidden animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
       {/* Header */}
       <div className="p-6 pb-2">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2 mb-6">
           <button
             onClick={onBack}
             className="p-2 bg-theme-surface rounded-full text-theme-secondary hover:text-theme-primary transition-colors border border-white/5"
@@ -217,10 +217,16 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                             <p className="text-xs text-theme-secondary capitalize">
                               {t(category.name.toLowerCase()) || category.name}
                             </p>
-                            {transaction.fee && transaction.fee > 0 && (
-                                <p className="text-[9px] text-red-400 font-bold uppercase mt-1">
-                                    {t('commissions')}: {transaction.fee.toLocaleString()} {transaction.originalCurrency === Currency.USD ? '$' : 'Bs.'}
-                                </p>
+                            {transaction.fee !== undefined && (
+                                transaction.fee > 0 ? (
+                                    <p className="text-[9px] text-red-400 font-bold uppercase mt-1">
+                                        {t('commissions')}: {transaction.fee.toLocaleString()} {transaction.originalCurrency === Currency.USD ? '$' : 'Bs.'}
+                                    </p>
+                                ) : (
+                                    <p className="text-[9px] text-emerald-400 font-bold uppercase mt-1">
+                                        {t('noCommission')}
+                                    </p>
+                                )
                             )}
                           </div>
                         </div>

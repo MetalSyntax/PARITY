@@ -978,7 +978,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 if (itemsToRender.length === 0) return null;
                                 return (
                                   <div key={date}>
-                                    <h3 className="text-xs font-bold text-zinc-500 sticky top-0 bg-background/95 backdrop-blur-sm md:bg-transparent py-2 px-2 z-10">
+                                    <h3 className="text-xs font-bold text-zinc-500 sticky top-0 bg-background/95 backdrop-blur-sm bg-transparent py-2 px-2 z-10">
                                       {(() => {
                                         const dateObj = new Date(`${date}T12:00:00`);
                                         const todayStr = new Date().toISOString().split('T')[0];

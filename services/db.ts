@@ -101,70 +101,66 @@ export class IndexedDBService {
             const tx = this.db!.transaction([STORE_NAME], "readonly");
             const store = tx.objectStore(STORE_NAME);
             
-            const results: any = {};
+            const rawResults: any = {};
             const keysToFetch = [KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED, KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS, KEYS.GOALS];
-            
-            // fetch all granular keys parallel
-            let completed = 0;
-            // ... variables ...
+            const allKeysToFetch = [...keysToFetch, KEYS.ROOT];
+            let fetchCompleted = 0;
 
-            // Helper to check final completion
-            const checkCompletion = async () => {
-                completed++;
-                if (completed === keysToFetch.length) {
-                    // Try to construct from granular data
-                    if (results[KEYS.PROFILE] && results[KEYS.ACCOUNTS]) {
-                        const appData: AppData = {
-                            accounts: results[KEYS.ACCOUNTS] || [],
-                            transactions: results[KEYS.TRANSACTIONS] || [],
-                            scheduledPayments: results[KEYS.SCHEDULED] || [],
-                            userProfile: results[KEYS.PROFILE],
-                            exchangeRate: results[KEYS.METADATA]?.exchangeRate || 0,
-                            budgets: results[KEYS.BUDGETS] || [],
-                            goals: results[KEYS.GOALS] || []
-                        };
-                        resolve(appData);
-                        return;
-                    }
-
-                    // If granular data missing/incomplete, Fallback to legacy root
-                    // ... legacy logic ...
-                    const legacyReq = store.get(KEYS.ROOT);
-                    legacyReq.onsuccess = async () => {
-                        if (legacyReq.result) {
-                            try {
-                                const data = await decryptData(legacyReq.result);
-                                // Ensure legacy data structure supports new fields if they exist
-                                if (!data.budgets) data.budgets = [];
-                                if (!data.goals) data.goals = [];
-                                resolve(data);
-                            } catch (e) {
-                                console.error("Legacy read failed", e);
-                                resolve(null);
-                            }
-                        } else {
-                            resolve(null);
+            const processResults = async () => {
+                const results: any = {};
+                for (const key of keysToFetch) {
+                    if (rawResults[key]) {
+                        try {
+                            results[key] = await decryptData(rawResults[key]);
+                        } catch (e) {
+                            console.warn(`Failed to decrypt ${key}`);
                         }
-                    };
-                    legacyReq.onerror = () => resolve(null);
+                    }
                 }
+
+                // Check if the essential granular data decrypted successfully
+                if (results[KEYS.PROFILE] && results[KEYS.ACCOUNTS]) {
+                    const appData: AppData = {
+                        accounts: results[KEYS.ACCOUNTS] || [],
+                        transactions: results[KEYS.TRANSACTIONS] || [],
+                        scheduledPayments: results[KEYS.SCHEDULED] || [],
+                        userProfile: results[KEYS.PROFILE],
+                        exchangeRate: results[KEYS.METADATA]?.exchangeRate || 0,
+                        budgets: results[KEYS.BUDGETS] || [],
+                        goals: results[KEYS.GOALS] || []
+                    };
+                    resolve(appData);
+                    return;
+                }
+
+                // If granular failed, check ROOT (legacy fallback)
+                if (rawResults[KEYS.ROOT]) {
+                     try {
+                         const data = await decryptData(rawResults[KEYS.ROOT]);
+                         if (data) {
+                             if (!data.budgets) data.budgets = [];
+                             if (!data.goals) data.goals = [];
+                             resolve(data);
+                             return;
+                         }
+                     } catch(e) {
+                         console.warn("Failed to decrypt legacy ROOT database");
+                     }
+                }
+                
+                resolve(null); // Completely failed to read/decrypt anything
             };
 
-            keysToFetch.forEach(key => {
+            allKeysToFetch.forEach(key => {
                 const req = store.get(key);
-                req.onsuccess = async () => {
-                    if (req.result) {
-                        try {
-                            results[key] = await decryptData(req.result);
-                        } catch (e) {
-                            console.error(`Failed to decrypt ${key}`, e);
-                        }
-                    }
-                    checkCompletion();
+                req.onsuccess = () => {
+                    if (req.result) rawResults[key] = req.result;
+                    fetchCompleted++;
+                    if (fetchCompleted === allKeysToFetch.length) processResults();
                 };
                 req.onerror = () => {
-                    console.error(`Error reading ${key}`);
-                    checkCompletion();
+                    fetchCompleted++;
+                    if (fetchCompleted === allKeysToFetch.length) processResults();
                 };
             });
         });

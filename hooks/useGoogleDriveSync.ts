@@ -13,6 +13,7 @@ interface UseGoogleDriveSyncProps<T> {
   googleClientId: string;
   onSyncSuccess?: () => void;
   onSyncError?: (error: any) => void;
+  onLoginError?: (error: string) => void;
 }
 
 export const useGoogleDriveSync = <T extends object>({
@@ -21,7 +22,8 @@ export const useGoogleDriveSync = <T extends object>({
   setLocalData,
   googleClientId,
   onSyncSuccess,
-  onSyncError
+  onSyncError,
+  onLoginError
 }: UseGoogleDriveSyncProps<T>) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -108,11 +110,15 @@ export const useGoogleDriveSync = <T extends object>({
 
   const handleLogin = useCallback(() => {
     if (tokenClient) {
-      // Removing prompt: 'consent' so it only asks when necessary
-      // Google will still show the account picker if session is not active or prompt is needed
-      tokenClient.requestAccessToken({ prompt: '' });
+      try {
+        tokenClient.requestAccessToken({ prompt: '' });
+      } catch (err) {
+        if (onLoginError) onLoginError("Error al intentar abrir la ventana de Google: " + err);
+      }
+    } else {
+      if (onLoginError) onLoginError("El cliente de Google no se ha cargado. Verifica si tu navegador está bloqueando scripts de Google.");
     }
-  }, [tokenClient]);
+  }, [tokenClient, onLoginError]);
 
   const findFileId = async (gapi: any) => {
     const listResponse = await gapi.client.drive.files.list({
@@ -199,7 +205,7 @@ export const useGoogleDriveSync = <T extends object>({
   }, [gapiInited, isAuthenticated, fileName, onSyncSuccess, onSyncError]);
 
   // 2. IMPORT FROM CLOUD (RESTORE)
-  const importFromCloud = useCallback(async () => {
+  const importFromCloud = useCallback(async (fileIdToRestore?: string) => {
     if (!gapiInited || !isAuthenticated) return;
     setIsSyncing(true);
 
@@ -223,7 +229,18 @@ export const useGoogleDriveSync = <T extends object>({
         throw new Error("No active session");
       }
 
-      const fileId = await findFileId(gapi);
+      let fileId = fileIdToRestore;
+      if (!fileId) {
+        const listResponse = await gapi.client.drive.files.list({
+          q: `name contains 'parity_backup_' and trashed = false`,
+          fields: 'files(id, name, modifiedTime)',
+          orderBy: 'modifiedTime desc'
+        });
+        const files = listResponse.result.files;
+        if (files && files.length > 0) {
+          fileId = files[0].id;
+        }
+      }
 
       if (fileId) {
         const fileContent = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
@@ -250,10 +267,46 @@ export const useGoogleDriveSync = <T extends object>({
     }
   }, [gapiInited, isAuthenticated, fileName, setLocalData, onSyncSuccess, onSyncError]);
 
+  const listCloudBackups = useCallback(async () => {
+    if (!gapiInited || !isAuthenticated) return [];
+    setIsSyncing(true);
+    try {
+      const gapi = (window as any).gapi;
+      let token = gapi.client.getToken()?.access_token;
+      if (!token) {
+        const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
+        if (savedTokenData) {
+          const { token: savedToken, expiresAt } = JSON.parse(savedTokenData);
+          if (Date.now() < expiresAt) {
+            token = savedToken;
+            gapi.client.setToken({ access_token: token });
+          }
+        }
+      }
+      if (!token) {
+        setIsAuthenticated(false);
+        throw new Error("No active session");
+      }
+
+      const listResponse = await gapi.client.drive.files.list({
+        q: `name contains 'parity_backup_' and trashed = false`,
+        fields: 'files(id, name, modifiedTime, size)',
+        orderBy: 'modifiedTime desc'
+      });
+      return listResponse.result.files || [];
+    } catch (error) {
+      console.error("List Backups Error", error);
+      return [];
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [gapiInited, isAuthenticated]);
+
   return {
     handleLogin,
     exportToCloud,
     importFromCloud,
+    listCloudBackups,
     isSyncing,
     isAuthenticated
   };

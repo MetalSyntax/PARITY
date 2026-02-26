@@ -162,12 +162,13 @@ export const SMART_CATEGORIES_EN: Record<string, string> = {
   'frappuccino': 'coffee', 'brewed-coffee': 'coffee', 'roaster': 'coffee', 'barista': 'coffee', 'coffee-shop': 'coffee',
   // OTHER (15+)
   'misc': 'other', 'general': 'other', 'miscellaneous': 'other', 'unknown': 'other', 'uncategorized': 'other',
-  'random': 'other', 'other-expense': 'other', 'atm-withdrawal': 'other', 'cash-out': 'other', 'transfer-out': 'other',
+  'random': 'other', 'other-expense': 'other',  'atm-withdrawal': 'other', 'cash-out': 'other', 'transfer-out': 'transfer', 'transfer': 'transfer', 'wire': 'transfer',
   // LOANS (15+)
   'loan': 'loans', 'credit': 'loans', 'debt': 'loans', 'financing': 'loans', 'repayment': 'loans',
   'lending': 'loans', 'borrowing': 'loans', 'mortgage-pay': 'loans', 'credit-card-pay': 'loans', 'loan-interest': 'loans',
   'installment': 'loans', 'payday': 'loans', 'creditor': 'loans', 'overdraft-pay': 'loans', 'principal': 'loans',
   'payment-other': 'other', 'etc': 'other', 'various': 'other', 'stuff': 'other', 'unspecified': 'other',
+  'send': 'transfer', 'receive-transfer': 'transfer',
 };
 
 export const SMART_CATEGORIES_ES: Record<string, string> = {
@@ -209,7 +210,7 @@ export const SMART_CATEGORIES_ES: Record<string, string> = {
   // COMPRAS (15+)
   'ropa': 'shopping', 'zapatos': 'shopping', 'accesorios': 'shopping', 'joyeria': 'shopping', 'cosmeticos': 'shopping',
   'maquillaje': 'shopping', 'perfume': 'shopping', 'reloj': 'shopping', 'centro comercial': 'shopping', 'tienda': 'shopping',
-  'boutique': 'shopping', 'rebajas': 'shopping', 'envio': 'shopping', 'descuento': 'shopping', 'cartera': 'shopping',
+  'boutique': 'shopping', 'rebajas': 'shopping', 'despacho': 'shopping', 'descuento': 'shopping', 'cartera': 'shopping',
   // EDUCACION (15+)
   'seminario': 'education',
   'grado': 'education', 'examen': 'education', 'libro': 'education',
@@ -272,12 +273,13 @@ export const SMART_CATEGORIES_ES: Record<string, string> = {
   'muffin': 'coffee', 'pasteleria': 'coffee', 'donas': 'coffee', 'panaderia-tip': 'coffee', 'barista-tip': 'coffee',
   // OTROS (15+)
   'varios': 'other', 'misc': 'other', 'otros-gastos': 'other', 'efectivo': 'other', 'retiro-cajero': 'other',
-  'desconocido': 'other', 'sin-categoria': 'other', 'pago-movil': 'other', 'transferencia-enviada': 'other', 'ajuste': 'other',
+  'desconocido': 'other', 'sin-categoria': 'other', 'pago-movil': 'transfer', 'transferencia-enviada': 'transfer', 'ajuste': 'other',
   // PRESTAMOS (15+)
   'prestamo': 'loans', 'credito': 'loans', 'deuda': 'loans', 'financiamiento': 'loans', 'abono': 'loans',
   'cuota-pago': 'loans', 'pagare': 'loans', 'hipoteca-pago': 'loans', 'tarjeta-credito': 'loans', 'interes-prestamo': 'loans',
   'reembolso-loan': 'loans', 'acreedor': 'loans', 'linea-credito': 'loans', 'amortizacion': 'loans', 'fianza': 'loans',
   'comision-bancaria-other': 'other', 'genericos': 'other', 'bolsa-otros': 'other', 'random-es': 'other', 'extra': 'other',
+  'transferencia': 'transfer', 'traspaso': 'transfer', 'envio': 'transfer', 'p2p': 'transfer', 'zelle': 'transfer', 'pago móvil': 'transfer',
 };
 
 export const SMART_CATEGORIES_PT: Record<string, string> = {
@@ -370,11 +372,12 @@ export const SMART_CATEGORIES_PT: Record<string, string> = {
   'escritorio': 'work', 'negocio': 'business', 'empresa': 'business', 'freelance-pt': 'freelance', 'projeto-pt': 'freelance',
   'cliente-pt': 'freelance', 'venda-business': 'business', 'lucro': 'business', 'juros-ganhos': 'interest', 'presente-pt': 'gift',
   'outros': 'other', 'varios-pt': 'other', 'misc-pt': 'other', 'dinheiro': 'other', 'saque': 'other',
-  'caixa': 'other', 'desconhecido-pt': 'other', 'ajuste-pt': 'other', 'transferência-enviada': 'other', 'pix-enviado': 'other',
+  'caixa': 'other', 'desconhecido-pt': 'other', 'ajuste-pt': 'other', 'transferência-enviada': 'transfer', 'pix-enviado': 'transfer',
   // EMPRESTIMOS (15+)
   'emprestimo': 'loans', 'credito': 'loans', 'divida': 'loans', 'financiamento': 'loans', 'parcela': 'loans',
   'amortizacao': 'loans', 'hipoteca-pgto': 'loans', 'cartao-credito': 'loans', 'juros-emprestimo': 'loans', 'prestacao': 'loans',
   'quitacao': 'loans', 'credor': 'loans', 'linea-credito-pt': 'loans', 'fiador': 'loans',
+  'transferencia': 'transfer', 'pix': 'transfer', 'transf': 'transfer',
 };
 
 export const getSmartCategories = (lang: string) => {

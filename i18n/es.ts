@@ -124,6 +124,7 @@ export const es = {
     totalMonthlyIncome: 'Ingreso Mensual Total',
     savingsEst: 'Ahorros (Est.)',
     commissions: 'Comisiones',
+    noCommission: 'Sin comisión',
     totalNetMonthly: 'Neto Mensual Total',
     incomeExpenseDiff: 'Ingresos - Gastos',
     positiveFlow: 'Flujo Positivo',

@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.21`
+# PARITY 💸 `v1.0.22`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,14 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.0.22
+
+- **Google Drive & Database:**
+  - `feat`: add Google Drive backup list and restore UI (experimental/personal use)
+  - `fix`: handle Google GSI prompt errors to prevent silent popup failures on Windows
+  - `fix`: implement defensive IndexedDB decryption fallback to prevent TransactionInactiveError
+  - `chore`: integrate native UI alerts instead of window.alert for Google Drive sync
 
 ### v1.0.21
 

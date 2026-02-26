@@ -97,7 +97,12 @@ export const decryptData = async (encryptedBase64: string): Promise<any> => {
             return JSON.parse(atob(encryptedBase64)); // maybe base64 but not encrypted?
         } catch (e2) {
              // as last resort, try just parsing the raw string in case it wasn't base64'd
-            return JSON.parse(encryptedBase64);
+            try {
+                return JSON.parse(encryptedBase64);
+            } catch (e3) {
+                console.warn("Data could not be decrypted or parsed (expected if encryption key changed).");
+                throw new Error("Decryption and fallback failed");
+            }
         }
     }
 };
