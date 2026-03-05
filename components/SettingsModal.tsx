@@ -62,6 +62,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
 
           if (fetchedRate) {
               setRate(Number(fetchedRate));
+              localStorage.setItem('last_bcv_update', Date.now().toString());
           } else {
               throw new Error("Invalid format");
           }

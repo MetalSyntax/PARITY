@@ -58,8 +58,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       ? initialData.toAccountId 
       : (accounts.length > 1 ? accounts[1].id : (accounts.length > 0 ? accounts[0].id : ''))
   );
+  const [focusedField, setFocusedField] = useState<'amount' | 'exchangeRate' | 'commissionFixed' | 'commissionPercent'>('amount');
   const [manualExchangeRate, setManualExchangeRate] = useState<string>(initialData?.exchangeRate?.toString() || exchangeRate.toString());
-  const [commission, setCommission] = useState<string>(initialData?.fee?.toString() || '0');
+  const [commissionFixed, setCommissionFixed] = useState<string>(initialData?.fee?.toString() || '0');
+  const [commissionPercent, setCommissionPercent] = useState<string>('0');
 
   
   const [categoryId, setCategoryId] = useState<string>(initialData ? initialData.category : CATEGORIES[0].id);
@@ -364,9 +366,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   }, [note, initialData, lang]);
 
   const handleKeyPress = (val: string) => {
-    setAmountStr(prev => {
+    const update = (prev: string) => {
       if (prev === '0' && val !== '.') return val;
-      if (val === '.' && prev.slice(-1) === '.') return prev;
+      if (val === '.' && prev.includes('.')) return prev;
       
       const isOperator = ['+', '-', '*', '/'].includes(val);
       const lastChar = prev.slice(-1);
@@ -376,14 +378,24 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
          return prev.slice(0, -1) + val;
       }
       return prev + val;
-    });
+    };
+
+    if (focusedField === 'amount') setAmountStr(update);
+    else if (focusedField === 'exchangeRate') setManualExchangeRate(update);
+    else if (focusedField === 'commissionFixed') setCommissionFixed(update);
+    else if (focusedField === 'commissionPercent') setCommissionPercent(update);
   };
 
   const handleDelete = () => {
-    setAmountStr(prev => {
+    const update = (prev: string) => {
       if (prev.length === 1 || prev === 'Error') return '0';
       return prev.slice(0, -1);
-    });
+    };
+
+    if (focusedField === 'amount') setAmountStr(update);
+    else if (focusedField === 'exchangeRate') setManualExchangeRate(update);
+    else if (focusedField === 'commissionFixed') setCommissionFixed(update);
+    else if (focusedField === 'commissionPercent') setCommissionPercent(update);
   };
 
   const handleCalculate = () => {
@@ -401,6 +413,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
     if (finalAmount === 0 || isNaN(finalAmount)) return;
 
+    const commFixedVal = parseFloat(commissionFixed) || 0;
+    const commPercentVal = parseFloat(commissionPercent) || 0;
+    const finalFee = commFixedVal + (finalAmount * (commPercentVal / 100));
+
     onSave({
       id: initialData?.id, // Pass ID if editing
       amount: finalAmount,
@@ -414,7 +430,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       toAccountId: type === TransactionType.TRANSFER ? toAccountId : undefined,
       note,
       date: new Date(date).toISOString(),
-      fee: type === TransactionType.TRANSFER ? parseFloat(commission) || 0 : 0,
+      fee: type === TransactionType.TRANSFER ? finalFee : 0,
       scheduledId: initialData?.scheduledId,
     });
   };
@@ -453,8 +469,21 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                           <button 
                              key={acc.id}
                              onClick={() => {
-                                 if (showAccountSelector === 'FROM') setFromAccountId(acc.id);
-                                 else setToAccountId(acc.id);
+                                 const isFrom = showAccountSelector === 'FROM';
+                                 if (isFrom) {
+                                     setFromAccountId(acc.id);
+                                     if (type === TransactionType.TRANSFER && acc.id === toAccountId) {
+                                         const differentAcc = accounts.find(a => a.id !== acc.id);
+                                         if (differentAcc) setToAccountId(differentAcc.id);
+                                     }
+                                     if (acc.currency !== currency) setCurrency(acc.currency);
+                                 } else {
+                                     setToAccountId(acc.id);
+                                     if (type === TransactionType.TRANSFER && acc.id === fromAccountId) {
+                                         const differentAcc = accounts.find(a => a.id !== acc.id);
+                                         if (differentAcc) setFromAccountId(differentAcc.id);
+                                     }
+                                 }
                                  setShowAccountSelector(null);
                              }}
                              className={`p-4 rounded-xl flex items-center justify-between border ${
@@ -520,14 +549,30 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         <div className="flex flex-col items-center justify-center mb-6">
            <div className="flex items-baseline justify-center gap-1">
              <span className="text-3xl text-theme-secondary font-light mb-1">{currency === Currency.USD ? '$' : 'Bs.'}</span>
-             <span className="text-6xl font-bold text-theme-primary tracking-tight break-all text-center">
-                {amountStr}
-             </span>
+             <input
+                type="text"
+                inputMode="none"
+                value={amountStr}
+                onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9\.\+\-\*\/]/g, ''))}
+                onFocus={() => setFocusedField('amount')}
+                className={`bg-transparent text-6xl font-bold tracking-tight text-center outline-none w-full ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
+             />
            </div>
            
            <div className="mt-4 flex items-center gap-2">
              <button 
-               onClick={() => setCurrency(prev => prev === Currency.USD ? Currency.VES : Currency.USD)}
+               onClick={() => {
+                   const newCur = currency === Currency.USD ? Currency.VES : Currency.USD;
+                   setCurrency(newCur);
+                   const matchingAcc = accounts.find(a => a.currency === newCur);
+                   if (matchingAcc) {
+                       setFromAccountId(matchingAcc.id);
+                       if (type === TransactionType.TRANSFER) {
+                           const diffAcc = accounts.find(a => a.id !== matchingAcc.id);
+                           if (diffAcc) setToAccountId(diffAcc.id);
+                       }
+                   }
+               }}
                className="flex items-center gap-1 bg-theme-surface hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition-all"
              >
                <span className="text-sm font-bold text-theme-brand">{currency === Currency.VES ? 'Bs.' : currency}</span>
@@ -571,10 +616,12 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-theme-primary">1 {getActiveAccount(fromAccountId).currency} =</span>
                                 <input 
-                                    type="number"
+                                    type="text"
+                                    inputMode="none"
                                     value={manualExchangeRate}
-                                    onChange={(e) => setManualExchangeRate(e.target.value)}
-                                    className="bg-theme-bg border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-theme-brand w-[50%] focus:border-theme-soft outline-none transition-colors"
+                                    onChange={(e) => setManualExchangeRate(e.target.value.replace(/[^0-9\.]/g, ''))}
+                                    onFocus={() => setFocusedField('exchangeRate')}
+                                    className={`bg-theme-bg border rounded-lg px-2 py-1.5 text-xs font-mono w-[50%] outline-none transition-colors ${focusedField === 'exchangeRate' ? 'border-theme-brand text-theme-brand' : 'border-white/10 text-theme-primary'}`}
                                 />
                                 <span className="text-[10px] font-bold text-theme-primary">{getActiveAccount(toAccountId).currency}</span>
                             </div>
@@ -582,34 +629,80 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     )}
 
                     {/* Commission Field */}
-                    <div className="w-[40%] bg-theme-surface rounded-2xl p-4 flex flex-col justify-center">
+                    <div className="w-[100%] bg-theme-surface rounded-2xl p-4 flex flex-col justify-center">
                         <span className="text-[10px] uppercase font-bold text-theme-secondary tracking-wider mb-2">{t('commissions')}</span>
-                        <div className="flex items-center gap-2">
-                            <input 
-                                type="number"
-                                value={commission}
-                                onChange={(e) => setCommission(e.target.value)}
-                                placeholder="0.00"
-                                className="bg-theme-bg border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-theme-brand w-[40%] focus:border-theme-soft outline-none transition-colors"
-                            />
-                            <span className="text-[10px] font-bold text-theme-primary">{getActiveAccount(fromAccountId).currency}</span>
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 flex items-center gap-2">
+                                <input 
+                                    type="text"
+                                    inputMode="none"
+                                    value={commissionFixed}
+                                    onChange={(e) => setCommissionFixed(e.target.value.replace(/[^0-9\.]/g, ''))}
+                                    onFocus={() => setFocusedField('commissionFixed')}
+                                    placeholder="0.00"
+                                    className={`bg-theme-bg border rounded-lg px-2 py-1.5 text-xs font-mono w-[70%] outline-none transition-colors ${focusedField === 'commissionFixed' ? 'border-theme-brand text-theme-brand' : 'border-white/10 text-theme-primary'}`}
+                                />
+                                <span className="text-[10px] font-bold text-theme-primary opacity-60 w-[30%]">Fija ({getActiveAccount(fromAccountId).currency})</span>
+                            </div>
+                            <div className="flex-1 flex items-center gap-2 border-l border-theme-soft/30 pl-4">
+                                <input 
+                                    type="text"
+                                    inputMode="none"
+                                    value={commissionPercent}
+                                    onChange={(e) => setCommissionPercent(e.target.value.replace(/[^0-9\.]/g, ''))}
+                                    onFocus={() => setFocusedField('commissionPercent')}
+                                    placeholder="0"
+                                    className={`bg-theme-bg border rounded-lg px-2 py-1.5 text-xs font-mono w-[70%] outline-none transition-colors ${focusedField === 'commissionPercent' ? 'border-theme-brand text-theme-brand' : 'border-white/10 text-theme-primary'}`}
+                                />
+                                <span className="text-[10px] font-bold text-theme-primary opacity-60 w-[30%]">%</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-theme-brand/5 rounded-2xl p-3 flex items-center justify-between">
-                    <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-tight">
-                       {t('totalTarget') || 'Total to receive'}
-                    </p>
-                    <span className="text-sm font-black text-theme-brand">
-                       {(() => {
-                           const amount = parseFloat(amountStr) || 0;
-                           const comm = parseFloat(commission) || 0;
-                           const rate = getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency ? (parseFloat(manualExchangeRate) || 0) : 1;
-                           const total = (amount - comm) * rate;
-                           return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
-                       })()} {getActiveAccount(toAccountId).currency}
-                    </span>
+                <div className="bg-theme-brand/5 rounded-2xl p-3 flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-tight">
+                           {t('totalTarget') || 'Total to receive'}
+                        </p>
+                        <span className="text-sm font-black text-theme-brand">
+                           {(() => {
+                               const amount = parseFloat(amountStr) || 0;
+                               let total = amount;
+                               const fromCurrency = getActiveAccount(fromAccountId).currency;
+                               const toCurrency = getActiveAccount(toAccountId).currency;
+                               
+                               if (fromCurrency !== toCurrency) {
+                                   const rate = parseFloat(manualExchangeRate) || 1;
+                                   if (fromCurrency === 'USD' && toCurrency === 'VES') {
+                                       total = amount * rate;
+                                   } else if (fromCurrency === 'VES' && toCurrency === 'USD') {
+                                       total = amount / rate;
+                                   } else {
+                                       total = amount * rate;
+                                   }
+                               }
+                               return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                           })()} {getActiveAccount(toAccountId).currency}
+                        </span>
+                    </div>
+                    { (parseFloat(commissionFixed) > 0 || parseFloat(commissionPercent) > 0) && (
+                        <div className="flex items-center justify-between border-t border-theme-soft/50 pt-1">
+                            <p className="text-[9px] text-theme-secondary font-bold uppercase tracking-tight opacity-60">
+                               {t('totalDeduction') || 'Total to deduct'}
+                            </p>
+                            <span className="text-[10px] font-black text-red-400">
+                               {(() => {
+                                   const amount = parseFloat(amountStr) || 0;
+                                   const commF = parseFloat(commissionFixed) || 0;
+                                   const commP = parseFloat(commissionPercent) || 0;
+                                   const fee = commF + (amount * (commP / 100));
+                                   const total = amount + fee;
+                                   return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                               })()} {getActiveAccount(fromAccountId).currency}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
         )}
@@ -715,6 +808,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
              {['/', '*', '-', '+'].map(op => (
                <button 
                   key={op}
+                  onPointerDown={(e) => e.preventDefault()}
                   onClick={() => handleKeyPress(op)}
                   className="flex-1 bg-theme-brand/10 hover:bg-theme-brand/20 text-theme-brand py-2 rounded-lg font-bold"
                >
@@ -728,6 +822,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
               <button 
                 key={num} 
+                onPointerDown={(e) => e.preventDefault()}
                 onClick={() => handleKeyPress(num.toString())}
                 className="text-2xl font-medium text-theme-primary hover:text-theme-brand transition-colors py-2"
               >
@@ -736,6 +831,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             ))}
             
             <button 
+              onPointerDown={(e) => e.preventDefault()}
               onClick={() => handleKeyPress('.')}
               className="text-2xl font-medium text-theme-primary hover:text-theme-brand transition-colors pb-2"
             >
@@ -743,6 +839,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             </button>
             
             <button 
+              onPointerDown={(e) => e.preventDefault()}
               onClick={() => handleKeyPress('0')}
               className="text-2xl font-medium text-theme-primary hover:text-theme-brand transition-colors pb-2"
             >
@@ -750,6 +847,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             </button>
             
             <button 
+              onPointerDown={(e) => e.preventDefault()}
               onClick={handleDelete}
               className="flex items-center justify-center text-theme-secondary hover:text-theme-primary transition-colors pb-2"
             >
@@ -816,6 +914,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                  <div className="flex flex-col gap-4 pb-10">
                      {CATEGORIES.filter(cat => {
                          if (type === TransactionType.TRANSFER) return cat.id === 'transfer';
+                         if (type === TransactionType.INCOME && !['income', 'work', 'freelance', 'business', 'interest', 'other', 'loans', 'charity', 'gift'].includes(cat.id)) return false;
+                         if (type === TransactionType.EXPENSE && ['income', 'work', 'freelance', 'business', 'interest'].includes(cat.id)) return false;
+                         if (type !== TransactionType.TRANSFER && cat.id === 'transfer') return false;
+                         
                          const translatedName = (t(cat.name) || cat.name).toLowerCase();
                          const query = categorySearch.toLowerCase();
                          if (translatedName.includes(query)) return true;

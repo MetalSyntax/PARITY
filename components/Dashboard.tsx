@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine, Fingerprint } from "lucide-react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine, Fingerprint, Delete } from "lucide-react";
 import { motion, Reorder, useDragControls } from "framer-motion";
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
@@ -184,6 +184,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Converter State
+  const [convertAmount, setConvertAmount] = useState<string>('1');
+  const [convertFromTo, setConvertFromTo] = useState<'USD_TO_VES' | 'VES_TO_USD'>('USD_TO_VES');
+  const [isConverterFocused, setIsConverterFocused] = useState(false);
+  
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [balanceChartType, setBalanceChartType] = useState<'LINE' | 'BAR'>('LINE');
   const [expenseChartType, setExpenseChartType] = useState<'DOUGHNUT' | 'BAR'>('DOUGHNUT');
@@ -218,7 +224,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Widget Order persistence
   const [leftOrder, setLeftOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem("dash_left_order");
-    return saved ? JSON.parse(saved) : ["balanceCard", "balanceChart", "wallets", "actions", "expenses"];
+    const parsed = saved ? JSON.parse(saved) : ["balanceCard", "converter", "balanceChart", "wallets", "actions", "expenses"];
+    if (!parsed.includes('converter')) {
+        parsed.splice(1, 0, 'converter');
+    }
+    return parsed;
   });
 
   const [rightOrder, setRightOrder] = useState<string[]>(() => {
@@ -742,6 +752,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <Bar data={{ labels: balanceHistory.history.map((h) => new Date(h.timestamp).toLocaleDateString(undefined, { weekday: "short" })), datasets: [{ data: balanceHistory.history.map((h) => formatChartValue(h.balance)), backgroundColor: 'rgba(99, 102, 241, 0.6)', borderRadius: 4 }] }} options={{ ...commonOptions, plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: (context) => formatChartAmount(context.parsed.y) } } }, scales: { x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }, y: { display: false } } }} />
                         )}
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {id === "converter" && (
+                  <div className="px-4 md:px-0">
+                    <div className="bg-theme-surface rounded-[2rem] p-6 border border-theme-soft shadow-theme relative">
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-2">
+                           <ArrowRightLeft size={16} className="text-theme-brand" />
+                           <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest">{t("currencyConverter") || "Conversión de Moneda"}</h3>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 bg-theme-bg p-3 rounded-2xl border border-theme-soft shadow-inner">
+                          <div className="flex-1 flex flex-col">
+                             <span className="text-[10px] uppercase font-bold text-theme-secondary opacity-50 ml-2 mb-1">
+                               {convertFromTo === 'USD_TO_VES' ? 'USD' : 'Bs.'}
+                             </span>
+                             <input 
+                                 type="text"
+                                 inputMode="none"
+                                 value={convertAmount}
+                                 onChange={(e) => setConvertAmount(e.target.value.replace(/[^0-9\.]/g, ''))}
+                                 onFocus={() => { setIsConverterFocused(true); onToggleBottomNav(false); }}
+                                 className={`bg-transparent text-xl font-black outline-none px-2 w-full transition-colors ${isConverterFocused ? 'text-theme-brand' : 'text-theme-primary'}`}
+                             />
+                          </div>
+
+                          <button 
+                             onClick={(e) => { e.stopPropagation(); setConvertFromTo(prev => prev === 'USD_TO_VES' ? 'VES_TO_USD' : 'USD_TO_VES'); }}
+                             className="p-3 bg-theme-surface border border-theme-soft shadow-sm rounded-xl text-theme-brand hover:scale-105 active:scale-95 transition-all"
+                          >
+                             <RefreshCw size={18} />
+                          </button>
+                          
+                          <div className="flex-1 flex flex-col items-end">
+                             <span className="text-[10px] uppercase font-bold text-theme-secondary opacity-50 mr-2 mb-1">
+                               {convertFromTo === 'USD_TO_VES' ? 'Bs.' : 'USD'}
+                             </span>
+                             <p className="text-xl font-black text-theme-primary px-2 break-all line-clamp-1 truncate w-full text-right overflow-hidden">
+                               {(() => {
+                                   const amt = parseFloat(convertAmount) || 0;
+                                   if (convertFromTo === 'USD_TO_VES') {
+                                      return (amt * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                   } else {
+                                      return (amt / exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                   }
+                               })()}
+                             </p>
+                          </div>
+                      </div>
+
                     </div>
                   </div>
                 )}
@@ -1381,6 +1444,53 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span>{t('biometrics')}</span>
               </motion.button>
             )}
+          </div>
+        </div>
+      )}
+
+      {isConverterFocused && (
+        <div className="fixed inset-x-0 bottom-0 bg-theme-surface border-t border-theme-soft p-6 z-[80] animate-in slide-in-from-bottom duration-300">
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="text-xs font-black text-theme-secondary uppercase tracking-widest">{t('converterKeypad') || 'Teclado del Conversor'}</h4>
+            <button 
+              onClick={() => { setIsConverterFocused(false); onToggleBottomNav(true); }}
+              className="p-2 bg-theme-soft rounded-lg text-theme-secondary hover:text-theme-primary transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-y-6 gap-x-8 max-w-md mx-auto">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+              <button 
+                key={num} 
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => setConvertAmount(prev => prev === '0' ? num.toString() : prev + num.toString())}
+                className="text-2xl font-black text-theme-primary hover:text-theme-brand transition-colors py-2 active:scale-90"
+              >
+                {num}
+              </button>
+            ))}
+            <button 
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => setConvertAmount(prev => prev.includes('.') ? prev : prev + '.')}
+              className="text-2xl font-black text-theme-primary hover:text-theme-brand transition-colors pb-2 active:scale-90"
+            >
+              .
+            </button>
+            <button 
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => setConvertAmount(prev => prev === '0' ? '0' : prev + '0')}
+              className="text-2xl font-black text-theme-primary hover:text-theme-brand transition-colors pb-2 active:scale-90"
+            >
+              0
+            </button>
+            <button 
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => setConvertAmount(prev => prev.length <= 1 ? '0' : prev.slice(0, -1))}
+              className="flex items-center justify-center text-theme-secondary hover:text-theme-primary transition-colors pb-2 active:scale-90"
+            >
+              <Delete size={24} />
+            </button>
           </div>
         </div>
       )}

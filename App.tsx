@@ -221,6 +221,35 @@ function AppContent() {
     load();
   }, [storageType]);
 
+  // Auto-fetch BCV Rate Daily
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const lastUpdate = localStorage.getItem('last_bcv_update');
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    
+    if (!lastUpdate || (now - parseInt(lastUpdate)) > oneDay) {
+        let isMounted = true;
+        const fetchRate = async () => {
+             try {
+                 const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+                 if (response.ok) {
+                     const data = await response.json();
+                     if (data.promedio && isMounted) {
+                         setExchangeRate(Number(data.promedio));
+                         localStorage.setItem('last_bcv_update', now.toString());
+                     }
+                 }
+             } catch (e) {
+                 console.error("Auto fetch rate failed", e);
+             }
+        };
+        fetchRate();
+        return () => { isMounted = false; };
+    }
+  }, [isLoaded]);
+
   // PIN Lock initialization
   useEffect(() => {
     if (isLoaded && autoLockEnabled) {
@@ -428,6 +457,9 @@ function AppContent() {
         const updatedAccounts = accounts.map(acc => {
           if (acc.id === tx.accountId) {
             let amount = tx.amount;
+            if (tx.type === TransactionType.TRANSFER && (tx.fee || 0) > 0) {
+               amount += tx.fee;
+            }
 
             if (acc.currency !== tx.originalCurrency) {
               if (acc.currency === Currency.USD && tx.originalCurrency === Currency.VES) {
@@ -516,11 +548,15 @@ function AppContent() {
     setAccounts(currentAccounts.map(acc => {
       if (acc.id === data.accountId) {
         let deduction = data.amount;
+        if (data.type === TransactionType.TRANSFER && (data.fee || 0) > 0) {
+            deduction += data.fee;
+        }
+
         if (acc.currency !== data.originalCurrency) {
           if (acc.currency === Currency.USD && data.originalCurrency === Currency.VES) {
-            deduction = data.amount / data.exchangeRate;
+            deduction = deduction / data.exchangeRate;
           } else if (acc.currency === Currency.VES && data.originalCurrency === Currency.USD) {
-            deduction = data.amount * data.exchangeRate;
+            deduction = deduction * data.exchangeRate;
           }
         }
         const modifier = data.type === TransactionType.INCOME ? 1 : -1;
@@ -543,17 +579,6 @@ function AppContent() {
             if (acc.currency === Currency.VES) addition = data.amount * data.exchangeRate;
             else addition = data.amount;
           }
-        }
-        
-        // Apply fee deduction if any
-        if (data.fee > 0) {
-            // Fee is assumed to be in the original currency
-            let feeInTarget = data.fee;
-            if (data.originalCurrency !== acc.currency) {
-                if (data.originalCurrency === Currency.USD && acc.currency === Currency.VES) feeInTarget = data.fee * data.exchangeRate;
-                else if (data.originalCurrency === Currency.VES && acc.currency === Currency.USD) feeInTarget = data.fee / data.exchangeRate;
-            }
-            addition -= feeInTarget;
         }
 
         return { ...acc, balance: acc.balance + addition };

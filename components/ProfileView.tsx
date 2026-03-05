@@ -377,7 +377,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="w-1.5 h-1.5 rounded-full bg-theme-brand animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-primary">Parity Intelligence</span>
           </div>
-          <p className="text-[10px] font-mono">v1.0.22</p>
+          <p className="text-[10px] font-mono">v1.0.23</p>
         </motion.div>
       </div>
 

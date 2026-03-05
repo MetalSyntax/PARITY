@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.22`
+# PARITY 💸 `v1.0.23`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,18 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.0.23
+
+- **Commission Engine & Numeric UX:**
+  - `feat`: enhance transfer commissions with support for both fixed and percentage fees
+  - `feat`: implement unified custom numeric keypad for all financial inputs with inputMode="none" (prevents native keyboard popup)
+  - `feat`: add Currency Converter widget to the Dashboard for instant USD/VES calculation
+  - `feat`: add automatic BCV exchange rate update on daily app load
+  - `feat`: implement smart category filtering (segregation of income vs. expense categories)
+  - `feat`: add smart account auto-selection based on transfer currency
+  - `fix`: correct VES to USD conversion calculation logic in transfer preview
+  - `ux`: add paste support for all numeric fields and improved focus handling
 
 ### v1.0.22
 
