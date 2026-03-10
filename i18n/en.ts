@@ -385,4 +385,10 @@ export const en = {
     imgTooLarge: 'Image too large (max 2MB)',
     noCloudBackups: 'No cloud backups found.',
     currencyConverter: 'Currency Converter',
+    addWithoutAnalysis: 'Add without analysis',
+    transactionDetails: 'Transaction Details',
+    viewReceipt: 'View Receipt',
+    receipt: 'Receipt/Invoice',
+    date: 'Date',
+    type: 'Type',
 };

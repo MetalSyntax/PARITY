@@ -380,4 +380,10 @@ export const pt = {
     imgTooLarge: 'Imagem muito grande (máx 2MB)',
     noCloudBackups: 'Nenhum backup na nuvem encontrado.',
     currencyConverter: 'Conversor de Moeda',
+    addWithoutAnalysis: 'Adicionar sem analisar',
+    transactionDetails: 'Detalhes da Transação',
+    viewReceipt: 'Ver Fatura',
+    receipt: 'Recibo/Fatura',
+    date: 'Data',
+    type: 'Tipo',
 };

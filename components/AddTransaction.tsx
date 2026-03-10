@@ -1140,19 +1140,31 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                    </div>
                </div>
 
-               <div className="mt-4 flex gap-3">
-                   <button 
-                        onClick={() => { setShowCropModal(false); setSelectedImage(null); }}
-                        className="flex-1 py-4 bg-white/5 text-theme-secondary font-bold rounded-2xl hover:bg-white/10 transition-colors uppercase text-xs"
-                   >
-                       {t('cancel')}
-                   </button>
-                   <button 
-                        onClick={handleApplyCrop}
-                        disabled={isScanning}
-                        className="flex-[2] py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-lg shadow-brand/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all uppercase text-xs"
-                   >
-                       {isScanning ? (
+                <div className="mt-4 flex flex-col gap-3">
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => { setShowCropModal(false); setSelectedImage(null); }}
+                            className="flex-1 py-4 bg-white/5 text-theme-secondary font-bold rounded-2xl hover:bg-white/10 transition-colors uppercase text-[10px]"
+                        >
+                            {t('cancel')}
+                        </button>
+                        <button 
+                            onClick={() => { 
+                                if (selectedImage) setReceiptImage(selectedImage);
+                                setShowCropModal(false);
+                                setSelectedImage(null);
+                            }}
+                            className="flex-1 py-4 bg-white/10 text-theme-primary font-bold rounded-2xl hover:bg-white/20 transition-colors uppercase text-[10px]"
+                        >
+                            {t('addWithoutAnalysis')}
+                        </button>
+                    </div>
+                    <button 
+                         onClick={handleApplyCrop}
+                         disabled={isScanning}
+                         className="w-full py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-lg shadow-brand/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all uppercase text-xs"
+                    >
+                        {isScanning ? (
                            <>
                                 <Loader2 size={18} className="animate-spin text-theme-brand" />
                                 <span className="text-xs font-bold text-theme-primary">{t('analyzing')}</span>
@@ -1163,8 +1175,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                 <span className="text-xs font-bold">{t('processSelection')}</span>
                             </>
                         )}
-                   </button>
-               </div>
+                    </button>
+                </div>
            </div>
        )}
        {/* Custom Camera Modal */}
