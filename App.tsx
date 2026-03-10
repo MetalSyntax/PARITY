@@ -78,6 +78,7 @@ function AppContent() {
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [rateHistory, setRateHistory] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: '', language: 'en' });
   const [displayInVES, setDisplayInVES] = useState(() => {
     const saved = localStorage.getItem("displayInVES");
@@ -211,6 +212,7 @@ function AppContent() {
             setScheduledPayments(loadedData.scheduledPayments || []);
             setBudgets(loadedData.budgets || []);
             setGoals(loadedData.goals || []);
+            setRateHistory(loadedData.rateHistory || []);
             setUserProfile(loadedData.userProfile || { name: 'User', language: 'en' });
             setIsFirstTime(false);
         } else {
@@ -236,10 +238,25 @@ function AppContent() {
                  const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
                  if (response.ok) {
                      const data = await response.json();
-                     if (data.promedio && isMounted) {
-                         setExchangeRate(Number(data.promedio));
-                         localStorage.setItem('last_bcv_update', now.toString());
-                     }
+                      if (data.promedio && isMounted) {
+                          const newRate = Number(data.promedio);
+                          setExchangeRate(newRate);
+                          localStorage.setItem('last_bcv_update', now.toString());
+                          
+                          // Track rate history
+                          setRateHistory(prev => {
+                              const today = new Date().toISOString().split('T')[0];
+                              const history = [...prev];
+                              const existingIdx = history.findIndex(h => h.date === today);
+                              if (existingIdx >= 0) {
+                                  history[existingIdx].rate = newRate;
+                              } else {
+                                  history.push({ date: today, rate: newRate });
+                              }
+                              // Keep last 30 days
+                              return history.sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
+                          });
+                      }
                  }
              } catch (e) {
                  console.error("Auto fetch rate failed", e);
@@ -423,7 +440,8 @@ function AppContent() {
       scheduledPayments,
       userProfile,
       budgets,
-      goals
+      goals,
+      rateHistory
     };
 
     const save = async () => {
@@ -436,7 +454,7 @@ function AppContent() {
     };
     
     save();
-  }, [exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals, isLoaded, storageType]);
+  }, [exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, isLoaded, storageType]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -909,8 +927,10 @@ function AppContent() {
               lang={userProfile.language}
               budgets={budgets}
               goals={goals}
+              accounts={accounts}
               onUpdateBudgets={setBudgets}
               onUpdateGoals={setGoals}
+              onUpdateAccounts={setAccounts}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}

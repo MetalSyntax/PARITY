@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.23`
+# PARITY 💸 `v1.0.24`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,16 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.0.24
+
+- **Full i18n Localization & UX Polish:**
+  - `feat`: fully localize ProfileView, TransferView, BudgetView, and ScheduledPaymentView
+  - `feat`: add missing translation keys for Heatmap, Goals, and Recurring Payments
+  - `feat`: implement locale-aware date formatting (es-ES, pt-BR, en-US) for all transaction lists
+  - `fix`: resolve duplicate translation keys and property name collisions in locale files
+  - `fix`: remove hardcoded fallback strings for a cleaner, unified i18n system
+  - `chore`: bump version to 1.0.24 and update documentation
 
 ### v1.0.23
 

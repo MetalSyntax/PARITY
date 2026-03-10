@@ -48,6 +48,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
+  const [profileImage, setProfileImage] = useState(profile.profileImage || '');
+  const [hideWelcome, setHideWelcome] = useState(profile.hideWelcome || false);
+  const [hideDevMode, setHideDevMode] = useState(profile.hideDevMode || false);
+  const [hideName, setHideName] = useState(profile.hideName || false);
+  const [dashboardTxLimit, setDashboardTxLimit] = useState(profile.dashboardTxLimit || 5);
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const t = (key: any) => getTranslation(lang, key);
@@ -70,8 +75,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   const handleSave = () => {
-    onUpdateProfile({ name, language: lang });
+    onUpdateProfile({ 
+      ...profile,
+      name, 
+      language: lang,
+      profileImage,
+      hideWelcome,
+      hideDevMode,
+      hideName,
+      dashboardTxLimit
+    });
     onBack();
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        showAlert(t('imgTooLarge'), 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {
@@ -161,29 +190,52 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       <motion.div variants={itemVariants} className="flex flex-col items-center mb-10">
-        <div className="relative">
-          <motion.div 
-            onClick={onDevModeTrigger}
-            whileHover={{ scale: 1.05 }}
-            className="w-28 h-28 rounded-[32px] bg-gradient-to-br from-theme-brand to-indigo-600 flex items-center justify-center text-4xl font-black text-white shadow-2xl shadow-theme-brand/30 cursor-pointer relative z-10 border-4 border-theme-bg"
-          >
-            {name.slice(0, 1).toUpperCase()}{name.slice(1, 2).toLowerCase()}
-          </motion.div>
+        <div className="relative group">
+          <input 
+            type="file" 
+            id="profile-image-upload" 
+            className="hidden" 
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+          <label htmlFor="profile-image-upload" className="cursor-pointer">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="w-28 h-28 rounded-[34px] bg-gradient-to-br from-theme-brand to-indigo-600 flex items-center justify-center text-4xl font-black text-white shadow-2xl shadow-theme-brand/30 relative z-10 border-4 border-theme-bg overflow-hidden"
+            >
+              {profileImage ? (
+                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <>
+                  {name.slice(0, 1).toUpperCase()}{name.slice(1, 2).toLowerCase()}
+                </>
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Upload size={24} className="text-white" />
+              </div>
+            </motion.div>
+          </label>
           <div className="absolute inset-0 bg-theme-brand/20 blur-2xl rounded-full scale-75" />
           
           <AnimatePresence>
-            {isDevMode && (
+            {isDevMode && !hideDevMode && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-theme-surface border border-theme-soft text-[10px] font-black text-theme-brand uppercase tracking-tighter shadow-xl rounded-full z-20 flex items-center gap-1"
+                onClick={(e) => { e.preventDefault(); onDevModeTrigger(); }}
+                className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-theme-surface border border-theme-soft text-[10px] font-black text-theme-brand uppercase tracking-tighter shadow-xl rounded-full z-20 flex items-center gap-1 cursor-pointer"
               >
                 <ShieldCheck size={10} /> {t('devMode')}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+        {!profileImage && (
+             <p className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mt-4 opacity-40">
+                {t('changeImage')}
+             </p>
+        )}
       </motion.div>
 
       <div className="flex flex-col gap-6">
@@ -263,6 +315,47 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <p className="text-[10px] text-theme-secondary mt-4 opacity-50 flex items-center gap-1">
             <Info size={10} /> {t('navbarFavoritesDesc')}
           </p>
+
+          <div className="mt-8 space-y-4 pt-6 border-t border-theme-soft">
+            <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-theme-primary">{t('hideWelcome')}</span>
+                <button 
+                    onClick={() => setHideWelcome(!hideWelcome)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${hideWelcome ? "bg-theme-brand" : "bg-theme-soft"}`}
+                >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideWelcome ? "left-6" : "left-1"}`} />
+                </button>
+            </div>
+            <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-theme-primary">{t('hideDevMode')}</span>
+                <button 
+                    onClick={() => setHideDevMode(!hideDevMode)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${hideDevMode ? "bg-theme-brand" : "bg-theme-soft"}`}
+                >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideDevMode ? "left-6" : "left-1"}`} />
+                </button>
+            </div>
+            <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-theme-primary">{t('hideName')}</span>
+                <button 
+                    onClick={() => setHideName(!hideName)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${hideName ? "bg-theme-brand" : "bg-theme-soft"}`}
+                >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideName ? "left-6" : "left-1"}`} />
+                </button>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+                <span className="text-xs font-bold text-theme-primary">{t('dashboardTxLimit')}</span>
+                <input 
+                    type="number" 
+                    value={dashboardTxLimit} 
+                    onChange={(e) => setDashboardTxLimit(parseInt(e.target.value) || 0)}
+                    className="w-16 bg-theme-bg border border-theme-soft rounded-lg px-2 py-1 text-xs font-bold text-theme-primary outline-none"
+                    min="1"
+                    max="50"
+                />
+            </div>
+          </div>
         </motion.div>
 
         {/* Data & Backup Card */}
@@ -384,9 +477,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {cloudBackups !== null && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
-            <h3 className="text-xl font-black text-theme-primary mb-4">{t('restoreData') || 'Restaurar'}</h3>
+            <h3 className="text-xl font-black text-theme-primary mb-4">{t('restoreData')}</h3>
             {cloudBackups.length === 0 ? (
-              <p className="text-sm text-theme-secondary text-center py-8">No se encontraron respaldos en la nube.</p>
+              <p className="text-sm text-theme-secondary text-center py-8">{t('noCloudBackups')}</p>
             ) : (
               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                 {cloudBackups.map(bkp => (
@@ -410,7 +503,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 onClick={() => setCloudBackups(null)}
                 className="mt-6 w-full py-4 rounded-2xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors"
             >
-                {t('cancel') || 'Cancelar'}
+                {t('cancel')}
             </button>
           </div>
         </div>

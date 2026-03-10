@@ -102,7 +102,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 >
                     <ChevronLeft size={24} />
                 </motion.button>
-                <h2 className="text-lg font-black tracking-tight">{t('currencyPerformance') || 'Rendimiento de Moneda'}</h2>
+                <h2 className="text-sm font-black tracking-tight truncate max-w-[200px]">{t('currencyPerformance')}</h2>
                 <div className="w-10 h-10" /> {/* Spacer */}
             </div>
 
@@ -120,14 +120,14 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             >
                                 <Shield size={20} />
                             </motion.div>
-                            <h3 className="font-extrabold text-theme-primary text-xl">Escudo de Inflación</h3>
+                            <h3 className="font-extrabold text-theme-primary text-xl">{t('inflationShield')}</h3>
                         </div>
                         <span className="bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-full text-[10px] font-black border border-blue-500/20">
                             {isBalanceVisible ? `+${rateDiff?.toFixed(1)}% vs IPC` : '******'}
                         </span>
                     </div>
 
-                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">Distribución de Impacto</p>
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('impactDistribution')}</p>
                     
                     {/* Progress Bar */}
                     <div className="h-4 w-full bg-zinc-800 rounded-full overflow-hidden flex mb-6 shadow-inner">
@@ -143,46 +143,46 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     <div className="flex justify-between">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                            <span className="text-xs font-bold text-zinc-400">Ahorro por cambio <span className="text-white ml-2">{shieldStats.saved}%</span></span>
+                            <span className="text-xs font-bold text-zinc-400">{t('savingsFromRate')} <span className="text-white ml-2">{shieldStats.saved}%</span></span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-zinc-400"><span className="text-white mr-2">{shieldStats.loss}%</span> Pérdida</span>
+                            <span className="text-xs font-bold text-zinc-400"><span className="text-white mr-2">{shieldStats.loss}%</span> {t('loss')}</span>
                             <div className="w-2 h-2 rounded-full bg-rose-500" />
                         </div>
                     </div>
                 </motion.div>
 
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 px-1">Análisis de Mercado</p>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 px-1">{t('marketAnalysis')}</p>
 
                 {/* Market Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                     <motion.div 
-                        whileHover={{ scale: 1.05 }}
-                        className="bg-blue-500 p-6 rounded-[2rem] shadow-lg shadow-blue-500/20"
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-blue-600 p-6 rounded-[2rem] shadow-xl shadow-blue-500/10 flex flex-col justify-between"
                     >
-                        <p className="text-[10px] font-black text-blue-100/70 uppercase mb-2">Tu Tasa Promedio</p>
-                        <div className="flex items-end gap-1 mb-3">
+                        <p className="text-[10px] font-black text-blue-100/70 uppercase tracking-widest mb-4">{t('yourAvgRate')}</p>
+                        <div className="flex items-baseline gap-2 mb-4">
                             <span className="text-3xl font-black text-white">{formatAmount(avgUserRate)}</span>
-                            <span className="text-xs font-bold text-blue-200 mb-1.5">Bs/$</span>
+                            <span className="text-xs font-bold text-blue-200">Bs/$</span>
                         </div>
-                        <div className="inline-flex items-center gap-1 bg-white/20 px-2 py-1 rounded-lg text-[10px] font-black text-white">
+                        <div className="inline-flex items-center gap-1.5 bg-white/20 self-start px-2.5 py-1 rounded-lg text-[10px] font-black text-white">
                             <TrendingDown size={12} />
                             -2.8%
                         </div>
                     </motion.div>
 
                     <motion.div 
-                        whileHover={{ scale: 1.05 }}
-                        className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem]"
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem] flex flex-col justify-between"
                     >
-                        <p className="text-[10px] font-black text-zinc-500 uppercase mb-2">Tasa Mercado</p>
-                        <div className="flex items-end gap-1 mb-3">
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('marketRateBCV')}</p>
+                        <div className="flex items-baseline gap-2 mb-4">
                             <span className="text-3xl font-black text-white">{formatAmount(exchangeRate)}</span>
-                            <span className="text-xs font-bold text-zinc-500 mb-1.5">Bs/$</span>
+                            <span className="text-xs font-bold text-zinc-500">Bs/$</span>
                         </div>
-                        <div className="flex items-center gap-1 text-zinc-500">
+                        <div className="flex items-center gap-1.5 text-zinc-500">
                             <Clock size={12} />
-                            <span className="text-[10px] font-bold">Hace 10min</span>
+                            <span className="text-[10px] font-bold">{t('updatedToday')}</span>
                         </div>
                     </motion.div>
                 </div>
@@ -191,12 +191,12 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 <div className="bg-zinc-900/50 p-6 rounded-[2.5rem] border border-white/5 mb-8">
                     <div className="flex justify-between items-start mb-6">
                         <div>
-                            <h3 className="font-bold text-theme-primary">Volatilidad (Spread)</h3>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase">Últimos 7 días</p>
+                            <h3 className="font-bold text-theme-primary">{t('volatilitySpread')}</h3>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase">{t('last7Days')}</p>
                         </div>
                         <div className="text-right">
                             <p className="text-emerald-400 font-black">{isBalanceVisible ? '+1.50 Bs' : '******'}</p>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Ganancia/Dólar</p>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">{t('profitPerDollar')}</p>
                         </div>
                     </div>
                     <div className="h-40 w-full mb-2">
@@ -209,10 +209,9 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
                         <CheckCircle2 size={32} />
                     </div>
-                    <h4 className="text-2xl font-black text-white mb-2">¡Bien jugado!</h4>
+                    <h4 className="text-2xl font-black text-white mb-2">{t('wellPlayed')}</h4>
                     <p className="text-sm text-zinc-400 leading-relaxed font-bold">
-                        Gastaste cuando el <span className="text-theme-brand">dólar estaba barato</span>. <br/>
-                        Tu estrategia de cambio ahorró <span className="text-emerald-400">{isBalanceVisible ? 'Bs. 3,450' : '******'}</span> este mes.
+                        {t('wellPlayedDesc').replace('{amount}', isBalanceVisible ? 'Bs. 3,450' : '******')}
                     </p>
                 </div>
             </div>

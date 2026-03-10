@@ -121,7 +121,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
               <option key={acc.id} value={acc.id} className="bg-zinc-900">{acc.icon} {acc.name} ({acc.currency})</option>
             ))}
           </select>
-          <div className="mt-1 text-xs text-zinc-500">Available: {fromAccount?.balance.toLocaleString()} {fromAccount?.currency}</div>
+          <div className="mt-1 text-xs text-zinc-500">{t('available')}: {fromAccount?.balance.toLocaleString()} {fromAccount?.currency}</div>
         </div>
 
         <motion.div 
@@ -187,7 +187,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
                     <div className="flex items-center gap-2 text-indigo-400">
                         <ArrowRight size={16} />
                         <span className="font-mono text-lg font-bold">
-                            {t('totalTarget') || 'Total to receive'}: {convertedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {toAccount?.currency}
+                            {t('totalTarget')}: {convertedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {toAccount?.currency}
                         </span>
                     </div>
                 </motion.div>

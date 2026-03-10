@@ -20,6 +20,11 @@ export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS
 export interface UserProfile {
   name: string;
   language: Language;
+  profileImage?: string; // Base64 or URL
+  hideWelcome?: boolean;
+  hideDevMode?: boolean;
+  dashboardTxLimit?: number;
+  hideName?: boolean;
 }
 
 export interface Account {
@@ -47,6 +52,7 @@ export interface Transaction {
   fee?: number; // Commission/fee for transfers
   updatedAt?: string;
   scheduledId?: string;
+  receipt?: string; // Base64 image
 }
 
 export interface Category {
@@ -76,6 +82,16 @@ export interface Budget {
     parentCategoryId?: string;
 }
 
+export interface GoalContribution {
+    id: string;
+    accountId: string;
+    amount: number; // Amount in original currency
+    originalCurrency: Currency;
+    exchangeRate: number;
+    normalizedAmountUSD: number;
+    date: string;
+}
+
 export interface Goal {
     id: string;
     name: string;
@@ -84,6 +100,23 @@ export interface Goal {
     deadline: string;
     icon: string;
     color: string;
+    contributions?: GoalContribution[];
+}
+
+export interface RateHistoryItem {
+    date: string; // ISO string (YYYY-MM-DD)
+    rate: number;
+}
+
+export interface AppData {
+    exchangeRate: number;
+    accounts: Account[];
+    transactions: Transaction[];
+    scheduledPayments: ScheduledPayment[];
+    userProfile: UserProfile;
+    budgets: Budget[];
+    goals: Goal[];
+    rateHistory?: RateHistoryItem[];
 }
 
 export interface ConfirmConfig {

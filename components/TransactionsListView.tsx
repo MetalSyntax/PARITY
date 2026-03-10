@@ -178,7 +178,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                     if (date === todayStr) return t('today');
                     if (date === yesterdayStr) return t('yesterday');
                     
-                    return dateObj?.toLocaleDateString(undefined, { 
+                    return dateObj?.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', { 
                       weekday: 'short', 
                       month: 'short', 
                       day: 'numeric',

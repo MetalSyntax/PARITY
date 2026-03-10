@@ -40,18 +40,18 @@ export const LegalBanner: React.FC<LegalBannerProps> = ({ lang }) => {
                                 <ShieldCheck size={24} />
                             </div>
                             <h3 className="font-black text-theme-primary tracking-tight">
-                                {t('gdprTitle') || 'Privacy & Data'}
+                                {t('gdprTitle')}
                             </h3>
                         </div>
                         <p className="text-xs text-theme-secondary leading-relaxed font-bold opacity-80">
-                            {t('gdprDesc') || 'We use local storage to keep your financial data secure and private on this device. No data is shared with third parties.'}
+                            {t('gdprDesc')}
                         </p>
                         <div className="flex gap-2">
                             <button
                                 onClick={handleAccept}
                                 className="flex-1 bg-theme-brand text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-brand/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
                             >
-                                {t('accept') || 'Accept'} <ChevronRight size={14} />
+                                {t('accept')} <ChevronRight size={14} />
                             </button>
                         </div>
                     </div>

@@ -143,13 +143,13 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
 
             <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-32">
                 <div className="mb-8 mt-2">
-                    <h1 className="text-3xl font-black text-theme-primary mb-1">Mapa de Calor</h1>
-                    <p className="text-sm text-theme-secondary opacity-70">Intensidad de gastos diarios</p>
+                    <h1 className="text-3xl font-black text-theme-primary mb-1">{t('heatmap')}</h1>
+                    <p className="text-sm text-theme-secondary opacity-70">{t('heatmapDesc')}</p>
                 </div>
 
                 {/* Calendar Grid */}
                 <div className="grid grid-cols-7 gap-3 mb-8">
-                    {['DO', 'LU', 'MA', 'MI', 'JU', 'VI', 'SA'].map(day => (
+                    {[t('day_sun'), t('day_mon'), t('day_tue'), t('day_wed'), t('day_thu'), t('day_fri'), t('day_sat')].map(day => (
                         <div key={day} className="text-[10px] font-black text-zinc-600 text-center mb-2">{day}</div>
                     ))}
                     {daysInMonth.map((day, idx) => (
@@ -173,15 +173,15 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                 <div className="flex justify-center gap-6 mb-12">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-zinc-800/50" />
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Sin gasto</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">{t('noExpense')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-orange-400/60" />
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Bajo</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">{t('low')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-red-500" />
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Alto</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">{t('high')}</span>
                     </div>
                 </div>
 
@@ -198,22 +198,22 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                             <TrendingUp size={24} />
                         </motion.div>
                         <div className="flex-1">
-                            <h3 className="font-black text-lg text-theme-primary mb-1">Patrón de Gasto</h3>
+                            <h3 className="font-black text-lg text-theme-primary mb-1">{t('spendingPattern')}</h3>
                             <p className="text-xs text-theme-secondary leading-relaxed opacity-80">
-                                Tus viernes son días de gasto fuerte. <br/>
-                                <span className="font-bold">Promedio: {formatAmount(maxSpend * 0.8)}</span> {isBalanceVisible && `/ ${displayInVES ? '$' : 'Bs.'} ${Math.round(displayInVES ? maxSpend * 0.8 : maxSpend * 0.8 * exchangeRate)?.toLocaleString()}`}
+                                {t('spendingPatternDesc')} <br/>
+                                <span className="font-bold">{t('average')}: {formatAmount(maxSpend * 0.8)}</span> {isBalanceVisible && `/ ${displayInVES ? '$' : 'Bs.'} ${Math.round(displayInVES ? maxSpend * 0.8 : maxSpend * 0.8 * exchangeRate)?.toLocaleString()}`}
                             </p>
                         </div>
                     </div>
                     <div className="mt-6 pt-6 border-t border-white/5 flex justify-between items-center">
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Análisis Inteligente</span>
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('smartAnalysis')}</span>
                         <motion.button 
                             whileHover={{ scale: 1.05, x: 5 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setShowPatternDetails(true)}
                             className="text-red-400 text-xs font-black flex items-center gap-1 transition-transform"
                         >
-                            Ver detalles <TrendingUp size={14} />
+                            {t('viewDetails')} <TrendingUp size={14} />
                         </motion.button>
                     </div>
                 </motion.div>
@@ -224,7 +224,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                         <div className="w-8 h-8 rounded-full bg-theme-brand/20 flex items-center justify-center text-theme-brand">
                             <TrendingUp size={16} className="rotate-45" />
                         </div>
-                        <span className="text-xs font-bold text-theme-secondary opacity-80">Ahorro potencial este mes</span>
+                        <span className="text-xs font-bold text-theme-secondary opacity-80">{t('potentialSavingsMonth')}</span>
                     </div>
                     <span className="text-lg font-black text-theme-primary">{formatAmount(potentialSavings)}</span>
                 </div>
@@ -289,7 +289,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                                         </motion.div>
                                     ))}
                                     <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
-                                        <span className="text-xs font-black text-zinc-500 uppercase">Total Diario</span>
+                                        <span className="text-xs font-black text-zinc-500 uppercase">{t('dailyTotal')}</span>
                                         <span className="text-lg font-black text-theme-primary">{formatAmount(selectedDay.txs.reduce((a,b) => a + b.normalizedAmountUSD, 0))}</span>
                                     </div>
                                 </div>
@@ -298,7 +298,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-600">
                                         <CalendarIcon size={32} />
                                     </div>
-                                    <p className="text-sm font-bold text-zinc-500">No hay gastos registrados este día.</p>
+                                    <p className="text-sm font-bold text-zinc-500">{t('noExpensesDay')}</p>
                                 </div>
                             )}
                         </div>
@@ -313,8 +313,8 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                     <div className="bg-theme-surface w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl animate-in slide-in-from-bottom-full duration-400">
                         <div className="p-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-red-500/10 to-transparent">
                             <div>
-                                <h3 className="text-sm font-black text-red-500 uppercase tracking-widest mb-1">Análisis de Patrones</h3>
-                                <h2 className="text-xl font-black text-theme-primary">Detalles del Gasto</h2>
+                                <h3 className="text-sm font-black text-red-500 uppercase tracking-widest mb-1">{t('patternAnalysis')}</h3>
+                                <h2 className="text-xl font-black text-theme-primary">{t('spendingDetails')}</h2>
                             </div>
                             <button onClick={() => setShowPatternDetails(false)} className="p-3 bg-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
                                 <X size={20} />
@@ -323,23 +323,23 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                         <div className="p-8 space-y-6">
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                                    <span className="text-xs font-bold text-zinc-400">Día de mayor gasto</span>
-                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">Viernes</span>
+                                    <span className="text-xs font-bold text-zinc-400">{t('highestSpendingDay')}</span>
+                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">{t('friday')}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                                    <span className="text-xs font-bold text-zinc-400">Categoría dominante</span>
-                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">Entretenimiento</span>
+                                    <span className="text-xs font-bold text-zinc-400">{t('dominantCategory')}</span>
+                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">{t('entertainment')}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                                    <span className="text-xs font-bold text-zinc-400">Frecuencia crítica</span>
-                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">Quincenal</span>
+                                    <span className="text-xs font-bold text-zinc-400">{t('criticalFrequency')}</span>
+                                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">{t('biweeklyPattern')}</span>
                                 </div>
                             </div>
 
                             <div className="p-6 bg-red-500/5 rounded-3xl border border-red-500/10">
-                                <h4 className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">Recomendación</h4>
+                                <h4 className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">{t('recommendation')}</h4>
                                 <p className="text-sm text-theme-secondary leading-relaxed font-medium">
-                                    Detectamos que tus gastos aumentan un 40% durante los fines de semana. Considera establecer un tope de retiro los jueves para evitar compras impulsivas.
+                                    {t('recommendationDesc')}
                                 </p>
                             </div>
 
@@ -347,7 +347,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                                 onClick={() => setShowPatternDetails(false)}
                                 className="w-full py-4 bg-theme-primary text-theme-bg font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-white/5"
                             >
-                                Entendido
+                                {t('understood')}
                             </button>
                         </div>
                     </div>

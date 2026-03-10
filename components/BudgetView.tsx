@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar, ArrowDownLeft, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig } from '../types';
@@ -77,8 +77,10 @@ interface BudgetViewProps {
   lang: Language;
   budgets: Budget[];
   goals: Goal[];
+  accounts: any[]; // Using any to avoid importing Account if not needed, but Account is available
   onUpdateBudgets: (budgets: Budget[]) => void;
   onUpdateGoals: (goals: Goal[]) => void;
+  onUpdateAccounts: (accounts: any[]) => void;
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
   exchangeRate: number;
@@ -93,8 +95,10 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     lang, 
     budgets, 
     goals, 
+    accounts,
     onUpdateBudgets,
     onUpdateGoals,
+    onUpdateAccounts,
     onToggleBottomNav,
     showConfirm,
     exchangeRate,
@@ -554,7 +558,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-secondary" size={18} />
                         <input
                            type="text"
-                           placeholder={t('searchCategories') || 'Buscar categorías...'}
+                           placeholder={t('searchCategories')}
                            value={categorySearch}
                            onChange={(e) => setCategorySearch(e.target.value)}
                            className="w-full bg-theme-surface border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm outline-none focus:border-theme-soft/50 transition-all font-bold text-white placeholder:text-zinc-600"
@@ -621,7 +625,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                            value={parentCategory}
                            onChange={e => setParentCategory(e.target.value)}
                        >
-                           <option value="" className="bg-theme-surface">None</option>
+                           <option value="" className="bg-theme-surface">{t('none')}</option>
                            {CATEGORIES.map(cat => (
                                <option key={cat.id} value={cat.id} className="bg-theme-surface">
                                    {t(cat.name)}
@@ -732,7 +736,17 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                       <h3 className="font-bold text-theme-primary">{editingGoal ? t('editGoal') : t('addGoal')}</h3>
                       <button onClick={() => setShowGoalModal(false)} className="p-2 hover:bg-white/10 rounded-full text-theme-secondary transition-colors"><X size={20} /></button>
                   </div>
-                  <GoalForm initialData={editingGoal} onSave={handleSaveGoal} onDelete={handleDeleteGoal} t={t} />
+                  <GoalForm 
+                    initialData={editingGoal} 
+                    onSave={handleSaveGoal} 
+                    onDelete={handleDeleteGoal} 
+                    accounts={accounts}
+                    onUpdateAccounts={onUpdateAccounts}
+                    t={t} 
+                    showConfirm={showConfirm}
+                    displayInVES={displayInVES}
+                    exchangeRate={exchangeRate}
+                  />
               </motion.div>
           </motion.div>
       )}
@@ -743,12 +757,38 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 };
 
 // --- Sub-component for Goal Form ---
-const GoalForm = ({ initialData, onSave, onDelete, t }: { initialData: Goal | null, onSave: (g: Goal) => void, onDelete: (id: string) => void, t: any }) => {
+const GoalForm = ({ 
+    initialData, 
+    onSave, 
+    onDelete, 
+    t, 
+    accounts, 
+    onUpdateAccounts, 
+    showConfirm, 
+    displayInVES, 
+    exchangeRate 
+}: { 
+    initialData: Goal | null, 
+    onSave: (g: Goal) => void, 
+    onDelete: (id: string) => void, 
+    t: any,
+    accounts: any[],
+    onUpdateAccounts: (accs: any[]) => void,
+    showConfirm: (config: ConfirmConfig) => void,
+    displayInVES: boolean,
+    exchangeRate: number
+}) => {
     const [name, setName] = useState(initialData?.name || '');
     const [target, setTarget] = useState(initialData?.targetAmount.toString() || '');
     const [saved, setSaved] = useState(initialData?.savedAmount.toString() || '');
     const [date, setDate] = useState(initialData?.deadline || '');
     const [icon, setIcon] = useState(initialData?.icon || 'target');
+    const [contributions, setContributions] = useState<any[]>(initialData?.contributions || []);
+
+    // Contribution form state
+    const [selectedAccount, setSelectedAccount] = useState(accounts[0]?.id || '');
+    const [contributionAmount, setContributionAmount] = useState('');
+    const [showContribute, setShowContribute] = useState(false);
 
     const handleSubmit = () => {
         if (!name || !target) return;
@@ -759,49 +799,217 @@ const GoalForm = ({ initialData, onSave, onDelete, t }: { initialData: Goal | nu
             savedAmount: parseFloat(saved) || 0,
             deadline: date || new Date().toISOString().split('T')[0],
             icon,
-            color: initialData?.color || 'from-indigo-600 to-purple-600' // Default color
+            color: initialData?.color || 'from-indigo-600 to-purple-600',
+            contributions: contributions
         });
     };
 
+    const handleAddContribution = () => {
+        const amount = parseFloat(contributionAmount);
+        if (isNaN(amount) || amount <= 0 || !selectedAccount) return;
+
+        const account = accounts.find(a => a.id === selectedAccount);
+        if (!account) return;
+
+        // Deduct from account
+        const updatedAccounts = accounts.map(a => 
+            a.id === selectedAccount ? { ...a, balance: a.balance - amount } : a
+        );
+
+        // Normalize amount to USD for the goal's savedAmount
+        const normalizedAmount = account.currency === 'USD' ? amount : amount / exchangeRate;
+        
+        const newContribution = {
+            id: Math.random().toString(36).substr(2, 9),
+            accountId: selectedAccount,
+            amount: amount,
+            originalCurrency: account.currency,
+            exchangeRate: exchangeRate,
+            normalizedAmountUSD: normalizedAmount,
+            date: new Date().toISOString()
+        };
+
+        const newContributions = [...contributions, newContribution];
+        setContributions(newContributions);
+        setSaved((parseFloat(saved || '0') + normalizedAmount).toString());
+        
+        onUpdateAccounts(updatedAccounts);
+        onSave({
+            id: initialData?.id || Math.random().toString(),
+            name,
+            targetAmount: parseFloat(target),
+            savedAmount: parseFloat(saved || '0') + normalizedAmount,
+            deadline: date || new Date().toISOString().split('T')[0],
+            icon,
+            color: initialData?.color || 'from-indigo-600 to-purple-600',
+            contributions: newContributions
+        });
+
+        // Reset
+        setContributionAmount('');
+        setShowContribute(false);
+    };
+
+    const handleReturnContribution = (contribution: any) => {
+        showConfirm({
+            message: t('returnFundsConfirm'),
+            onConfirm: () => {
+                const updatedAccounts = accounts.map(a => 
+                    a.id === contribution.accountId ? { ...a, balance: a.balance + contribution.amount } : a
+                );
+
+                const newContributions = contributions.filter(c => c.id !== contribution.id);
+                setContributions(newContributions);
+                setSaved((parseFloat(saved || '0') - contribution.normalizedAmountUSD).toString());
+
+                onUpdateAccounts(updatedAccounts);
+                onSave({
+                    id: initialData?.id || '',
+                    name,
+                    targetAmount: parseFloat(target),
+                    savedAmount: parseFloat(saved || '0') - contribution.normalizedAmountUSD,
+                    deadline: date || new Date().toISOString().split('T')[0],
+                    icon,
+                    color: initialData?.color || 'from-indigo-600 to-purple-600',
+                    contributions: newContributions
+                });
+            }
+        });
+    };
+
+    const formatShortAmount = (usd: number) => {
+        const val = displayInVES ? usd * exchangeRate : usd;
+        const symbol = displayInVES ? 'Bs.' : '$';
+        return `${symbol}${val.toLocaleString(undefined, { maximumFractionDigits: 1 })}`;
+    };
+
     return (
-        <div className="p-6 flex flex-col gap-4">
-            <div>
-                <label className="text-xs text-zinc-500 mb-1 block">{t('name')}</label>
-                <input className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={name} onChange={e => setName(e.target.value)} placeholder={t('goalNamePlaceholder')} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+        <div className="p-6 flex flex-col gap-4 max-h-[70vh] overflow-y-auto no-scrollbar">
+            <div className="space-y-4">
                 <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">{t('targetAmount')}</label>
-                    <input type="number" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={target} onChange={e => setTarget(e.target.value)} placeholder="1000" />
+                    <label className="text-xs text-zinc-500 mb-1 block">{t('name')}</label>
+                    <input className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={name} onChange={e => setName(e.target.value)} placeholder={t('goalNamePlaceholder')} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-xs text-zinc-500 mb-1 block">{t('targetAmount')}</label>
+                        <input type="number" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={target} onChange={e => setTarget(e.target.value)} placeholder="1000" />
+                    </div>
+                    <div>
+                        <label className="text-xs text-zinc-500 mb-1 block">{t('savedAmount')}</label>
+                        <input type="number" readOnly={contributions.length > 0} className={`w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500 ${contributions.length > 0 ? 'opacity-50 cursor-not-allowed' : ''}`} value={saved} onChange={e => setSaved(e.target.value)} placeholder="0" />
+                        {contributions.length > 0 && <p className="text-[10px] text-indigo-400 mt-1">{t('savedFromContributions')}</p>}
+                    </div>
                 </div>
                 <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">{t('savedAmount')}</label>
-                    <input type="number" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500" value={saved} onChange={e => setSaved(e.target.value)} placeholder="0" />
+                    <label className="text-xs text-zinc-500 mb-1 block">{t('deadline')}</label>
+                    <div className="relative">
+                        <input type="date" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 pl-10 text-white outline-none focus:border-indigo-500" value={date} onChange={e => setDate(e.target.value)} />
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">
+                            <Calendar size={18} />
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div>
-                <label className="text-xs text-zinc-500 mb-1 block">{t('deadline')}</label>
-            <div className="relative">
-                <input type="date" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 pl-10 text-white outline-none focus:border-indigo-500" value={date} onChange={e => setDate(e.target.value)} />
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">
-                    <Calendar size={18} />
-                </div>
-            </div>
-            </div>
-            <div>
-                <label className="text-xs text-zinc-500 mb-1 block">{t('icon')}</label>
-                <div className="grid grid-cols-5 gap-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-                    {Object.keys(GOAL_ICONS).map(key => (
-                        <motion.button 
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            key={key} 
-                            onClick={() => setIcon(key)} 
-                            className={`aspect-square rounded-xl flex items-center justify-center transition-all ${icon === key ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white'}`}
-                        >
-                            {renderIcon(key, GOAL_ICONS, 20)}
-                        </motion.button>
-                    ))}
+                
+                {/* Contributions Section */}
+                {initialData && (
+                    <div className="mt-2 p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-xs font-black uppercase text-theme-secondary flex items-center gap-2">
+                                <History size={14} /> {t('contributions')}
+                            </h4>
+                            <button 
+                                onClick={() => setShowContribute(!showContribute)}
+                                className="text-[10px] bg-indigo-600/20 text-indigo-400 px-2 py-1 rounded-lg font-bold hover:bg-indigo-600 hover:text-white transition-colors"
+                            >
+                                {showContribute ? t('cancel') : `+ ${t('addFunds')}`}
+                            </button>
+                        </div>
+
+                        {showContribute && (
+                            <div className="mb-4 p-3 bg-white/5 rounded-xl border border-indigo-500/20 space-y-3 animate-in slide-in-from-top-2">
+                                <select 
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-xs text-white outline-none"
+                                    value={selectedAccount}
+                                    onChange={e => setSelectedAccount(e.target.value)}
+                                >
+                                    {accounts.map(acc => (
+                                        <option key={acc.id} value={acc.id} className="bg-theme-surface">
+                                            {acc.name} ({acc.currency} {acc.balance.toLocaleString()})
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="number" 
+                                        placeholder="0.00"
+                                        className="flex-1 bg-black/20 border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-indigo-500"
+                                        value={contributionAmount}
+                                        onChange={e => setContributionAmount(e.target.value)}
+                                    />
+                                    <button 
+                                        onClick={handleAddContribution}
+                                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-indigo-500/20"
+                                    >
+                                        {t('add')}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2 max-h-[150px] overflow-y-auto no-scrollbar">
+                            {contributions.length === 0 ? (
+                                <p className="text-[10px] text-zinc-500 italic text-center py-2">{t('noContributions')}</p>
+                            ) : (
+                                contributions.slice().reverse().map(c => {
+                                    const acc = accounts.find(a => a.id === c.accountId);
+                                    return (
+                                        <div key={c.id} className="flex justify-between items-center p-2 bg-black/20 rounded-lg border border-white/5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1 px-1.5 bg-emerald-500/10 text-emerald-400 rounded-md text-[8px] font-black uppercase">
+                                                    {acc?.currency || c.originalCurrency}
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-white">{acc?.name || 'Wallet'}</p>
+                                                    <p className="text-[8px] text-zinc-500">{new Date(c.date).toLocaleDateString()}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-bold text-theme-primary">{c.amount} {c.originalCurrency}</p>
+                                                    <p className="text-[8px] text-zinc-500 font-mono">≈ {formatShortAmount(c.normalizedAmountUSD)}</p>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleReturnContribution(c)}
+                                                    className="p-1.5 bg-red-500/10 text-red-500 rounded-md hover:bg-red-500/20 transition-colors"
+                                                    title={t('returnFunds')}
+                                                >
+                                                    <ArrowDownLeft size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">{t('icon')}</label>
+                    <div className="grid grid-cols-5 gap-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                        {Object.keys(GOAL_ICONS).map(key => (
+                            <motion.button 
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                key={key} 
+                                onClick={() => setIcon(key)} 
+                                className={`aspect-square rounded-xl flex items-center justify-center transition-all ${icon === key ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white'}`}
+                            >
+                                {renderIcon(key, GOAL_ICONS, 20)}
+                            </motion.button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -809,7 +1017,7 @@ const GoalForm = ({ initialData, onSave, onDelete, t }: { initialData: Goal | nu
                 {initialData && (
                     <button onClick={() => onDelete(initialData.id)} className="p-4 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20"><Trash2 size={20} /></button>
                 )}
-                <button onClick={handleSubmit} className="flex-1 p-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500">{t('save')}</button>
+                <button onClick={handleSubmit} className="flex-1 p-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-lg shadow-indigo-500/40">{t('save')}</button>
             </div>
         </div>
     );

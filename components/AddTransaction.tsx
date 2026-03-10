@@ -89,6 +89,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showCropModal, setShowCropModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
+  const [receiptImage, setReceiptImage] = useState<string | null>(initialData?.receipt || null);
   const [cropBox, setCropBox] = useState({ x: 20, y: 30, width: 60, height: 40 }); // Relative %
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -198,6 +199,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
         const cleanedAmount = forFinal;
         setAmountStr(cleanedAmount);
+        
+        // Auto-save the full image as receipt
+        if (selectedImage) setReceiptImage(selectedImage);
+
         if (detectedCurrency) {
             setCurrency(detectedCurrency);
             showAlert(`${t('totalFound') || 'Total found'}: ${detectedCurrency === Currency.USD ? '$' : 'Bs. '}${cleanedAmount}`, 'success');
@@ -211,7 +216,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       }
     } catch (err) {
       console.error("OCR Error:", err);
-      showAlert('OCR Scan failed', 'error');
+      showAlert(t('alert_ocrFailed'), 'error');
     } finally {
       setIsScanning(false);
     }
@@ -255,7 +260,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             }
         } catch (err) {
             console.error("Camera access error:", err);
-            showAlert('Camera access denied', 'error');
+            showAlert(t('alert_cameraDenied'), 'error');
             setShowCameraModal(false);
         }
     }, 100);
@@ -432,6 +437,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       date: new Date(date).toISOString(),
       fee: type === TransactionType.TRANSFER ? finalFee : 0,
       scheduledId: initialData?.scheduledId,
+      receipt: receiptImage
     });
   };
 
@@ -445,7 +451,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     <X size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-theme-primary mb-2">{t('noAccounts')}</h3>
-                <p className="text-theme-secondary mb-6 text-sm">Please create a wallet first before adding transactions.</p>
+                <p className="text-theme-secondary mb-6 text-sm">{t('alert_createWalletFirst')}</p>
                 <button onClick={handleClose} className="w-full py-3 bg-theme-surface border border-white/10 hover:bg-white/5 rounded-xl font-bold text-theme-primary">
                     {t('close')}
                 </button>
@@ -536,7 +542,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             </button>
             {showMenu && (
                 <div className="absolute right-0 top-12 bg-theme-surface border border-white/10 rounded-xl shadow-2xl p-2 min-w-[150px] z-50 animate-in fade-in zoom-in-95">
-                    <button onClick={handleReset} className="w-full text-left px-4 py-2 text-sm text-theme-primary hover:bg-white/5 rounded-lg">Reset Form</button>
+                    <button onClick={handleReset} className="w-full text-left px-4 py-2 text-sm text-theme-primary hover:bg-white/5 rounded-lg">{t('resetForm')}</button>
                 </div>
             )}
         </div>
@@ -642,7 +648,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                     placeholder="0.00"
                                     className={`bg-theme-bg border rounded-lg px-2 py-1.5 text-xs font-mono w-[70%] outline-none transition-colors ${focusedField === 'commissionFixed' ? 'border-theme-brand text-theme-brand' : 'border-white/10 text-theme-primary'}`}
                                 />
-                                <span className="text-[10px] font-bold text-theme-primary opacity-60 w-[30%]">Fija ({getActiveAccount(fromAccountId).currency})</span>
+                                <span className="text-[10px] font-bold text-theme-primary opacity-60 w-[30%]">{t('fixed')} ({getActiveAccount(fromAccountId).currency})</span>
                             </div>
                             <div className="flex-1 flex items-center gap-2 border-l border-theme-soft/30 pl-4">
                                 <input 
@@ -689,7 +695,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     { (parseFloat(commissionFixed) > 0 || parseFloat(commissionPercent) > 0) && (
                         <div className="flex items-center justify-between border-t border-theme-soft/50 pt-1">
                             <p className="text-[9px] text-theme-secondary font-bold uppercase tracking-tight opacity-60">
-                               {t('totalDeduction') || 'Total to deduct'}
+                               {t('totalToDeduct')}
                             </p>
                             <span className="text-[10px] font-black text-red-400">
                                {(() => {
@@ -720,7 +726,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 <div className="relative">
                     <button 
                         onClick={() => setShowScanOptions(!showScanOptions)} 
-                        title="Scan Options" 
+                        title={t('scanOptions')} 
                         className={`p-2.5 rounded-xl transition-all shadow-lg border ${showScanOptions || isScanning ? 'bg-theme-brand text-white border-theme-soft' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
                     >
                         {isScanning ? <Loader2 size={18} className="animate-spin text-white" /> : <Camera size={18} />}
@@ -734,7 +740,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
                                 >
                                     <Camera size={16} className="text-theme-brand" />
-                                    <span className="font-bold">{t('openCamera') || 'Abrir Cámara'}</span>
+                                    <span className="font-bold">{t('openCamera')}</span>
                                 </button>
                             </div>
                             
@@ -751,7 +757,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
                                 >
                                     <ImageIcon size={16} className="text-theme-brand" />
-                                    <span className="font-bold">{t('attachImage') || 'Adjuntar Imagen'}</span>
+                                    <span className="font-bold">{t('attachImage')}</span>
                                 </label>
                             </div>
                         </div>
@@ -766,6 +772,25 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 </button>
             </div>
         </div>
+
+        {/* Receipt Preview */}
+        {receiptImage && (
+            <div className="mb-6 animate-in zoom-in-95 duration-300">
+                <div className="relative inline-block group">
+                    <img 
+                      src={receiptImage} 
+                      alt="Receipt" 
+                      className="w-20 h-24 object-cover rounded-xl border-2 border-theme-brand shadow-lg" 
+                    />
+                    <button 
+                      onClick={() => setReceiptImage(null)}
+                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                        <X size={12} />
+                    </button>
+                </div>
+            </div>
+        )}
 
         {/* Date and Category Selection */}
         <div className="flex gap-4 mb-4">
@@ -977,7 +1002,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
        {showCropModal && selectedImage && (
            <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col p-4 animate-in fade-in zoom-in-95 duration-200">
                <div className="flex justify-between items-center mb-4">
-                   <h3 className="text-white font-bold text-sm uppercase tracking-widest">{t('selectTotalSection') || 'Selecciona el TOTAL'}</h3>
+                   <h3 className="text-white font-bold text-sm uppercase tracking-widest">{t('selectTotalSection')}</h3>
                    <button onClick={() => { setShowCropModal(false); setSelectedImage(null); }} className="p-2 bg-white/10 rounded-full text-white">
                        <X size={20} />
                    </button>
@@ -1129,15 +1154,15 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                    >
                        {isScanning ? (
                            <>
-                               <Loader2 size={18} className="animate-spin" />
-                               {t('analyzing') || 'Analizando...'}
-                           </>
-                       ) : (
-                           <>
-                               <RefreshCcw size={18} />
-                               {t('processSelection') || 'Analizar Selección'}
-                           </>
-                       )}
+                                <Loader2 size={18} className="animate-spin text-theme-brand" />
+                                <span className="text-xs font-bold text-theme-primary">{t('analyzing')}</span>
+                            </>
+                        ) : (
+                            <>
+                                <Check size={18} />
+                                <span className="text-xs font-bold">{t('processSelection')}</span>
+                            </>
+                        )}
                    </button>
                </div>
            </div>
@@ -1160,9 +1185,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                        </div>
                        <div className="w-full flex justify-center pb-10">
                            <div className="w-16 h-16 border-2 border-white/30 rounded-lg pointer-events-none" />
-                           <p className="absolute bottom-24 text-white/70 text-xs font-bold bg-black/50 px-3 py-1 rounded-full">
-                               {t('selectArea') || 'Tap button to capture'}
-                           </p>
+                            <p className="absolute bottom-24 text-white/70 text-xs font-bold bg-black/50 px-3 py-1 rounded-full">
+                                {t('tapToCapture')}
+                            </p>
                        </div>
                    </div>
                </div>

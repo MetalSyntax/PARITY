@@ -137,7 +137,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
              </motion.button>
              <div>
                <h1 className="text-xl font-bold text-theme-primary">{t('scheduled')}</h1>
-               <p className="text-xs text-theme-secondary font-medium">{t('manageSubscriptions') || 'Manage repeating transfers'}</p>
+               <p className="text-xs text-theme-secondary font-medium">{t('manageSubscriptions')}</p>
              </div>
         </div>
         <div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
           <div>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={14} className="text-emerald-400" />
-              <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">{t('incomeSchedules') || 'Income Schedules'}</h3>
+              <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">{t('incomeSchedules')}</h3>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {incomeSchedules.map(p => (
@@ -174,7 +174,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               ))}
               {incomeSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
-                  {t('noIncomeScheduled') || 'No income schedules found'}
+                  {t('noIncomeScheduled')}
                 </div>
               )}
             </div>
@@ -184,7 +184,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
           <div>
             <div className="flex items-center gap-2 mb-4">
               <TrendingDown size={14} className="text-red-400" />
-              <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">{t('expenseSchedules') || 'Expense Schedules'}</h3>
+              <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">{t('expenseSchedules')}</h3>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {expenseSchedules.map(p => (
@@ -192,7 +192,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               ))}
               {expenseSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
-                  {t('noExpensesScheduled') || 'No expense schedules found'}
+                  {t('noExpensesScheduled')}
                 </div>
               )}
             </div>
@@ -312,7 +312,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                             </div>
 
                             <div>
-                               <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('startDate') || 'Start Date'}</label>
+                               <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('startDate')}</label>
                                <div className="relative">
                                    <input 
                                     className="w-full bg-theme-bg border border-white/5 p-4 pl-12 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors" 

@@ -584,33 +584,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center gap-4">
             <div className="flex wrap items-center gap-3 group relative">
               <div 
-                onClick={onDevModeTrigger}
-                className="w-10 h-10 rounded-full bg-gradient-to-tr from-theme-brand to-purple-500 border border-white/20 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-pointer hover:scale-105 transition-transform"
-              >
-                {userProfile.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div
-                className="cursor-pointer"
                 onClick={() => onNavigate("PROFILE")}
+                className="w-10 h-10 rounded-full bg-gradient-to-tr from-theme-brand to-purple-500 border border-white/20 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-pointer hover:scale-105 transition-transform overflow-hidden"
               >
-                {isDevMode && (
-                    <span className="flex x-1.5 py-0.5 rounded-md bg-theme-brand/20 border border-theme-soft text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
+                {userProfile.profileImage ? (
+                  <img src={userProfile.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  userProfile.name.slice(0, 2).toUpperCase()
+                )}
+              </div>
+              <div className="flex flex-col">
+                {isDevMode && !userProfile.hideDevMode && (
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="px-1.5 py-0.5 rounded-md bg-theme-brand/20 border border-theme-soft text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
                       {t('devMode')}
                     </span>
-                  )}
-                <div className="flex items-center gap-2">
+                  </div>
+                )}
+                {!userProfile.hideWelcome && (
                   <p className="text-[10px] text-theme-secondary uppercase tracking-widest font-bold">
-                    {t("welcome")}
+                    {t("welcome")}{(!userProfile.hideName && userProfile.name) ? `,` : ''}
                   </p>
-                  
-                </div>
-                <p className="text-sm font-black text-theme-primary">
-                  {userProfile.name}
-                </p>
+                )}
+                {!userProfile.hideName && (
+                  <p className="text-sm font-black text-theme-primary">
+                    {userProfile.name}
+                  </p>
+                )}
               </div>
             </div>
-
-            {/* View Selector */}
           </div>
 
           <div className="flex items-center gap-2">
@@ -624,7 +626,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <button
             onClick={onCheckUpdate}
             className={`p-2 rounded-full transition-all flex items-center justify-center relative ${needUpdate ? 'bg-theme-brand text-white shadow-lg shadow-theme-brand/20 animate-pulse' : 'bg-theme-soft text-theme-secondary hover:text-theme-primary'}`}
-            title={needUpdate ? t('updateAvailable') : t('checkUpdates') || 'Buscar actualizaciones'}
+            title={needUpdate ? t('updateAvailable') : t('checkUpdates')}
           >
             {needUpdate ? <ArrowDownToLine size={20} /> : <RefreshCw size={20} />}
             {needUpdate && (
@@ -762,7 +764,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
                            <ArrowRightLeft size={16} className="text-theme-brand" />
-                           <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest">{t("currencyConverter") || "Conversión de Moneda"}</h3>
+                           <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest">{t("currencyConverter")}</h3>
                         </div>
                       </div>
                       
@@ -1027,7 +1029,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <div className="flex flex-col gap-6">
                         {(() => {
                           let count = 0;
-                          const MAX_ITEMS = 5;
+                          const MAX_ITEMS = userProfile.dashboardTxLimit || 5;
                           const sortedDates = Object.keys(groupedTransactions).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
                           return (
                             <>
@@ -1117,7 +1119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   </div>
                                 );
                               })}
-                              {transactions.length > 5 && (
+                              {transactions.length > (userProfile.dashboardTxLimit || 5) && (
                                 <button onClick={() => onNavigate('TRANSACTIONS')} className="w-full py-4 text-center text-sm font-bold text-theme-brand hover:text-theme-primary transition-colors border-t border-theme-soft mt-2">{t('viewMore')}</button>
                               )}
                             </>
@@ -1132,7 +1134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-theme-soft min-h-[500px]">
                     <div className="flex items-center justify-between mb-6 px-4 md:px-0">
                       <h3 className="text-sm font-black text-theme-primary uppercase tracking-widest flex items-center gap-3">
-                        <ArrowRightLeft size={16} className="text-theme-brand" /> {t('recentTransactions')}
+                        <ArrowRightLeft size={16} className="text-theme-brand" /> {t('incomeVsExpenses')}
                       </h3>
                       <button onClick={() => onNavigate('TRANSACTIONS')} className="p-2 bg-theme-soft rounded-lg text-theme-secondary hover:text-theme-brand transition-all">
                         <Settings size={14} />
@@ -1451,7 +1453,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {isConverterFocused && (
         <div className="fixed inset-x-0 bottom-0 bg-theme-surface border-t border-theme-soft p-6 z-[80] animate-in slide-in-from-bottom duration-300">
           <div className="flex justify-between items-center mb-6">
-            <h4 className="text-xs font-black text-theme-secondary uppercase tracking-widest">{t('converterKeypad') || 'Teclado del Conversor'}</h4>
+            <h4 className="text-xs font-black text-theme-secondary uppercase tracking-widest">{t('converterKeypad')}</h4>
             <button 
               onClick={() => { setIsConverterFocused(false); onToggleBottomNav(true); }}
               className="p-2 bg-theme-soft rounded-lg text-theme-secondary hover:text-theme-primary transition-colors"
