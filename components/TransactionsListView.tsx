@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Transaction, Language, Currency, TransactionType } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
+import { TransactionDetailModal } from './TransactionDetailModal';
 
 interface TransactionsListViewProps {
   onBack: () => void;
@@ -397,138 +398,14 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Transaction Detail Modal */}
-      <AnimatePresence>
-        {selectedTx && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4"
-            onClick={() => setSelectedTx(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-theme-surface w-full max-w-lg rounded-[32px] border border-white/10 shadow-2xl overflow-hidden flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 flex flex-col gap-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${CATEGORIES.find(c => c.id === selectedTx.category)?.color || 'bg-theme-brand'} bg-opacity-20`}>
-                      {CATEGORIES.find(c => c.id === selectedTx.category)?.icon}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-theme-primary leading-tight">
-                        {t(CATEGORIES.find(c => c.id === selectedTx.category)?.name) || selectedTx.category}
-                      </h3>
-                      <p className="text-sm text-theme-secondary">
-                        {new Date(selectedTx.date).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { dateStyle: 'long' })}
-                      </p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedTx(null)}
-                    className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-theme-secondary transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <div className="bg-theme-bg/50 rounded-3xl p-6 border border-white/5">
-                  <div className="text-center mb-6">
-                    <p className="text-xs font-black uppercase tracking-widest text-theme-secondary mb-2">{t('amount')}</p>
-                    <h2 className={`text-4xl font-black ${selectedTx.type === TransactionType.INCOME ? 'text-emerald-400' : 'text-theme-primary'}`}>
-                      {selectedTx.type === TransactionType.INCOME ? '+' : '-'}
-                      {selectedTx.originalCurrency === Currency.USD ? '$' : 'Bs.'}
-                      {selectedTx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </h2>
-                    {selectedTx.originalCurrency !== (displayInVES ? Currency.VES : Currency.USD) && (
-                         <p className="text-sm text-theme-secondary mt-1 font-mono">
-                            ≈ {displayInVES ? 'Bs.' : '$'} {
-                                (displayInVES 
-                                    ? (selectedTx.originalCurrency === Currency.USD ? selectedTx.amount * selectedTx.exchangeRate : selectedTx.amount)
-                                    : (selectedTx.originalCurrency === Currency.VES ? selectedTx.amount / selectedTx.exchangeRate : selectedTx.amount)
-                                ).toLocaleString(undefined, { minimumFractionDigits: 2 })
-                            }
-                         </p>
-                    )}
-                  </div>
-
-                  <div className="grid gap-4 pt-4 border-t border-white/5">
-                    {selectedTx.note && (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-theme-secondary opacity-50">{t('notePlaceholder').replace('...', '')}</span>
-                        <p className="text-sm text-theme-primary leading-relaxed">{selectedTx.note}</p>
-                      </div>
-                    )}
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-theme-secondary opacity-50">{t('type')}</span>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                        selectedTx.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-400' : 
-                        selectedTx.type === TransactionType.EXPENSE ? 'bg-red-500/10 text-red-500' : 
-                        'bg-blue-500/10 text-blue-400'
-                      }`}>
-                        {t(selectedTx.type.toLowerCase())}
-                      </span>
-                    </div>
-
-                    {selectedTx.fee !== undefined && selectedTx.fee > 0 && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-theme-secondary opacity-50">{t('commissions')}</span>
-                        <span className="text-red-400 font-bold">{selectedTx.fee.toLocaleString()} {selectedTx.originalCurrency === Currency.USD ? '$' : 'Bs.'}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {selectedTx.receipt && (
-                  <div className="flex flex-col gap-3">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-theme-secondary opacity-50">{t('receipt')}</span>
-                    <div className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black aspect-[4/3]">
-                      <img 
-                        src={selectedTx.receipt} 
-                        alt="Receipt" 
-                        className="w-full h-full object-contain" 
-                      />
-                      <a 
-                        href={selectedTx.receipt} 
-                        download={`receipt_${selectedTx.id}.jpg`}
-                        className="absolute bottom-4 right-4 p-3 bg-theme-brand text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                      >
-                         <Plus size={20} />
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4 bg-white/5 border-t border-white/5 flex gap-3">
-                 <button
-                  onClick={() => {
-                    const tx = selectedTx;
-                    setSelectedTx(null);
-                    onEditTransaction(tx);
-                  }}
-                  className="flex-1 py-4 bg-theme-surface border border-white/10 rounded-2xl font-black uppercase tracking-widest text-[10px] text-theme-primary hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                >
-                  <TrendingUp size={14} className="text-theme-brand" />
-                  {t('edit')}
-                </button>
-                <button
-                  onClick={() => setSelectedTx(null)}
-                  className="flex-1 py-4 bg-theme-brand rounded-2xl font-black uppercase tracking-widest text-[10px] text-white shadow-lg shadow-brand/20 transition-all"
-                >
-                  {t('done')}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <TransactionDetailModal
+        transaction={selectedTx!}
+        isOpen={!!selectedTx}
+        onClose={() => setSelectedTx(null)}
+        onEdit={onEditTransaction}
+        language={lang}
+        displayInVES={displayInVES}
+      />
     </div>
   );
 };

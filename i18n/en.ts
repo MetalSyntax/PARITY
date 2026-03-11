@@ -391,4 +391,7 @@ export const en = {
     receipt: 'Receipt/Invoice',
     date: 'Date',
     type: 'Type',
+    summary: 'Summary',
+    noReceipt: 'No receipt available',
+    download: 'Download',
 };

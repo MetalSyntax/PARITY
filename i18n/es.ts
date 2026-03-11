@@ -405,4 +405,7 @@ export const es = {
   receipt: "Factura/Recibo",
   date: "Fecha",
   type: "Tipo",
+  summary: "Resumen",
+  noReceipt: "No hay factura",
+  download: "Descargar",
 };

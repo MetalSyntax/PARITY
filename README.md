@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.24`
+# PARITY 💸 `v1.0.25`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,16 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.0.25
+
+- **Reusable Transaction Modals & Logic Robustness:**
+  - `feat`: consolidate individual modal views into a unified `TransactionDetailModal`
+  - `feat`: implement drawer-style tabbed navigation (Summary/Invoice) for better mobile UX
+  - `feat`: add fullscreen Lightbox viewer for transaction receipts with direct download
+  - `fix`: resolve `RangeError` (Maximum call stack size exceeded) during encryption of large datasets
+  - `fix`: eliminate potential null pointer crashes in the Transaction Detail view
+  - `ux`: ensure internal modal state resets correctly when switching between transactions
 
 ### v1.0.24
 

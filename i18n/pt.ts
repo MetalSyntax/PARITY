@@ -386,4 +386,7 @@ export const pt = {
     receipt: 'Recibo/Fatura',
     date: 'Data',
     type: 'Tipo',
+    summary: 'Resumo',
+    noReceipt: 'Nenhuma fatura disponível',
+    download: 'Baixar',
 };

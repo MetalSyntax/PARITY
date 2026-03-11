@@ -50,13 +50,20 @@ export const encryptData = async (data: any): Promise<string> => {
         encodedData
       );
 
-      // Combine IV and encrypted data and encode as Base64 for storage
+      // Combine IV and encrypted data
       const encryptedArray = new Uint8Array(encrypted);
       const combined = new Uint8Array(iv.length + encryptedArray.length);
       combined.set(iv);
       combined.set(encryptedArray, iv.length);
 
-      return btoa(String.fromCharCode(...combined));
+      // Convert to binary string safely using chunks to avoid call stack limits
+      let binary = "";
+      const CHUNK_SIZE = 0x8000; // 32KB chunks
+      for (let i = 0; i < combined.length; i += CHUNK_SIZE) {
+        binary += String.fromCharCode.apply(null, combined.subarray(i, i + CHUNK_SIZE) as any);
+      }
+
+      return btoa(binary);
   } catch (e) {
       console.error("Encryption failed", e);
       return JSON.stringify(data); // Fallback to plain if fails (should notify user)
