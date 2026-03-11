@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X, Receipt } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Transaction, Language, Currency, TransactionType } from '../types';
 import { getTranslation } from '../i18n';
@@ -276,6 +276,18 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                         
                         {/* Actions Overlay */}
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                          {transaction.receipt && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTx(transaction);
+                              }}
+                              className="p-2 bg-theme-bg/80 backdrop-blur-sm hover:bg-theme-brand rounded-xl text-theme-brand hover:text-white transition-colors border border-white/5"
+                              title={t('viewReceipt')}
+                            >
+                              <Receipt size={14} />
+                            </button>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

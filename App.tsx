@@ -1022,6 +1022,7 @@ function AppContent() {
               lang={userProfile.language}
               exchangeRate={exchangeRate}
               isBalanceVisible={isBalanceVisible}
+              rateHistory={rateHistory}
             />
           )}
         </motion.div>
