@@ -4,28 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
-import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
+import { renderAccountIcon, ACCOUNT_ICONS } from '../utils/iconUtils';
 
-// Icon Map for Financial Services
-const ACCOUNT_ICONS: Record<string, React.ElementType> = {
-    'wallet': FaWallet,
-    'bank': FaBuildingColumns,
-    'card': FaCreditCard,
-    'visa': FaCcVisa,
-    'mastercard': FaCcMastercard,
-    'cash': FaMoneyBillWave,
-    'crypto': FaBitcoin,
-    'paypal': FaPaypal,
-    'mobile': FaMobileScreen,
-    'savings': FaPiggyBank
-};
-
-// Helper to render icon safely (handles old emojis + new keys)
-const renderAccountIcon = (iconKey: string, size: number = 24) => {
-    const IconComponent = ACCOUNT_ICONS[iconKey];
-    if (IconComponent) return <IconComponent size={size} />;
-    return <span style={{ fontSize: size }}>{iconKey}</span>; // Fallback for emojis
-};
 
 interface WalletViewProps {
   onBack: () => void;

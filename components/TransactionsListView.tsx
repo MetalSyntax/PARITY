@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X, Receipt } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Transaction, Language, Currency, TransactionType } from '../types';
+import { Transaction, Language, Currency, TransactionType, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
 import { TransactionDetailModal } from './TransactionDetailModal';
+import { TransactionItem } from './TransactionItem';
 
 interface TransactionsListViewProps {
   onBack: () => void;
   transactions: Transaction[];
+  accounts: Account[];
   lang: Language;
   onDeleteTransaction: (id: string) => void;
   onEditTransaction: (t: Transaction) => void;
@@ -20,6 +22,7 @@ interface TransactionsListViewProps {
 export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   onBack,
   transactions,
+  accounts,
   lang,
   onDeleteTransaction,
   onEditTransaction,
@@ -189,128 +192,19 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                   })()}
                 </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-1">
-                  {groupedTransactions[date].map((transaction) => {
-                    const category = CATEGORIES.find((c) => c.id === transaction.category) || CATEGORIES[0];
-                    const isExpense = transaction.type === TransactionType.EXPENSE;
-                    const isIncome = transaction.type === TransactionType.INCOME;
-                    const isOriginalUSD = transaction.originalCurrency === Currency.USD;
-                    const mainAmount = transaction.amount;
-                    const mainSymbol = isOriginalUSD ? "$" : "Bs.";
-                    const secondaryAmount = isOriginalUSD 
-                      ? transaction.amount * transaction.exchangeRate 
-                      : transaction.amount / transaction.exchangeRate;
-                    const secondarySymbol = isOriginalUSD ? "Bs." : "$";
-
-                    return (
-                      <motion.div
-                        key={transaction.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        onClick={() => setSelectedTx(transaction)}
-                        className="flex items-center justify-between p-4 rounded-2xl bg-theme-surface border border-white/5 hover:border-white/10 transition-all group relative pr-16 cursor-pointer overflow-hidden"
-                      >
-                        {transaction.receipt && (
-                            <div className="absolute -left-1 -top-1 w-6 h-6 bg-theme-brand/20 flex items-center justify-center rounded-br-lg opacity-50">
-                                <Plus size={10} className="text-theme-brand" />
-                            </div>
-                        )}
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`w-12 h-12 rounded-2xl flex items-center justify-center ${category.color} bg-opacity-20 shadow-inner`}
-                          >
-                            {category.icon}
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm text-theme-primary">
-                              {transaction.note || t(category.name)}
-                            </p>
-                            <p className="text-xs text-theme-secondary capitalize">
-                              {t(category.name.toLowerCase()) || category.name}
-                            </p>
-                            {transaction.fee !== undefined && (
-                                transaction.fee > 0 ? (
-                                    <p className="text-[9px] text-red-400 font-bold uppercase mt-1">
-                                        {t('commissions')}: {transaction.fee.toLocaleString()} {transaction.originalCurrency === Currency.USD ? '$' : 'Bs.'}
-                                    </p>
-                                ) : (
-                                    <p className="text-[9px] text-emerald-400 font-bold uppercase mt-1">
-                                        {t('noCommission')}
-                                    </p>
-                                )
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p
-                            className={`font-black text-sm ${
-                              isIncome ? "text-emerald-400" : "text-theme-primary"
-                            }`}
-                          >
-                            {isIncome ? "+" : "-"}
-                            {displayInVES ? "Bs." : (isOriginalUSD ? "$" : "Bs.")}
-                            {isBalanceVisible
-                              ? (displayInVES 
-                                  ? (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount)
-                                  : mainAmount
-                                )?.toLocaleString(undefined, {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })
-                              : "***"}
-                          </p>
-                          <p className="text-[10px] text-theme-secondary font-mono">
-                            ~{displayInVES ? "$" : secondarySymbol}{" "}
-                            {isBalanceVisible
-                              ? (displayInVES 
-                                  ? (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate)
-                                  : secondaryAmount
-                                )?.toLocaleString(
-                                  undefined,
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
-                                )
-                              : "***"}
-                          </p>
-                        </div>
-                        
-                        {/* Actions Overlay */}
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                          {transaction.receipt && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTx(transaction);
-                              }}
-                              className="p-2 bg-theme-bg/80 backdrop-blur-sm hover:bg-theme-brand rounded-xl text-theme-brand hover:text-white transition-colors border border-white/5"
-                              title={t('viewReceipt')}
-                            >
-                              <Receipt size={14} />
-                            </button>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditTransaction(transaction);
-                            }}
-                            className="p-2 bg-theme-bg/80 backdrop-blur-sm hover:bg-theme-brand rounded-xl text-theme-brand hover:text-white transition-colors border border-white/5"
-                          >
-                            <TrendingUp size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteTransaction(transaction.id);
-                            }}
-                            className="p-2 bg-theme-bg/80 backdrop-blur-sm hover:bg-red-500 rounded-xl text-red-400 hover:text-white transition-colors border border-white/5"
-                          >
-                            <Plus size={14} className="rotate-45" />
-                          </button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+                  {groupedTransactions[date].map((transaction) => (
+                    <TransactionItem
+                      key={transaction.id}
+                      transaction={transaction}
+                      accounts={accounts}
+                      lang={lang}
+                      isBalanceVisible={isBalanceVisible}
+                      displayInVES={displayInVES}
+                      onSelect={setSelectedTx}
+                      onEdit={onEditTransaction}
+                      onDelete={onDeleteTransaction}
+                    />
+                  ))}
                 </div>
               </div>
             ))}

@@ -5,9 +5,14 @@ import { Transaction, Account, Currency, UserProfile, TransactionType } from "..
 import { CATEGORIES } from "../constants";
 import { getTranslation } from "../i18n";
 import { TransactionDetailModal } from "./TransactionDetailModal";
+import { PinModal } from "./PinModal";
+import { TransactionItem } from "./TransactionItem";
+import { CurrencyConverter } from "./CurrencyConverter";
+import { DashboardCustomizer } from "./DashboardCustomizer";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler } from "chart.js";
 import { Line, Doughnut, Bar } from "react-chartjs-2";
-import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from "react-icons/fa6";
+import { tailwindToHex, commonOptions } from "../utils/chartUtils";
+import { renderAccountIcon } from "../utils/iconUtils";
 
 ChartJS.register(
   CategoryScale,
@@ -22,105 +27,6 @@ ChartJS.register(
   Filler,
 );
 
-// Chart Options Helper
-const commonOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  animation: {
-    duration: 1500,
-    easing: 'easeInOutQuart' as const,
-    delay: (context: any) => {
-        let delay = 0;
-        if (context.type === 'data' && context.mode === 'default') {
-            delay = context.dataIndex * 100 + context.datasetIndex * 100;
-        }
-        return delay;
-    }
-  },
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: "rgba(24, 24, 27, 0.9)", // zinc-900 with alpha
-      titleColor: "#ffffff",
-      bodyColor: "#e4e4e7",
-      borderColor: "rgba(255,255,255,0.1)",
-      borderWidth: 1,
-      padding: 12,
-      displayColors: true,
-      cornerRadius: 12,
-      titleFont: { size: 14, weight: 'bold' as const },
-      bodyFont: { size: 13 },
-      usePointStyle: true,
-    },
-  },
-  scales: {
-    x: { 
-        display: false,
-        border: { display: false },
-        grid: { display: false }
-    },
-    y: { 
-        display: false,
-        border: { display: false },
-        grid: { display: false }
-    },
-  },
-  interaction: {
-    intersect: false,
-    mode: "index" as const,
-  },
-};
-
-// Icon Map for Financial Services
-const ACCOUNT_ICONS: Record<string, React.ElementType> = {
-  wallet: FaWallet,
-  bank: FaBuildingColumns,
-  card: FaCreditCard,
-  visa: FaCcVisa,
-  mastercard: FaCcMastercard,
-  cash: FaMoneyBillWave,
-  crypto: FaBitcoin,
-  paypal: FaPaypal,
-  mobile: FaMobileScreen,
-  savings: FaPiggyBank,
-};
-
-// Helper to render icon safely
-const renderAccountIcon = (iconKey: string, size: number = 24) => {
-  const IconComponent = ACCOUNT_ICONS[iconKey];
-  if (IconComponent) return <IconComponent size={size} />;
-  return <span style={{ fontSize: size }}>{iconKey}</span>;
-};
-
-const tailwindToHex = (colorClass: string) => {
-  if (!colorClass) return "#888888";
-  if (colorClass.includes("orange-400")) return "#fb923c";
-  if (colorClass.includes("blue-400")) return "#60a5fa";
-  if (colorClass.includes("amber-500")) return "#f59e0b";
-  if (colorClass.includes("indigo-400")) return "#818cf8";
-  if (colorClass.includes("yellow-400")) return "#facc15";
-  if (colorClass.includes("red-400")) return "#f87171";
-  if (colorClass.includes("purple-400")) return "#c084fc";
-  if (colorClass.includes("sky-400")) return "#38bdf8";
-  if (colorClass.includes("pink-400")) return "#f472b6";
-  if (colorClass.includes("emerald-400")) return "#34d399";
-  if (colorClass.includes("rose-400")) return "#fb7185";
-  if (colorClass.includes("green-400")) return "#4ade80";
-  if (colorClass.includes("amber-400")) return "#fbbf24";
-  if (colorClass.includes("blue-300")) return "#93c5fd";
-  if (colorClass.includes("gray-400")) return "#9ca3af";
-  if (colorClass.includes("cyan-400")) return "#22d3ee";
-  if (colorClass.includes("zinc-300")) return "#d4d4d8";
-  if (colorClass.includes("violet-400")) return "#a78bfa";
-  if (colorClass.includes("slate-400")) return "#94a3b8";
-  if (colorClass.includes("teal-400")) return "#2dd4bf";
-  if (colorClass.includes("rose-300")) return "#fda4af";
-  if (colorClass.includes("slate-300")) return "#cbd5e1";
-  if (colorClass.includes("indigo-300")) return "#a5b4fc";
-  if (colorClass.includes("gray-300")) return "#d1d5db";
-  if (colorClass.includes("zinc-500")) return "#71717a";
-  return "#888888";
-};
 
 interface DashboardProps {
   accounts: Account[];
@@ -129,10 +35,12 @@ interface DashboardProps {
   onOpenSettings: () => void;
   onNavigate: (view: any) => void;
   userProfile: UserProfile;
+  onDeleteTransaction: (id: string) => void;
   onEditTransaction: (t: Transaction) => void;
   onToggleBottomNav: (visible: boolean) => void;
   isBalanceVisible: boolean;
   setIsBalanceVisible: (visible: boolean) => void;
+  isDevMode: boolean;
   onDevModeTrigger: () => void;
   displayInVES: boolean;
   onToggleDisplayCurrency: () => void;
@@ -142,6 +50,7 @@ interface DashboardProps {
   biometricsEnabled?: boolean;
   onVerifyBiometrics?: () => Promise<boolean>;
 }
+
 
 export const Dashboard: React.FC<DashboardProps> = ({
   accounts,
@@ -169,10 +78,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const formatAmount = (usd: number) => {
     if (!isBalanceVisible) return "******";
     const val = displayInVES ? usd * exchangeRate : usd;
-    const symbol = displayInVES ? "Bs. " : "$";
-    return `${symbol}${val?.toLocaleString(undefined, {
-      maximumFractionDigits: 0,
-    })}`;
+    const symbol = displayInVES ? 'Bs.' : '$';
+    return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatSecondaryAmount = (usd: number) => {
@@ -182,15 +89,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${symbol}`;
   };
   const [showPinModal, setShowPinModal] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  
-  // Converter State
-  const [convertAmount, setConvertAmount] = useState<string>('1');
-  const [convertFromTo, setConvertFromTo] = useState<'USD_TO_VES' | 'VES_TO_USD'>('USD_TO_VES');
-  const [isConverterFocused, setIsConverterFocused] = useState(false);
   
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [balanceChartType, setBalanceChartType] = useState<'LINE' | 'BAR'>('LINE');
@@ -199,6 +99,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     timestamp: number;
     balance: number;
   } | null>(null);
+
 
   // Widget Visibility
   const [showBalanceChart, setShowBalanceChart] = useState(() => {
@@ -333,29 +234,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const closePinModal = () => {
     setShowPinModal(false);
-    setPinInput("");
-    setPinError(false);
-  };
-
-  const handlePinDigit = (digit: string) => {
-    if (pinInput.length < 4) {
-      const newPin = pinInput + digit;
-      setPinInput(newPin);
-      if (newPin.length === 4) {
-        // Auto verify on 4th digit
-        if (newPin === getStoredPin()) {
-          setIsBalanceVisible(true);
-          localStorage.setItem("isBalanceVisible", "true");
-          closePinModal();
-        } else {
-          // Small delay to show last dot then error
-          setTimeout(() => {
-            setPinError(true);
-            setPinInput("");
-          }, 200);
-        }
-      }
-    }
   };
 
   // Group transactions by Date
@@ -700,6 +578,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </button>
                       </div>
 
+                      {/* Chart Background */}
+                      <div className="absolute inset-x-0 bottom-0 h-32 opacity-20 pointer-events-none">
+                        <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="w-full h-full">
+                          <defs>
+                            <linearGradient id="cardTrendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor={balanceHistory.trendPercent >= 0 ? '#10b981' : '#f43f5e'} stopOpacity="0.4" />
+                              <stop offset="100%" stopColor={balanceHistory.trendPercent >= 0 ? '#10b981' : '#f43f5e'} stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          <motion.path
+                            initial={{ pathLength: 0, opacity: 0 }}
+                            animate={{ pathLength: 1, opacity: 1 }}
+                            transition={{ duration: 1.5, ease: "easeInOut" }}
+                            d={balanceHistory.points}
+                            fill="none"
+                            stroke={balanceHistory.trendPercent >= 0 ? '#10b981' : '#f43f5e'}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                          <motion.path
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.3 }}
+                            transition={{ duration: 1, delay: 0.5 }}
+                            d={balanceHistory.area}
+                            fill="url(#cardTrendGradient)"
+                          />
+                        </svg>
+                      </div>
+
                       <div className="cursor-pointer relative z-10">
                         <p className="text-xs text-theme-secondary font-black uppercase tracking-widest mb-2 opacity-60">
                           {t("totalBalance")}
@@ -762,54 +669,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 {id === "converter" && (
                   <div className="px-4 md:px-0">
-                    <div className="bg-theme-surface rounded-[2rem] p-6 border border-theme-soft shadow-theme relative">
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-2">
-                           <ArrowRightLeft size={16} className="text-theme-brand" />
-                           <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest">{t("currencyConverter")}</h3>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-4 bg-theme-bg p-3 rounded-2xl border border-theme-soft shadow-inner">
-                          <div className="flex-1 flex flex-col">
-                             <span className="text-[10px] uppercase font-bold text-theme-secondary opacity-50 ml-2 mb-1">
-                               {convertFromTo === 'USD_TO_VES' ? 'USD' : 'Bs.'}
-                             </span>
-                             <input 
-                                 type="text"
-                                 inputMode="none"
-                                 value={convertAmount}
-                                 onChange={(e) => setConvertAmount(e.target.value.replace(/[^0-9\.]/g, ''))}
-                                 onFocus={() => { setIsConverterFocused(true); onToggleBottomNav(false); }}
-                                 className={`bg-transparent text-xl font-black outline-none px-2 w-full transition-colors ${isConverterFocused ? 'text-theme-brand' : 'text-theme-primary'}`}
-                             />
-                          </div>
-
-                          <button 
-                             onClick={(e) => { e.stopPropagation(); setConvertFromTo(prev => prev === 'USD_TO_VES' ? 'VES_TO_USD' : 'USD_TO_VES'); }}
-                             className="p-3 bg-theme-surface border border-theme-soft shadow-sm rounded-xl text-theme-brand hover:scale-105 active:scale-95 transition-all"
-                          >
-                             <RefreshCw size={18} />
-                          </button>
-                          
-                          <div className="flex-1 flex flex-col items-end">
-                             <span className="text-[10px] uppercase font-bold text-theme-secondary opacity-50 mr-2 mb-1">
-                               {convertFromTo === 'USD_TO_VES' ? 'Bs.' : 'USD'}
-                             </span>
-                             <p className="text-xl font-black text-theme-primary px-2 break-all line-clamp-1 truncate w-full text-right overflow-hidden">
-                               {(() => {
-                                   const amt = parseFloat(convertAmount) || 0;
-                                   if (convertFromTo === 'USD_TO_VES') {
-                                      return (amt * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 });
-                                   } else {
-                                      return (amt / exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 });
-                                   }
-                               })()}
-                             </p>
-                          </div>
-                      </div>
-
-                    </div>
+                    <CurrencyConverter 
+                      exchangeRate={exchangeRate} 
+                      lang={userProfile.language} 
+                      onToggleBottomNav={onToggleBottomNav} 
+                    />
                   </div>
                 )}
 
@@ -1053,75 +917,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                       })()}
                                     </h3>
                                     <div className="flex flex-col gap-2 mt-1">
-                                      {itemsToRender.map(transaction => {
-                                        const category = CATEGORIES.find(c => c.id === transaction.category) || CATEGORIES[0];
-                                        const isExpense = transaction.type === TransactionType.EXPENSE;
-                                        const isTransfer = transaction.type === TransactionType.TRANSFER;
-                                        const isOriginalUSD = transaction.originalCurrency === Currency.USD;
-                                        const isMainVES = displayInVES;
-                                        const displayMain = isMainVES 
-                                          ? (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount)
-                                          : (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate);
-                                        const displayMainSymbol = isMainVES ? 'Bs.' : '$';
-                                        
-                                        const displaySecondary = isMainVES
-                                          ? (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate)
-                                          : (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount);
-                                        const displaySecondarySymbol = isMainVES ? '$' : 'Bs.';
-                                        
-                                        const fromAcc = accounts.find(a => a.id === transaction.accountId);
-                                        const toAcc = accounts.find(a => a.id === transaction.toAccountId);
-                                        const accName = fromAcc?.name || 'Unknown';
-
-                                         return (
-                                           <div key={transaction.id} onClick={() => setSelectedTx(transaction)} className="flex items-center justify-between p-3 rounded-xl hover:bg-theme-soft transition-colors group relative pr-14 bg-theme-surface border border-theme-soft mb-2 cursor-pointer">
-                                             <div className="flex items-center gap-4">
-                                               <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border border-theme-soft ${
-                                                 isTransfer ? 'bg-indigo-500/10 text-indigo-400' : category.color
-                                               }`}>
-                                                 {isTransfer ? <ArrowRightLeft size={20} /> : category.icon}
-                                               </div>
-                                               <div>
-                                                 <div className="flex items-center gap-2">
-                                                   <p className="text-sm font-black text-theme-primary line-clamp-1">
-                                                     {isTransfer ? `${fromAcc?.name} → ${toAcc?.name}` : transaction.note || t(category.name as any)}
-                                                   </p>
-                                                   {transaction.exchangeRate !== exchangeRate && !isTransfer && (
-                                                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" title="Custom Rate Used" />
-                                                   )}
-                                                 </div>
-                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                   <p className="text-[10px] font-bold text-theme-secondary opacity-50 uppercase tracking-tighter">
-                                                     {transaction.originalCurrency} • {accName}
-                                                   </p>
-                                                   <span className="text-[10px] text-theme-secondary opacity-30">•</span>
-                                                   <p className="text-[10px] font-bold text-theme-secondary opacity-50">{new Date(transaction.date).toLocaleDateString()}</p>
-                                                 </div>
-                                               </div>
-                                             </div>
-                                             <div className="text-right">
-                                               <p className={`text-sm font-black ${
-                                                 isTransfer ? 'text-indigo-400' : isExpense ? 'text-red-500' : 'text-emerald-500'
-                                               }`}>
-                                                 {isTransfer ? '' : isExpense ? '-' : '+'}{displayMainSymbol}{isBalanceVisible ? displayMain?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
-                                               </p>
-                                               <p className="text-[10px] font-bold text-theme-secondary opacity-40">
-                                                 ~{displaySecondarySymbol}{isBalanceVisible ? displaySecondary?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
-                                               </p>
-                                             </div>
-
-                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-theme-soft">
-                                               {transaction.receipt && (
-                                                  <button onClick={(e) => { e.stopPropagation(); setSelectedTx(transaction); }} className="p-2 text-theme-brand hover:bg-theme-brand/10 rounded-lg" title={t('viewReceipt')}>
-                                                    <Receipt size={14}/>
-                                                  </button>
-                                               )}
-                                               <button onClick={(e) => { e.stopPropagation(); onEditTransaction(transaction); }} className="p-2 text-theme-secondary hover:text-theme-brand rounded-lg"><Settings size={14}/></button>
-                                               <button onClick={(e) => { e.stopPropagation(); onDeleteTransaction(transaction.id); }} className="p-2 text-theme-secondary hover:text-red-500 rounded-lg"><X size={14}/></button>
-                                             </div>
-                                           </div>
-                                         );
-                                      })}
+                                      {itemsToRender.map(transaction => (
+                                        <TransactionItem 
+                                          key={transaction.id}
+                                          transaction={transaction}
+                                          accounts={accounts}
+                                          lang={userProfile.language}
+                                          isBalanceVisible={isBalanceVisible}
+                                          displayInVES={displayInVES}
+                                          onSelect={setSelectedTx}
+                                          onEdit={onEditTransaction}
+                                          onDelete={onDeleteTransaction}
+                                          compact={true}
+                                        />
+                                      ))}
                                     </div>
                                   </div>
                                 );
@@ -1136,7 +945,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
                 )}
-
                 {id === "incomeVsExpense" && showIncomeVsExpense && (
                   <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-theme-soft min-h-[500px]">
                     <div className="flex items-center justify-between mb-6 px-4 md:px-0">
@@ -1276,232 +1084,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {showCustomizer && (
-        <div className="fixed inset-0 bg-black/80 z-[70] backdrop-blur-xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-10 duration-500">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-lg font-black text-theme-primary tracking-tight">
-                {t("customizeDashboard")}
-              </h3>
-              <button
-                onClick={() => setShowCustomizer(false)}
-                className="p-2 bg-theme-bg rounded-xl text-theme-secondary hover:text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
-                <div className="flex items-center gap-3">
-                  <Activity size={18} className="text-theme-brand" />
-                  <span className="text-sm font-bold text-theme-primary">
-                    {t("showBalanceChart")}
-                  </span>
-                </div>
-                <button
-                  onClick={() => toggleWidget("balance")}
-                  className={`w-12 h-6 rounded-full transition-all relative ${showBalanceChart ? "bg-theme-brand" : "bg-white/10"}`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showBalanceChart ? "left-7" : "left-1"}`}
-                  />
-                </button>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
-                <div className="flex items-center gap-3">
-                  <PieChart size={18} className="text-theme-brand" />
-                  <span className="text-sm font-bold text-theme-primary">
-                    {t("showExpenseStructure")}
-                  </span>
-                </div>
-                <button
-                  onClick={() => toggleWidget("expense")}
-                  className={`w-12 h-6 rounded-full transition-all relative ${showExpenseStructure ? "bg-theme-brand" : "bg-white/10"}`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showExpenseStructure ? "left-7" : "left-1"}`}
-                  />
-                </button>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
-                <div className="flex items-center gap-3">
-                  <BarChart size={18} className="text-theme-brand" />
-                  <span className="text-sm font-bold text-theme-primary">
-                    {t("incomeVsExpenses")}
-                  </span>
-                </div>
-                <button
-                  onClick={() => toggleWidget("incomeVs")}
-                  className={`w-12 h-6 rounded-full transition-all relative ${showIncomeVsExpense ? "bg-theme-brand" : "bg-white/10"}`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showIncomeVsExpense ? "left-7" : "left-1"}`}
-                  />
-                </button>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
-                <div className="flex items-center gap-3">
-                  <TrendingUp size={18} className="text-theme-brand" />
-                  <span className="text-sm font-bold text-theme-primary">
-                    {t("dailySpending")}
-                  </span>
-                </div>
-                <button
-                  onClick={() => toggleWidget("daily")}
-                  className={`w-12 h-6 rounded-full transition-all relative ${showDailySpending ? "bg-theme-brand" : "bg-white/10"}`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showDailySpending ? "left-7" : "left-1"}`}
-                  />
-                </button>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
-                <div className="flex items-center gap-3">
-                  <BarChart size={18} className="text-theme-brand rotate-90" />
-                  <span className="text-sm font-bold text-theme-primary">
-                    {t("categoryBreakdown")}
-                  </span>
-                </div>
-                <button
-                  onClick={() => toggleWidget("category")}
-                  className={`w-12 h-6 rounded-full transition-all relative ${showCategoryBreakdown ? "bg-theme-brand" : "bg-white/10"}`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showCategoryBreakdown ? "left-7" : "left-1"}`}
-                  />
-                </button>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowCustomizer(false)}
-              className="w-full bg-theme-brand text-white font-black py-4 rounded-2xl mt-8 shadow-xl hover:brightness-110 active:scale-[0.98] transition-all"
-            >
-              {t("done")}
-            </button>
-          </div>
-        </div>
+        <DashboardCustomizer 
+          lang={userProfile.language}
+          showBalanceChart={showBalanceChart}
+          showExpenseStructure={showExpenseStructure}
+          showIncomeVsExpense={showIncomeVsExpense}
+          showDailySpending={showDailySpending}
+          showCategoryBreakdown={showCategoryBreakdown}
+          toggleWidget={toggleWidget}
+          onClose={() => setShowCustomizer(false)}
+        />
       )}
 
       {showPinModal && (
-        <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-6 animate-in fade-in duration-200 backdrop-blur-md">
-          <div className="w-full max-w-xs flex flex-col items-center gap-8">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-2xl bg-theme-surface border border-white/10 flex items-center justify-center text-theme-brand shadow-2xl shadow-brand/20 mb-4">
-                <Lock size={32} />
-              </div>
-              <h2 className="text-2xl font-bold text-theme-primary text-center">
-                {t("verifyIdentity")}
-              </h2>
-              <p className="text-theme-secondary text-sm text-center">
-                {t("enterPin")}
-              </p>
-            </div>
-            <div className="flex gap-4 mb-4">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={`w-4 h-4 rounded-full transition-all duration-300 ${i < pinInput.length ? (pinError ? "bg-red-500 scale-110" : "bg-theme-brand scale-110") : "bg-white/10"}`}
-                />
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-6 w-full px-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                <button
-                  key={num}
-                  onClick={() => handlePinDigit(num.toString())}
-                  className="w-full aspect-square rounded-full bg-theme-soft hover:bg-theme-surface border border-theme-soft text-2xl font-black text-theme-primary transition-all active:scale-95 flex items-center justify-center shadow-sm"
-                >
-                  {num}
-                </button>
-              ))}
-              <div />
-              <button
-                key="0"
-                onClick={() => handlePinDigit("0")}
-                className="w-full aspect-square rounded-full bg-theme-surface/30 hover:bg-theme-surface border border-white/5 text-2xl font-semibold text-theme-primary transition-all active:scale-95 flex items-center justify-center"
-              >
-                0
-              </button>
-              <button
-                onClick={() => setPinInput((prev) => prev.slice(0, -1))}
-                className="w-full aspect-square rounded-full flex items-center justify-center text-theme-secondary hover:text-white"
-              >
-                {t("delete")}
-              </button>
-            </div>
-            <button
-              onClick={closePinModal}
-              className="mt-4 text-theme-secondary text-sm hover:text-white"
-            >
-              {t("cancel")}
-            </button>
-
-            {biometricsEnabled && onVerifyBiometrics && (
-              <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={async () => {
-                    const success = await onVerifyBiometrics();
-                    if (success) {
-                      setIsBalanceVisible(true);
-                      localStorage.setItem("isBalanceVisible", "true");
-                      closePinModal();
-                    }
-                  }}
-                  className="mt-6 flex items-center gap-2 px-6 py-3 bg-theme-surface/30 border border-white/5 rounded-2xl text-theme-primary font-bold transition-all shadow-sm"
-              >
-                  <Fingerprint size={20} className="text-theme-brand" />
-                  <span>{t('biometrics')}</span>
-              </motion.button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {isConverterFocused && (
-        <div className="fixed inset-x-0 bottom-0 bg-theme-surface border-t border-theme-soft p-6 z-[80] animate-in slide-in-from-bottom duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h4 className="text-xs font-black text-theme-secondary uppercase tracking-widest">{t('converterKeypad')}</h4>
-            <button 
-              onClick={() => { setIsConverterFocused(false); onToggleBottomNav(true); }}
-              className="p-2 bg-theme-soft rounded-lg text-theme-secondary hover:text-theme-primary transition-colors"
-            >
-              <X size={18} />
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-y-6 gap-x-8 max-w-md mx-auto">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-              <button 
-                key={num} 
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => setConvertAmount(prev => prev === '0' ? num.toString() : prev + num.toString())}
-                className="text-2xl font-black text-theme-primary hover:text-theme-brand transition-colors py-2 active:scale-90"
-              >
-                {num}
-              </button>
-            ))}
-            <button 
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => setConvertAmount(prev => prev.includes('.') ? prev : prev + '.')}
-              className="text-2xl font-black text-theme-primary hover:text-theme-brand transition-colors pb-2 active:scale-90"
-            >
-              .
-            </button>
-            <button 
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => setConvertAmount(prev => prev === '0' ? '0' : prev + '0')}
-              className="text-2xl font-black text-theme-primary hover:text-theme-brand transition-colors pb-2 active:scale-90"
-            >
-              0
-            </button>
-            <button 
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => setConvertAmount(prev => prev.length <= 1 ? '0' : prev.slice(0, -1))}
-              className="flex items-center justify-center text-theme-secondary hover:text-theme-primary transition-colors pb-2 active:scale-90"
-            >
-              <Delete size={24} />
-            </button>
-          </div>
-        </div>
+        <PinModal 
+          lang={userProfile.language}
+          biometricsEnabled={biometricsEnabled}
+          onVerifyBiometrics={onVerifyBiometrics}
+          onSuccess={() => {
+            setIsBalanceVisible(true);
+            localStorage.setItem("isBalanceVisible", "true");
+            closePinModal();
+          }}
+          onCancel={closePinModal}
+        />
       )}
 
       <TransactionDetailModal

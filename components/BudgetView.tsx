@@ -4,6 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
+import { PinModal } from './PinModal';
+import { TransactionItem } from './TransactionItem';
+import { formatAmount as fmtAmt, formatSecondaryAmount as fmtSec } from '../utils/formatUtils';
+import { renderAccountIcon as renderAccIcon } from '../utils/iconUtils';
+import { Eye, EyeOff } from 'lucide-react';
 import { 
     FaPlane, FaHouse, FaCar, FaGraduationCap, FaGift, FaGamepad, FaBasketShopping, FaEnvelope, 
     FaBox, FaRibbon, FaBriefcaseMedical, FaBullseye, FaRing, FaLaptop, FaPiggyBank, FaSackDollar, 
@@ -108,19 +113,15 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 }) => {
   const t = (key: any) => getTranslation(lang, key);
 
-  const formatAmount = (usd: number, decimals: number = 0) => {
-    if (!isBalanceVisible) return '******';
-    const val = displayInVES ? usd * exchangeRate : usd;
-    const symbol = displayInVES ? 'Bs. ' : '$';
-    return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
-  };
+  const [isBalanceVisibleLocal, setIsBalanceVisibleLocal] = useState(isBalanceVisible);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [selectedBudgetTransactions, setSelectedBudgetTransactions] = useState<{catId: string, name: string} | null>(null);
 
-  const formatSecondary = (usd: number) => {
-    if (!isBalanceVisible) return '******';
-    const val = displayInVES ? usd : usd * exchangeRate;
-    const symbol = displayInVES ? '$' : 'Bs.';
-    return `${symbol} ${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-  };
+  const formatAmount = (usd: number, decimals: number = 2) => 
+    fmtAmt(usd, exchangeRate, displayInVES, isBalanceVisibleLocal, decimals);
+
+  const formatSecondary = (usd: number) => 
+    fmtSec(usd, exchangeRate, displayInVES, isBalanceVisibleLocal, 2);
   const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>('ENVELOPES');
   const [isManaging, setIsManaging] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -334,20 +335,28 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                         
                         <div className="grid grid-cols-2 gap-8 mb-6">
                             <div>
-                                <p className="text-[10px] text-theme-secondary uppercase font-black tracking-widest mb-2 flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-theme-brand" />
-                                    {t('totalEnvelopes')}
-                                </p>
+                                <div className="text-[10px] text-theme-secondary uppercase font-black tracking-widest mb-2 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-theme-brand" />
+                                        {t('totalEnvelopes')}
+                                    </div>
+                                    <button 
+                                        onClick={() => isBalanceVisibleLocal ? setIsBalanceVisibleLocal(false) : setShowPinModal(true)}
+                                        className="p-1 hover:bg-white/5 rounded-md text-theme-secondary transition-colors"
+                                    >
+                                        {isBalanceVisibleLocal ? <EyeOff size={12} /> : <Eye size={12} />}
+                                    </button>
+                                </div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-black text-theme-primary">{formatAmount(totalBudgetSum)}</span>
                                     <span className="text-xs text-theme-secondary font-mono">{formatSecondary(totalBudgetSum)}</span>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] text-theme-secondary uppercase font-black tracking-widest mb-2 flex items-center gap-2 justify-end">
+                                <div className="text-[10px] text-theme-secondary uppercase font-black tracking-widest mb-2 flex items-center gap-2 justify-end">
                                     {t('totalMonthlyIncome')}
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                </p>
+                                </div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-black text-emerald-400">{formatAmount(totalIncomeMonth)}</span>
                                     <span className="text-xs text-theme-secondary font-mono">{formatSecondary(totalIncomeMonth)}</span>
@@ -423,7 +432,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     <motion.div 
                       layout
                       key={budget.categoryId} 
-                      className="bg-theme-surface p-5 rounded-2xl border border-white/5 shadow-lg relative group overflow-hidden"
+                      onClick={() => !isManaging && setSelectedBudgetTransactions({ catId: targetCatId, name: t(cat.name) })}
+                      className={`bg-theme-surface p-5 rounded-2xl border border-white/5 shadow-lg relative group overflow-hidden ${!isManaging ? 'cursor-pointer hover:bg-white/5 transition-colors' : ''}`}
                     >
                       <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-4">
@@ -752,6 +762,84 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       )}
       </AnimatePresence>
 
+      {showPinModal && (
+        <PinModal 
+          lang={lang}
+          biometricsEnabled={true}
+          onSuccess={() => {
+            setIsBalanceVisibleLocal(true);
+            setShowPinModal(false);
+          }}
+          onCancel={() => setShowPinModal(false)}
+        />
+      )}
+
+      {/* Envelope Detail Modal */}
+      <AnimatePresence>
+        {selectedBudgetTransactions && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-theme-surface w-full max-w-lg rounded-[32px] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                <div className="flex flex-col">
+                  <h3 className="font-black text-xl text-theme-primary">{selectedBudgetTransactions.name}</h3>
+                  <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-widest">{selectedMonth}</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedBudgetTransactions(null)} 
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-theme-secondary transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-4 overflow-y-auto no-scrollbar">
+                <div className="space-y-2">
+                  {(() => {
+                    const txs = transactions.filter(t => 
+                      t.category === selectedBudgetTransactions.catId && 
+                      t.type === TransactionType.EXPENSE && 
+                      t.date.startsWith(selectedMonth)
+                    ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                    if (txs.length === 0) return (
+                      <div className="text-center py-12 text-theme-secondary opacity-50">
+                        <History size={48} className="mx-auto mb-4 opacity-20" />
+                        <p className="font-bold">{t('noTransactions')}</p>
+                      </div>
+                    );
+
+                    return txs.map(tx => (
+                      <TransactionItem 
+                        key={tx.id}
+                        transaction={tx}
+                        accounts={accounts}
+                        lang={lang}
+                        isBalanceVisible={isBalanceVisibleLocal}
+                        displayInVES={displayInVES}
+                        compact={true}
+                        onSelect={() => {}} 
+                        onEdit={() => {}} 
+                        onDelete={() => {}} 
+                      />
+                    ));
+                  })()}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };
@@ -966,8 +1054,8 @@ const GoalForm = ({
                                     return (
                                         <div key={c.id} className="flex justify-between items-center p-2 bg-black/20 rounded-lg border border-white/5">
                                             <div className="flex items-center gap-2">
-                                                <div className="p-1 px-1.5 bg-emerald-500/10 text-emerald-400 rounded-md text-[8px] font-black uppercase">
-                                                    {acc?.currency || c.originalCurrency}
+                                                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                                                    {acc?.iconKey ? renderAccIcon(acc.iconKey) : (acc?.currency || c.originalCurrency)}
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-bold text-white">{acc?.name || 'Wallet'}</p>
