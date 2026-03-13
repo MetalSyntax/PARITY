@@ -3,6 +3,9 @@ import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, Shop
 import { Account, Currency } from './types';
 
 export const INITIAL_RATE = 350.50;
+export const INITIAL_USD_RATE_PARALLEL = 450.50;
+export const INITIAL_EURO_RATE = 400.00;
+export const INITIAL_EURO_RATE_PARALLEL = 500.00;
 
 export const MOCK_ACCOUNTS: Account[] = [];
 

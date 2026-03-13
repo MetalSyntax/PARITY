@@ -235,6 +235,7 @@ export const en = {
     alert_importSuccess: 'Data imported successfully!',
     alert_speechNotSupported: 'Speech recognition not supported in this browser',
     alert_fetchError: 'Failed to fetch live rate',
+    alert_fetchSuccess: 'Rates updated successfully!',
     alert_incorrectPin: 'Incorrect current PIN',
     alert_pinLengthError: 'New PIN must be 4 digits',
     alert_pinSuccess: 'PIN updated successfully',

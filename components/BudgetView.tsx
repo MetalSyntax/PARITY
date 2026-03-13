@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar, ArrowDownLeft, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
-import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig } from '../types';
+import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig, Currency } from '../types';
 import { getTranslation } from '../i18n';
 import { PinModal } from './PinModal';
 import { TransactionItem } from './TransactionItem';
@@ -89,7 +89,8 @@ interface BudgetViewProps {
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
   exchangeRate: number;
-  displayInVES: boolean;
+  euroRate?: number;
+  displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
   isBalanceVisible: boolean;
 }
@@ -107,7 +108,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     onToggleBottomNav,
     showConfirm,
     exchangeRate,
-    displayInVES,
+    euroRate,
+    displayCurrency,
     onToggleDisplayCurrency,
     isBalanceVisible
 }) => {
@@ -118,10 +120,10 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const [selectedBudgetTransactions, setSelectedBudgetTransactions] = useState<{catId: string, name: string} | null>(null);
 
   const formatAmount = (usd: number, decimals: number = 2) => 
-    fmtAmt(usd, exchangeRate, displayInVES, isBalanceVisibleLocal, decimals);
+    fmtAmt(usd, exchangeRate, displayCurrency, isBalanceVisibleLocal, decimals, euroRate);
 
   const formatSecondary = (usd: number) => 
-    fmtSec(usd, exchangeRate, displayInVES, isBalanceVisibleLocal, 2);
+    fmtSec(usd, exchangeRate, displayCurrency, isBalanceVisibleLocal, 2, euroRate);
   const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>('ENVELOPES');
   const [isManaging, setIsManaging] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -226,10 +228,10 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
         <div className="flex items-center gap-2">
             <button 
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
+                {displayCurrency === Currency.VES ? <Coins size={14} /> : displayCurrency === Currency.EUR ? <span className="text-xs">€</span> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayCurrency}</span>
             </button>
             <div className="relative">
               <button 
@@ -511,13 +513,19 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                             animate={{ opacity: 1, height: 'auto' }}
                             className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2"
                           >
-                              <span className="text-xs text-theme-secondary uppercase">{t('limit')}:</span>
-                              <span className="text-theme-secondary font-bold">{displayInVES ? 'Bs.' : '$'}</span>
+                              <span className="text-theme-secondary font-bold">
+                                  {displayCurrency === Currency.VES ? 'Bs.' : displayCurrency === Currency.EUR ? '€' : '$'}
+                              </span>
                               <input 
                                   type="number" 
-                                  value={budget.limit} 
-                                  onChange={(e) => handleUpdateLimit(budget.categoryId, e.target.value)}
-                                  className="bg-transparent font-bold text-white w-full outline-none border-b border-white/10 focus:border-indigo-500"
+                                  value={displayCurrency === Currency.VES ? budget.limit * exchangeRate : displayCurrency === Currency.EUR ? budget.limit * (exchangeRate / (euroRate || exchangeRate)) : budget.limit} 
+                                  onChange={(e) => {
+                                      const val = parseFloat(e.target.value);
+                                      if (isNaN(val)) return;
+                                      const usdVal = displayCurrency === Currency.VES ? val / exchangeRate : displayCurrency === Currency.EUR ? val * ((euroRate || exchangeRate) / exchangeRate) : val;
+                                      handleUpdateLimit(budget.categoryId, usdVal.toString());
+                                  }}
+                                  className="bg-transparent font-bold text-white w-full outline-none border-b border-white/10 focus:border-theme-brand"
                               />
                           </motion.div>
                       )}
@@ -754,8 +762,9 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     onUpdateAccounts={onUpdateAccounts}
                     t={t} 
                     showConfirm={showConfirm}
-                    displayInVES={displayInVES}
+                    displayCurrency={displayCurrency}
                     exchangeRate={exchangeRate}
+                    euroRate={euroRate}
                   />
               </motion.div>
           </motion.div>
@@ -825,7 +834,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                         accounts={accounts}
                         lang={lang}
                         isBalanceVisible={isBalanceVisibleLocal}
-                        displayInVES={displayInVES}
+                        displayCurrency={displayCurrency}
                         compact={true}
                         onSelect={() => {}} 
                         onEdit={() => {}} 
@@ -853,8 +862,9 @@ const GoalForm = ({
     accounts, 
     onUpdateAccounts, 
     showConfirm, 
-    displayInVES, 
-    exchangeRate 
+    displayCurrency, 
+    exchangeRate,
+    euroRate
 }: { 
     initialData: Goal | null, 
     onSave: (g: Goal) => void, 
@@ -863,8 +873,9 @@ const GoalForm = ({
     accounts: any[],
     onUpdateAccounts: (accs: any[]) => void,
     showConfirm: (config: ConfirmConfig) => void,
-    displayInVES: boolean,
-    exchangeRate: number
+    displayCurrency: Currency;
+    exchangeRate: number;
+    euroRate?: number;
 }) => {
     const [name, setName] = useState(initialData?.name || '');
     const [target, setTarget] = useState(initialData?.targetAmount.toString() || '');
@@ -966,8 +977,13 @@ const GoalForm = ({
     };
 
     const formatShortAmount = (usd: number) => {
-        const val = displayInVES ? usd * exchangeRate : usd;
-        const symbol = displayInVES ? 'Bs.' : '$';
+        let val = usd;
+        if (displayCurrency === Currency.VES) {
+            val = usd * exchangeRate;
+        } else if (displayCurrency === Currency.EUR && euroRate) {
+            val = usd * (exchangeRate / euroRate);
+        }
+        const symbol = displayCurrency === Currency.VES ? 'Bs.' : displayCurrency === Currency.EUR ? '€' : '$';
         return `${symbol}${val.toLocaleString(undefined, { maximumFractionDigits: 1 })}`;
     };
 

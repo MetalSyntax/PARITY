@@ -240,6 +240,7 @@ export const es = {
   alert_speechNotSupported:
     "El reconocimiento de voz no es compatible con este navegador",
   alert_fetchError: "Error al obtener la tasa en vivo",
+  alert_fetchSuccess: "¡Tasas actualizadas con éxito!",
   alert_incorrectPin: "PIN actual incorrecto",
   alert_pinLengthError: "El nuevo PIN debe ser de 4 dígitos",
   alert_pinSuccess: "PIN actualizado correctamente",
@@ -408,4 +409,6 @@ export const es = {
   summary: "Resumen",
   noReceipt: "No hay factura",
   download: "Descargar",
+  rateTypeOfficial: "Oficial (BCV)",
+  rateTypeParallel: "Bursátil/Binance",
 };

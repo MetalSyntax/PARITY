@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ChevronDown, ChevronUp, PieChart, BarChart, Settings, Activity, TrendingUp, X, ShieldAlert, Zap, AlertCircle, Coins, DollarSign, Shield, GripVertical, CalendarRange, ChartCandlestick } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, PieChart, BarChart, Settings, Activity, TrendingUp, X, ShieldAlert, Zap, AlertCircle, Coins, DollarSign, Shield, GripVertical, CalendarRange, ChartCandlestick, RefreshCw } from 'lucide-react';
 import { motion, Reorder, useDragControls, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
-import { Transaction, TransactionType, Language, ScheduledPayment } from '../types';
+import { Transaction, TransactionType, Language, ScheduledPayment, Currency } from '../types';
 import { getTranslation } from '../i18n';
 import { commonOptions, tailwindToHex } from '../utils/chartUtils';
 
@@ -18,10 +18,11 @@ interface AnalysisViewProps {
   lang: Language;
   scheduledPayments: ScheduledPayment[];
   exchangeRate: number;
+  euroRate?: number;
   isBalanceVisible: boolean;
   onToggleBottomNav: (visible: boolean) => void;
   onNavigate: (view: any) => void;
-  displayInVES: boolean;
+  displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
 }
 
@@ -31,10 +32,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     lang, 
     scheduledPayments, 
     exchangeRate, 
+    euroRate,
     isBalanceVisible, 
     onToggleBottomNav, 
     onNavigate,
-    displayInVES,
+    displayCurrency,
     onToggleDisplayCurrency
 }) => {
   const t = (key: any) => getTranslation(lang, key);
@@ -167,8 +169,17 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
   const formatAmount = (usd: number) => {
     if (!isBalanceVisible) return '******';
-    const val = displayInVES ? usd * exchangeRate : usd;
-    const symbol = displayInVES ? 'Bs. ' : '$';
+    let val = usd;
+    let symbol = '$';
+    
+    if (displayCurrency === Currency.VES) {
+      val = usd * exchangeRate;
+      symbol = 'Bs.';
+    } else if (displayCurrency === Currency.EUR) {
+      val = (usd * exchangeRate) / (euroRate || 1);
+      symbol = '€';
+    }
+    
     return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
@@ -192,10 +203,10 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
+                {displayCurrency === Currency.VES ? <Coins size={14} /> : displayCurrency === Currency.EUR ? <RefreshCw size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayCurrency}</span>
             </motion.button>
 
             <div className="relative">
@@ -262,7 +273,9 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                     </h2>
                     {isBalanceVisible && (
                         <span className="text-sm font-mono text-theme-secondary mt-1">
-                            {displayInVES ? `≈ $${Math.abs(netCashFlow)?.toFixed(2)}` : `≈ Bs. ${(Math.abs(netCashFlow) * exchangeRate)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            {displayCurrency === Currency.USD ? `≈ Bs. ${(Math.abs(netCashFlow) * exchangeRate)?.toLocaleString()}` : 
+                             displayCurrency === Currency.EUR ? `≈ $${Math.abs(netCashFlow)?.toFixed(2)}` :
+                             `≈ $${Math.abs(netCashFlow)?.toFixed(2)}`}
                         </span>
                     )}
                 </div>
@@ -387,7 +400,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                               display: true, 
                                               grid: { color: 'rgba(255,255,255,0.05)' },
                                               border: { display: false },
-                                              ticks: { color: '#71717a', font: { size: 10 }, callback: (v: any) => displayInVES ? `${v/1000}k` : `$${v}` }
+                                              ticks: { color: '#71717a', font: { size: 10 }, callback: (v: any) => {
+                                                  if (displayCurrency === Currency.VES) return `${v/1000}k Bs.`;
+                                                  if (displayCurrency === Currency.EUR) return `€${v}`;
+                                                  return `$${v}`;
+                                              }}
                                           },
                                           y: { 
                                               stacked: true,
@@ -452,7 +469,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                       },
                                       scales: {
                                           x: { display: true, grid: { display: false }, ticks: { color: '#71717a', font: { size: 10 } } },
-                                          y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 }, callback: (value: any) => displayInVES ? `Bs.${value/1000}k` : `$${value}` } }
+                                          y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 }, callback: (value: any) => {
+                                                  if (displayCurrency === Currency.VES) return `${value/1000}k Bs.`;
+                                                  if (displayCurrency === Currency.EUR) return `€${value}`;
+                                                  return `$${value}`;
+                                              }} }
                                       }
                                   }}
                               />
@@ -515,7 +536,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                               }
                                           },
                                           scales: { 
-                                              y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 }, callback: (v: any) => displayInVES ? `${v/1000}k` : `$${v}` } },
+                                              y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 }, callback: (v: any) => {
+                                                  if (displayCurrency === Currency.VES) return `${v/1000}k Bs.`;
+                                                  if (displayCurrency === Currency.EUR) return `€${v}`;
+                                                  return `$${v}`;
+                                              }} },
                                               x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 } } }
                                           } 
                                       }} />
@@ -557,7 +582,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                                 }
                                             },
                                             scales: {
-                                                y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 9 }, callback: (v: any) => displayInVES ? `${v/1000}k` : `$${v}` } },
+                                                y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 9 }, callback: (v: any) => {
+                                                    if (displayCurrency === Currency.VES) return `${(v * exchangeRate / 1000).toFixed(1)}k Bs.`;
+                                                    if (displayCurrency === Currency.EUR) return `€${(v * exchangeRate / (euroRate || 1)).toFixed(0)}`;
+                                                    return `$${v}`;
+                                                }} },
                                                 x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: '#71717a', font: { size: 9 }, maxRotation: 45, minRotation: 45 } }
                                             }
                                         }}

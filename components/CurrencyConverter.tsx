@@ -1,21 +1,24 @@
 import React, { useState } from "react";
 import { ArrowRightLeft, RefreshCw, Delete, X } from "lucide-react";
 import { getTranslation } from "../i18n";
-import { Language } from "../types";
+import { Language, Currency } from "../types";
 
 interface CurrencyConverterProps {
   exchangeRate: number;
+  euroRate?: number;
   lang: Language;
   onToggleBottomNav: (visible: boolean) => void;
 }
 
 export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
   exchangeRate,
+  euroRate,
   lang,
   onToggleBottomNav
 }) => {
   const [convertAmount, setConvertAmount] = useState<string>('1');
-  const [convertFromTo, setConvertFromTo] = useState<'USD_TO_VES' | 'VES_TO_USD'>('USD_TO_VES');
+  const [fromCurrency, setFromCurrency] = useState<Currency>(Currency.USD);
+  const [toCurrency, setToCurrency] = useState<Currency>(Currency.VES);
   const [isConverterFocused, setIsConverterFocused] = useState(false);
 
   const t = (key: any) => getTranslation(lang, key);
@@ -26,11 +29,26 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
 
   const calculatedResult = () => {
     const amt = parseFloat(convertAmount) || 0;
-    if (convertFromTo === 'USD_TO_VES') {
-      return (amt * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    } else {
-      return (amt / exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    }
+    const eRate = euroRate || 1;
+    let result = amt;
+
+    // Convert from source to VES first
+    let inVES = amt;
+    if (fromCurrency === Currency.USD || fromCurrency === Currency.USDT) inVES = amt * exchangeRate;
+    else if (fromCurrency === Currency.EUR) inVES = amt * eRate;
+    
+    // Convert from VES to target
+    if (toCurrency === Currency.USD || toCurrency === Currency.USDT) result = inVES / exchangeRate;
+    else if (toCurrency === Currency.EUR) result = inVES / eRate;
+    else result = inVES;
+
+    return result.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
+
+  const cycleCurrency = (cur: Currency): Currency => {
+    const rotation = [Currency.USD, Currency.VES, Currency.EUR];
+    const idx = rotation.indexOf(cur as any);
+    return rotation[(idx + 1) % rotation.length] as Currency;
   };
 
   return (
@@ -44,9 +62,12 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
         </div>
         
         <div className="flex items-center gap-4 bg-theme-bg p-3 rounded-2xl border border-theme-soft shadow-inner">
-          <div className="flex-1 flex flex-col">
-            <span className="text-[10px] uppercase font-bold text-theme-secondary opacity-50 ml-2 mb-1">
-              {convertFromTo === 'USD_TO_VES' ? 'USD' : 'Bs.'}
+          <button 
+            onClick={() => setFromCurrency(cycleCurrency(fromCurrency))}
+            className="flex-1 flex flex-col items-start hover:bg-white/5 p-2 rounded-xl transition-colors"
+          >
+            <span className="text-[10px] uppercase font-bold text-theme-brand mb-1">
+              {fromCurrency}
             </span>
             <input 
               type="text"
@@ -54,25 +75,34 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
               value={convertAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               onFocus={() => { setIsConverterFocused(true); onToggleBottomNav(false); }}
-              className={`bg-transparent text-xl font-black outline-none px-2 w-full transition-colors ${isConverterFocused ? 'text-theme-brand' : 'text-theme-primary'}`}
+              readOnly
+              className={`bg-transparent text-xl font-black outline-none w-full transition-colors cursor-pointer ${isConverterFocused ? 'text-theme-brand' : 'text-theme-primary'}`}
             />
-          </div>
+          </button>
 
           <button 
-            onClick={(e) => { e.stopPropagation(); setConvertFromTo(prev => prev === 'USD_TO_VES' ? 'VES_TO_USD' : 'USD_TO_VES'); }}
+            onClick={(e) => { 
+                e.stopPropagation(); 
+                const oldFrom = fromCurrency;
+                setFromCurrency(toCurrency);
+                setToCurrency(oldFrom);
+            }}
             className="p-3 bg-theme-surface border border-theme-soft shadow-sm rounded-xl text-theme-brand hover:scale-105 active:scale-95 transition-all"
           >
             <RefreshCw size={18} />
           </button>
           
-          <div className="flex-1 flex flex-col items-end">
-            <span className="text-[10px] uppercase font-bold text-theme-secondary opacity-50 mr-2 mb-1">
-              {convertFromTo === 'USD_TO_VES' ? 'Bs.' : 'USD'}
+          <button 
+            onClick={() => setToCurrency(cycleCurrency(toCurrency))}
+            className="flex-1 flex flex-col items-end hover:bg-white/5 p-2 rounded-xl transition-colors"
+          >
+            <span className="text-[10px] uppercase font-bold text-theme-brand mb-1">
+              {toCurrency}
             </span>
-            <p className="text-xl font-black text-theme-primary px-2 break-all line-clamp-1 truncate w-full text-right overflow-hidden">
+            <p className="text-xl font-black text-theme-primary break-all line-clamp-1 truncate w-full text-right overflow-hidden">
               {calculatedResult()}
             </p>
-          </div>
+          </button>
         </div>
       </div>
 

@@ -42,13 +42,15 @@ interface DashboardProps {
   setIsBalanceVisible: (visible: boolean) => void;
   isDevMode: boolean;
   onDevModeTrigger: () => void;
-  displayInVES: boolean;
+  displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
   needUpdate: boolean;
   updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
   onCheckUpdate: () => void;
   biometricsEnabled?: boolean;
   onVerifyBiometrics?: () => Promise<boolean>;
+  euroRate?: number;
+  euroRateParallel?: number;
 }
 
 
@@ -66,27 +68,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
   setIsBalanceVisible,
   isDevMode,
   onDevModeTrigger,
-  displayInVES,
+  displayCurrency,
   onToggleDisplayCurrency,
   needUpdate,
   updateServiceWorker,
   onCheckUpdate,
   biometricsEnabled,
-  onVerifyBiometrics
+  onVerifyBiometrics,
+  euroRate,
+  euroRateParallel
 }) => {
 
   const formatAmount = (usd: number) => {
     if (!isBalanceVisible) return "******";
-    const val = displayInVES ? usd * exchangeRate : usd;
-    const symbol = displayInVES ? 'Bs.' : '$';
+    let val = usd;
+    let symbol = '$';
+    
+    if (displayCurrency === Currency.VES) {
+      val = usd * exchangeRate;
+      symbol = 'Bs.';
+    } else if (displayCurrency === Currency.EUR) {
+      val = (usd * exchangeRate) / (euroRate || 1);
+      symbol = '€';
+    }
+    
     return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatSecondaryAmount = (usd: number) => {
     if (!isBalanceVisible) return "";
-    const val = displayInVES ? usd : usd * exchangeRate;
-    const symbol = displayInVES ? "$" : "Bs.";
-    return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${symbol}`;
+    
+    if (displayCurrency === Currency.USD) {
+      const val = usd * exchangeRate;
+      return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} Bs.`;
+    } else if (displayCurrency === Currency.VES) {
+      const val = usd;
+      return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} $`;
+    } else if (displayCurrency === Currency.EUR) {
+      const val = usd;
+      return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} $`;
+    }
+    return "";
   };
   const [showPinModal, setShowPinModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -186,23 +208,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const t = (key: any) => getTranslation(userProfile.language, key);
 
-  // Calculate Total Balance
   const totalBalanceUSD = useMemo(() => {
     return accounts.reduce((acc, account) => {
       let val = account.balance;
       if (account.currency === Currency.VES)
         val = account.balance / exchangeRate;
+      else if (account.currency === Currency.EUR)
+        val = (account.balance * (euroRate || exchangeRate)) / exchangeRate;
+      else if (account.currency === Currency.USDT)
+        val = account.balance;
       return acc + val;
     }, 0);
-  }, [accounts, exchangeRate]);
+  }, [accounts, exchangeRate, euroRate]);
 
   const totalBalanceVES = totalBalanceUSD * exchangeRate;
+  const totalBalanceEUR = totalBalanceVES / (euroRate || 1);
 
   const formatChartValue = (usd: number) => {
-    return displayInVES ? usd * exchangeRate : usd;
+    if (displayCurrency === Currency.VES) return usd * exchangeRate;
+    if (displayCurrency === Currency.EUR) return (usd * exchangeRate) / (euroRate || 1);
+    return usd;
   };
 
-  const getSymbol = () => (displayInVES ? "Bs." : "$");
+  const getSymbol = () => {
+    if (displayCurrency === Currency.VES) return "Bs.";
+    if (displayCurrency === Currency.EUR) return "€";
+    return "$";
+  };
 
   const formatChartAmount = (usd: number) => {
     if (!isBalanceVisible) return '******';
@@ -515,12 +547,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
             <button
               onClick={onOpenSettings}
-              className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-3 py-1.5 rounded-full flex items-center gap-2"
+              className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-3 py-1.5 rounded-full flex items-center gap-3"
             >
-              <span className="text-xs font-mono text-emerald-500 font-bold">
-                1 USD = {exchangeRate?.toFixed(2)}
+              <span className="text-[10px] font-mono whitespace-nowrap">
+                <span className="text-emerald-500 font-bold">USD: {exchangeRate?.toFixed(2)}</span>
+                <span className="mx-2 text-theme-secondary opacity-30">|</span>
+                <span className="text-blue-400 font-bold">EUR: {euroRate?.toFixed(2)}</span>
               </span>
-              <TrendingUp size={12} className="text-emerald-500" />
+              <TrendingUp size={12} className="text-theme-brand" />
             </button>
           </div>
         </div>
@@ -563,12 +597,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="px-4 md:px-0">
                     <div className="bg-theme-surface rounded-[2.5rem] p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-theme border border-theme-soft bg-gradient-to-br from-theme-surface to-theme-bg group">
                       <div className="absolute top-8 right-8 flex gap-3 z-20">
-                        <button
+                         <button
                           onClick={(e) => { e.stopPropagation(); onToggleDisplayCurrency(); }}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-theme-soft transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-bg text-theme-secondary hover:text-theme-primary'}`}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-theme-soft transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-bg text-theme-secondary hover:text-theme-primary'}`}
                         >
-                          {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                          <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
+                          {displayCurrency === Currency.VES ? <Coins size={14} /> : displayCurrency === Currency.EUR ? <RefreshCw size={14} /> : <DollarSign size={14} />}
+                          <span className="hidden sm:inline">{displayCurrency}</span>
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handlePrivacyToggle(e); }}
@@ -671,6 +705,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="px-4 md:px-0">
                     <CurrencyConverter 
                       exchangeRate={exchangeRate} 
+                      euroRate={euroRate}
                       lang={userProfile.language} 
                       onToggleBottomNav={onToggleBottomNav} 
                     />
@@ -712,7 +747,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={20} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
                       { id: "PROFILE", label: t("profile"), icon: <User size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
                     ].map((action, i) => (
-                      <button key={i} onClick={() => onNavigate(action.id)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">
+                      <button key={i} onClick={() => action.id === 'CURRENCY_PERF' ? onOpenSettings() : onNavigate(action.id as any)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">
                         <div className={`w-12 h-12 rounded-xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>{action.icon}</div>
                         <span className="text-xs text-theme-secondary font-medium">{action.label}</span>
                       </button>
@@ -924,7 +959,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                           accounts={accounts}
                                           lang={userProfile.language}
                                           isBalanceVisible={isBalanceVisible}
-                                          displayInVES={displayInVES}
+                                          displayCurrency={displayCurrency}
                                           onSelect={setSelectedTx}
                                           onEdit={onEditTransaction}
                                           onDelete={onDeleteTransaction}
@@ -1117,7 +1152,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         onEdit={onEditTransaction}
         language={userProfile.language}
         exchangeRate={exchangeRate}
-        displayInVES={displayInVES}
+        displayCurrency={displayCurrency}
       />
     </div>
   );

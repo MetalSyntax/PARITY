@@ -12,7 +12,7 @@ interface TransactionDetailModalProps {
   onEdit: (t: Transaction) => void;
   language: Language;
   exchangeRate?: number;
-  displayInVES: boolean;
+  displayCurrency: Currency;
 }
 
 export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
@@ -22,7 +22,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   onEdit,
   language,
   exchangeRate,
-  displayInVES,
+  displayCurrency,
 }) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'invoice'>('summary');
   const [showLightbox, setShowLightbox] = useState(false);
@@ -38,6 +38,21 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
   const category = CATEGORIES.find(c => c.id === transaction.category) || CATEGORIES[0];
 
+  const getSymbol = (cur: Currency) => {
+    if (cur === Currency.USD || cur === Currency.USDT) return '$';
+    if (cur === Currency.EUR) return '€';
+    return 'Bs.';
+  };
+
+  const isUSD = (cur: Currency) => cur === Currency.USD || cur === Currency.USDT;
+
+  const calculateAmount = (cur: Currency, tx: Transaction, currentER?: number) => {
+    const rate = currentER || tx.exchangeRate || 1;
+    if (cur === Currency.VES) return tx.normalizedAmountUSD * rate;
+    if (cur === Currency.EUR) return (tx.normalizedAmountUSD * rate) / (tx.euroRate || 1);
+    return tx.normalizedAmountUSD;
+  };
+
   const mainAmount = transaction.amount;
   const isOriginalUSD = transaction.originalCurrency === Currency.USD;
 
@@ -48,16 +63,13 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           <p className="text-xs font-black uppercase tracking-widest text-theme-secondary mb-2">{t('amount')}</p>
           <h2 className={`text-4xl font-black ${transaction.type === TransactionType.INCOME ? 'text-emerald-400' : 'text-theme-primary'}`}>
             {transaction.type === TransactionType.INCOME ? '+' : '-'}
-            {transaction.originalCurrency === Currency.USD ? '$' : 'Bs.'}
+            {(transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT) ? '$' : transaction.originalCurrency === Currency.EUR ? '€' : 'Bs.'}
             {transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h2>
-          {transaction.originalCurrency !== (displayInVES ? Currency.VES : Currency.USD) && (
+          {displayCurrency !== transaction.originalCurrency && !(isUSD(displayCurrency) && isUSD(transaction.originalCurrency)) && (
             <p className="text-sm text-theme-secondary mt-1 font-mono">
-              ≈ {displayInVES ? 'Bs.' : '$'} {
-                (displayInVES
-                  ? (transaction.originalCurrency === Currency.USD ? transaction.amount * (exchangeRate || transaction.exchangeRate) : transaction.amount)
-                  : (transaction.originalCurrency === Currency.VES ? transaction.amount / (exchangeRate || transaction.exchangeRate) : transaction.amount)
-                ).toLocaleString(undefined, { minimumFractionDigits: 2 })
+              ≈ {getSymbol(displayCurrency)} {
+                calculateAmount(displayCurrency, transaction, exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2 })
               }
             </p>
           )}
@@ -85,7 +97,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           {transaction.fee !== undefined && transaction.fee > 0 && (
             <div className="flex justify-between items-center text-sm">
               <span className="text-[10px] font-black uppercase tracking-wider text-theme-secondary opacity-50">{t('commissions')}</span>
-              <span className="text-red-400 font-bold">{transaction.fee.toLocaleString()} {transaction.originalCurrency === Currency.USD ? '$' : 'Bs.'}</span>
+              <span className="text-red-400 font-bold">{transaction.fee.toLocaleString()} {getSymbol(transaction.originalCurrency)}</span>
             </div>
           )}
         </div>

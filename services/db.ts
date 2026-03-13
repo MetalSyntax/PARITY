@@ -22,6 +22,9 @@ export type StorageType = 'LOCAL_STORAGE' | 'INDEXED_DB';
 
 export interface AppData {
     exchangeRate: number;
+    usdRateParallel?: number;
+    euroRate?: number;
+    euroRateParallel?: number;
     accounts: Account[];
     transactions: Transaction[];
     scheduledPayments: ScheduledPayment[];

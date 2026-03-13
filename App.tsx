@@ -22,8 +22,8 @@ import './index.css';
 // @ts-ignore
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
-import { INITIAL_RATE, MOCK_ACCOUNTS, CATEGORIES } from './constants';
-import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig } from './types';
+import { INITIAL_RATE, INITIAL_USD_RATE_PARALLEL, INITIAL_EURO_RATE, INITIAL_EURO_RATE_PARALLEL, MOCK_ACCOUNTS, CATEGORIES } from './constants';
+import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
@@ -74,6 +74,9 @@ function AppContent() {
 
   // Application State
   const [exchangeRate, setExchangeRate] = useState(INITIAL_RATE);
+  const [usdRateParallel, setUsdRateParallel] = useState(INITIAL_USD_RATE_PARALLEL);
+  const [euroRate, setEuroRate] = useState(INITIAL_EURO_RATE);
+  const [euroRateParallel, setEuroRateParallel] = useState(INITIAL_EURO_RATE_PARALLEL);
   const [accounts, setAccounts] = useState<Account[]>(MOCK_ACCOUNTS);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
@@ -81,9 +84,9 @@ function AppContent() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [rateHistory, setRateHistory] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: '', language: 'en' });
-  const [displayInVES, setDisplayInVES] = useState(() => {
-    const saved = localStorage.getItem("displayInVES");
-    return saved !== null ? JSON.parse(saved) : false;
+  const [displayCurrency, setDisplayCurrency] = useState<Currency>(() => {
+    const saved = localStorage.getItem("displayCurrency");
+    return saved ? (saved as Currency) : Currency.USD;
   });
   const [navbarFavorites, setNavbarFavorites] = useState<ViewState[]>(() => {
     const saved = localStorage.getItem("navbarFavorites");
@@ -91,9 +94,12 @@ function AppContent() {
   });
 
   const toggleDisplayCurrency = () => {
-    const next = !displayInVES;
-    setDisplayInVES(next);
-    localStorage.setItem("displayInVES", JSON.stringify(next));
+    const rotation = [Currency.USD, Currency.VES, Currency.EUR];
+    const currentIndex = rotation.indexOf(displayCurrency);
+    const nextIndex = (currentIndex + 1) % rotation.length;
+    const next = rotation[nextIndex];
+    setDisplayCurrency(next);
+    localStorage.setItem("displayCurrency", next);
   };
 
   const [isLoaded, setIsLoaded] = useState(false);
@@ -208,6 +214,9 @@ function AppContent() {
 
         if (loadedData) {
             setExchangeRate(loadedData.exchangeRate || INITIAL_RATE);
+            setUsdRateParallel(loadedData.usdRateParallel || INITIAL_USD_RATE_PARALLEL);
+            setEuroRate(loadedData.euroRate || INITIAL_EURO_RATE);
+            setEuroRateParallel(loadedData.euroRateParallel || INITIAL_EURO_RATE_PARALLEL);
             setAccounts(loadedData.accounts && loadedData.accounts.length > 0 ? loadedData.accounts : MOCK_ACCOUNTS);
             setTransactions(loadedData.transactions || []);
             setScheduledPayments(loadedData.scheduledPayments || []);
@@ -224,49 +233,88 @@ function AppContent() {
     load();
   }, [storageType]);
 
-  // Auto-fetch BCV Rate Daily
-  useEffect(() => {
-    if (!isLoaded) return;
-    
-    const lastUpdate = localStorage.getItem('last_bcv_update');
-    const now = Date.now();
-    const oneDay = 24 * 60 * 60 * 1000;
-    
-    if (!lastUpdate || (now - parseInt(lastUpdate)) > oneDay) {
-        let isMounted = true;
-        const fetchRate = async () => {
-             try {
-                 const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
-                 if (response.ok) {
-                     const data = await response.json();
-                      if (data.promedio && isMounted) {
-                          const newRate = Number(data.promedio);
-                          setExchangeRate(newRate);
-                          localStorage.setItem('last_bcv_update', now.toString());
-                          
-                          // Track rate history
-                          setRateHistory(prev => {
-                              const today = new Date().toISOString().split('T')[0];
-                              const history = [...prev];
-                              const existingIdx = history.findIndex(h => h.date === today);
-                              if (existingIdx >= 0) {
-                                  history[existingIdx].rate = newRate;
-                              } else {
-                                  history.push({ date: today, rate: newRate });
-                              }
-                              // Keep last 30 days
-                              return history.sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
-                          });
-                      }
+    const fetchAllRates = async () => {
+         try {
+             const [usdRes, eurRes] = await Promise.all([
+                fetch('https://ve.dolarapi.com/v1/dolares'),
+                fetch('https://ve.dolarapi.com/v1/euros')
+             ]);
+
+             if (usdRes.ok) {
+                 const data = await usdRes.json();
+                 if (Array.isArray(data)) {
+                    const official = data.find(r => r.fuente === 'oficial');
+                    const parallel = data.find(r => r.fuente === 'paralelo');
+                    let newRate = exchangeRate;
+                    if (official) {
+                        newRate = Number(official.promedio);
+                        setExchangeRate(newRate);
+                        localStorage.setItem('last_bcv_update', Date.now().toString());
+                    }
+                    if (parallel) {
+                        setUsdRateParallel(Number(parallel.promedio));
+                    }
+
+                    if (official) {
+                        setRateHistory(prev => {
+                            const today = new Date().toISOString().split('T')[0];
+                            const history = [...prev];
+                            const existingIdx = history.findIndex(h => h.date === today && h.currency === Currency.USD);
+                            if (existingIdx >= 0) {
+                                history[existingIdx].rate = newRate;
+                            } else {
+                                history.push({ date: today, rate: newRate, currency: Currency.USD });
+                            }
+                            return history.sort((a,b) => a.date.localeCompare(b.date)).slice(-60);
+                        });
+                    }
                  }
-             } catch (e) {
-                 console.error("Auto fetch rate failed", e);
              }
-        };
-        fetchRate();
-        return () => { isMounted = false; };
-    }
-  }, [isLoaded]);
+
+             if (eurRes.ok) {
+                const data = await eurRes.json();
+                if (Array.isArray(data)) {
+                    const official = data.find(r => r.fuente === 'oficial');
+                    const parallel = data.find(r => r.fuente === 'paralelo');
+                    if (official) setEuroRate(Number(official.promedio));
+                    if (parallel) setEuroRateParallel(Number(parallel.promedio));
+
+                    if (official) {
+                        setRateHistory(prev => {
+                            const today = new Date().toISOString().split('T')[0];
+                            const history = [...prev];
+                            const existingIdx = history.findIndex(h => h.date === today && h.currency === Currency.EUR);
+                            if (existingIdx >= 0) {
+                                history[existingIdx].rate = Number(official.promedio);
+                            } else {
+                                history.push({ date: today, rate: Number(official.promedio), currency: Currency.EUR });
+                            }
+                            return history.sort((a,b) => a.date.localeCompare(b.date)).slice(-60);
+                        });
+                    }
+                }
+             }
+             return true;
+         } catch (e) {
+             console.error("Fetch all rates failed", e);
+             return false;
+         }
+    };
+
+    useEffect(() => {
+        if (!isLoaded) return;
+        
+        const lastUpdate = localStorage.getItem('last_bcv_update');
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+        
+        if (!lastUpdate || (now - parseInt(lastUpdate)) > oneDay) {
+            fetchAllRates();
+        }
+        
+        (window as any).refreshAppRates = fetchAllRates;
+    }, [isLoaded]);
+
 
   // PIN Lock initialization
   useEffect(() => {
@@ -396,12 +444,20 @@ function AppContent() {
   };
 
 
+  const handleUpdateRateType = (type: RateType) => {
+    setUserProfile(prev => ({ ...prev, rateType: type }));
+    showAlert(type === 'OFFICIAL' ? 'Tasas Oficiales (BCV) activadas' : 'Tasas Paralelas (Binance) activadas', 'success');
+  };
+
   // Save logic
   useEffect(() => {
     if (!isLoaded) return;
     
     const data: AppData = {
       exchangeRate,
+      usdRateParallel,
+      euroRate,
+      euroRateParallel,
       accounts,
       transactions,
       scheduledPayments,
@@ -421,7 +477,7 @@ function AppContent() {
     };
     
     save();
-  }, [exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, isLoaded, storageType]);
+  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, isLoaded, storageType]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -447,9 +503,11 @@ function AppContent() {
             }
 
             if (acc.currency !== tx.originalCurrency) {
-              if (acc.currency === Currency.USD && tx.originalCurrency === Currency.VES) {
+              const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
+              
+              if (isUSDType(acc.currency) && tx.originalCurrency === Currency.VES) {
                 amount = tx.amount / tx.exchangeRate;
-              } else if (acc.currency === Currency.VES && tx.originalCurrency === Currency.USD) {
+              } else if (acc.currency === Currency.VES && isUSDType(tx.originalCurrency)) {
                 amount = tx.amount * tx.exchangeRate;
               }
             }
@@ -512,9 +570,14 @@ function AppContent() {
        if (revertedAccounts) currentAccounts = revertedAccounts;
     }
 
-    const normalizedUSD = data.originalCurrency === Currency.USD
+    const currentEuroRate = userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate;
+    const currentUSDRes = userProfile.rateType === 'PARALLEL' ? (usdRateParallel || exchangeRate) : exchangeRate;
+
+    const normalizedUSD = (data.originalCurrency === Currency.USD || data.originalCurrency === Currency.USDT)
       ? data.amount
-      : data.amount / data.exchangeRate;
+      : data.originalCurrency === Currency.EUR
+      ? (data.amount * (data.euroRate || currentEuroRate)) / (data.exchangeRate || currentUSDRes)
+      : data.amount / (data.exchangeRate || currentUSDRes);
 
     const newTransaction: Transaction = {
       ...data,
@@ -538,10 +601,19 @@ function AppContent() {
         }
 
         if (acc.currency !== data.originalCurrency) {
-          if (acc.currency === Currency.USD && data.originalCurrency === Currency.VES) {
-            deduction = deduction / data.exchangeRate;
-          } else if (acc.currency === Currency.VES && data.originalCurrency === Currency.USD) {
-            deduction = deduction * data.exchangeRate;
+          const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
+          const txRate = data.exchangeRate || currentUSDRes;
+          const txEuroRate = data.euroRate || currentEuroRate;
+
+          if (isUSDType(acc.currency)) {
+            if (data.originalCurrency === Currency.VES) deduction = deduction / txRate;
+            else if (data.originalCurrency === Currency.EUR) deduction = deduction * (txEuroRate / txRate);
+          } else if (acc.currency === Currency.VES) {
+            if (isUSDType(data.originalCurrency)) deduction = deduction * txRate;
+            else if (data.originalCurrency === Currency.EUR) deduction = deduction * txEuroRate;
+          } else if (acc.currency === Currency.EUR) {
+            if (isUSDType(data.originalCurrency)) deduction = deduction * (txRate / txEuroRate);
+            else if (data.originalCurrency === Currency.VES) deduction = deduction / txEuroRate;
           }
         }
         const modifier = data.type === TransactionType.INCOME ? 1 : -1;
@@ -552,17 +624,19 @@ function AppContent() {
         let addition = data.amount;
 
         if (data.originalCurrency !== acc.currency) {
-          if (data.originalCurrency === Currency.USD) {
-            if (acc.currency === Currency.VES) addition = data.amount * data.exchangeRate;
-            else addition = data.amount;
-          }
-          else if (data.originalCurrency === Currency.VES) {
-            if (acc.currency === Currency.USD) addition = data.amount / data.exchangeRate;
-            else addition = data.amount / data.exchangeRate;
-          }
-          else {
-            if (acc.currency === Currency.VES) addition = data.amount * data.exchangeRate;
-            else addition = data.amount;
+          const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
+          const txRate = data.exchangeRate || currentUSDRes;
+          const txEuroRate = data.euroRate || currentEuroRate;
+
+          if (isUSDType(acc.currency)) {
+             if (data.originalCurrency === Currency.VES) addition = data.amount / txRate;
+             else if (data.originalCurrency === Currency.EUR) addition = data.amount * (txEuroRate / txRate);
+          } else if (acc.currency === Currency.VES) {
+             if (isUSDType(data.originalCurrency)) addition = data.amount * txRate;
+             else if (data.originalCurrency === Currency.EUR) addition = data.amount * txEuroRate;
+          } else if (acc.currency === Currency.EUR) {
+             if (isUSDType(data.originalCurrency)) addition = data.amount * (txRate / txEuroRate);
+             else if (data.originalCurrency === Currency.VES) addition = data.amount / txEuroRate;
           }
         }
 
@@ -783,7 +857,7 @@ function AppContent() {
             <Dashboard
               accounts={accounts}
               transactions={transactions}
-              exchangeRate={exchangeRate}
+              exchangeRate={userProfile.rateType === 'PARALLEL' ? (usdRateParallel || exchangeRate) : exchangeRate}
               onOpenSettings={() => setShowSettings(true)}
               onNavigate={setCurrentView}
               userProfile={userProfile}
@@ -794,7 +868,7 @@ function AppContent() {
               setIsBalanceVisible={setIsBalanceVisible}
               isDevMode={isDevMode}
               onDevModeTrigger={handleDevModeTrigger}
-              displayInVES={displayInVES}
+              displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               needUpdate={needRefresh}
               updateServiceWorker={updateServiceWorker}
@@ -810,6 +884,8 @@ function AppContent() {
               }}
               biometricsEnabled={biometricsEnabled}
               onVerifyBiometrics={verifyBiometrics}
+              euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
+              euroRateParallel={euroRateParallel}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -820,7 +896,7 @@ function AppContent() {
               onTransfer={handleSaveTransaction}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
-              displayInVES={displayInVES}
+              displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
@@ -834,7 +910,7 @@ function AppContent() {
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}
-              displayInVES={displayInVES}
+              displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               isBalanceVisible={isBalanceVisible}
             />
@@ -853,7 +929,7 @@ function AppContent() {
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}
-              displayInVES={displayInVES}
+              displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               isBalanceVisible={isBalanceVisible}
             />
@@ -868,7 +944,7 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
               onToggleBottomNav={setIsNavVisible}
               onNavigate={setCurrentView}
-              displayInVES={displayInVES}
+              displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
@@ -885,7 +961,7 @@ function AppContent() {
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               onConfirmPayment={handleConfirmScheduledPayment}
-              displayInVES={displayInVES}
+              displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
@@ -920,7 +996,7 @@ function AppContent() {
               onDeleteTransaction={handleDeleteTransaction}
               onEditTransaction={(tx) => { setEditingTransaction(tx); setShowAdd(true); }}
               isBalanceVisible={isBalanceVisible}
-              displayInVES={displayInVES}
+              displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
             />
           )}
@@ -930,7 +1006,7 @@ function AppContent() {
               transactions={transactions}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
-              displayInVES={displayInVES}
+              displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               isBalanceVisible={isBalanceVisible}
             />
@@ -943,6 +1019,8 @@ function AppContent() {
               exchangeRate={exchangeRate}
               isBalanceVisible={isBalanceVisible}
               rateHistory={rateHistory}
+              euroRate={euroRate}
+              euroRateParallel={euroRateParallel}
             />
           )}
         </motion.div>
@@ -1017,7 +1095,8 @@ function AppContent() {
           <AddTransaction
             onClose={() => { setShowAdd(false); setEditingTransaction(null); }}
             onSave={handleSaveTransaction}
-            exchangeRate={exchangeRate}
+            exchangeRate={userProfile.rateType === 'PARALLEL' ? (usdRateParallel || exchangeRate) : exchangeRate}
+            euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
             accounts={accounts}
             lang={userProfile.language}
             initialData={editingTransaction}
@@ -1028,6 +1107,11 @@ function AppContent() {
         {showSettings && (
           <SettingsModal 
             currentRate={exchangeRate}
+            usdRateParallel={usdRateParallel}
+            euroRate={euroRate}
+            euroRateParallel={euroRateParallel}
+            rateType={userProfile.rateType || 'OFFICIAL'}
+            onUpdateRateType={handleUpdateRateType}
             onClose={() => setShowSettings(false)}
             onUpdateRate={setExchangeRate}
             lang={userProfile.language}
@@ -1040,6 +1124,8 @@ function AppContent() {
             biometricsEnabled={biometricsEnabled}
             onToggleBiometrics={handleToggleBiometrics}
             isDevMode={isDevMode}
+            onRefreshRates={fetchAllRates}
+
           />
         )}
 

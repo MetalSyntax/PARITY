@@ -14,7 +14,8 @@ interface ScheduledPaymentViewProps {
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
   exchangeRate: number;
-  displayInVES: boolean;
+  euroRate?: number;
+  displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
   isBalanceVisible: boolean;
 }
@@ -28,7 +29,8 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   onToggleBottomNav,
   showConfirm,
   exchangeRate,
-  displayInVES,
+  euroRate,
+  displayCurrency,
   onToggleDisplayCurrency,
   isBalanceVisible
 }) => {
@@ -36,8 +38,17 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   
   const formatAmount = (usd: number) => {
     if (!isBalanceVisible) return '******';
-    const val = displayInVES ? usd * exchangeRate : usd;
-    const symbol = displayInVES ? 'Bs. ' : '$';
+    let val = usd;
+    let symbol = '$';
+    
+    if (displayCurrency === Currency.VES) {
+      val = usd * exchangeRate;
+      symbol = 'Bs.';
+    } else if (displayCurrency === Currency.EUR) {
+      val = (usd * exchangeRate) / (euroRate || 1);
+      symbol = '€';
+    }
+    
     return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
@@ -145,10 +156,10 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
+                {displayCurrency === Currency.VES ? <Coins size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayCurrency === Currency.VES ? 'Bs.' : displayCurrency}</span>
             </motion.button>
             <motion.button 
                 whileHover={{ scale: 1.1 }}
@@ -170,7 +181,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {incomeSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} displayInVES={displayInVES} isBalanceVisible={isBalanceVisible} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} />
               ))}
               {incomeSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -188,7 +199,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {expenseSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} displayInVES={displayInVES} isBalanceVisible={isBalanceVisible} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} />
               ))}
               {expenseSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -400,11 +411,12 @@ interface ScheduledItemProps {
   onDelete: (id: string) => void;
   onConfirm: (payment: ScheduledPayment) => void; // Added onConfirm which was missing in original interface
   exchangeRate: number;
-  displayInVES: boolean;
+  euroRate?: number;
+  displayCurrency: Currency;
   isBalanceVisible: boolean;
 }
 
-const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate, displayInVES, isBalanceVisible }) => {
+const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate, euroRate, displayCurrency, isBalanceVisible }) => {
   const isIncome = p.type === TransactionType.INCOME;
   
   return (
@@ -440,15 +452,24 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
             <span className={`font-black text-sm ${isIncome ? 'text-emerald-400' : 'text-theme-primary'}`}>
               {isBalanceVisible ? (
                   <>
-                    {displayInVES ? 'Bs.' : (p.currency === Currency.USD ? '$' : 'Bs.')}
-                    {(displayInVES ? (p.currency === Currency.VES ? p.amount : p.amount * exchangeRate) : (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate))?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {displayCurrency === Currency.USD ? '$' : displayCurrency === Currency.EUR ? '€' : 'Bs.'}
+                    {(() => {
+                        const amountUSD = p.currency === Currency.USD || p.currency === Currency.USDT ? p.amount : (p.currency === Currency.EUR ? (p.amount * (euroRate || 0)) / exchangeRate : p.amount / exchangeRate);
+                        if (displayCurrency === Currency.USD) return amountUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        if (displayCurrency === Currency.EUR) return ((amountUSD * exchangeRate) / (euroRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        return (amountUSD * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    })()}
                   </>
               ) : '******'}
             </span>
             <span className="text-[10px] text-zinc-500 font-mono">
               {isBalanceVisible ? (
                   <>
-                  ~{displayInVES ? '$' : 'Bs.'} {(displayInVES ? (p.currency === Currency.USD ? p.amount : p.amount / exchangeRate) : (p.currency === Currency.USD ? p.amount * exchangeRate : p.amount))?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  ~{displayCurrency === Currency.USD ? 'Bs.' : '$'} {(() => {
+                        const amountUSD = p.currency === Currency.USD || p.currency === Currency.USDT ? p.amount : (p.currency === Currency.EUR ? (p.amount * (euroRate || 0)) / exchangeRate : p.amount / exchangeRate);
+                        if (displayCurrency === Currency.USD) return (amountUSD * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
+                        return amountUSD.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                    })()}
                   </>
               ) : '******'}
             </span>

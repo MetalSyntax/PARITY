@@ -13,6 +13,8 @@ export enum TransactionType {
   TRANSFER = 'TRANSFER'
 }
 
+export type RateType = 'OFFICIAL' | 'PARALLEL';
+
 export type Language = 'en' | 'es' | 'pt';
 
 export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF';
@@ -25,6 +27,7 @@ export interface UserProfile {
   hideDevMode?: boolean;
   dashboardTxLimit?: number;
   hideName?: boolean;
+  rateType?: RateType;
 }
 
 export interface Account {
@@ -42,6 +45,7 @@ export interface Transaction {
   amount: number; // Stored in original currency
   originalCurrency: Currency;
   exchangeRate: number; // Snapshot of rate at time of transaction
+  euroRate?: number; // Snapshot of euro rate at time of transaction
   normalizedAmountUSD: number; // Calculated value in USD at time of transaction
   type: TransactionType;
   category: string;
@@ -88,6 +92,7 @@ export interface GoalContribution {
     amount: number; // Amount in original currency
     originalCurrency: Currency;
     exchangeRate: number;
+    euroRate?: number;
     normalizedAmountUSD: number;
     date: string;
 }
@@ -106,10 +111,14 @@ export interface Goal {
 export interface RateHistoryItem {
     date: string; // ISO string (YYYY-MM-DD)
     rate: number;
+    currency?: Currency;
 }
 
 export interface AppData {
     exchangeRate: number;
+    usdRateParallel?: number;
+    euroRate?: number;
+    euroRateParallel?: number;
     accounts: Account[];
     transactions: Transaction[];
     scheduledPayments: ScheduledPayment[];

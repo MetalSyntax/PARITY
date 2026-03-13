@@ -20,9 +20,35 @@ interface SettingsModalProps {
   biometricsEnabled: boolean;
   onToggleBiometrics: (enabled: boolean) => void;
   isDevMode?: boolean;
+  rateType: 'OFFICIAL' | 'PARALLEL';
+  onUpdateRateType: (type: 'OFFICIAL' | 'PARALLEL') => void;
+  euroRate?: number;
+  euroRateParallel?: number;
+  usdRateParallel?: number;
+  onRefreshRates: () => Promise<boolean>;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClose, onUpdateRate, lang, currentStorageType, showAlert, autoLockEnabled, onToggleAutoLock, autoLockDelay, onSetAutoLockDelay, biometricsEnabled, onToggleBiometrics, isDevMode }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ 
+  currentRate, 
+  usdRateParallel,
+  euroRate,
+  euroRateParallel,
+  onClose, 
+  onUpdateRate, 
+  lang, 
+  currentStorageType, 
+  showAlert, 
+  autoLockEnabled, 
+  onToggleAutoLock, 
+  autoLockDelay, 
+  onSetAutoLockDelay, 
+  biometricsEnabled, 
+  onToggleBiometrics, 
+  isDevMode,
+  rateType,
+  onUpdateRateType,
+  onRefreshRates
+}) => {
   const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
   const [mode, setMode] = useState<'AUTO' | 'PARALLEL' | 'MANUAL'>('MANUAL');
@@ -43,38 +69,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
     }
   }, []);
 
-  const handleFetchRate = async (targetMode: 'AUTO' | 'PARALLEL') => {
-      setMode(targetMode);
+  const handleFetchRate = async (targetMode: 'OFFICIAL' | 'PARALLEL') => {
+      setMode(targetMode === 'OFFICIAL' ? 'AUTO' : 'PARALLEL'); // Keep internal mode state consistent
       setIsFetching(true);
       
       try {
-          const endpoint = targetMode === 'AUTO' 
-              ? 'https://ve.dolarapi.com/v1/dolares/oficial' 
-              : 'https://ve.dolarapi.com/v1/dolares/paralelo';
+          const success = await onRefreshRates();
+          if (!success) throw new Error('Refresh failed');
           
-          const response = await fetch(endpoint);
-          
-          if (!response.ok) throw new Error('Network error');
-          
-          const data = await response.json();
-          // The API returns { ..., promedio: number, ... }
-          const fetchedRate = data.promedio;
-
-          if (fetchedRate) {
-              setRate(Number(fetchedRate));
-              localStorage.setItem('last_bcv_update', Date.now().toString());
-          } else {
-              throw new Error("Invalid format");
-          }
+          // If we manually fetched, we update the local 'rate' state to reflect the fetched official USD rate
+          // This keeps the manual input sync with official if they just clicked it
+          setRate(currentRate);
+          showAlert('alert_fetchSuccess', 'success');
       } catch (error) {
-          console.error("Failed to fetch rate", error);
-          // Fallback values if API fails
-          setRate(targetMode === 'AUTO' ? 50.50 : 60.15);
+          console.error("Failed to fetch rates", error);
           showAlert('alert_fetchError', 'error');
       } finally {
           setIsFetching(false);
       }
   };
+
 
   const handleChangePin = () => {
       const currentStored = localStorage.getItem('parity_pin') || '0000';
@@ -142,40 +156,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ currentRate, onClo
             <div className="h-px bg-theme-soft"></div>
 
             <section>
-              <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] mb-4 flex items-center gap-2 opacity-60">
-                <TrendingUp size={14} className="text-theme-brand"/> {t('exchangeRateLabel')}
-              </h3>
-              <p className="text-[11px] font-bold text-theme-secondary mb-5 leading-relaxed opacity-80">{t('rateSourceDescription')}</p>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] flex items-center gap-2 opacity-60">
+                    <TrendingUp size={14} className="text-theme-brand"/> {t('exchangeRateLabel')}
+                  </h3>
+                  <button 
+                    onClick={() => handleFetchRate(rateType)} 
+                    disabled={isFetching}
+                    className={`p-2 bg-theme-soft rounded-xl text-theme-secondary hover:text-theme-primary transition-all ${isFetching ? 'animate-spin' : ''}`}
+                  >
+                    <RefreshCw size={14} />
+                  </button>
+                </div>
+                <p className="text-[11px] font-bold text-theme-secondary mb-5 leading-relaxed opacity-80">{t('rateSourceDescription')}</p>
               
               <div className="flex flex-col gap-3">
                  <button 
-                     onClick={() => handleFetchRate('AUTO')}
-                     className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${mode === 'AUTO' ? 'bg-theme-brand/5 border-theme-soft ring-1 ring-theme-brand/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
+                     onClick={() => onUpdateRateType('OFFICIAL')}
+                     className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${rateType === 'OFFICIAL' ? 'bg-theme-brand/5 border-theme-soft ring-1 ring-theme-brand/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
                  >
                     <div className="w-12 h-12 rounded-2xl bg-theme-surface flex items-center justify-center shadow-sm border border-theme-soft"><Globe size={22} className="text-emerald-500" /></div>
-                    <div>
-                       <p className="font-black text-sm text-theme-primary">{t('officialRate')}</p>
-                       <p className="text-[10px] font-bold text-theme-secondary opacity-60">{isFetching && mode === 'AUTO' ? t('fetching') : 'BCV'}</p>
+                    <div className="flex-1">
+                       <p className="font-black text-sm text-theme-primary">{t('rateTypeOfficial')}</p>
+                       <div className="flex gap-4 mt-1">
+                          <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-emerald-500 font-black">{currentRate.toFixed(2)}</span></span>
+                          <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(euroRate || 0).toFixed(2)}</span></span>
+                       </div>
                     </div>
                  </button>
                  
-                 {isDevMode && (
-                  <div className="relative group">
-                    <div className="absolute -top-2 right-4 px-2 py-0.5 bg-theme-brand text-[8px] font-black text-white uppercase tracking-widest rounded-full z-10 shadow-sm border border-theme-soft">
-                        {t('experimental')}
+                 <button 
+                     onClick={() => onUpdateRateType('PARALLEL')}
+                     className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${rateType === 'PARALLEL' ? 'bg-amber-500/5 border-amber-500/40 ring-1 ring-amber-500/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
+                 >
+                    <div className="w-12 h-12 rounded-2xl bg-theme-surface flex items-center justify-center shadow-sm border border-theme-soft"><TrendingUp size={22} className="text-amber-500" /></div>
+                    <div className="flex-1">
+                      <p className="font-black text-sm text-theme-primary">{t('rateTypeParallel')}</p>
+                       <div className="flex gap-4 mt-1">
+                          <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-amber-500 font-black">{(usdRateParallel || 0).toFixed(2)}</span></span>
+                          <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(euroRateParallel || 0).toFixed(2)}</span></span>
+                       </div>
                     </div>
-                    <button 
-                        onClick={() => handleFetchRate('PARALLEL')}
-                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${mode === 'PARALLEL' ? 'bg-amber-500/5 border-amber-500/40 ring-1 ring-amber-500/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
-                    >
-                        <div className="w-12 h-12 rounded-2xl bg-theme-surface flex items-center justify-center shadow-sm border border-theme-soft"><TrendingUp size={22} className="text-amber-500" /></div>
-                        <div>
-                          <p className="font-black text-sm text-theme-primary">{t('parallelRate')}</p>
-                          <p className="text-[10px] font-bold text-theme-secondary opacity-60">{isFetching && mode === 'PARALLEL' ? t('fetching') : t('averageParallel')}</p>
-                        </div>
-                    </button>
-                  </div>
-                 )}
+                 </button>
 
                  <button 
                     onClick={() => setMode('MANUAL')} 

@@ -19,8 +19,9 @@ interface WalletViewProps {
   onToggleBottomNav: (show: boolean) => void;
   showConfirm: (config: ConfirmConfig) => void;
   onConfirmPayment: (payment: ScheduledPayment) => void;
-  displayInVES: boolean;
+  displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
+  euroRate?: number;
 }
 
 export const WalletView: React.FC<WalletViewProps> = ({ 
@@ -35,8 +36,9 @@ export const WalletView: React.FC<WalletViewProps> = ({
     onToggleBottomNav,
     showConfirm,
     onConfirmPayment,
-    displayInVES,
-    onToggleDisplayCurrency
+    displayCurrency,
+    onToggleDisplayCurrency,
+    euroRate
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isEditing, setIsEditing] = useState(false);
@@ -91,15 +93,33 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
   const formatAmount = (usd: number) => {
     if (!isBalanceVisible) return '******';
-    const val = displayInVES ? usd * safeRate : usd;
-    const symbol = displayInVES ? 'Bs. ' : '$';
+    let val = usd;
+    let symbol = '$';
+    
+    if (displayCurrency === Currency.VES) {
+      val = usd * exchangeRate;
+      symbol = 'Bs.';
+    } else if (displayCurrency === Currency.EUR) {
+      val = (usd * exchangeRate) / (euroRate || 1);
+      symbol = '€';
+    }
+    
     return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatSecondary = (usd: number) => {
     if (!isBalanceVisible) return '';
-    const val = displayInVES ? usd : usd * safeRate;
-    const symbol = displayInVES ? '$' : 'Bs.';
+    let val: number;
+    let symbol: string;
+
+    if (displayCurrency === Currency.USD) {
+      val = usd * exchangeRate;
+      symbol = 'Bs.';
+    } else {
+      val = usd;
+      symbol = '$';
+    }
+    
     return `${symbol} ${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
 
@@ -214,10 +234,10 @@ export const WalletView: React.FC<WalletViewProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
+                {displayCurrency === Currency.VES ? <Coins size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayCurrency === Currency.VES ? 'Bs.' : displayCurrency}</span>
             </motion.button>
             {activeTab === 'WALLETS' && (
                 <motion.button 
@@ -306,8 +326,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                         </div>
                                         <div>
                                             <p className="text-emerald-400 font-bold text-lg leading-none mb-1">
-                                                {displayInVES ? `+` : `+$`}{formatAmount(income.amount).replace('$', '').replace('Bs. ', '')}
-                                                {displayInVES ? ' Bs.' : ''}
+                                                {formatAmount(income.currency === Currency.USD ? income.amount : income.amount / exchangeRate)}
                                             </p>
                                             <p className="text-[9px] text-theme-secondary font-bold uppercase tracking-tight">
                                               {new Date(income.date.split('T')[0] + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} • {t(income.frequency === 'Bi-weekly' ? 'biweekly' : income.frequency === 'One-Time' ? 'oneTime' : income.frequency.toLowerCase()) || income.frequency}
@@ -445,9 +464,16 @@ export const WalletView: React.FC<WalletViewProps> = ({
                             </div>
                             <h3 className="text-4xl font-black text-theme-primary tracking-tighter">
                                 <span className="text-2xl text-theme-secondary opacity-40 mr-1">
-                                  {displayInVES ? 'Bs.' : (acc.currency === 'USD' || acc.currency === 'USDT' ? '$' : (acc.currency === Currency.VES ? 'Bs.' : acc.currency))}
+                                  {displayCurrency === Currency.USD ? '$' : displayCurrency === Currency.EUR ? '€' : 'Bs.'}
                                 </span>
-                                {isBalanceVisible ? (displayInVES ? (acc.currency === Currency.VES ? acc.balance : acc.balance * exchangeRate) : acc.balance)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '******'}
+                                {(() => {
+                                    if (!isBalanceVisible) return '******';
+                                    const amountUSD = acc.currency === Currency.USD || acc.currency === Currency.USDT ? acc.balance : (acc.currency === Currency.EUR ? (acc.balance * (euroRate || 0)) / exchangeRate : acc.balance / exchangeRate);
+                                    
+                                    if (displayCurrency === Currency.USD) return amountUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    if (displayCurrency === Currency.EUR) return ((amountUSD * exchangeRate) / (euroRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    return (amountUSD * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                })()}
                             </h3>
                         </div>
                       </motion.div>

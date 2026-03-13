@@ -12,11 +12,12 @@ interface TransferViewProps {
   onTransfer: (data: any) => void;
   lang: Language;
   exchangeRate: number;
-  displayInVES: boolean;
+  euroRate?: number;
+  displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
 }
 
-export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactions, onBack, onTransfer, lang, exchangeRate, displayInVES, onToggleDisplayCurrency }) => {
+export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactions, onBack, onTransfer, lang, exchangeRate, euroRate, displayCurrency, onToggleDisplayCurrency }) => {
   const [fromId, setFromId] = useState(accounts[0].id);
   const [toId, setToId] = useState(accounts.length > 1 ? accounts[1].id : accounts[0].id);
   const [amount, setAmount] = useState('');
@@ -55,14 +56,15 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
     // Convert TO USD base first (conceptual)
     let usdBase = netVal;
     if (fromAccount.currency === Currency.VES) usdBase = netVal / exchangeRate;
+    else if (fromAccount.currency === Currency.EUR) usdBase = (netVal * (euroRate || 0)) / exchangeRate;
     
     // Convert FROM USD base to target
     if (toAccount.currency === Currency.VES) res = usdBase * exchangeRate;
-    else if (toAccount.currency === Currency.USD) res = usdBase;
-    else res = usdBase; // Treat EUR/USDT as 1:1 USD for now
+    else if (toAccount.currency === Currency.EUR) res = (usdBase * exchangeRate) / (euroRate || 1);
+    else res = usdBase; 
     
     setConvertedAmount(res);
-  }, [amount, fee, fromId, toId, exchangeRate, accounts]);
+  }, [amount, fee, fromId, toId, exchangeRate, euroRate, accounts]);
 
 
   const handleTransfer = () => {
@@ -79,6 +81,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
       category: selectedCategory,
       note: `Transfer to ${toAccount?.name}`,
       fee: parseFloat(fee) || 0,
+      euroRate: euroRate,
       date: new Date().toISOString()
     });
     onBack();
@@ -102,10 +105,10 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onToggleDisplayCurrency}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
         >
-            {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-            <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
+            {displayCurrency === Currency.VES ? <Coins size={14} /> : <DollarSign size={14} />}
+            <span className="hidden sm:inline">{displayCurrency === Currency.VES ? 'Bs.' : displayCurrency}</span>
         </motion.button>
       </div>
 
@@ -247,12 +250,20 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
                                     <p className="text-[10px] text-zinc-500 uppercase">{new Date(tx.date).toLocaleDateString()}</p>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-sm font-black text-indigo-400">{tx.originalCurrency === Currency.USD ? '$' : 'Bs.'} {tx.amount.toLocaleString()}</p>
-                                <p className="text-[10px] text-zinc-600 font-mono">
-                                    {tx.originalCurrency === Currency.USD ? 'Bs.' : '$'} {(tx.originalCurrency === Currency.USD ? tx.amount * tx.exchangeRate : tx.amount / tx.exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                                </p>
-                            </div>
+                             <div className="text-right">
+                                 <p className="text-sm font-black text-indigo-400">
+                                     {tx.originalCurrency === Currency.EUR ? '€' : (tx.originalCurrency === Currency.USD || tx.originalCurrency === Currency.USDT) ? '$' : 'Bs.'} {tx.amount.toLocaleString()}
+                                 </p>
+                                 <p className="text-[10px] text-zinc-600 font-mono">
+                                     {(() => {
+                                         const rate = tx.exchangeRate || exchangeRate;
+                                         const eRate = tx.euroRate || euroRate || 1;
+                                         if (displayCurrency === Currency.VES) return `Bs. ${(tx.normalizedAmountUSD * rate).toLocaleString()}`;
+                                         if (displayCurrency === Currency.EUR) return `€ ${((tx.normalizedAmountUSD * rate) / eRate).toLocaleString()}`;
+                                         return `$ ${tx.normalizedAmountUSD.toLocaleString()}`;
+                                     })()}
+                                 </p>
+                             </div>
                         </div>
                       );
                   });

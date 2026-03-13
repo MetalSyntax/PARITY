@@ -24,6 +24,8 @@ interface CurrencyPerformanceViewProps {
     onBack: () => void;
     isBalanceVisible: boolean;
     rateHistory: RateHistoryItem[];
+    euroRate?: number;
+    euroRateParallel?: number;
 }
 
 export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = ({
@@ -32,7 +34,9 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
     lang,
     onBack,
     isBalanceVisible,
-    rateHistory
+    rateHistory,
+    euroRate,
+    euroRateParallel
 }) => {
     const t = (key: any) => getTranslation(lang as any, key);
 
@@ -77,7 +81,8 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
 
     const volatilityData = useMemo(() => {
         // Use real history or mock if empty
-        const history = rateHistory && rateHistory.length > 0 ? rateHistory : [
+        const usdHistory = rateHistory?.filter(h => !h.currency || h.currency === Currency.USD) || [];
+        const history = usdHistory.length > 0 ? usdHistory : [
             { date: '2026-03-05', rate: exchangeRate * 0.95 },
             { date: '2026-03-06', rate: exchangeRate * 0.96 },
             { date: '2026-03-07', rate: exchangeRate * 0.955 },
@@ -177,7 +182,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 px-1">{t('marketAnalysis')}</p>
 
                 {/* Market Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <motion.div 
                         whileHover={{ scale: 1.02 }}
                         className="bg-blue-600 p-6 rounded-[2rem] shadow-xl shadow-blue-500/10 flex flex-col justify-between"
@@ -205,6 +210,31 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                         <div className="flex items-center gap-1.5 text-zinc-500">
                             <Clock size={12} />
                             <span className="text-[10px] font-bold">{t('updatedToday')}</span>
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* Euro Market Grid */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                    <motion.div 
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-zinc-900 border border-white/5 p-5 rounded-[2rem] flex flex-col items-center text-center"
+                    >
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2">Euro Oficial</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-black text-white">{(euroRate || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span className="text-[9px] font-bold text-zinc-500">Bs/€</span>
+                        </div>
+                    </motion.div>
+
+                    <motion.div 
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-zinc-900 border border-white/5 p-5 rounded-[2rem] flex flex-col items-center text-center"
+                    >
+                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2">Euro Binance</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-black text-white">{(euroRateParallel || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span className="text-[9px] font-bold text-zinc-500">Bs/€</span>
                         </div>
                     </motion.div>
                 </div>

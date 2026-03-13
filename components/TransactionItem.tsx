@@ -10,7 +10,7 @@ interface TransactionItemProps {
   accounts: Account[];
   lang: string;
   isBalanceVisible: boolean;
-  displayInVES: boolean;
+  displayCurrency: Currency;
   onSelect: (t: Transaction) => void;
   onEdit: (t: Transaction) => void;
   onDelete: (id: string) => void;
@@ -22,7 +22,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   accounts,
   lang,
   isBalanceVisible,
-  displayInVES,
+  displayCurrency,
   onSelect,
   onEdit,
   onDelete,
@@ -33,17 +33,32 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   const isExpense = transaction.type === TransactionType.EXPENSE;
   const isIncome = transaction.type === TransactionType.INCOME;
   const isTransfer = transaction.type === TransactionType.TRANSFER;
-  const isOriginalUSD = transaction.originalCurrency === Currency.USD;
+  const isOriginalUSDType = transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT;
 
-  const displayMain = displayInVES 
-    ? (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount)
-    : (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate);
-  const displayMainSymbol = displayInVES ? 'Bs.' : '$';
+  const calculateDisplay = (cur: Currency) => {
+    let amount = transaction.normalizedAmountUSD;
+    let symbol = '$';
+    
+    if (cur === Currency.VES) {
+      amount = transaction.normalizedAmountUSD * transaction.exchangeRate;
+      symbol = 'Bs.';
+    } else if (cur === Currency.EUR) {
+      const euroRateToUse = transaction.euroRate || 1; // Fallback if old tx
+      amount = (transaction.normalizedAmountUSD * transaction.exchangeRate) / euroRateToUse;
+      symbol = '€';
+    }
+    
+    return { amount, symbol };
+  };
+
+  const main = calculateDisplay(displayCurrency);
+  const displayMain = main.amount;
+  const displayMainSymbol = main.symbol;
   
-  const displaySecondary = displayInVES
-    ? (isOriginalUSD ? transaction.amount : transaction.amount / transaction.exchangeRate)
-    : (isOriginalUSD ? transaction.amount * transaction.exchangeRate : transaction.amount);
-  const displaySecondarySymbol = displayInVES ? '$' : 'Bs.';
+  const secondaryCurrency = displayCurrency === Currency.USD ? Currency.VES : Currency.USD;
+  const secondary = calculateDisplay(secondaryCurrency);
+  const displaySecondary = secondary.amount;
+  const displaySecondarySymbol = secondary.symbol;
   
   const fromAcc = accounts.find(a => a.id === transaction.accountId);
   const toAcc = accounts.find(a => a.id === transaction.toAccountId);
@@ -81,7 +96,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
           </div>
           {!compact && transaction.fee !== undefined && transaction.fee > 0 && (
             <p className="text-[9px] text-red-400 font-bold uppercase mt-1">
-                {t('commissions')}: {transaction.fee.toLocaleString()} {transaction.originalCurrency === Currency.USD ? '$' : 'Bs.'}
+                {t('commissions')}: {transaction.fee.toLocaleString()} {(transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT) ? '$' : 'Bs.'}
             </p>
           )}
         </div>

@@ -230,6 +230,7 @@ export const pt = {
     alert_importSuccess: 'Dados importados com sucesso!',
     alert_speechNotSupported: 'Reconhecimento de voz não compatível com este navegador',
     alert_fetchError: 'Erro ao buscar taxa ao vivo',
+    alert_fetchSuccess: 'Taxas atualizadas!',
     alert_incorrectPin: 'PIN atual incorreto',
     alert_pinLengthError: 'O novo PIN deve ter 4 dígitos',
     alert_pinSuccess: 'PIN atualizado com sucesso',

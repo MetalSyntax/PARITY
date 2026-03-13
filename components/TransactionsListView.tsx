@@ -15,7 +15,7 @@ interface TransactionsListViewProps {
   onDeleteTransaction: (id: string) => void;
   onEditTransaction: (t: Transaction) => void;
   isBalanceVisible: boolean;
-  displayInVES: boolean;
+  displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
 }
 
@@ -27,7 +27,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   onDeleteTransaction,
   onEditTransaction,
   isBalanceVisible,
-  displayInVES,
+  displayCurrency,
   onToggleDisplayCurrency
 }) => {
   const t = (key: any) => getTranslation(lang, key);
@@ -86,10 +86,10 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           <div className="ml-auto flex items-center gap-2">
             <button 
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayInVES ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayInVES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayInVES ? 'Bs.' : 'USD'}</span>
+                {displayCurrency === Currency.VES ? <Coins size={14} /> : <DollarSign size={14} />}
+                <span className="hidden sm:inline">{displayCurrency === Currency.VES ? 'Bs.' : displayCurrency}</span>
             </button>
             <div className="relative">
                <select
@@ -199,7 +199,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                       accounts={accounts}
                       lang={lang}
                       isBalanceVisible={isBalanceVisible}
-                      displayInVES={displayInVES}
+                      displayCurrency={displayCurrency}
                       onSelect={setSelectedTx}
                       onEdit={onEditTransaction}
                       onDelete={onDeleteTransaction}
@@ -298,7 +298,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         onClose={() => setSelectedTx(null)}
         onEdit={onEditTransaction}
         language={lang}
-        displayInVES={displayInVES}
+        displayCurrency={displayCurrency}
       />
     </div>
   );
