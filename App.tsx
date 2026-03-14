@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { AddTransaction } from './views/AddTransaction';
@@ -304,51 +304,70 @@ function AppContent() {
     };
 
     const checkScheduledNotifications = () => {
-        if (!userProfile.notificationsEnabled || !scheduledPayments.length) return;
+        const currentProfile = userProfileRef.current;
+        const currentPayments = scheduledPaymentsRef.current;
+        const currentExchangeRate = exchangeRateRef.current;
+        const currentEuroRate = euroRateRef.current;
+
+        if (!currentProfile.notificationsEnabled || !currentPayments.length) return;
         
         const now = new Date();
-        const leadDays = userProfile.notificationLeadTime || 0;
+        const todayStr = now.toISOString().split('T')[0];
+        const leadDays = currentProfile.notificationLeadTime || 0;
+        let updated = false;
+        const newPayments = [...currentPayments];
         
-        scheduledPayments.forEach(p => {
+        currentPayments.forEach((p, idx) => {
             if (p.notificationsEnabled === false) return;
+            if (p.lastNotified === todayStr) return;
             
             const dueDate = new Date(p.date.split('T')[0] + 'T12:00:00');
             const diffTime = dueDate.getTime() - now.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
-            // If today is within the lead time window and we haven't notified today
             if (diffDays >= 0 && diffDays <= leadDays) {
-                const lastNotified = p.lastNotified;
-                const todayStr = now.toISOString().split('T')[0];
+                const amountStr = formatAmount(p.amount, currentExchangeRate, Currency.USD, true, 2, currentEuroRate);
+                const msg = t('notificationBody')
+                    .replace('{name}', p.name)
+                    .replace('{amount}', amountStr)
+                    .replace('{date}', dueDate.toLocaleDateString());
                 
-                if (lastNotified !== todayStr) {
-                    const amountStr = formatAmount(p.amount, exchangeRate, Currency.USD, true, 2, euroRate);
-                    const msg = t('notificationBody')
-                        .replace('{name}', p.name)
-                        .replace('{amount}', amountStr)
-                        .replace('{date}', dueDate.toLocaleDateString());
-                    
-                    showAlert(msg, 'info');
-                    
-                    // Mark as notified
-                    setScheduledPayments(prev => prev.map(item => 
-                        item.id === p.id ? { ...item, lastNotified: todayStr } : item
-                    ));
+                showAlert(msg, 'info');
+
+                if (Notification.permission === 'granted') {
+                    new Notification(t('notificationTitle'), {
+                        body: msg,
+                        icon: '/icon-192x192.png',
+                        badge: '/icon-192x192.png'
+                    });
                 }
+                
+                newPayments[idx] = { ...p, lastNotified: todayStr };
+                updated = true;
             }
         });
+
+        if (updated) {
+            setScheduledPayments(newPayments);
+        }
     };
+
+    const scheduledPaymentsRef = useRef(scheduledPayments);
+    const userProfileRef = useRef(userProfile);
+    const exchangeRateRef = useRef(exchangeRate);
+    const euroRateRef = useRef(euroRate);
+
+    useEffect(() => {
+        scheduledPaymentsRef.current = scheduledPayments;
+        userProfileRef.current = userProfile;
+        exchangeRateRef.current = exchangeRate;
+        euroRateRef.current = euroRate;
+    }, [scheduledPayments, userProfile, exchangeRate, euroRate]);
 
     useEffect(() => {
         if (!isLoaded) return;
-        
-        // Always fetch rates when the app opens to ensure fresh data
         fetchAllRates();
-        
-        // Check for scheduled notifications
         checkScheduledNotifications();
-        
-        (window as any).refreshAppRates = fetchAllRates;
     }, [isLoaded]);
 
 
@@ -359,13 +378,11 @@ function AppContent() {
     }
   }, [isLoaded, autoLockEnabled]);
 
-  // PIN Lock on Resume
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         setBackgroundTime(Date.now());
       } else if (document.visibilityState === 'visible') {
-        // Fetch rates when app returns to foreground
         fetchAllRates();
         checkScheduledNotifications();
         
@@ -376,7 +393,6 @@ function AppContent() {
               setIsAppLocked(true);
             }
           } else {
-            // Fallback for first time or if backgroundTime was lost
             setIsAppLocked(true);
           }
         }
@@ -543,57 +559,12 @@ function AppContent() {
     }
   }, [isLoaded, userProfile.notificationsEnabled]);
 
-  const checkScheduledPayments = () => {
-    if (!userProfile.notificationsEnabled || Notification.permission !== 'granted') return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
-    const leadTime = userProfile.notificationLeadTime || 1;
-    let updated = false;
-
-    const newScheduled = scheduledPayments.map(p => {
-      if (p.lastNotified === todayStr) return p;
-
-      const pDate = new Date(p.date);
-      pDate.setHours(0, 0, 0, 0);
-      
-      const diffTime = pDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays >= 0 && diffDays <= leadTime) {
-        // Send Notification
-        const title = t('notificationTitle');
-        const body = t('notificationBody')
-          .replace('{name}', p.name)
-          .replace('{amount}', p.amount.toLocaleString())
-          .replace('{date}', p.date);
-
-        new Notification(title, {
-          body,
-          icon: '/icon-192x192.png',
-          badge: '/icon-192x192.png'
-        });
-
-        updated = true;
-        return { ...p, lastNotified: todayStr };
-      }
-      return p;
-    });
-
-    if (updated) {
-      setScheduledPayments(newScheduled);
-    }
-  };
 
   useEffect(() => {
     if (!isLoaded) return;
     
-    // Check on mount
-    checkScheduledPayments();
-
     // Check every hour
-    const interval = setInterval(checkScheduledPayments, 60 * 60 * 1000);
+    const interval = setInterval(checkScheduledNotifications, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [isLoaded, scheduledPayments, userProfile.notificationsEnabled, userProfile.notificationLeadTime]);
 
@@ -911,21 +882,6 @@ function AppContent() {
             isDevMode={isDevMode}
           />
       );
-  }
-
-  if (isAppLocked) {
-    return (
-      <PinModal 
-        lang={userProfile.language}
-        onSuccess={() => {
-            setIsAppLocked(false);
-            setPinInput("");
-            setPinError(false);
-        }}
-        biometricsEnabled={biometricsEnabled}
-        onVerifyBiometrics={verifyBiometrics}
-      />
-    );
   }
 
   const handleConfirmScheduledPayment = (p: ScheduledPayment) => {
@@ -1336,6 +1292,20 @@ function AppContent() {
                     </div>
                 </div>
             </div>
+        )}
+
+        {/* PIN Lock Overlay */}
+        {isAppLocked && (
+            <PinModal 
+                lang={userProfile.language}
+                onSuccess={() => {
+                    setIsAppLocked(false);
+                    setPinInput("");
+                    setPinError(false);
+                }}
+                biometricsEnabled={biometricsEnabled}
+                onVerifyBiometrics={verifyBiometrics}
+            />
         )}
 
         <LegalBanner lang={userProfile.language} />
