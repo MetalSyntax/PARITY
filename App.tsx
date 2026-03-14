@@ -553,37 +553,11 @@ function AppContent() {
     return false;
   };
 
-  const requestMediaPermission = async (type: 'camera' | 'microphone') => {
-    try {
-      const constraints = type === 'camera' ? { video: true } : { audio: true };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      stream.getTracks().forEach(track => track.stop());
-      return true;
-    } catch (e) {
-      console.error(`Permission denied for ${type}`, e);
-      return false;
-    }
-  };
-
-  const requestStoragePermission = async () => {
-    try {
-        if (navigator.storage && navigator.storage.persist) {
-          return await navigator.storage.persist();
-        }
-        return true;
-    } catch (e) {
-        return false;
-    }
-  };
-
   useEffect(() => {
-    if (isLoaded) {
-      if (userProfile.notificationsEnabled) requestNotificationPermission();
-      if (userProfile.cameraEnabled) requestMediaPermission('camera');
-      if (userProfile.microphoneEnabled) requestMediaPermission('microphone');
-      if (userProfile.storageEnabled) requestStoragePermission();
+    if (isLoaded && userProfile.notificationsEnabled) {
+      requestNotificationPermission();
     }
-  }, [isLoaded, userProfile.notificationsEnabled, userProfile.cameraEnabled, userProfile.microphoneEnabled, userProfile.storageEnabled]);
+  }, [isLoaded, userProfile.notificationsEnabled]);
 
 
   useEffect(() => {

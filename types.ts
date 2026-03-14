@@ -30,9 +30,6 @@ export interface UserProfile {
   rateType?: RateType;
   notificationsEnabled?: boolean;
   notificationLeadTime?: number; // Days before due date
-  cameraEnabled?: boolean;
-  microphoneEnabled?: boolean;
-  storageEnabled?: boolean;
 }
 
 export interface Account {
