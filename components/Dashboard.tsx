@@ -547,14 +547,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
             <button
               onClick={onOpenSettings}
-              className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-3 py-1.5 rounded-full flex items-center gap-3"
+              className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-4 py-2 rounded-2xl flex items-center gap-3"
             >
-              <span className="text-[10px] font-mono whitespace-nowrap">
-                <span className="text-emerald-500 font-bold">USD: {exchangeRate?.toFixed(2)}</span>
-                <span className="mx-2 text-theme-secondary opacity-30">|</span>
-                <span className="text-blue-400 font-bold">EUR: {euroRate?.toFixed(2)}</span>
-              </span>
-              <TrendingUp size={12} className="text-theme-brand" />
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-emerald-500 leading-tight">USD: {exchangeRate?.toFixed(2)}</span>
+                <span className="text-[10px] font-black text-blue-400 leading-tight">EUR: {euroRate?.toFixed(2)}</span>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-theme-brand/10 flex items-center justify-center">
+                <TrendingUp size={14} className="text-theme-brand" />
+              </div>
             </button>
           </div>
         </div>
@@ -747,7 +748,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={20} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
                       { id: "PROFILE", label: t("profile"), icon: <User size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
                     ].map((action, i) => (
-                      <button key={i} onClick={() => action.id === 'CURRENCY_PERF' ? onOpenSettings() : onNavigate(action.id as any)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">
+                      <button key={i} onClick={() => onNavigate(action.id as any)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">
                         <div className={`w-12 h-12 rounded-xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>{action.icon}</div>
                         <span className="text-xs text-theme-secondary font-medium">{action.label}</span>
                       </button>

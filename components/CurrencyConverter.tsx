@@ -45,10 +45,30 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
     return result.toLocaleString(undefined, { maximumFractionDigits: 2 });
   };
 
-  const cycleCurrency = (cur: Currency): Currency => {
-    const rotation = [Currency.USD, Currency.VES, Currency.EUR];
-    const idx = rotation.indexOf(cur as any);
-    return rotation[(idx + 1) % rotation.length] as Currency;
+  const cycleCurrency = (current: Currency, isFrom: boolean): void => {
+    if (isFrom) {
+      // Toggle 'from' between USD, VES, EUR
+      const next = current === Currency.USD ? Currency.VES : current === Currency.VES ? Currency.EUR : Currency.USD;
+      setFromCurrency(next);
+
+      // Enforce rules on 'to'
+      if (next === Currency.USD || next === Currency.EUR) {
+        setToCurrency(Currency.VES);
+      } else if (next === Currency.VES) {
+        // If we switched to VES from something else, keep toCurrency as USD or EUR
+        // It's likely already USD or EUR, but just in case:
+        if (toCurrency === Currency.VES) setToCurrency(Currency.USD);
+      }
+    } else {
+      // Toggle 'to'
+      if (fromCurrency === Currency.VES) {
+        // If 'from' is VES, 'to' can be USD or EUR
+        setToCurrency(toCurrency === Currency.USD ? Currency.EUR : Currency.USD);
+      } else {
+        // If 'from' is foreign (USD/EUR), 'to' MUST be VES
+        setToCurrency(Currency.VES);
+      }
+    }
   };
 
   return (
@@ -63,7 +83,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
         
         <div className="flex items-center gap-4 bg-theme-bg p-3 rounded-2xl border border-theme-soft shadow-inner">
           <button 
-            onClick={() => setFromCurrency(cycleCurrency(fromCurrency))}
+            onClick={() => cycleCurrency(fromCurrency, true)}
             className="flex-1 flex flex-col items-start hover:bg-white/5 p-2 rounded-xl transition-colors"
           >
             <span className="text-[10px] uppercase font-bold text-theme-brand mb-1">
@@ -93,7 +113,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
           </button>
           
           <button 
-            onClick={() => setToCurrency(cycleCurrency(toCurrency))}
+            onClick={() => cycleCurrency(toCurrency, false)}
             className="flex-1 flex flex-col items-end hover:bg-white/5 p-2 rounded-xl transition-colors"
           >
             <span className="text-[10px] uppercase font-bold text-theme-brand mb-1">

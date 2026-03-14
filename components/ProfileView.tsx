@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, Database, HardDrive, Info, Settings2 } from 'lucide-react';
+import { ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, Database, HardDrive, Info, Settings2, Bell } from 'lucide-react';
 import { UserProfile, Language, Transaction, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { StorageType } from '../services/db';
@@ -53,6 +53,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [hideDevMode, setHideDevMode] = useState(profile.hideDevMode || false);
   const [hideName, setHideName] = useState(profile.hideName || false);
   const [dashboardTxLimit, setDashboardTxLimit] = useState(profile.dashboardTxLimit || 5);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(profile.notificationsEnabled || false);
+  const [notificationLeadTime, setNotificationLeadTime] = useState(profile.notificationLeadTime || 1);
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const t = (key: any) => getTranslation(lang, key);
@@ -83,7 +85,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       hideWelcome,
       hideDevMode,
       hideName,
-      dashboardTxLimit
+      dashboardTxLimit,
+      notificationsEnabled,
+      notificationLeadTime
     });
     onBack();
   };
@@ -396,6 +400,48 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <Upload size={20} className="text-theme-secondary group-hover:text-theme-brand transition-colors" />
               <span className="text-xs font-bold text-theme-secondary group-hover:text-theme-brand transition-colors">{t('restoreData')}</span>
             </motion.label>
+          </div>
+        </motion.div>
+
+        {/* Notifications Card */}
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-[24px] p-6 space-y-6 shadow-sm">
+          <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest block flex items-center gap-2 opacity-60">
+            <Bell size={12} className="text-theme-brand" /> {t('notifications')}
+          </label>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-theme-primary">{t('enableNotifications')}</span>
+                <button 
+                    onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${notificationsEnabled ? "bg-theme-brand" : "bg-theme-soft"}`}
+                >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${notificationsEnabled ? "left-6" : "left-1"}`} />
+                </button>
+            </div>
+            
+            <AnimatePresence>
+              {notificationsEnabled && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden flex items-center justify-between pt-2"
+                >
+                  <span className="text-xs font-bold text-theme-secondary">{t('notificationLeadTime')}</span>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="number" 
+                      value={notificationLeadTime} 
+                      onChange={(e) => setNotificationLeadTime(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-16 bg-theme-bg border border-theme-soft rounded-lg px-2 py-1 text-xs font-bold text-theme-primary text-center outline-none"
+                      min="0"
+                      max="30"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
 

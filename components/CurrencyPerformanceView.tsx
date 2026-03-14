@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { ChevronLeft, Shield, TrendingUp, TrendingDown, Clock, CheckCircle2, LineChart, Activity } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { ChevronLeft, Shield, TrendingUp, TrendingDown, Clock, CheckCircle2, LineChart, Activity, DollarSign, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line } from 'react-chartjs-2';
@@ -46,25 +46,70 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
         return `$${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    // Calculate Average User Purchase Rate
-    const avgUserRate = useMemo(() => {
-        const incomeTx = transactions.filter(t => t.type === TransactionType.INCOME && t.originalCurrency === Currency.USD);
-        if (incomeTx.length === 0) return exchangeRate * 0.98; // Fallback
-        const totalUSD = incomeTx.reduce((a, b) => a + b.amount, 0);
-        const weightedRate = incomeTx.reduce((a, b) => a + (b.amount * b.exchangeRate), 0);
-        return weightedRate / totalUSD;
-    }, [transactions, exchangeRate]);
+    const [historicalUsd, setHistoricalUsd] = useState<{date: string, rate: number}[]>([]);
+    const [historicalEur, setHistoricalEur] = useState<{date: string, rate: number}[]>([]);
+    const [activeTab, setActiveTab] = useState<'USD' | 'EUR'>('USD');
+    const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+    const [showAllHistory, setShowAllHistory] = useState(false);
 
-    const rateDiff = ((exchangeRate - avgUserRate) / avgUserRate) * 100;
+    useEffect(() => {
+        const fetchHistory = async () => {
+            setIsLoadingHistory(true);
+            try {
+                const [usdRes, eurRes] = await Promise.all([
+                    fetch('https://ve.dolarapi.com/v1/historicos/dolares'),
+                    fetch('https://ve.dolarapi.com/v1/historicos/euros')
+                ]);
+                
+                if (usdRes.ok) {
+                    const data = await usdRes.json();
+                    if (Array.isArray(data)) {
+                        const officialUsd = data.filter((d: any) => d.fuente === 'oficial').map((d: any) => ({
+                            date: d.fecha,
+                            rate: Number(d.promedio)
+                        })).sort((a: any, b: any) => a.date.localeCompare(b.date));
+                        setHistoricalUsd(officialUsd);
+                    }
+                }
+                
+                if (eurRes.ok) {
+                    const data = await eurRes.json();
+                    if (Array.isArray(data)) {
+                        const officialEur = data.filter((d: any) => d.fuente === 'oficial').map((d: any) => ({
+                            date: d.fecha,
+                            rate: Number(d.promedio)
+                        })).sort((a: any, b: any) => a.date.localeCompare(b.date));
+                        setHistoricalEur(officialEur);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch historical rates", e);
+            } finally {
+                setIsLoadingHistory(false);
+            }
+        };
+        fetchHistory();
+    }, []);
+
+    const activeHistory = activeTab === 'USD' ? historicalUsd : historicalEur;
+
+    const periodVariation = useMemo(() => {
+        if (!historicalUsd || historicalUsd.length < 2) return 0;
+        const start = historicalUsd[0].rate;
+        const end = historicalUsd[historicalUsd.length - 1].rate;
+        return ((end - start) / start) * 100;
+    }, [historicalUsd]);
     
-    // Inflation Shield Distribution (Mock based on transactions)
+    // Inflation Shield Distribution
     const shieldStats = useMemo(() => {
-        const saved = Math.min(95, Math.max(20, 70 + (rateDiff * 2)));
+        const variation = periodVariation;
+        const saved = Math.min(95, Math.max(20, 70 + (variation * 2)));
         return {
             saved: Math.round(saved),
-            loss: 100 - Math.round(saved)
+            loss: 100 - Math.round(saved),
+            variation
         };
-    }, [rateDiff]);
+    }, [periodVariation]);
 
     const commonOptions = {
         responsive: true,
@@ -80,17 +125,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
     };
 
     const volatilityData = useMemo(() => {
-        // Use real history or mock if empty
-        const usdHistory = rateHistory?.filter(h => !h.currency || h.currency === Currency.USD) || [];
-        const history = usdHistory.length > 0 ? usdHistory : [
-            { date: '2026-03-05', rate: exchangeRate * 0.95 },
-            { date: '2026-03-06', rate: exchangeRate * 0.96 },
-            { date: '2026-03-07', rate: exchangeRate * 0.955 },
-            { date: '2026-03-08', rate: exchangeRate * 0.97 },
-            { date: '2026-03-09', rate: exchangeRate * 0.98 },
-            { date: '2026-03-10', rate: exchangeRate * 0.99 },
-            { date: new Date().toISOString().split('T')[0], rate: exchangeRate }
-        ];
+        const history = activeHistory.length > 0 ? activeHistory : [];
 
         return {
             labels: history.map(h => {
@@ -115,7 +150,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 pointBorderWidth: 2
             }]
         };
-    }, [rateHistory, exchangeRate, lang]);
+    }, [activeHistory, lang]);
 
     return (
         <div className="flex flex-col h-full bg-black text-white animate-in slide-in-from-right duration-500 overflow-hidden">
@@ -150,7 +185,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             <h3 className="font-extrabold text-theme-primary text-xl">{t('inflationShield')}</h3>
                         </div>
                         <span className="bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-full text-[10px] font-black border border-blue-500/20">
-                            {isBalanceVisible ? `+${rateDiff?.toFixed(1)}% vs IPC` : '******'}
+                            {isBalanceVisible ? `${periodVariation >= 0 ? '+' : ''}${periodVariation?.toFixed(1)}% ${t('vsIPC')}` : '******'}
                         </span>
                     </div>
 
@@ -179,64 +214,47 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     </div>
                 </motion.div>
 
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 px-1">{t('marketAnalysis')}</p>
-
-                {/* Market Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                {/* Market Grid - Now static at top of Analysis */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
                     <motion.div 
                         whileHover={{ scale: 1.02 }}
-                        className="bg-blue-600 p-6 rounded-[2rem] shadow-xl shadow-blue-500/10 flex flex-col justify-between"
+                        className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem] flex flex-col items-center text-center justify-center"
                     >
-                        <p className="text-[10px] font-black text-blue-100/70 uppercase tracking-widest mb-4">{t('yourAvgRate')}</p>
-                        <div className="flex items-baseline gap-2 mb-4">
-                            <span className="text-3xl font-black text-white">{formatAmount(avgUserRate)}</span>
-                            <span className="text-xs font-bold text-blue-200">Bs/$</span>
-                        </div>
-                        <div className={`inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-lg text-[10px] font-black text-white ${rateDiff >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                            {rateDiff >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                            {rateDiff >= 0 ? '+' : ''}{rateDiff?.toFixed(1)}%
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('dollarBCV')}</p>
+                        <div className="flex items-baseline gap-2 mb-2">
+                            <span className="text-3xl font-black text-white">{exchangeRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span className="text-xs font-bold text-zinc-500">Bs/$</span>
                         </div>
                     </motion.div>
 
                     <motion.div 
                         whileHover={{ scale: 1.02 }}
-                        className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem] flex flex-col justify-between"
+                        className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem] flex flex-col items-center text-center justify-center"
                     >
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('marketRateBCV')}</p>
-                        <div className="flex items-baseline gap-2 mb-4">
-                            <span className="text-3xl font-black text-white">{formatAmount(exchangeRate)}</span>
-                            <span className="text-xs font-bold text-zinc-500">Bs/$</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-zinc-500">
-                            <Clock size={12} />
-                            <span className="text-[10px] font-bold">{t('updatedToday')}</span>
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('euroBCV')}</p>
+                        <div className="flex items-baseline gap-2 mb-2">
+                            <span className="text-3xl font-black text-white">{(euroRate || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span className="text-xs font-bold text-zinc-500">Bs/€</span>
                         </div>
                     </motion.div>
                 </div>
 
-                {/* Euro Market Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                    <motion.div 
-                        whileHover={{ scale: 1.02 }}
-                        className="bg-zinc-900 border border-white/5 p-5 rounded-[2rem] flex flex-col items-center text-center"
-                    >
-                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2">Euro Oficial</p>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-black text-white">{(euroRate || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                            <span className="text-[9px] font-bold text-zinc-500">Bs/€</span>
-                        </div>
-                    </motion.div>
-
-                    <motion.div 
-                        whileHover={{ scale: 1.02 }}
-                        className="bg-zinc-900 border border-white/5 p-5 rounded-[2rem] flex flex-col items-center text-center"
-                    >
-                        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2">Euro Binance</p>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-black text-white">{(euroRateParallel || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                            <span className="text-[9px] font-bold text-zinc-500">Bs/€</span>
-                        </div>
-                    </motion.div>
+                <div className="flex items-center justify-between mb-6 px-1">
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('marketAnalysis')}</p>
+                    <div className="flex bg-zinc-900 p-1 rounded-xl border border-white/5 shadow-inner">
+                        <button 
+                            onClick={() => setActiveTab('USD')} 
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black transition-all flex items-center gap-2 ${activeTab === 'USD' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-400'}`}
+                        >
+                            <DollarSign size={14} /> {activeTab === 'USD' ? 'USD' : 'USD'}
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('EUR')} 
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black transition-all flex items-center gap-2 ${activeTab === 'EUR' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-400'}`}
+                        >
+                            <Euro size={14} /> {activeTab === 'EUR' ? 'EURO' : 'EURO'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Volatility Chart */}
@@ -244,21 +262,108 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     <div className="flex justify-between items-start mb-6">
                         <div>
                             <h3 className="font-bold text-theme-primary">{t('volatilitySpread')}</h3>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase">{t('last7Days')}</p>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase mt-1">
+                                {activeTab === 'USD' ? t('dollarBCV') : t('euroBCV')}
+                            </p>
                         </div>
                         <div className="text-right">
-                            <p className={`font-black ${ (rateHistory && rateHistory.length > 1 && (rateHistory[rateHistory.length-1].rate - rateHistory[0].rate)) >= 0 ? 'text-emerald-400' : 'text-rose-400' }`}>
+                            <p className={`font-black ${ (activeHistory && activeHistory.length > 1 && (activeHistory[activeHistory.length-1].rate - activeHistory[0].rate)) >= 0 ? 'text-emerald-400' : 'text-rose-400' }`}>
                                 {isBalanceVisible ? 
-                                    ((rateHistory && rateHistory.length > 1) 
-                                        ? `${(rateHistory[rateHistory.length-1].rate - rateHistory[0].rate) >= 0 ? '+' : ''}${(rateHistory[rateHistory.length-1].rate - rateHistory[0].rate).toFixed(2)} Bs.`
-                                        : '+1.50 Bs.') // Fallback
+                                    (isLoadingHistory 
+                                        ? '...'
+                                        : ((activeHistory && activeHistory.length > 1) 
+                                            ? `${(activeHistory[activeHistory.length-1].rate - activeHistory[0].rate) >= 0 ? '+' : ''}${(activeHistory[activeHistory.length-1].rate - activeHistory[0].rate).toFixed(2)} Bs.`
+                                            : '0.00 Bs.'))
                                     : '******'}
                             </p>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">{t('profitPerDollar')}</p>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">{t('profitPerDollar')} {activeTab}</p>
                         </div>
                     </div>
                     <div className="h-40 w-full mb-2">
-                        <Line data={volatilityData} options={commonOptions as any} />
+                        {isLoadingHistory ? (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <Activity className="animate-spin text-blue-500" size={24} />
+                            </div>
+                        ) : (
+                            <Line data={volatilityData} options={commonOptions as any} />
+                        )}
+                    </div>
+                </div>
+
+                {/* Historical Table */}
+                <div className="mt-4 mb-20 px-1">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('historicalData')} {activeTab === 'USD' ? 'USD' : 'EURO'}</h3>
+                        <div className="flex items-center gap-2">
+                            <Clock size={12} className="text-zinc-500" />
+                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">{t('updatedToday')}</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                        {isLoadingHistory ? (
+                            Array(5).fill(0).map((_, i) => (
+                                <div key={i} className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl animate-pulse h-16" />
+                            ))
+                        ) : activeHistory.length === 0 ? (
+                            <div className="p-8 text-center text-zinc-600 text-sm border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                                {t('noData')}
+                            </div>
+                        ) : (
+                            <>
+                                {[...activeHistory].reverse().slice(0, showAllHistory ? activeHistory.length : 7).map((item, index, arr) => {
+                                    // Notice: we need to find the variation with the item after it in the OVERALL reversed list
+                                    // The overall reversed list is [...activeHistory].reverse()
+                                    const fullReversed = [...activeHistory].reverse();
+                                    const nextItem = fullReversed[index + 1];
+                                    let variation = 0;
+                                    if (nextItem) {
+                                        variation = ((item.rate - nextItem.rate) / nextItem.rate) * 100;
+                                    }
+
+                                    return (
+                                        <div key={item.date} className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl flex items-center justify-between group hover:border-blue-500/30 transition-all duration-300">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    {activeTab === 'USD' ? <DollarSign size={18} /> : <Euro size={18} />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-white capitalize">
+                                                        {new Date(item.date + 'T12:00:00').toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', { 
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            year: 'numeric'
+                                                        })}
+                                                    </p>
+                                                    <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-tighter">
+                                                        {t('officialRate')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-white">
+                                                    {item.rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} 
+                                                    <span className="text-[10px] text-zinc-500 ml-1">Bs.</span>
+                                                </p>
+                                                {index < fullReversed.length - 1 && (
+                                                    <div className={`flex items-center justify-end gap-1 text-[10px] font-black ${variation >= 0 ? (variation === 0 ? 'text-zinc-500' : 'text-emerald-400') : 'text-rose-400'}`}>
+                                                        {variation > 0 ? <TrendingUp size={10} /> : variation < 0 ? <TrendingDown size={10} /> : <Activity size={10} />}
+                                                        {variation === 0 ? '0.00%' : `${variation > 0 ? '+' : ''}${variation.toFixed(2)}%`}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {activeHistory.length > 7 && (
+                                    <button 
+                                        onClick={() => setShowAllHistory(!showAllHistory)}
+                                        className="mt-2 w-full py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-colors bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10"
+                                    >
+                                        {showAllHistory ? t('showLess') : t('showMore')}
+                                    </button>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
 

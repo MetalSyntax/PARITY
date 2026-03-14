@@ -484,6 +484,78 @@ function AppContent() {
     localStorage.setItem("navbarFavorites", JSON.stringify(navbarFavorites));
   }, [navbarFavorites, isLoaded]);
 
+  // --- Notification Logic ---
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    if (isLoaded && userProfile.notificationsEnabled) {
+      requestNotificationPermission();
+    }
+  }, [isLoaded, userProfile.notificationsEnabled]);
+
+  const checkScheduledPayments = () => {
+    if (!userProfile.notificationsEnabled || Notification.permission !== 'granted') return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+    const leadTime = userProfile.notificationLeadTime || 1;
+    let updated = false;
+
+    const newScheduled = scheduledPayments.map(p => {
+      if (p.lastNotified === todayStr) return p;
+
+      const pDate = new Date(p.date);
+      pDate.setHours(0, 0, 0, 0);
+      
+      const diffTime = pDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays >= 0 && diffDays <= leadTime) {
+        // Send Notification
+        const title = t('notificationTitle');
+        const body = t('notificationBody')
+          .replace('{name}', p.name)
+          .replace('{amount}', p.amount.toLocaleString())
+          .replace('{date}', p.date);
+
+        new Notification(title, {
+          body,
+          icon: '/icon-192x192.png',
+          badge: '/icon-192x192.png'
+        });
+
+        updated = true;
+        return { ...p, lastNotified: todayStr };
+      }
+      return p;
+    });
+
+    if (updated) {
+      setScheduledPayments(newScheduled);
+    }
+  };
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    // Check on mount
+    checkScheduledPayments();
+
+    // Check every hour
+    const interval = setInterval(checkScheduledPayments, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isLoaded, scheduledPayments, userProfile.notificationsEnabled, userProfile.notificationLeadTime]);
+
+
 
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);

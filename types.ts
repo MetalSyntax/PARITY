@@ -28,6 +28,8 @@ export interface UserProfile {
   dashboardTxLimit?: number;
   hideName?: boolean;
   rateType?: RateType;
+  notificationsEnabled?: boolean;
+  notificationLeadTime?: number; // Days before due date
 }
 
 export interface Account {
@@ -75,6 +77,7 @@ export interface ScheduledPayment {
     frequency: 'Monthly' | 'Weekly' | 'Yearly' | 'Bi-weekly' | 'One-Time';
     type?: TransactionType; // Optional for backward compatibility, defaults to EXPENSE
     category?: string; // Optional for backward compatibility
+    lastNotified?: string; // ISO date string (YYYY-MM-DD)
 }
 
 export interface Budget {
