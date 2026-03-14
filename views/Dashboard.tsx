@@ -630,20 +630,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     className="items-start"
                                 />
                           </h1>
-                          <div className="flex items-center gap-3">
-                             <span className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-lg border border-theme-soft">
-                              <CurrencyAmount
-                                amount={totalBalanceUSD}
-                                exchangeRate={exchangeRate}
-                                euroRate={euroRate}
-                                displayCurrency={displayCurrency}
-                                isBalanceVisible={isBalanceVisible}
-                                showSecondary={true}
-                                size="xs"
-                                weight="bold"
-                                className="items-start"
-                              />
-                            </span>
+                           <div className="flex items-center gap-3">
+                             <span className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-lg border border-theme-soft flex items-center gap-1">
+                               <span className="opacity-50 text-[10px] uppercase">≈</span>
+                               {formatSecondaryAmount(
+                                  totalBalanceUSD,
+                                  exchangeRate,
+                                  displayCurrency,
+                                  isBalanceVisible,
+                                  2,
+                                  euroRate
+                               )}
+                             </span>
                             {isBalanceVisible && (
                               <div className={`p-1 flex items-center gap-1 rounded-full text-[10px] font-black ${balanceHistory.trendPercent >= 0 ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
                                 {balanceHistory.trendPercent >= 0 ? <ArrowUpRight size={10} /> : <TrendingDown size={10} />}

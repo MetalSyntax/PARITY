@@ -222,7 +222,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     >
                         <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('dollarBCV')}</p>
                         <div className="flex items-baseline gap-2 mb-2">
-                            <span className="text-3xl font-black text-white">{exchangeRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span className="text-xl font-black text-white">{exchangeRate.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             <span className="text-xs font-bold text-zinc-500">Bs/$</span>
                         </div>
                     </motion.div>
@@ -233,7 +233,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     >
                         <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('euroBCV')}</p>
                         <div className="flex items-baseline gap-2 mb-2">
-                            <span className="text-3xl font-black text-white">{(euroRate || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span className="text-xl font-black text-white">{(euroRate || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             <span className="text-xs font-bold text-zinc-500">Bs/€</span>
                         </div>
                     </motion.div>
