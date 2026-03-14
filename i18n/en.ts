@@ -416,4 +416,9 @@ export const en = {
     noScheduledForNotifications: 'No scheduled payments to notify.',
     smartAlertsActive: 'Smart Alerts Active',
     smartAlertsDesc: 'We will notify you based on your lead time settings for each selected payment.',
+    mobilePermissions: 'Device Permissions',
+    cameraPermission: 'Camera Access',
+    microphonePermission: 'Microphone Access',
+    storagePermission: 'Persistent Storage',
+    mobilePermissionsDesc: 'Enable these permissions to use OCR scanning, voice notes, and secure data storage functions.',
 };

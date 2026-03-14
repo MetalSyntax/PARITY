@@ -432,4 +432,9 @@ export const es = {
   noScheduledForNotifications: "No hay pagos programados para notificar.",
   smartAlertsActive: "Alertas Inteligentes Activas",
   smartAlertsDesc: "Te notificaremos según el tiempo de anticipación configurado para cada pago seleccionado.",
+  mobilePermissions: "Permisos del Dispositivo",
+  cameraPermission: "Acceso a Cámara",
+  microphonePermission: "Acceso a Micrófono",
+  storagePermission: "Almacenamiento Persistente",
+  mobilePermissionsDesc: "Habilita estos permisos para usar funciones de escaneo OCR, notas de voz y almacenamiento seguro de datos.",
 };

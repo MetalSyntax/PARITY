@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, Database, HardDrive, Info, Settings2, Bell } from 'lucide-react';
+import { ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, Database, HardDrive, Info, Settings2, Bell, Camera, Mic, Smartphone } from 'lucide-react';
 import { UserProfile, Language, Transaction, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { StorageType } from '../services/db';
@@ -57,6 +57,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [dashboardTxLimit, setDashboardTxLimit] = useState(profile.dashboardTxLimit || 5);
   const [notificationsEnabled, setNotificationsEnabled] = useState(profile.notificationsEnabled || false);
   const [notificationLeadTime, setNotificationLeadTime] = useState(profile.notificationLeadTime || 1);
+  const [cameraEnabled, setCameraEnabled] = useState(profile.cameraEnabled || false);
+  const [microphoneEnabled, setMicrophoneEnabled] = useState(profile.microphoneEnabled || false);
+  const [storageEnabled, setStorageEnabled] = useState(profile.storageEnabled || false);
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const t = (key: any) => getTranslation(lang, key);
@@ -89,7 +92,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       hideName,
       dashboardTxLimit,
       notificationsEnabled,
-      notificationLeadTime
+      notificationLeadTime,
+      cameraEnabled,
+      microphoneEnabled,
+      storageEnabled
     });
     onBack();
   };
@@ -455,6 +461,64 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* Mobile App Options Card */}
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-[24px] p-6 space-y-6 shadow-sm">
+          <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest block flex items-center gap-2 opacity-60">
+            <Smartphone size={12} className="text-theme-brand" /> {t('mobilePermissions')}
+          </label>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <div className="p-2 bg-theme-bg rounded-lg text-theme-secondary group-hover:text-theme-brand transition-colors">
+                      <Camera size={16} />
+                   </div>
+                   <span className="text-xs font-bold text-theme-primary">{t('cameraPermission')}</span>
+                </div>
+                <button 
+                    onClick={() => setCameraEnabled(!cameraEnabled)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${cameraEnabled ? "bg-theme-brand" : "bg-theme-soft"}`}
+                >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${cameraEnabled ? "left-6" : "left-1"}`} />
+                </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <div className="p-2 bg-theme-bg rounded-lg text-theme-secondary group-hover:text-theme-brand transition-colors">
+                      <Mic size={16} />
+                   </div>
+                   <span className="text-xs font-bold text-theme-primary">{t('microphonePermission')}</span>
+                </div>
+                <button 
+                    onClick={() => setMicrophoneEnabled(!microphoneEnabled)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${microphoneEnabled ? "bg-theme-brand" : "bg-theme-soft"}`}
+                >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${microphoneEnabled ? "left-6" : "left-1"}`} />
+                </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <div className="p-2 bg-theme-bg rounded-lg text-theme-secondary group-hover:text-theme-brand transition-colors">
+                      <HardDrive size={16} />
+                   </div>
+                   <span className="text-xs font-bold text-theme-primary">{t('storagePermission')}</span>
+                </div>
+                <button 
+                    onClick={() => setStorageEnabled(!storageEnabled)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${storageEnabled ? "bg-theme-brand" : "bg-theme-soft"}`}
+                >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${storageEnabled ? "left-6" : "left-1"}`} />
+                </button>
+            </div>
+            
+            <p className="text-[10px] text-theme-secondary opacity-50 italic">
+                {t('mobilePermissionsDesc')}
+            </p>
           </div>
         </motion.div>
 
