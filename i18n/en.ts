@@ -407,4 +407,13 @@ export const en = {
     summary: 'Summary',
     noReceipt: 'No receipt available',
     download: 'Download',
+    scheduledNotifications: 'Payment Alerts',
+    managePersonalizedAlerts: 'Personalized Alerts',
+    overallNotifications: 'Global Notifications',
+    personalizedAlerts: 'Individual Alerts',
+    active: 'Active',
+    inactive: 'Inactive',
+    noScheduledForNotifications: 'No scheduled payments to notify.',
+    smartAlertsActive: 'Smart Alerts Active',
+    smartAlertsDesc: 'We will notify you based on your lead time settings for each selected payment.',
 };

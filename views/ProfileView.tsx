@@ -24,6 +24,7 @@ interface ProfileViewProps {
   onDevModeTrigger: () => void;
   navbarFavorites: string[];
   onUpdateNavbarFavorites: (favs: any[]) => void;
+  onNavigate: (view: any) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -44,7 +45,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   isDevMode,
   onDevModeTrigger,
   navbarFavorites,
-  onUpdateNavbarFavorites
+  onUpdateNavbarFavorites,
+  onNavigate
 }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
@@ -426,19 +428,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden flex items-center justify-between pt-2"
+                  className="overflow-hidden space-y-4"
                 >
-                  <span className="text-xs font-bold text-theme-secondary">{t('notificationLeadTime')}</span>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="number" 
-                      value={notificationLeadTime} 
-                      onChange={(e) => setNotificationLeadTime(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-16 bg-theme-bg border border-theme-soft rounded-lg px-2 py-1 text-xs font-bold text-theme-primary text-center outline-none"
-                      min="0"
-                      max="30"
-                    />
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-xs font-bold text-theme-secondary">{t('notificationLeadTime')}</span>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="number" 
+                        value={notificationLeadTime} 
+                        onChange={(e) => setNotificationLeadTime(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-16 bg-theme-bg border border-theme-soft rounded-lg px-2 py-1 text-xs font-bold text-theme-primary text-center outline-none"
+                        min="0"
+                        max="30"
+                      />
+                    </div>
                   </div>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onNavigate('SCHEDULED_NOTIFICATIONS')}
+                    className="w-full py-3 bg-theme-bg border border-theme-soft rounded-xl text-xs font-black text-theme-brand uppercase tracking-widest flex items-center justify-center gap-2"
+                  >
+                    <Settings2 size={14} /> {t('managePersonalizedAlerts')}
+                  </motion.button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -516,7 +529,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="w-1.5 h-1.5 rounded-full bg-theme-brand animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-primary">Parity Intelligence</span>
           </div>
-          <p className="text-[10px] font-mono">v1.0.23</p>
+          <p className="text-[10px] font-mono">v1.0.26</p>
         </motion.div>
       </div>
 

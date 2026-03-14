@@ -52,8 +52,8 @@ export const formatSecondaryAmount = (
     symbol = 'Bs.';
   }
 
-  return `${val?.toLocaleString(undefined, { 
+  return `${symbol} ${val?.toLocaleString(undefined, { 
     minimumFractionDigits: 0,
     maximumFractionDigits: decimals 
-  })} ${symbol}`;
+  })}`;
 };

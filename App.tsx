@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint } from 'lucide-react';
-import { Dashboard } from './components/Dashboard';
-import { AddTransaction } from './components/AddTransaction';
+import { Dashboard } from './views/Dashboard';
+import { AddTransaction } from './views/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
-import { TransferView } from './components/TransferView';
-import { BudgetView } from './components/BudgetView';
-import { AnalysisView } from './components/AnalysisView';
-import { WalletView } from './components/WalletView';
-import { ProfileView } from './components/ProfileView';
-import { Onboarding } from './components/Onboarding';
-import { ScheduledPaymentView } from './components/ScheduledPaymentView';
-import { TransactionsListView } from './components/TransactionsListView';
-import { CalendarHeatmapView } from './components/CalendarHeatmapView';
-import { CurrencyPerformanceView } from './components/CurrencyPerformanceView';
+import { TransferView } from './views/TransferView';
+import { BudgetView } from './views/BudgetView';
+import { AnalysisView } from './views/AnalysisView';
+import { WalletView } from './views/WalletView';
+import { ProfileView } from './views/ProfileView';
+import { Onboarding } from './views/Onboarding';
+import { ScheduledPaymentView } from './views/ScheduledPaymentView';
+import { TransactionsListView } from './views/TransactionsListView';
+import { CalendarHeatmapView } from './views/CalendarHeatmapView';
+import { CurrencyPerformanceView } from './views/CurrencyPerformanceView';
+import { ScheduledNotificationsView } from './views/ScheduledNotificationsView';
 import { LegalBanner } from './components/LegalBanner';
 import { PinModal } from './components/PinModal';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -23,6 +24,7 @@ import './index.css';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { INITIAL_RATE, INITIAL_USD_RATE_PARALLEL, INITIAL_EURO_RATE, INITIAL_EURO_RATE_PARALLEL, MOCK_ACCOUNTS, CATEGORIES } from './constants';
+import { formatAmount } from './utils/formatUtils';
 import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
@@ -301,16 +303,50 @@ function AppContent() {
          }
     };
 
+    const checkScheduledNotifications = () => {
+        if (!userProfile.notificationsEnabled || !scheduledPayments.length) return;
+        
+        const now = new Date();
+        const leadDays = userProfile.notificationLeadTime || 0;
+        
+        scheduledPayments.forEach(p => {
+            if (p.notificationsEnabled === false) return;
+            
+            const dueDate = new Date(p.date.split('T')[0] + 'T12:00:00');
+            const diffTime = dueDate.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // If today is within the lead time window and we haven't notified today
+            if (diffDays >= 0 && diffDays <= leadDays) {
+                const lastNotified = p.lastNotified;
+                const todayStr = now.toISOString().split('T')[0];
+                
+                if (lastNotified !== todayStr) {
+                    const amountStr = formatAmount(p.amount, exchangeRate, Currency.USD, true, 2, euroRate);
+                    const msg = t('notificationBody')
+                        .replace('{name}', p.name)
+                        .replace('{amount}', amountStr)
+                        .replace('{date}', dueDate.toLocaleDateString());
+                    
+                    showAlert(msg, 'info');
+                    
+                    // Mark as notified
+                    setScheduledPayments(prev => prev.map(item => 
+                        item.id === p.id ? { ...item, lastNotified: todayStr } : item
+                    ));
+                }
+            }
+        });
+    };
+
     useEffect(() => {
         if (!isLoaded) return;
         
-        const lastUpdate = localStorage.getItem('last_bcv_update');
-        const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000;
+        // Always fetch rates when the app opens to ensure fresh data
+        fetchAllRates();
         
-        if (!lastUpdate || (now - parseInt(lastUpdate)) > oneDay) {
-            fetchAllRates();
-        }
+        // Check for scheduled notifications
+        checkScheduledNotifications();
         
         (window as any).refreshAppRates = fetchAllRates;
     }, [isLoaded]);
@@ -328,15 +364,21 @@ function AppContent() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         setBackgroundTime(Date.now());
-      } else if (document.visibilityState === 'visible' && autoLockEnabled) {
-        if (backgroundTime !== null) {
-          const elapsed = (Date.now() - backgroundTime) / 1000;
-          if (elapsed >= autoLockDelay) {
+      } else if (document.visibilityState === 'visible') {
+        // Fetch rates when app returns to foreground
+        fetchAllRates();
+        checkScheduledNotifications();
+        
+        if (autoLockEnabled) {
+          if (backgroundTime !== null) {
+            const elapsed = (Date.now() - backgroundTime) / 1000;
+            if (elapsed >= autoLockDelay) {
+              setIsAppLocked(true);
+            }
+          } else {
+            // Fallback for first time or if backgroundTime was lost
             setIsAppLocked(true);
           }
-        } else {
-           // Fallback for first time or if backgroundTime was lost
-           setIsAppLocked(true);
         }
         setBackgroundTime(null);
       }
@@ -1057,6 +1099,7 @@ function AppContent() {
               navbarFavorites={navbarFavorites}
               onUpdateNavbarFavorites={setNavbarFavorites}
               listCloudBackups={listCloudBackups}
+              onNavigate={(v) => setCurrentView(v)}
             />
           )}
           {currentView === 'TRANSACTIONS' && (
@@ -1093,6 +1136,20 @@ function AppContent() {
               rateHistory={rateHistory}
               euroRate={euroRate}
               euroRateParallel={euroRateParallel}
+            />
+          )}
+          {currentView === 'SCHEDULED_NOTIFICATIONS' && (
+            <ScheduledNotificationsView
+              onBack={() => setCurrentView('PROFILE')}
+              lang={userProfile.language}
+              scheduledPayments={scheduledPayments}
+              onUpdateScheduledPayments={(payments) => {
+                  setScheduledPayments(payments);
+              }}
+              notificationsEnabled={userProfile.notificationsEnabled || false}
+              onToggleGlobalNotifications={(enabled) => {
+                  setUserProfile(prev => ({ ...prev, notificationsEnabled: enabled }));
+              }}
             />
           )}
         </motion.div>

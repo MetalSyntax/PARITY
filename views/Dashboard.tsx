@@ -4,11 +4,13 @@ import { motion, Reorder, useDragControls, AnimatePresence } from "framer-motion
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
 import { getTranslation } from "../i18n";
-import { TransactionDetailModal } from "./TransactionDetailModal";
-import { PinModal } from "./PinModal";
-import { TransactionItem } from "./TransactionItem";
-import { CurrencyConverter } from "./CurrencyConverter";
-import { DashboardCustomizer } from "./DashboardCustomizer";
+import { TransactionDetailModal } from "../components/TransactionDetailModal";
+import { PinModal } from "../components/PinModal";
+import { TransactionItem } from "../components/TransactionItem";
+import { CurrencyConverter } from "../components/CurrencyConverter";
+import { DashboardCustomizer } from "../components/DashboardCustomizer";
+import { CurrencyAmount } from "../components/CurrencyAmount";
+import { formatAmount, formatSecondaryAmount } from "../utils/formatUtils";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler } from "chart.js";
 import { Line, Doughnut, Bar } from "react-chartjs-2";
 import { tailwindToHex, commonOptions } from "../utils/chartUtils";
@@ -79,37 +81,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   euroRateParallel
 }) => {
 
-  const formatAmount = (usd: number) => {
-    if (!isBalanceVisible) return "******";
-    let val = usd;
-    let symbol = '$';
-    
-    if (displayCurrency === Currency.VES) {
-      val = usd * exchangeRate;
-      symbol = 'Bs.';
-    } else if (displayCurrency === Currency.EUR) {
-      val = (usd * exchangeRate) / (euroRate || 1);
-      symbol = '€';
-    }
-    
-    return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  const formatSecondaryAmount = (usd: number) => {
-    if (!isBalanceVisible) return "";
-    
-    if (displayCurrency === Currency.USD) {
-      const val = usd * exchangeRate;
-      return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} Bs.`;
-    } else if (displayCurrency === Currency.VES) {
-      const val = usd;
-      return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} $`;
-    } else if (displayCurrency === Currency.EUR) {
-      const val = usd;
-      return `${val?.toLocaleString(undefined, { maximumFractionDigits: 0 })} $`;
-    }
-    return "";
-  };
   const [showPinModal, setShowPinModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -238,7 +209,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const formatChartAmount = (usd: number) => {
     if (!isBalanceVisible) return '******';
-    return formatAmount(usd);
+    return formatAmount(usd, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate);
   };
 
   useEffect(() => {
@@ -648,18 +619,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </p>
                         <div className="flex flex-col gap-1 mb-2">
                           <h1 className="text-5xl font-black tracking-tighter text-theme-primary leading-tight">
-                            {isBalanceVisible ? (
-                              <>
-                                {formatAmount(totalBalanceUSD)}
-                              </>
-                            ) : (
-                              <span className="tracking-widest">******</span>
-                            )}
+                            <CurrencyAmount
+                                    amount={totalBalanceUSD}
+                                    exchangeRate={exchangeRate}
+                                    euroRate={euroRate}
+                                    displayCurrency={displayCurrency}
+                                    isBalanceVisible={isBalanceVisible}
+                                    size="2xl"
+                                    weight="black"
+                                    className="items-start"
+                                />
                           </h1>
                           <div className="flex items-center gap-3">
-                             <p className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-lg border border-theme-soft">
-                              {isBalanceVisible ? formatSecondaryAmount(totalBalanceUSD) : "******"}
-                            </p>
+                             <span className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-lg border border-theme-soft">
+                              <CurrencyAmount
+                                amount={totalBalanceUSD}
+                                exchangeRate={exchangeRate}
+                                euroRate={euroRate}
+                                displayCurrency={displayCurrency}
+                                isBalanceVisible={isBalanceVisible}
+                                showSecondary={true}
+                                size="xs"
+                                weight="bold"
+                                className="items-start"
+                              />
+                            </span>
                             {isBalanceVisible && (
                               <div className={`p-1 flex items-center gap-1 rounded-full text-[10px] font-black ${balanceHistory.trendPercent >= 0 ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
                                 {balanceHistory.trendPercent >= 0 ? <ArrowUpRight size={10} /> : <TrendingDown size={10} />}
@@ -693,9 +677,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                       <div className="h-48 w-full">
                         {balanceChartType === 'LINE' ? (
-                          <Line data={{ labels: balanceHistory.history.map((h) => new Date(h.timestamp).toLocaleDateString(undefined, { weekday: "short" })), datasets: [{ data: balanceHistory.history.map((h) => h.balance), borderColor: "#6366f1", backgroundColor: (context) => { const ctx = context.chart.ctx; const gradient = ctx.createLinearGradient(0, 0, 0, 300); gradient.addColorStop(0, "rgba(99,102,241, 0.4)"); gradient.addColorStop(1, "rgba(99,102,241, 0)"); return gradient; }, fill: true, tension: 0.4, pointRadius: 0 }] }} options={{ ...commonOptions, plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: (context) => formatChartAmount(context.raw as number) } } }, scales: { x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }, y: { display: false } } }} />
+                          <Line data={{ labels: balanceHistory.history.map((h) => new Date(h.timestamp).toLocaleDateString(undefined, { weekday: "short" })), datasets: [{ data: balanceHistory.history.map((h) => h.balance), borderColor: "#6366f1", backgroundColor: (context) => { const ctx = context.chart.ctx; const gradient = ctx.createLinearGradient(0, 0, 0, 300); gradient.addColorStop(0, "rgba(99,102,241, 0.4)"); gradient.addColorStop(1, "rgba(99,102,241, 0)"); return gradient; }, fill: true, tension: 0.4, pointRadius: 0 }] }} options={{ ...commonOptions, plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: (context) => formatAmount(context.raw as number, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate) } } }, scales: { x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }, y: { display: false } } }} />
                         ) : (
-                          <Bar data={{ labels: balanceHistory.history.map((h) => new Date(h.timestamp).toLocaleDateString(undefined, { weekday: "short" })), datasets: [{ data: balanceHistory.history.map((h) => formatChartValue(h.balance)), backgroundColor: 'rgba(99, 102, 241, 0.6)', borderRadius: 4 }] }} options={{ ...commonOptions, plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: (context) => formatChartAmount(context.parsed.y) } } }, scales: { x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }, y: { display: false } } }} />
+                          <Bar data={{ labels: balanceHistory.history.map((h) => new Date(h.timestamp).toLocaleDateString(undefined, { weekday: "short" })), datasets: [{ data: balanceHistory.history.map((h) => formatChartValue(h.balance)), backgroundColor: 'rgba(99, 102, 241, 0.6)', borderRadius: 4 }] }} options={{ ...commonOptions, plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: (context) => formatAmount(context.parsed.y, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate) } } }, scales: { x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }, y: { display: false } } }} />
                         )}
                       </div>
                     </div>
@@ -773,10 +757,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <h2 className="text-2xl font-black text-theme-primary">
                           {isBalanceVisible ? (
                             <>
-                              {formatAmount(expenseSummary.totalUSD)}
-                              <span className="text-sm font-normal text-theme-secondary ml-2">
-                                / {formatSecondaryAmount(expenseSummary.totalUSD)}
-                              </span>
+                              <CurrencyAmount
+                                amount={expenseSummary.totalUSD}
+                                exchangeRate={exchangeRate}
+                                euroRate={euroRate}
+                                displayCurrency={displayCurrency}
+                                isBalanceVisible={isBalanceVisible}
+                                showSecondary={true}
+                                size="lg"
+                                weight="black"
+                                className="items-start"
+                              />
                             </>
                           ) : "******"}
                           <span className="text-xs text-theme-secondary ml-2 font-bold uppercase tracking-widest opacity-40">{t("totalExpenses")}</span>
@@ -820,7 +811,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 tooltip: {
                                   ...commonOptions.plugins.tooltip,
                                   callbacks: {
-                                    label: (context: any) => `${context.label}: ${getSymbol()}${context.raw.toLocaleString()}`
+                                    label: (context: any) => `${context.label}: ${formatAmount(context.raw, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}`
                                   }
                                 }
                               }
@@ -843,7 +834,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     ...commonOptions.plugins,
                                     tooltip: {
                                         ...commonOptions.plugins.tooltip,
-                                        callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.parsed.x?.toLocaleString()}` }
+                                         callbacks: { label: (context: any) => `${context.label}: ${formatAmount(context.parsed.x, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}` }
                                     }
                                 },
                                 scales: {
@@ -874,10 +865,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               </div>
                               <span className="text-xs font-bold">{t(item.name as any)}</span>
                             </div>
-                            <div className="text-right">
-                              <p className="text-xs font-black">{formatAmount(item.amount)}</p>
-                              <p className="text-[9px] font-bold opacity-40">{item.percent?.toFixed(1)}%</p>
-                            </div>
+                             <div className="text-right">
+                               <CurrencyAmount
+                                 amount={item.amount}
+                                 exchangeRate={exchangeRate}
+                                 euroRate={euroRate}
+                                 displayCurrency={displayCurrency}
+                                 isBalanceVisible={isBalanceVisible}
+                                 size="xs"
+                                 weight="black"
+                               />
+                               <p className="text-[9px] font-bold opacity-40">{item.percent?.toFixed(1)}%</p>
+                             </div>
                           </button>
                         ))}
                       </div>
@@ -1066,7 +1065,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               ...commonOptions.plugins,
                               tooltip: {
                                   ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.dataset.label}: ${getSymbol()}${context.raw?.toLocaleString()}` }
+                                   callbacks: { label: (context: any) => `${context.dataset.label}: ${formatAmount(context.raw, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}` }
                               }
                           },
                           scales: {

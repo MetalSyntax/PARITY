@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.25`
+# PARITY 💸 `v1.0.26`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,19 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.0.26
+
+- **Architecture Refactor & Smart Notifications:**
+  - `feat`: architectural cleanup moving UI components to a dedicated `views/` directory
+  - `feat`: implement **Scheduled Notifications** system with per-payment alert management
+  - `feat`: integrate live **historical market data** (BCV/Binance) for USD & EUR
+  - `feat`: enhance **Currency Performance** view with inflation shield and volatility spread charts
+  - `feat`: implement automatic exchange rate refresh on app foreground/visibility change
+  - `feat`: unify multi-language support (EN, ES, PT) for notification and market data
+  - `fix`: resolve React hydration errors by standardizing `CurrencyAmount` as phrasing content (span)
+  - `fix`: eliminate syntax errors in `TransferView` and `WalletView` after directory restructuring
+  - `ux`: redesign Dashboard header for cleaner dual-currency display on small screens
 
 ### v1.0.25
 

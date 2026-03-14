@@ -402,4 +402,13 @@ export const pt = {
     summary: 'Resumo',
     noReceipt: 'Nenhuma fatura disponível',
     download: 'Baixar',
+    scheduledNotifications: 'Alertas de Pagamento',
+    managePersonalizedAlerts: 'Alertas Personalizados',
+    overallNotifications: 'Notificações Globais',
+    personalizedAlerts: 'Alertas Individuais',
+    active: 'Ativo',
+    inactive: 'Inativo',
+    noScheduledForNotifications: 'Nenhum pagamento agendado para notificar.',
+    smartAlertsActive: 'Alertas Inteligentes Ativos',
+    smartAlertsDesc: 'Notificaremos você com base nas suas configurações de antecedência para cada pagamento selecionado.',
 };

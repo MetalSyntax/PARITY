@@ -423,4 +423,13 @@ export const es = {
   download: "Descargar",
   rateTypeOfficial: "Oficial (BCV)",
   rateTypeParallel: "Bursátil/Binance",
+  scheduledNotifications: "Alertas de Pago",
+  managePersonalizedAlerts: "Alertas Personalizadas",
+  overallNotifications: "Notificaciones Globales",
+  personalizedAlerts: "Alertas Individuales",
+  active: "Activo",
+  inactive: "Inactivo",
+  noScheduledForNotifications: "No hay pagos programados para notificar.",
+  smartAlertsActive: "Alertas Inteligentes Activas",
+  smartAlertsDesc: "Te notificaremos según el tiempo de anticipación configurado para cada pago seleccionado.",
 };

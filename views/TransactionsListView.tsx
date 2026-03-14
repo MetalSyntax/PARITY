@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Transaction, Language, Currency, TransactionType, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
-import { TransactionDetailModal } from './TransactionDetailModal';
-import { TransactionItem } from './TransactionItem';
+import { TransactionDetailModal } from '../components/TransactionDetailModal';
+import { TransactionItem } from '../components/TransactionItem';
 
 interface TransactionsListViewProps {
   onBack: () => void;

@@ -17,7 +17,7 @@ export type RateType = 'OFFICIAL' | 'PARALLEL';
 
 export type Language = 'en' | 'es' | 'pt';
 
-export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF';
+export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS';
 
 export interface UserProfile {
   name: string;
@@ -78,6 +78,7 @@ export interface ScheduledPayment {
     type?: TransactionType; // Optional for backward compatibility, defaults to EXPENSE
     category?: string; // Optional for backward compatibility
     lastNotified?: string; // ISO date string (YYYY-MM-DD)
+    notificationsEnabled?: boolean;
 }
 
 export interface Budget {

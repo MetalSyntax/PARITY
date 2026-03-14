@@ -4,7 +4,9 @@ import { motion, Reorder, useDragControls, AnimatePresence } from 'framer-motion
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, ScheduledPayment, Currency } from '../types';
 import { getTranslation } from '../i18n';
+import { CurrencyAmount } from '../components/CurrencyAmount';
 import { commonOptions, tailwindToHex } from '../utils/chartUtils';
+import { formatAmount } from '../utils/formatUtils';
 
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler } from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
@@ -167,21 +169,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     return results;
   }, [monthlyTransactions, totalIncome]);
 
-  const formatAmount = (usd: number) => {
-    if (!isBalanceVisible) return '******';
-    let val = usd;
-    let symbol = '$';
-    
-    if (displayCurrency === Currency.VES) {
-      val = usd * exchangeRate;
-      symbol = 'Bs.';
-    } else if (displayCurrency === Currency.EUR) {
-      val = (usd * exchangeRate) / (euroRate || 1);
-      symbol = '€';
-    }
-    
-    return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+
 
   return (
     <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg">
@@ -269,7 +257,17 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                 <p className="text-theme-secondary text-sm">{t('netCashFlow')}</p>
                 <div className="flex flex-col">
                     <h2 className={`text-4xl font-bold flex items-center gap-2 ${netCashFlow >= 0 ? 'text-theme-primary' : 'text-red-400'}`}>
-                        {netCashFlow >= 0 ? '+' : '-'}{formatAmount(Math.abs(netCashFlow))}
+                      <CurrencyAmount
+                        amount={Math.abs(netCashFlow)}
+                        exchangeRate={exchangeRate}
+                        euroRate={euroRate}
+                        displayCurrency={displayCurrency}
+                        isBalanceVisible={isBalanceVisible}
+                        showPlusMinus={false}
+                        weight="black"
+                        className="items-start"
+                        prefix={netCashFlow >= 0 ? '+' : '-'}
+                      />
                     </h2>
                     {isBalanceVisible && (
                         <span className="text-sm font-mono text-theme-secondary mt-1">
@@ -387,7 +385,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                                       let label = context.dataset.label || '';
                                                       if (label) label += ': ';
                                                       if (context.parsed.x !== undefined) {
-                                                          label += formatAmount(context.parsed.x);
+                                                          label += formatAmount(context.parsed.x, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate);
                                                       }
                                                       return label;
                                                   }
@@ -463,7 +461,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                           tooltip: {
                                               ...commonOptions.plugins.tooltip,
                                               callbacks: {
-                                                  label: (context: any) => `${context.dataset.label}: ${formatAmount(context.parsed.y)}`
+                                                  label: (context: any) => `${context.dataset.label}: ${formatAmount(context.parsed.y, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}`
                                               }
                                           }
                                       },
@@ -531,7 +529,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                               tooltip: {
                                                   ...commonOptions.plugins.tooltip,
                                                   callbacks: {
-                                                      label: (context: any) => `${context.dataset.label}: ${formatAmount(context.parsed.y)}`
+                                                      label: (context: any) => `${context.dataset.label}: ${formatAmount(context.parsed.y, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}`
                                                   }
                                               }
                                           },
@@ -577,7 +575,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                                 tooltip: {
                                                     ...commonOptions.plugins.tooltip,
                                                     callbacks: {
-                                                        label: (context: any) => `${context.label}: ${formatAmount(context.parsed.y)}`
+                                                        label: (context: any) => `${context.label}: ${formatAmount(context.parsed.y, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}`
                                                     }
                                                 }
                                             },
@@ -619,7 +617,12 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                                     tooltip: {
                                                         ...commonOptions.plugins.tooltip,
                                                         callbacks: {
-                                                            label: (context: any) => `${context.label}: ${formatAmount(context.raw)}`
+                                                            label: (context: any) => {
+                                                                const amount = context.raw;
+                                                                if (displayCurrency === Currency.VES) return `${context.label}: ${amount/1000}k Bs.`;
+                                                                if (displayCurrency === Currency.EUR) return `${context.label}: €${amount}`;
+                                                                return `${context.label}: $${amount}`;
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -648,7 +651,16 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                   <div className="flex-1">
                                       <div className="flex justify-between items-start mb-1">
                                           <h4 className="font-bold text-theme-primary">{t(leak.category)}</h4>
-                                          <span className="font-mono text-sm font-bold text-rose-400">{formatAmount(leak.amount)}</span>
+                                          <CurrencyAmount
+                                            amount={leak.amount}
+                                            exchangeRate={exchangeRate}
+                                            euroRate={euroRate}
+                                            displayCurrency={displayCurrency}
+                                            isBalanceVisible={isBalanceVisible}
+                                            size="sm"
+                                            weight="bold"
+                                            className="text-rose-400"
+                                          />
                                       </div>
                                       <p className="text-xs text-theme-secondary opacity-70 leading-relaxed font-bold uppercase tracking-tight">{leak.description}</p>
                                   </div>

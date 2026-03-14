@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Transaction, Currency, TransactionType, Account } from '../types';
 import { CATEGORIES } from '../constants';
 import { getTranslation } from '../i18n';
+import { CurrencyAmount } from './CurrencyAmount';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -35,30 +36,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   const isTransfer = transaction.type === TransactionType.TRANSFER;
   const isOriginalUSDType = transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT;
 
-  const calculateDisplay = (cur: Currency) => {
-    let amount = transaction.normalizedAmountUSD;
-    let symbol = '$';
-    
-    if (cur === Currency.VES) {
-      amount = transaction.normalizedAmountUSD * transaction.exchangeRate;
-      symbol = 'Bs.';
-    } else if (cur === Currency.EUR) {
-      const euroRateToUse = transaction.euroRate || 1; // Fallback if old tx
-      amount = (transaction.normalizedAmountUSD * transaction.exchangeRate) / euroRateToUse;
-      symbol = '€';
-    }
-    
-    return { amount, symbol };
-  };
 
-  const main = calculateDisplay(displayCurrency);
-  const displayMain = main.amount;
-  const displayMainSymbol = main.symbol;
-  
-  const secondaryCurrency = displayCurrency === Currency.USD ? Currency.VES : Currency.USD;
-  const secondary = calculateDisplay(secondaryCurrency);
-  const displaySecondary = secondary.amount;
-  const displaySecondarySymbol = secondary.symbol;
   
   const fromAcc = accounts.find(a => a.id === transaction.accountId);
   const toAcc = accounts.find(a => a.id === transaction.toAccountId);
@@ -101,16 +79,17 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
           )}
         </div>
       </div>
-      <div className="text-right">
-        <p className={`text-sm font-black ${
-          isTransfer ? 'text-indigo-400' : isIncome ? 'text-emerald-500' : 'text-red-500'
-        }`}>
-          {isTransfer ? '' : isIncome ? '+' : '-'}{displayMainSymbol}{isBalanceVisible ? displayMain?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '***'}
-        </p>
-        <p className="text-[10px] font-bold text-theme-secondary opacity-40">
-          ~{displaySecondarySymbol}{isBalanceVisible ? displaySecondary?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '***'}
-        </p>
-      </div>
+      <CurrencyAmount
+        amount={transaction.normalizedAmountUSD}
+        exchangeRate={transaction.exchangeRate}
+        euroRate={transaction.euroRate}
+        displayCurrency={displayCurrency}
+        isBalanceVisible={isBalanceVisible}
+        showSecondary={true}
+        type={transaction.type}
+        showPlusMinus={!isTransfer}
+        weight="black"
+      />
 
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-theme-soft">
         {transaction.receipt && (
