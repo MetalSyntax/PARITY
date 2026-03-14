@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, ShieldCheck, CloudDownload, ArrowRight } from 'lucide-react';
+import { Target, ShieldCheck, CloudDownload, ArrowRight, Wallet, BarChart3, Rocket } from 'lucide-react';
 import { getTranslation } from '../i18n';
 import { Language } from '../types';
 
@@ -31,8 +31,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
         {
             title: t('onboarding_title3'),
             desc: t('onboarding_desc3'),
-            icon: <CloudDownload size={80} className="text-blue-400" />,
+            icon: <Wallet size={80} className="text-amber-400" />,
+            color: 'from-amber-500/20 to-orange-500/20'
+        },
+        {
+            title: t('onboarding_title4'),
+            desc: t('onboarding_desc4'),
+            icon: <BarChart3 size={80} className="text-blue-400" />,
             color: 'from-blue-500/20 to-indigo-500/20'
+        },
+        {
+            title: t('onboarding_title5'),
+            desc: t('onboarding_desc5'),
+            icon: <Rocket size={80} className="text-theme-brand" />,
+            color: 'from-theme-brand/20 to-pink-500/20'
         }
     ];
 
@@ -42,6 +54,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
         <div className="fixed inset-0 z-[200] bg-theme-bg flex flex-col items-center justify-center p-8 overflow-hidden font-sans">
             {/* Background Glow */}
             <div className={`absolute inset-0 bg-gradient-to-b ${currentSlide.color} opacity-30 transition-all duration-1000`} />
+            
+            {/* Skip Button */}
+            {step < slides.length - 1 && (
+                <button 
+                    onClick={() => setStep(slides.length - 1)}
+                    className="absolute top-12 right-8 z-[210] p-4 text-theme-secondary font-black text-xs uppercase tracking-widest hover:text-theme-primary transition-colors"
+                >
+                    {t('skip')}
+                </button>
+            )}
             
             <div className="relative z-10 w-full max-w-sm flex flex-col items-center text-center">
                 {/* Icon Container */}
@@ -78,7 +100,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
 
                 {/* Actions */}
                 <div className="w-full flex flex-col gap-4">
-                    {step < 2 ? (
+                    {step < slides.length - 1 ? (
                         <button 
                             onClick={() => setStep(step + 1)}
                             className="w-full bg-theme-primary text-theme-bg font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-black/20"
@@ -89,7 +111,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
                         <>
                             <button 
                                 onClick={onStartFresh}
-                                className="w-full bg-theme-primary text-theme-bg font-black py-4 rounded-2xl hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-black/20"
+                                className="w-full bg-theme-primary text-theme-bg font-black py-4 rounded-2xl hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-black/20 font-black"
                             >
                                 {t('startFromScratch')}
                             </button>

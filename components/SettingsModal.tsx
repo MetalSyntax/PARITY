@@ -185,19 +185,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                  </button>
                  
-                 <button 
-                     onClick={() => onUpdateRateType('PARALLEL')}
-                     className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${rateType === 'PARALLEL' ? 'bg-amber-500/5 border-amber-500/40 ring-1 ring-amber-500/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
-                 >
-                    <div className="w-12 h-12 rounded-2xl bg-theme-surface flex items-center justify-center shadow-sm border border-theme-soft"><TrendingUp size={22} className="text-amber-500" /></div>
-                    <div className="flex-1">
-                      <p className="font-black text-sm text-theme-primary">{t('rateTypeParallel')}</p>
-                       <div className="flex gap-4 mt-1">
-                          <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-amber-500 font-black">{(usdRateParallel || 0).toFixed(2)}</span></span>
-                          <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(euroRateParallel || 0).toFixed(2)}</span></span>
-                       </div>
-                    </div>
-                 </button>
+                  {isDevMode && (
+                    <button 
+                         onClick={() => onUpdateRateType('PARALLEL')}
+                         className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${rateType === 'PARALLEL' ? 'bg-amber-500/5 border-amber-500/40 ring-1 ring-amber-500/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-theme-surface flex items-center justify-center shadow-sm border border-theme-soft"><TrendingUp size={22} className="text-amber-500" /></div>
+                      <div className="flex-1">
+                        <p className="font-black text-sm text-theme-primary">{t('rateTypeParallel')}</p>
+                         <div className="flex gap-4 mt-1">
+                            <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-amber-500 font-black">{(usdRateParallel || 0).toFixed(2)}</span></span>
+                            <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(euroRateParallel || 0).toFixed(2)}</span></span>
+                         </div>
+                      </div>
+                    </button>
+                  )}
 
                  <button 
                     onClick={() => setMode('MANUAL')} 

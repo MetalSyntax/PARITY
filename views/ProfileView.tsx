@@ -223,19 +223,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </label>
           <div className="absolute inset-0 bg-theme-brand/20 blur-2xl rounded-full scale-75" />
           
-          <AnimatePresence>
-            {isDevMode && !hideDevMode && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                onClick={(e) => { e.preventDefault(); onDevModeTrigger(); }}
-                className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-theme-surface border border-theme-soft text-[10px] font-black text-theme-brand uppercase tracking-tighter shadow-xl rounded-full z-20 flex items-center gap-1 cursor-pointer"
-              >
-                <ShieldCheck size={10} /> {t('devMode')}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Dev mode shield button removed in favor of version tap trigger */}
+
         </div>
         {!profileImage && (
              <p className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mt-4 opacity-40">
@@ -332,15 +321,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideWelcome ? "left-6" : "left-1"}`} />
                 </button>
             </div>
-            <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-theme-primary">{t('hideDevMode')}</span>
-                <button 
-                    onClick={() => setHideDevMode(!hideDevMode)}
-                    className={`w-10 h-5 rounded-full transition-all relative ${hideDevMode ? "bg-theme-brand" : "bg-theme-soft"}`}
-                >
-                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideDevMode ? "left-6" : "left-1"}`} />
-                </button>
-            </div>
+            {isDevMode && (
+              <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-theme-primary">{t('hideDevMode')}</span>
+                  <button 
+                      onClick={() => setHideDevMode(!hideDevMode)}
+                      className={`w-10 h-5 rounded-full transition-all relative ${hideDevMode ? "bg-theme-brand" : "bg-theme-soft"}`}
+                  >
+                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideDevMode ? "left-6" : "left-1"}`} />
+                  </button>
+              </div>
+            )}
             <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-theme-primary">{t('hideName')}</span>
                 <button 
@@ -529,7 +520,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="w-1.5 h-1.5 rounded-full bg-theme-brand animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-primary">Parity Intelligence</span>
           </div>
-          <p className="text-[10px] font-mono">v1.0.26</p>
+          <p 
+            onClick={onDevModeTrigger}
+            className="text-[10px] font-mono cursor-pointer hover:text-theme-brand transition-colors select-none"
+          >
+            v1.0.26 {isDevMode && !hideDevMode && '(DEV)'}
+          </p>
         </motion.div>
       </div>
 
