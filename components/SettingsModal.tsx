@@ -26,6 +26,7 @@ interface SettingsModalProps {
   euroRateParallel?: number;
   usdRateParallel?: number;
   onRefreshRates: () => Promise<boolean>;
+  hasFetchedRates: boolean;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ 
@@ -47,7 +48,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isDevMode,
   rateType,
   onUpdateRateType,
-  onRefreshRates
+  onRefreshRates,
+  hasFetchedRates
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [rate, setRate] = useState(currentRate);
@@ -179,8 +181,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex-1">
                        <p className="font-black text-sm text-theme-primary">{t('rateTypeOfficial')}</p>
                        <div className="flex gap-4 mt-1">
-                          <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-emerald-500 font-black">{currentRate.toFixed(2)}</span></span>
-                          <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(euroRate || 0).toFixed(2)}</span></span>
+                          <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-emerald-500 font-black">{(hasFetchedRates || navigator.onLine) ? currentRate.toFixed(2) : '--.--'}</span></span>
+                          <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(hasFetchedRates || navigator.onLine) ? (euroRate || 0).toFixed(2) : '--.--'}</span></span>
                        </div>
                     </div>
                  </button>
@@ -194,8 +196,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <div className="flex-1">
                         <p className="font-black text-sm text-theme-primary">{t('rateTypeParallel')}</p>
                          <div className="flex gap-4 mt-1">
-                            <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-amber-500 font-black">{(usdRateParallel || 0).toFixed(2)}</span></span>
-                            <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(euroRateParallel || 0).toFixed(2)}</span></span>
+                            <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-amber-500 font-black">{(hasFetchedRates || navigator.onLine) ? (usdRateParallel || 0).toFixed(2) : '--.--'}</span></span>
+                            <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(hasFetchedRates || navigator.onLine) ? (euroRateParallel || 0).toFixed(2) : '--.--'}</span></span>
                          </div>
                       </div>
                     </button>

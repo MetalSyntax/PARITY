@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ChevronDown, ChevronUp, PieChart, BarChart, Settings, Activity, TrendingUp, X, ShieldAlert, Zap, AlertCircle, Coins, DollarSign, Shield, GripVertical, CalendarRange, ChartCandlestick, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, PieChart, BarChart, Settings, Activity, TrendingUp, X, ShieldAlert, Zap, AlertCircle, Coins, DollarSign, Shield, GripVertical, CalendarRange, ChartCandlestick, RefreshCw, Euro } from 'lucide-react';
 import { motion, Reorder, useDragControls, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, ScheduledPayment, Currency } from '../types';
 import { getTranslation } from '../i18n';
 import { CurrencyAmount } from '../components/CurrencyAmount';
-import { commonOptions, tailwindToHex } from '../utils/chartUtils';
 import { formatAmount } from '../utils/formatUtils';
 
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler } from 'chart.js';
-import { Line, Doughnut, Bar } from 'react-chartjs-2';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler);
+import { IncomeVsExpenseChart, ExpenseStructureChart, MonthlyNetFlowChart, IncomeDistributionChart } from '../components/Charts';
 
 
 interface AnalysisViewProps {
@@ -193,7 +189,15 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayCurrency === Currency.VES ? <Coins size={14} /> : displayCurrency === Currency.EUR ? <RefreshCw size={14} /> : <DollarSign size={14} />}
+                <div className="w-4 h-4 flex items-center justify-center">
+                    {displayCurrency === Currency.VES ? (
+                        <span className="text-[9px] font-black leading-none">Bs</span>
+                    ) : displayCurrency === Currency.EUR ? (
+                        <Euro size={14} />
+                    ) : (
+                        <DollarSign size={14} />
+                    )}
+                </div>
                 <span className="hidden sm:inline">{displayCurrency}</span>
             </motion.button>
 
@@ -271,7 +275,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                     </h2>
                     {isBalanceVisible && (
                         <span className="text-sm font-mono text-theme-secondary mt-1">
-                            {displayCurrency === Currency.USD ? `≈ Bs. ${(Math.abs(netCashFlow) * exchangeRate)?.toLocaleString()}` : 
+                            {displayCurrency === Currency.USD ? `≈ Bs ${(Math.abs(netCashFlow) * exchangeRate)?.toLocaleString()}` : 
                              displayCurrency === Currency.EUR ? `≈ $${Math.abs(netCashFlow)?.toFixed(2)}` :
                              `≈ $${Math.abs(netCashFlow)?.toFixed(2)}`}
                         </span>
@@ -342,140 +346,15 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                       </div>
 
                       <div className="relative h-[300px] w-full mt-4">
-                          {mainChartType === 'BAR' ? (
-                              <Bar 
-                                  data={{
-                                      labels: [t('income'), t('expenses')],
-                                      datasets: [
-                                          {
-                                              label: t('income'),
-                                              data: [totalIncome, 0],
-                                              backgroundColor: 'rgba(52, 211, 153, 0.8)', // emerald-400
-                                              borderRadius: 12,
-                                              barThickness: 40,
-                                          },
-                                          ...sortedCategories.map((cat, idx) => ({
-                                              label: t(cat.name),
-                                              data: [0, cat.total],
-                                              backgroundColor: tailwindToHex(cat.color) + 'CC',
-                                              borderRadius: idx === 0 ? { topLeft: 12, bottomLeft: 12 } : idx === sortedCategories.length - 1 ? { topRight: 12, bottomRight: 12 } : 0,
-                                              barThickness: 40,
-                                          }))
-                                      ]
-                                  }}
-                                  options={{
-                                      ...commonOptions,
-                                      indexAxis: 'y' as const,
-                                      plugins: {
-                                          ...commonOptions.plugins,
-                                          legend: { 
-                                              display: true, 
-                                              position: 'bottom' as const,
-                                              labels: {
-                                                  color: '#a1a1aa',
-                                                  usePointStyle: true,
-                                                  padding: 20,
-                                                  font: { size: 10 }
-                                              }
-                                          },
-                                          tooltip: {
-                                              ...commonOptions.plugins.tooltip,
-                                              callbacks: {
-                                                  label: function(context: any) {
-                                                      let label = context.dataset.label || '';
-                                                      if (label) label += ': ';
-                                                      if (context.parsed.x !== undefined) {
-                                                          label += formatAmount(context.parsed.x, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate);
-                                                      }
-                                                      return label;
-                                                  }
-                                              }
-                                          }
-                                      },
-                                      scales: {
-                                          x: { 
-                                              stacked: true,
-                                              display: true, 
-                                              grid: { color: 'rgba(255,255,255,0.05)' },
-                                              border: { display: false },
-                                              ticks: { color: '#71717a', font: { size: 10 }, callback: (v: any) => {
-                                                  if (displayCurrency === Currency.VES) return `${v/1000}k Bs.`;
-                                                  if (displayCurrency === Currency.EUR) return `€${v}`;
-                                                  return `$${v}`;
-                                              }}
-                                          },
-                                          y: { 
-                                              stacked: true,
-                                              display: true, 
-                                              grid: { display: false },
-                                              border: { display: false },
-                                              ticks: { color: '#e4e4e7', font: { size: 12, weight: 'bold' } }
-                                          }
-                                      }
-                                  }}
-                              />
-                          ) : (
-                              <Line 
-                                  data={{
-                                      labels: monthKeys,
-                                      datasets: [
-                                          {
-                                              label: t('income'),
-                                              data: monthKeys.map(m => transactions.filter(t => t.date.startsWith(m) && t.type === TransactionType.INCOME).reduce((a,c) => a+c.normalizedAmountUSD, 0)),
-                                              borderColor: '#34d399',
-                                              backgroundColor: (context: any) => {
-                                                  const ctx = context.chart.ctx;
-                                                  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                                                  gradient.addColorStop(0, 'rgba(52, 211, 153, 0.3)');
-                                                  gradient.addColorStop(1, 'rgba(52, 211, 153, 0)');
-                                                  return gradient;
-                                              },
-                                              tension: 0.4,
-                                              fill: true,
-                                              pointRadius: 4,
-                                              pointBackgroundColor: '#34d399',
-                                          },
-                                          {
-                                              label: t('expenses'),
-                                              data: monthKeys.map(m => transactions.filter(t => t.date.startsWith(m) && t.type === TransactionType.EXPENSE).reduce((a,c) => a+c.normalizedAmountUSD, 0)),
-                                              borderColor: '#f87171',
-                                              backgroundColor: (context: any) => {
-                                                  const ctx = context.chart.ctx;
-                                                  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                                                  gradient.addColorStop(0, 'rgba(248, 113, 113, 0.2)');
-                                                  gradient.addColorStop(1, 'rgba(248, 113, 113, 0)');
-                                                  return gradient;
-                                              },
-                                              tension: 0.4,
-                                              fill: true,
-                                              pointRadius: 4,
-                                              pointBackgroundColor: '#f87171',
-                                          }
-                                      ]
-                                  }}
-                                  options={{
-                                      ...commonOptions,
-                                      plugins: {
-                                          ...commonOptions.plugins,
-                                          legend: { display: true, position: 'bottom' as const, labels: { color: '#a1a1aa', font: { size: 10 } } },
-                                          tooltip: {
-                                              ...commonOptions.plugins.tooltip,
-                                              callbacks: {
-                                                  label: (context: any) => `${context.dataset.label}: ${formatAmount(context.parsed.y, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}`
-                                              }
-                                          }
-                                      },
-                                      scales: {
-                                          x: { display: true, grid: { display: false }, ticks: { color: '#71717a', font: { size: 10 } } },
-                                          y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 }, callback: (value: any) => {
-                                                  if (displayCurrency === Currency.VES) return `${value/1000}k Bs.`;
-                                                  if (displayCurrency === Currency.EUR) return `€${value}`;
-                                                  return `$${value}`;
-                                              }} }
-                                      }
-                                  }}
-                              />
-                          )}
+                          <IncomeVsExpenseChart 
+                            type={mainChartType}
+                            transactions={monthlyTransactions}
+                            lang={lang}
+                            exchangeRate={exchangeRate}
+                            euroRate={euroRate}
+                            displayCurrency={displayCurrency}
+                            isBalanceVisible={isBalanceVisible}
+                          />
                       </div>
                       
                       {showDetails && (
@@ -484,14 +363,14 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                   <span>{t('totalIncomeLabel')}</span>
                                   <div className="text-right">
                                       <span className="text-emerald-400 block">{isBalanceVisible ? `$${totalIncome?.toFixed(2)}` : '******'}</span>
-                                      {isBalanceVisible && <span className="text-emerald-600 text-xs">Bs. {(totalIncome * exchangeRate).toLocaleString()}</span>}
+                                      {isBalanceVisible && <span className="text-emerald-600 text-xs">Bs {(totalIncome * exchangeRate).toLocaleString()}</span>}
                                   </div>
                               </div>
                               <div className="flex justify-between text-sm text-theme-secondary mb-2">
                                   <span>{t('totalExpensesLabel')}</span>
                                   <div className="text-right">
                                       <span className="text-rose-400 block">{isBalanceVisible ? `-$${totalSpent?.toFixed(2)}` : '******'}</span>
-                                      {isBalanceVisible && <span className="text-rose-600 text-xs">Bs. {(totalSpent * exchangeRate).toLocaleString()}</span>}
+                                      {isBalanceVisible && <span className="text-rose-600 text-xs">Bs {(totalSpent * exchangeRate).toLocaleString()}</span>}
                                   </div>
                               </div>
                           </div>
@@ -507,41 +386,14 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('monthlyNetFlow')}</h3>
                                 </div>
                                 <div className="h-48">
-                                    <Bar 
-                                      data={{
-                                          labels: monthKeys,
-                                          datasets: [{
-                                              label: t('netFlow'),
-                                              data: monthKeys.map(m => {
-                                                  const monthT = transactions.filter(t => t.date.startsWith(m));
-                                                  const inc = monthT.filter(t => t.type === TransactionType.INCOME).reduce((a,c) => a+c.normalizedAmountUSD,0);
-                                                  const exp = monthT.filter(t => t.type === TransactionType.EXPENSE).reduce((a,c) => a+c.normalizedAmountUSD,0);
-                                                  return inc - exp;
-                                              }),
-                                              backgroundColor: (context: any) => context.raw >= 0 ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)',
-                                              borderRadius: 8
-                                          }]
-                                      }} 
-                                      options={{
-                                          ...commonOptions, 
-                                          plugins: {
-                                              ...commonOptions.plugins,
-                                              tooltip: {
-                                                  ...commonOptions.plugins.tooltip,
-                                                  callbacks: {
-                                                      label: (context: any) => `${context.dataset.label}: ${formatAmount(context.parsed.y, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}`
-                                                  }
-                                              }
-                                          },
-                                          scales: { 
-                                              y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 }, callback: (v: any) => {
-                                                  if (displayCurrency === Currency.VES) return `${v/1000}k Bs.`;
-                                                  if (displayCurrency === Currency.EUR) return `€${v}`;
-                                                  return `$${v}`;
-                                              }} },
-                                              x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: '#71717a', font: { size: 10 } } }
-                                          } 
-                                      }} />
+                                    <MonthlyNetFlowChart 
+                                        transactions={transactions}
+                                        lang={lang}
+                                        exchangeRate={exchangeRate}
+                                        euroRate={euroRate}
+                                        displayCurrency={displayCurrency}
+                                        isBalanceVisible={isBalanceVisible}
+                                    />
                                 </div>
                             </div>
                       )}
@@ -554,40 +406,14 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('topSpendingCategories')}</h3>
                                 </div>
                                 <div className="h-48">
-                                    <Bar 
-                                        data={{
-                                            labels: sortedCategories.map(c => t(c.name)),
-                                            datasets: [{
-                                                label: t('amount'),
-                                                data: sortedCategories.map(c => c.total),
-                                                backgroundColor: sortedCategories.map(c => {
-                                                    const hex = tailwindToHex(c.color);
-                                                    return hex + 'B3'; // 70% opacity
-                                                }),
-                                                borderRadius: 8,
-                                                barThickness: 25
-                                            }]
-                                        }}
-                                        options={{
-                                            ...commonOptions,
-                                            plugins: {
-                                                ...commonOptions.plugins,
-                                                tooltip: {
-                                                    ...commonOptions.plugins.tooltip,
-                                                    callbacks: {
-                                                        label: (context: any) => `${context.label}: ${formatAmount(context.parsed.y, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}`
-                                                    }
-                                                }
-                                            },
-                                            scales: {
-                                                y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { size: 9 }, callback: (v: any) => {
-                                                    if (displayCurrency === Currency.VES) return `${(v * exchangeRate / 1000).toFixed(1)}k Bs.`;
-                                                    if (displayCurrency === Currency.EUR) return `€${(v * exchangeRate / (euroRate || 1)).toFixed(0)}`;
-                                                    return `$${v}`;
-                                                }} },
-                                                x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: '#71717a', font: { size: 9 }, maxRotation: 45, minRotation: 45 } }
-                                            }
-                                        }}
+                                    <ExpenseStructureChart 
+                                        type="BAR"
+                                        transactions={monthlyTransactions}
+                                        lang={lang}
+                                        exchangeRate={exchangeRate}
+                                        euroRate={euroRate}
+                                        displayCurrency={displayCurrency}
+                                        isBalanceVisible={isBalanceVisible}
                                     />
                                 </div>
                             </motion.div>
@@ -599,34 +425,13 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                 </div>
                                 <div className="h-48 flex justify-center">
                                     <div className="w-48 h-48">
-                                        <Doughnut 
-                                            data={{
-                                                labels: incomeCategories.map(c => t(c.name)),
-                                                datasets: [{
-                                                    data: incomeCategories.map(c => c.total),
-                                                    backgroundColor: incomeCategories.map(c => tailwindToHex(c.color) + 'CC'),
-                                                    borderWidth: 0,
-                                                    hoverOffset: 15
-                                                }]
-                                            }}
-                                            options={{
-                                                ...commonOptions,
-                                                cutout: '70%',
-                                                plugins: {
-                                                    ...commonOptions.plugins,
-                                                    tooltip: {
-                                                        ...commonOptions.plugins.tooltip,
-                                                        callbacks: {
-                                                            label: (context: any) => {
-                                                                const amount = context.raw;
-                                                                if (displayCurrency === Currency.VES) return `${context.label}: ${amount/1000}k Bs.`;
-                                                                if (displayCurrency === Currency.EUR) return `${context.label}: €${amount}`;
-                                                                return `${context.label}: $${amount}`;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }}
+                                        <IncomeDistributionChart 
+                                            transactions={monthlyTransactions}
+                                            lang={lang}
+                                            exchangeRate={exchangeRate}
+                                            euroRate={euroRate}
+                                            displayCurrency={displayCurrency}
+                                            isBalanceVisible={isBalanceVisible}
                                         />
                                     </div>
                                 </div>

@@ -36,7 +36,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
         let symbol = '$';
         if (displayCurrency === Currency.VES) {
             val = usd * exchangeRate;
-            symbol = 'Bs. ';
+            symbol = 'Bs ';
         } else if (displayCurrency === Currency.EUR && euroRate) {
             val = usd * (exchangeRate / euroRate);
             symbol = '€';
@@ -210,7 +210,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                             <h3 className="font-black text-lg text-theme-primary mb-1">{t('spendingPattern')}</h3>
                             <p className="text-xs text-theme-secondary leading-relaxed opacity-80">
                                 {t('spendingPatternDesc')} <br/>
-                                <span className="font-bold">{t('average')}: {formatAmount(maxSpend * 0.8)}</span> {isBalanceVisible && `/ ${displayCurrency === Currency.VES ? '$' : 'Bs.'} ${Math.round(displayCurrency === Currency.VES ? maxSpend * 0.8 / exchangeRate : maxSpend * 0.8 * exchangeRate)?.toLocaleString()}`}
+                                <span className="font-bold">{t('average')}: {formatAmount(maxSpend * 0.8)}</span> {isBalanceVisible && `/ ${displayCurrency === Currency.VES ? '$' : 'Bs'} ${Math.round(displayCurrency === Currency.VES ? maxSpend * 0.8 / exchangeRate : maxSpend * 0.8 * exchangeRate)?.toLocaleString()}`}
                             </p>
                         </div>
                     </div>
@@ -292,7 +292,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                                             <div className="text-right">
                                                 <p className="text-sm font-black text-red-400">-{formatAmount(tx.normalizedAmountUSD)}</p>
                                                 {isBalanceVisible && (
-                                                    <p className="text-[10px] font-bold text-zinc-500">~{displayCurrency === Currency.VES ? '$' : 'Bs.'} {(displayCurrency === Currency.VES ? (tx.originalCurrency === Currency.USD ? tx.amount : tx.amount / exchangeRate) : (tx.originalCurrency === Currency.USD ? tx.amount * exchangeRate : tx.amount))?.toLocaleString()}</p>
+                                                    <p className="text-[10px] font-bold text-zinc-500">~{displayCurrency === Currency.VES ? '$' : 'Bs'} {(displayCurrency === Currency.VES ? (tx.originalCurrency === Currency.USD ? tx.amount : tx.amount / exchangeRate) : (tx.originalCurrency === Currency.USD ? tx.amount * exchangeRate : tx.amount))?.toLocaleString()}</p>
                                                 )}
                                             </div>
                                         </motion.div>

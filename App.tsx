@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint } from 'lucide-react';
+import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint, ShoppingCart } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { AddTransaction } from './views/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
@@ -14,6 +14,7 @@ import { TransactionsListView } from './views/TransactionsListView';
 import { CalendarHeatmapView } from './views/CalendarHeatmapView';
 import { CurrencyPerformanceView } from './views/CurrencyPerformanceView';
 import { ScheduledNotificationsView } from './views/ScheduledNotificationsView';
+import { ShoppingListView } from './views/ShoppingListView';
 import { LegalBanner } from './components/LegalBanner';
 import { PinModal } from './components/PinModal';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -25,7 +26,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { INITIAL_RATE, INITIAL_USD_RATE_PARALLEL, INITIAL_EURO_RATE, INITIAL_EURO_RATE_PARALLEL, MOCK_ACCOUNTS, CATEGORIES } from './constants';
 import { formatAmount } from './utils/formatUtils';
-import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType } from './types';
+import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
@@ -86,6 +87,7 @@ function AppContent() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [rateHistory, setRateHistory] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: '', language: 'en' });
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(() => {
     const saved = localStorage.getItem("displayCurrency");
     return saved ? (saved as Currency) : Currency.USD;
@@ -93,6 +95,10 @@ function AppContent() {
   const [navbarFavorites, setNavbarFavorites] = useState<ViewState[]>(() => {
     const saved = localStorage.getItem("navbarFavorites");
     return saved ? JSON.parse(saved) : ['WALLET', 'ANALYSIS', 'PROFILE'];
+  });
+
+  const [hasFetchedRates, setHasFetchedRates] = useState(() => {
+    return localStorage.getItem('last_bcv_update') !== null;
   });
 
   const toggleDisplayCurrency = () => {
@@ -226,6 +232,7 @@ function AppContent() {
             setGoals(loadedData.goals || []);
             setRateHistory(loadedData.rateHistory || []);
             setUserProfile(loadedData.userProfile || { name: 'User', language: 'en' });
+            setShoppingItems(loadedData.shoppingItems || []);
             setIsFirstTime(false);
         } else {
             setIsFirstTime(true);
@@ -296,6 +303,7 @@ function AppContent() {
                     }
                 }
              }
+             setHasFetchedRates(true);
              return true;
          } catch (e) {
              console.error("Fetch all rates failed", e);
@@ -522,7 +530,8 @@ function AppContent() {
       userProfile,
       budgets,
       goals,
-      rateHistory
+      rateHistory,
+      shoppingItems
     };
 
     const save = async () => {
@@ -535,7 +544,7 @@ function AppContent() {
     };
     
     save();
-  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, isLoaded, storageType]);
+  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, shoppingItems, isLoaded, storageType]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -572,6 +581,8 @@ function AppContent() {
 
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [selectedTxForDetail, setSelectedTxForDetail] = useState<Transaction | null>(null);
+  const [shoppingItemToConvert, setShoppingItemToConvert] = useState<ShoppingItem | null>(null);
 
   const handleUpdateAccounts = (newAccounts: Account[]) => {
     setAccounts(newAccounts);
@@ -732,7 +743,13 @@ function AppContent() {
     }));
 
     setShowAdd(false);
+    if (shoppingItemToConvert) {
+        setShoppingItems(prev => prev.map(item => 
+          item.id === shoppingItemToConvert.id ? { ...item, completed: true } : item
+        ));
+    }
     setEditingTransaction(null);
+    setShoppingItemToConvert(null);
 
     // If this transaction came from a scheduled payment, update or remove it
     if (data.scheduledId) {
@@ -774,6 +791,7 @@ function AppContent() {
         setScheduledPayments(data.scheduledPayments || []);
         setBudgets(data.budgets || []);
         setGoals(data.goals || []);
+        setShoppingItems(data.shoppingItems || []);
         setUserProfile(data.userProfile);
         
         const newData: AppData = {
@@ -783,7 +801,8 @@ function AppContent() {
             scheduledPayments: data.scheduledPayments || [],
             userProfile: data.userProfile,
             budgets: data.budgets || [],
-            goals: data.goals || []
+            goals: data.goals || [],
+            shoppingItems: data.shoppingItems || []
         };
 
         if (storageType === 'INDEXED_DB') {
@@ -954,8 +973,10 @@ function AppContent() {
               }}
               biometricsEnabled={biometricsEnabled}
               onVerifyBiometrics={verifyBiometrics}
-              euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
+               euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
               euroRateParallel={euroRateParallel}
+              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
+              hasFetchedRates={hasFetchedRates}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -1002,6 +1023,7 @@ function AppContent() {
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               isBalanceVisible={isBalanceVisible}
+              onSaveTransaction={handleSaveTransaction}
             />
           )}
           {currentView === 'ANALYSIS' && (
@@ -1069,6 +1091,7 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
+              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
             />
           )}
           {currentView === 'HEATMAP' && (
@@ -1090,8 +1113,10 @@ function AppContent() {
               exchangeRate={exchangeRate}
               isBalanceVisible={isBalanceVisible}
               rateHistory={rateHistory}
-              euroRate={euroRate}
+               euroRate={euroRate}
               euroRateParallel={euroRateParallel}
+              usdRateParallel={usdRateParallel}
+              isDevMode={isDevMode}
             />
           )}
           {currentView === 'SCHEDULED_NOTIFICATIONS' && (
@@ -1108,10 +1133,25 @@ function AppContent() {
               }}
             />
           )}
+          {currentView === 'SHOPPING_LIST' && (
+            <ShoppingListView
+              onBack={() => setCurrentView('DASHBOARD')}
+              items={shoppingItems}
+              onUpdateItems={setShoppingItems}
+              lang={userProfile.language}
+              exchangeRate={exchangeRate}
+              displayCurrency={displayCurrency}
+              euroRate={euroRate}
+              onConvertToExpense={(item) => {
+                setShoppingItemToConvert(item);
+                setShowAdd(true);
+              }}
+            />
+          )}
         </motion.div>
 
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
-        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
+        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF', 'SHOPPING_LIST'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
           <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-4 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
             <button
               onClick={() => setCurrentView('DASHBOARD')}
@@ -1134,6 +1174,7 @@ function AppContent() {
                   {view === 'TRANSACTIONS' && <Receipt size={24} />}
                   {view === 'HEATMAP' && <CalendarRange size={24} />}
                   {view === 'CURRENCY_PERF' && <ChartCandlestick size={24} />}
+                  {view === 'SHOPPING_LIST' && <ShoppingCart size={24} />}
                 </button>
             ))}
 
@@ -1170,6 +1211,7 @@ function AppContent() {
                   {view === 'TRANSACTIONS' && <Receipt size={24} />}
                   {view === 'HEATMAP' && <Activity size={24} />}
                   {view === 'CURRENCY_PERF' && <TrendingUp size={24} />}
+                  {view === 'SHOPPING_LIST' && <ShoppingCart size={24} />}
                 </button>
             ))}
           </div>
@@ -1178,13 +1220,29 @@ function AppContent() {
         {/* Modals */}
         {showAdd && (
           <AddTransaction
-            onClose={() => { setShowAdd(false); setEditingTransaction(null); }}
+            onClose={() => { 
+                setShowAdd(false); 
+                setEditingTransaction(null); 
+                setShoppingItemToConvert(null);
+            }}
             onSave={handleSaveTransaction}
             exchangeRate={userProfile.rateType === 'PARALLEL' ? (usdRateParallel || exchangeRate) : exchangeRate}
             euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
             accounts={accounts}
             lang={userProfile.language}
-            initialData={editingTransaction}
+            initialData={editingTransaction || (shoppingItemToConvert ? {
+                id: '', 
+                amount: shoppingItemToConvert.price || 0,
+                originalCurrency: shoppingItemToConvert.currency || Currency.USD,
+                exchangeRate: exchangeRate,
+                euroRate: euroRate,
+                normalizedAmountUSD: (shoppingItemToConvert.price || 0) / (shoppingItemToConvert.currency === Currency.VES ? exchangeRate : 1),
+                type: TransactionType.EXPENSE,
+                category: shoppingItemToConvert.categoryId || CATEGORIES[1].id,
+                accountId: accounts[0]?.id || '',
+                note: shoppingItemToConvert.name,
+                date: new Date().toISOString()
+            } as Transaction : null)}
             showAlert={showAlert}
           />
         )}
@@ -1210,7 +1268,7 @@ function AppContent() {
             onToggleBiometrics={handleToggleBiometrics}
             isDevMode={isDevMode}
             onRefreshRates={fetchAllRates}
-
+            hasFetchedRates={hasFetchedRates}
           />
         )}
 

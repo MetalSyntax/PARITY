@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Wallet, TrendingUp, Filter, Search, Plus, DollarSign, ChevronDown, Edit2, Trash2, X, RefreshCw, Coins, Layers, Calendar } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingUp, Filter, Search, Plus, DollarSign, ChevronDown, Edit2, Trash2, X, RefreshCw, Coins, Layers, Calendar, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
@@ -210,8 +210,16 @@ export const WalletView: React.FC<WalletViewProps> = ({
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayCurrency === Currency.VES ? <Coins size={14} /> : displayCurrency === Currency.EUR ? <RefreshCw size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayCurrency === Currency.VES ? 'Bs.' : displayCurrency}</span>
+                <div className="w-4 h-4 flex items-center justify-center">
+                    {displayCurrency === Currency.VES ? (
+                        <span className="text-[9px] font-black leading-none">Bs</span>
+                    ) : displayCurrency === Currency.EUR ? (
+                        <Euro size={14} />
+                    ) : (
+                        <DollarSign size={14} />
+                    )}
+                </div>
+                <span className="hidden sm:inline">{displayCurrency}</span>
             </motion.button>
             {activeTab === 'WALLETS' && (
                 <motion.button 
@@ -470,7 +478,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         <div className="flex justify-between items-end">
                             <div className="flex flex-col gap-2">
                                 <span className="text-theme-secondary text-[10px] font-bold uppercase tracking-widest opacity-60">{t('availableBalance')}</span>
-                                <span className="bg-theme-bg px-3 py-1 rounded-lg text-[10px] font-black font-mono text-zinc-400 border border-white/5 w-fit shadow-inner">{acc.currency === Currency.VES ? 'Bs.' : acc.currency}</span>
+                                <span className="bg-theme-bg px-3 py-1 rounded-lg text-[10px] font-black font-mono text-zinc-400 border border-white/5 w-fit shadow-inner">{acc.currency === Currency.VES ? 'Bs' : acc.currency}</span>
                             </div>
                             <div className="flex flex-col items-end">
                                 <CurrencyAmount
@@ -535,7 +543,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                         onClick={() => setCurrency(c)} 
                                         className={`py-3 rounded-xl border text-xs font-black transition-all ${currency === c ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-theme-brand/20' : 'bg-theme-bg border-white/10 text-theme-secondary hover:bg-theme-soft'}`}
                                     >
-                                        {c === Currency.VES ? 'Bs.' : c}
+                                        {c === Currency.VES ? 'Bs' : c}
                                     </button>
                                 ))}
                             </div>

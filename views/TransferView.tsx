@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowDown, ArrowRight, Coins, DollarSign } from 'lucide-react';
+import { ArrowLeft, ArrowDown, ArrowRight, Coins, DollarSign, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Account, TransactionType, Language, Currency, Transaction } from '../types';
 import { getTranslation } from '../i18n';
@@ -107,8 +107,16 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
             onClick={onToggleDisplayCurrency}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
         >
-            {displayCurrency === Currency.VES ? <Coins size={14} /> : <DollarSign size={14} />}
-            <span className="hidden sm:inline">{displayCurrency === Currency.VES ? 'Bs.' : displayCurrency}</span>
+            <div className="w-4 h-4 flex items-center justify-center">
+                {displayCurrency === Currency.VES ? (
+                    <span className="text-[9px] font-black leading-none">Bs</span>
+                ) : displayCurrency === Currency.EUR ? (
+                    <Euro size={14} />
+                ) : (
+                    <DollarSign size={14} />
+                )}
+            </div>
+            <span className="hidden sm:inline">{displayCurrency}</span>
         </motion.button>
       </div>
 
@@ -252,13 +260,13 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
                             </div>
                              <div className="text-right">
                                  <p className="text-sm font-black text-indigo-400">
-                                     {tx.originalCurrency === Currency.EUR ? '€' : (tx.originalCurrency === Currency.USD || tx.originalCurrency === Currency.USDT) ? '$' : 'Bs.'} {tx.amount.toLocaleString()}
+                                     {tx.originalCurrency === Currency.EUR ? '€' : (tx.originalCurrency === Currency.USD || tx.originalCurrency === Currency.USDT) ? '$' : 'Bs'} {tx.amount.toLocaleString()}
                                  </p>
                                  <p className="text-[10px] text-zinc-600 font-mono">
                                      {(() => {
                                          const rate = tx.exchangeRate || exchangeRate;
                                          const eRate = tx.euroRate || euroRate || 1;
-                                         if (displayCurrency === Currency.VES) return `Bs. ${(tx.normalizedAmountUSD * rate).toLocaleString()}`;
+                                         if (displayCurrency === Currency.VES) return `Bs ${(tx.normalizedAmountUSD * rate).toLocaleString()}`;
                                          if (displayCurrency === Currency.EUR) return `€ ${((tx.normalizedAmountUSD * rate) / eRate).toLocaleString()}`;
                                          return `$ ${tx.normalizedAmountUSD.toLocaleString()}`;
                                      })()}

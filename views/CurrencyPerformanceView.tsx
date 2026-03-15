@@ -1,21 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ChevronLeft, Shield, TrendingUp, TrendingDown, Clock, CheckCircle2, LineChart, Activity, DollarSign, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { MarketVolatilityChart } from '../components/Charts';
 import { Transaction, Currency, TransactionType, RateHistoryItem } from '../types';
 import { getTranslation } from '../i18n';
-
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler
-);
 
 interface CurrencyPerformanceViewProps {
     transactions: Transaction[];
@@ -26,6 +14,8 @@ interface CurrencyPerformanceViewProps {
     rateHistory: RateHistoryItem[];
     euroRate?: number;
     euroRateParallel?: number;
+    usdRateParallel?: number;
+    isDevMode?: boolean;
 }
 
 export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = ({
@@ -36,7 +26,9 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
     isBalanceVisible,
     rateHistory,
     euroRate,
-    euroRateParallel
+    euroRateParallel,
+    usdRateParallel,
+    isDevMode
 }) => {
     const t = (key: any) => getTranslation(lang as any, key);
 
@@ -92,65 +84,72 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
     }, []);
 
     const activeHistory = activeTab === 'USD' ? historicalUsd : historicalEur;
+    const last7DaysHistory = useMemo(() => activeHistory.slice(-7), [activeHistory]);
 
     const periodVariation = useMemo(() => {
         if (!historicalUsd || historicalUsd.length < 2) return 0;
-        const start = historicalUsd[0].rate;
-        const end = historicalUsd[historicalUsd.length - 1].rate;
+        const last30 = historicalUsd.slice(-30);
+        const start = last30[0].rate;
+        const end = last30[last30.length - 1].rate;
         return ((end - start) / start) * 100;
     }, [historicalUsd]);
     
     // Inflation Shield Distribution
     const shieldStats = useMemo(() => {
         const variation = periodVariation;
-        const saved = Math.min(95, Math.max(20, 70 + (variation * 2)));
+        // Shielded is the % of value protected from devaluation
+        const saved = Math.min(100, Math.max(0, variation));
         return {
-            saved: Math.round(saved),
-            loss: 100 - Math.round(saved),
+            saved: Number(saved.toFixed(1)),
+            loss: Number((100 - saved).toFixed(1)),
             variation
         };
     }, [periodVariation]);
 
-    const commonOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-        },
-        scales: {
-            x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: '#52525b', font: { size: 9 } } },
-            y: { display: false, border: { display: false } }
-        }
-    };
+    const [currentSlide, setCurrentSlide] = useState(0);
 
-    const volatilityData = useMemo(() => {
-        const history = activeHistory.length > 0 ? activeHistory : [];
+    const achievementSlides = useMemo(() => {
+        const expensesThisMonth = transactions.filter(tx => 
+            tx.type === TransactionType.EXPENSE && 
+            new Date(tx.date).getMonth() === new Date().getMonth()
+        );
+        const avgRate = expensesThisMonth.length > 0 
+            ? expensesThisMonth.reduce((acc, tx) => acc + tx.exchangeRate, 0) / expensesThisMonth.length
+            : exchangeRate;
+        const spendDiff = ((exchangeRate - avgRate) / exchangeRate) * 100;
 
-        return {
-            labels: history.map(h => {
-                const date = new Date(h.date + 'T12:00:00');
-                return date.toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short' }).toUpperCase();
-            }),
-            datasets: [{
-                data: history.map(h => h.rate),
-                borderColor: '#3b82f6',
-                backgroundColor: (context: any) => {
-                    const ctx = context.chart.ctx;
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 150);
-                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.3)');
-                    gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-                    return gradient;
-                },
-                fill: true,
-                tension: 0.4,
-                pointRadius: history.length > 15 ? 0 : 4,
-                pointBackgroundColor: '#3b82f6',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
-            }]
-        };
-    }, [activeHistory, lang]);
+        return [
+            {
+                title: t('achievement_market_title'),
+                desc: t('achievement_market_desc').replace('{percent}', shieldStats.variation.toFixed(1)),
+                icon: <Shield size={32} />,
+                color: 'text-blue-400',
+                bg: 'bg-blue-500/20'
+            },
+            {
+                title: t('achievement_spend_title'),
+                desc: t('achievement_spend_desc').replace('{percent}', Math.abs(spendDiff).toFixed(1)),
+                icon: <TrendingDown size={32} />,
+                color: 'text-emerald-400',
+                bg: 'bg-emerald-500/20'
+            },
+            {
+                title: t('achievement_goals_title'),
+                desc: t('achievement_goals_desc'),
+                icon: <CheckCircle2 size={32} />,
+                color: 'text-amber-400',
+                bg: 'bg-amber-500/20'
+            }
+        ];
+    }, [shieldStats, transactions, exchangeRate, lang]);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide(prev => (prev + 1) % achievementSlides.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, [achievementSlides.length]);
+
 
     return (
         <div className="flex flex-col h-full bg-black text-white animate-in slide-in-from-right duration-500 overflow-hidden">
@@ -214,6 +213,66 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     </div>
                 </motion.div>
 
+                {/* Developer Mode Gap Card */}
+                {isDevMode && usdRateParallel && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-zinc-900 border border-amber-500/20 p-6 rounded-[2rem] mb-8 relative overflow-hidden group"
+                    >
+                        {/* Background Decoration */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -mr-16 -mt-16 rounded-full group-hover:bg-amber-500/10 transition-colors" />
+
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                                    <Activity size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-extrabold text-amber-500 text-sm uppercase tracking-wider">{t('devMode')}</h3>
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase">{t('marketAnalysis')}</p>
+                                </div>
+                            </div>
+                            <span className="px-3 py-1 bg-amber-500/10 text-amber-500 rounded-full text-[10px] font-black border border-amber-500/20">
+                                GAP ANALYSIS
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6 relative z-10">
+                            <div>
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Brecha en Bs</p>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl font-black text-white">
+                                        {(usdRateParallel - exchangeRate).toFixed(2)}
+                                    </span>
+                                    <span className="text-xs font-bold text-zinc-500">Bs</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Porcentaje de Brecha</p>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl font-black text-amber-400">
+                                        {(((usdRateParallel - exchangeRate) / exchangeRate) * 100).toFixed(2)}%
+                                    </span>
+                                    <TrendingUp size={14} className="text-amber-500" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-white/5 flex justify-between items-center">
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">Oficial (BCV)</span>
+                                <span className="text-sm font-bold text-zinc-300">{exchangeRate.toFixed(2)}</span>
+                            </div>
+                            <div className="h-4 w-px bg-white/10" />
+                            <div className="flex flex-col items-end">
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">Paralelo</span>
+                                <span className="text-sm font-bold text-zinc-300">{usdRateParallel.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* Market Grid - Now static at top of Analysis */}
                 <div className="grid grid-cols-2 gap-4 mb-8">
                     <motion.div 
@@ -267,13 +326,13 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className={`font-black ${ (activeHistory && activeHistory.length > 1 && (activeHistory[activeHistory.length-1].rate - activeHistory[0].rate)) >= 0 ? 'text-emerald-400' : 'text-rose-400' }`}>
+                            <p className={`font-black ${ (last7DaysHistory && last7DaysHistory.length > 1 && (last7DaysHistory[last7DaysHistory.length-1].rate - last7DaysHistory[0].rate)) >= 0 ? 'text-emerald-400' : 'text-rose-400' }`}>
                                 {isBalanceVisible ? 
                                     (isLoadingHistory 
                                         ? '...'
-                                        : ((activeHistory && activeHistory.length > 1) 
-                                            ? `${(activeHistory[activeHistory.length-1].rate - activeHistory[0].rate) >= 0 ? '+' : ''}${(activeHistory[activeHistory.length-1].rate - activeHistory[0].rate).toFixed(2)} Bs.`
-                                            : '0.00 Bs.'))
+                                        : ((last7DaysHistory && last7DaysHistory.length > 1) 
+                                            ? `${(last7DaysHistory[last7DaysHistory.length-1].rate - last7DaysHistory[0].rate) >= 0 ? '+' : ''}${(last7DaysHistory[last7DaysHistory.length-1].rate - last7DaysHistory[0].rate).toFixed(2)} Bs`
+                                            : '0.00 Bs'))
                                     : '******'}
                             </p>
                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">{t('profitPerDollar')} {activeTab}</p>
@@ -285,7 +344,10 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                                 <Activity className="animate-spin text-blue-500" size={24} />
                             </div>
                         ) : (
-                            <Line data={volatilityData} options={commonOptions as any} />
+                            <MarketVolatilityChart 
+                                history={last7DaysHistory}
+                                lang={lang}
+                            />
                         )}
                     </div>
                 </div>
@@ -342,7 +404,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                                             <div className="text-right">
                                                 <p className="text-sm font-black text-white">
                                                     {item.rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} 
-                                                    <span className="text-[10px] text-zinc-500 ml-1">Bs.</span>
+                                                    <span className="text-[10px] text-zinc-500 ml-1">Bs</span>
                                                 </p>
                                                 {index < fullReversed.length - 1 && (
                                                     <div className={`flex items-center justify-end gap-1 text-[10px] font-black ${variation >= 0 ? (variation === 0 ? 'text-zinc-500' : 'text-emerald-400') : 'text-rose-400'}`}>
@@ -367,15 +429,35 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     </div>
                 </div>
 
-                {/* Achievement Card */}
-                <div className="bg-zinc-900/80 p-8 rounded-[2.5rem] border border-white/10 flex flex-col items-center text-center">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                        <CheckCircle2 size={32} />
-                    </div>
-                    <h4 className="text-2xl font-black text-white mb-2">{t('wellPlayed')}</h4>
-                    <p className="text-sm text-zinc-400 leading-relaxed font-bold">
-                        {t('wellPlayedDesc').replace('{amount}', isBalanceVisible ? 'Bs. 3,450' : '******')}
-                    </p>
+                {/* Achievement Slider Card */}
+                <div className="relative h-64 mb-8">
+                    <AnimatePresence mode="wait">
+                        <motion.div 
+                            key={currentSlide}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="absolute inset-0 bg-zinc-900/80 p-8 rounded-[2.5rem] border border-white/10 flex flex-col items-center text-center justify-center"
+                        >
+                            <div className={`w-16 h-16 rounded-full ${achievementSlides[currentSlide].bg} flex items-center justify-center ${achievementSlides[currentSlide].color} mb-6 shadow-lg`}>
+                                {achievementSlides[currentSlide].icon}
+                            </div>
+                            <h4 className="text-2xl font-black text-white mb-2">{achievementSlides[currentSlide].title}</h4>
+                            <p className="text-sm text-zinc-400 leading-relaxed font-bold">
+                                {achievementSlides[currentSlide].desc}
+                            </p>
+                            
+                            {/* Dots */}
+                            <div className="flex gap-2 mt-6">
+                                {achievementSlides.map((_, i) => (
+                                    <div 
+                                        key={i} 
+                                        className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentSlide ? 'bg-blue-500 w-4' : 'bg-zinc-700'}`} 
+                                    />
+                                ))}
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </div>
         </div>

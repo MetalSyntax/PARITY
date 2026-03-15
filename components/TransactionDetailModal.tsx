@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, Plus, Maximize2, Receipt, Info } from 'lucide-react';
+import { X, TrendingUp, Plus, Maximize2, Receipt, Info, Camera, Trash2, Edit2, Image as ImageIcon } from 'lucide-react';
 import { Transaction, TransactionType, Currency, Language } from '../types';
 import { CATEGORIES } from '../constants';
 import { getTranslation } from '../i18n';
@@ -10,6 +10,7 @@ interface TransactionDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit: (t: Transaction) => void;
+  onUpdateTransaction?: (t: Transaction) => void;
   language: Language;
   exchangeRate?: number;
   displayCurrency: Currency;
@@ -20,12 +21,14 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   isOpen,
   onClose,
   onEdit,
+  onUpdateTransaction,
   language,
   exchangeRate,
   displayCurrency,
 }) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'invoice'>('summary');
   const [showLightbox, setShowLightbox] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const t = (key: any) => getTranslation(language, key);
 
   React.useEffect(() => {
@@ -105,8 +108,40 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     </div>
   );
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onUpdateTransaction) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        onUpdateTransaction({
+          ...transaction,
+          receipt: base64String
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeReceipt = () => {
+    if (onUpdateTransaction) {
+      onUpdateTransaction({
+        ...transaction,
+        receipt: undefined
+      });
+      setActiveTab('summary');
+    }
+  };
+
   const renderInvoice = () => (
     <div className="flex flex-col gap-6 p-6 h-full">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept="image/*" 
+        className="hidden" 
+      />
       <div className="flex flex-col gap-3 h-full">
         {transaction.receipt ? (
           <div className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black aspect-[4/3] flex-1">
@@ -118,24 +153,38 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             />
             <div className="absolute top-4 right-4 flex gap-2">
                 <button
-                onClick={() => setShowLightbox(true)}
-                className="p-3 bg-black/50 backdrop-blur-md text-white rounded-xl hover:bg-theme-brand transition-colors shadow-lg border border-white/10"
+                  onClick={() => setShowLightbox(true)}
+                  className="p-3 bg-black/50 backdrop-blur-md text-white rounded-xl hover:bg-theme-brand transition-colors shadow-lg border border-white/10"
                 >
-                <Maximize2 size={20} />
+                  <Maximize2 size={20} />
                 </button>
-                <a
-                href={transaction.receipt}
-                download={`receipt_${transaction.id}.jpg`}
-                className="p-3 bg-theme-brand text-white rounded-xl shadow-lg hover:brightness-110 transition-all border border-white/10"
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-3 bg-theme-brand text-white rounded-xl shadow-lg hover:brightness-110 transition-all border border-white/10"
                 >
-                <Plus size={20} />
-                </a>
+                  <Edit2 size={20} />
+                </button>
+                <button
+                  onClick={removeReceipt}
+                  className="p-3 bg-red-500/80 text-white rounded-xl shadow-lg hover:bg-red-600 transition-all border border-white/10"
+                >
+                  <Trash2 size={20} />
+                </button>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-theme-secondary bg-theme-bg/30 rounded-3xl border border-dashed border-white/10">
-            <Receipt size={48} className="opacity-20 mb-4" />
-            <p className="text-sm font-bold">{t('noReceipt') || 'No hay factura'}</p>
+          <div className="flex flex-col items-center justify-center py-12 text-theme-secondary bg-theme-bg/30 rounded-3xl border border-dashed border-white/10 h-full">
+            <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center mb-4 text-theme-secondary opacity-20">
+              <ImageIcon size={40} />
+            </div>
+            <p className="text-sm font-bold mb-6">{t('noReceipt') || 'Sin factura adjunta'}</p>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="px-6 py-3 bg-theme-brand text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-brand/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+            >
+              <Camera size={16} />
+              {t('addReceipt') || 'Agregar Factura'}
+            </button>
           </div>
         )}
       </div>

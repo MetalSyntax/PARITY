@@ -232,7 +232,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
         if (detectedCurrency) {
             setCurrency(detectedCurrency);
-            showAlert(`${t('totalFound') || 'Total found'}: ${detectedCurrency === Currency.USD ? '$' : 'Bs. '}${cleanedAmount}`, 'success');
+            showAlert(`${t('totalFound') || 'Total found'}: ${detectedCurrency === Currency.USD ? '$' : 'Bs '}${cleanedAmount}`, 'success');
         } else {
             showAlert(`${t('totalFound') || 'Total found'}: ${cleanedAmount}`, 'success');
         }
@@ -616,7 +616,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         {/* Amount Display */}
         <div className="flex flex-col items-center justify-center mb-6">
            <div className="flex items-baseline justify-center gap-1">
-             <span className="text-3xl text-theme-secondary font-light mb-1">{(currency === Currency.USD || currency === Currency.USDT) ? '$' : currency === Currency.EUR ? '€' : 'Bs.'}</span>
+             <span className="text-3xl text-theme-secondary font-light mb-1">{(currency === Currency.USD || currency === Currency.USDT) ? '$' : currency === Currency.EUR ? '€' : 'Bs'}</span>
              <input
                 type="text"
                 inputMode="none"
@@ -650,7 +650,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                }}
                className="flex items-center gap-1 bg-theme-surface hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition-all"
              >
-               <span className="text-sm font-bold text-theme-brand">{currency === Currency.VES ? 'Bs.' : currency}</span>
+               <span className="text-sm font-bold text-theme-brand">{currency === Currency.VES ? 'Bs' : currency}</span>
                <ChevronDown size={14} className="text-theme-secondary" />
              </button>
 

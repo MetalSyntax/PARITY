@@ -74,7 +74,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
           </div>
           {!compact && transaction.fee !== undefined && transaction.fee > 0 && (
             <p className="text-[9px] text-red-400 font-bold uppercase mt-1">
-                {t('commissions')}: {transaction.fee.toLocaleString()} {(transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT) ? '$' : 'Bs.'}
+                {t('commissions')}: {transaction.fee.toLocaleString()} {(transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT) ? '$' : 'Bs'}
             </p>
           )}
         </div>

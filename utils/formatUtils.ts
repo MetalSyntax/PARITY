@@ -14,7 +14,7 @@ export const formatAmount = (
 
   if (displayCurrency === Currency.VES) {
     val = usd * exchangeRate;
-    symbol = 'Bs.';
+    symbol = 'Bs';
   } else if (displayCurrency === Currency.EUR && euroRate) {
     val = usd * (exchangeRate / euroRate);
     symbol = '€';
@@ -42,14 +42,14 @@ export const formatSecondaryAmount = (
   // If display is EUR, secondary is VES (or USD? let's stick to VES as default secondary for USD/EUR)
   
   let val = usd * exchangeRate;
-  let symbol = 'Bs.';
+  let symbol = 'Bs';
 
   if (displayCurrency === Currency.VES) {
     val = usd;
     symbol = '$';
   } else if (displayCurrency === Currency.EUR && euroRate) {
     val = usd * exchangeRate; // Show VES as secondary for EUR too
-    symbol = 'Bs.';
+    symbol = 'Bs';
   }
 
   return `${symbol} ${val?.toLocaleString(undefined, { 

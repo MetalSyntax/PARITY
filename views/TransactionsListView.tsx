@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X, Receipt } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X, Receipt, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Transaction, Language, Currency, TransactionType, Account } from '../types';
 import { getTranslation } from '../i18n';
@@ -17,6 +17,7 @@ interface TransactionsListViewProps {
   isBalanceVisible: boolean;
   displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
+  onUpdateTransaction: (t: Transaction) => void;
 }
 
 export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
@@ -28,7 +29,8 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   onEditTransaction,
   isBalanceVisible,
   displayCurrency,
-  onToggleDisplayCurrency
+  onToggleDisplayCurrency,
+  onUpdateTransaction
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,8 +90,16 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayCurrency === Currency.VES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayCurrency === Currency.VES ? 'Bs.' : displayCurrency}</span>
+                <div className="w-4 h-4 flex items-center justify-center">
+                    {displayCurrency === Currency.VES ? (
+                        <span className="text-[9px] font-black leading-none">Bs</span>
+                    ) : displayCurrency === Currency.EUR ? (
+                        <Euro size={14} />
+                    ) : (
+                        <DollarSign size={14} />
+                    )}
+                </div>
+                <span className="hidden sm:inline">{displayCurrency}</span>
             </button>
             <div className="relative">
                <select
@@ -297,6 +307,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         isOpen={!!selectedTx}
         onClose={() => setSelectedTx(null)}
         onEdit={onEditTransaction}
+        onUpdateTransaction={onUpdateTransaction}
         language={lang}
         displayCurrency={displayCurrency}
       />

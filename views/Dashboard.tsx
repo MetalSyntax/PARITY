@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine, Fingerprint, Delete } from "lucide-react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine, Fingerprint, Delete, ShoppingCart, Euro } from "lucide-react";
 import { motion, Reorder, useDragControls, AnimatePresence } from "framer-motion";
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
@@ -11,23 +11,8 @@ import { CurrencyConverter } from "../components/CurrencyConverter";
 import { DashboardCustomizer } from "../components/DashboardCustomizer";
 import { CurrencyAmount } from "../components/CurrencyAmount";
 import { formatAmount, formatSecondaryAmount } from "../utils/formatUtils";
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement, BarElement, Filler } from "chart.js";
-import { Line, Doughnut, Bar } from "react-chartjs-2";
-import { tailwindToHex, commonOptions } from "../utils/chartUtils";
+import { IncomeVsExpenseChart, ExpenseStructureChart, DailySpendingChart, BalanceHistoryChart } from "../components/Charts";
 import { renderAccountIcon } from "../utils/iconUtils";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-  BarElement,
-  Filler,
-);
 
 
 interface DashboardProps {
@@ -53,6 +38,8 @@ interface DashboardProps {
   onVerifyBiometrics?: () => Promise<boolean>;
   euroRate?: number;
   euroRateParallel?: number;
+  onUpdateTransaction: (t: Transaction) => void;
+  hasFetchedRates: boolean;
 }
 
 
@@ -78,7 +65,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   biometricsEnabled,
   onVerifyBiometrics,
   euroRate,
-  euroRateParallel
+  euroRateParallel,
+  onUpdateTransaction,
+  hasFetchedRates
 }) => {
 
   const [showPinModal, setShowPinModal] = useState(false);
@@ -202,7 +191,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const getSymbol = () => {
-    if (displayCurrency === Currency.VES) return "Bs.";
+    if (displayCurrency === Currency.VES) return "Bs";
     if (displayCurrency === Currency.EUR) return "€";
     return "$";
   };
@@ -521,10 +510,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-4 py-2 rounded-2xl flex items-center gap-3"
             >
               <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-emerald-500 leading-tight">USD: {exchangeRate?.toFixed(2)}</span>
-                <span className="text-[10px] font-black text-blue-400 leading-tight">EUR: {euroRate?.toFixed(2)}</span>
+                <span className="text-[10px] font-black text-emerald-500 leading-tight">
+                    USD: {(hasFetchedRates || navigator.onLine) ? exchangeRate?.toFixed(2) : '--.--'} Bs
+                </span>
+                <span className="text-[10px] font-black text-blue-400 leading-tight">
+                    EUR: {(hasFetchedRates || navigator.onLine) ? euroRate?.toFixed(2) : '--.--'} Bs
+                </span>
               </div>
-              <div className="w-8 h-8 rounded-full bg-theme-brand/10 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-theme-brand/10 hidden md:flex items-center justify-center">
                 <TrendingUp size={14} className="text-theme-brand" />
               </div>
             </button>
@@ -569,11 +562,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="px-4 md:px-0">
                     <div className="bg-theme-surface rounded-[2.5rem] p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-theme border border-theme-soft bg-gradient-to-br from-theme-surface to-theme-bg group">
                       <div className="absolute top-8 right-8 flex gap-3 z-20">
-                         <button
+                        <button
                           onClick={(e) => { e.stopPropagation(); onToggleDisplayCurrency(); }}
                           className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-theme-soft transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-bg text-theme-secondary hover:text-theme-primary'}`}
                         >
-                          {displayCurrency === Currency.VES ? <Coins size={14} /> : displayCurrency === Currency.EUR ? <RefreshCw size={14} /> : <DollarSign size={14} />}
+                          <div className="w-4 h-4 flex items-center justify-center">
+                            {displayCurrency === Currency.VES ? (
+                                <span className="text-[9px] font-black leading-none">Bs</span>
+                            ) : displayCurrency === Currency.EUR ? (
+                                <Euro size={14} />
+                            ) : (
+                                <DollarSign size={14} />
+                            )}
+                          </div>
                           <span className="hidden sm:inline">{displayCurrency}</span>
                         </button>
                         <button
@@ -674,11 +675,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       </div>
                       <div className="h-48 w-full">
-                        {balanceChartType === 'LINE' ? (
-                          <Line data={{ labels: balanceHistory.history.map((h) => new Date(h.timestamp).toLocaleDateString(undefined, { weekday: "short" })), datasets: [{ data: balanceHistory.history.map((h) => h.balance), borderColor: "#6366f1", backgroundColor: (context) => { const ctx = context.chart.ctx; const gradient = ctx.createLinearGradient(0, 0, 0, 300); gradient.addColorStop(0, "rgba(99,102,241, 0.4)"); gradient.addColorStop(1, "rgba(99,102,241, 0)"); return gradient; }, fill: true, tension: 0.4, pointRadius: 0 }] }} options={{ ...commonOptions, plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: (context) => formatAmount(context.raw as number, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate) } } }, scales: { x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }, y: { display: false } } }} />
-                        ) : (
-                          <Bar data={{ labels: balanceHistory.history.map((h) => new Date(h.timestamp).toLocaleDateString(undefined, { weekday: "short" })), datasets: [{ data: balanceHistory.history.map((h) => formatChartValue(h.balance)), backgroundColor: 'rgba(99, 102, 241, 0.6)', borderRadius: 4 }] }} options={{ ...commonOptions, plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: (context) => formatAmount(context.parsed.y, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate) } } }, scales: { x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }, y: { display: false } } }} />
-                        )}
+                        <BalanceHistoryChart
+                          type={balanceChartType}
+                          history={balanceHistory.history}
+                          lang={userProfile.language}
+                          exchangeRate={exchangeRate}
+                          euroRate={euroRate}
+                          displayCurrency={displayCurrency}
+                          isBalanceVisible={isBalanceVisible}
+                        />
                       </div>
                     </div>
                   </div>
@@ -728,6 +733,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       { id: "WALLET", label: t("wallet"), icon: <Wallet size={20} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
                       { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={20} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
                       { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={20} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
+                      { id: "SHOPPING_LIST", label: t("shoppingList"), icon: <ShoppingCart size={20} />, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
                       { id: "PROFILE", label: t("profile"), icon: <User size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
                     ].map((action, i) => (
                       <button key={i} onClick={() => onNavigate(action.id as any)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">
@@ -739,7 +745,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
 
                 {id === "expenses" && showExpenseStructure && (
-                  <div className="bg-theme-surface p-8 mx-6 rounded-[2rem] border border-theme-soft shadow-theme animate-in fade-in slide-in-from-bottom-2 duration-500 overflow-hidden relative">
+                  <div className="bg-theme-surface p-8 rounded-[2rem] border border-theme-soft shadow-theme animate-in fade-in slide-in-from-bottom-2 duration-500 overflow-hidden relative">
                     <div className="flex justify-between items-start mb-8 relative z-10">
                       <div>
                         <div className="flex items-center gap-4 mb-1">
@@ -778,70 +784,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                       <div className="flex justify-center relative group h-48 w-48 mx-auto xl:mx-0">
-                        {expenseChartType === 'DOUGHNUT' ? (
-                          <Doughnut 
-                            data={{
-                              labels: expenseSummary.structure.map(s => t(s.name)),
-                              datasets: [{
-                                data: expenseSummary.structure.map(s => formatChartValue(s.amount)),
-                                backgroundColor: expenseSummary.structure.map(s => {
-                                  const baseColor = tailwindToHex(s.color);
-                                  return (selectedCategory && selectedCategory !== s.id) ? baseColor + '40' : baseColor;
-                                }),
-                                borderWidth: 0,
-                                hoverOffset: 10
-                              }]
-                            }}
-                            options={{
-                              ...commonOptions,
-                              cutout: '80%',
-                              onClick: (_, elements) => {
-                                if (elements.length > 0) {
-                                  const index = elements[0].index;
-                                  const catId = expenseSummary.structure[index].id;
-                                  setSelectedCategory(prev => prev === catId ? null : catId);
-                                } else {
-                                  setSelectedCategory(null);
-                                }
-                              },
-                              plugins: {
-                                ...commonOptions.plugins,
-                                tooltip: {
-                                  ...commonOptions.plugins.tooltip,
-                                  callbacks: {
-                                    label: (context: any) => `${context.label}: ${formatAmount(context.raw, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}`
-                                  }
-                                }
-                              }
-                            }}
-                          />
-                        ) : (
-                          <Bar 
-                            data={{
-                                labels: expenseSummary.structure.slice(0, 5).map(s => t(s.name)),
-                                datasets: [{
-                                    data: expenseSummary.structure.slice(0, 5).map(s => formatChartValue(s.amount)),
-                                    backgroundColor: expenseSummary.structure.slice(0, 5).map(s => tailwindToHex(s.color)),
-                                    borderRadius: 6,
-                                }]
-                            }}
-                            options={{
-                                ...commonOptions,
-                                indexAxis: 'y' as const,
-                                plugins: {
-                                    ...commonOptions.plugins,
-                                    tooltip: {
-                                        ...commonOptions.plugins.tooltip,
-                                         callbacks: { label: (context: any) => `${context.label}: ${formatAmount(context.parsed.x, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}` }
-                                    }
-                                },
-                                scales: {
-                                    x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } },
-                                    y: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#e4e4e7", font: { size: 10 } } }
-                                }
-                            }}
-                          />
-                        )}
+                        <ExpenseStructureChart 
+                          type={expenseChartType}
+                          transactions={transactions}
+                          lang={userProfile.language}
+                          exchangeRate={exchangeRate}
+                          euroRate={euroRate}
+                          displayCurrency={displayCurrency}
+                          isBalanceVisible={isBalanceVisible}
+                          selectedCategoryId={selectedCategory}
+                          onCategoryClick={setSelectedCategory}
+                        />
                         {expenseChartType === 'DOUGHNUT' && (
                           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <div className="text-center">
@@ -979,7 +932,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 )}
                 {id === "incomeVsExpense" && showIncomeVsExpense && (
-                  <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-theme-soft min-h-[500px]">
+                  <div className="bg-theme-surface p-8 rounded-[2rem] border border-theme-soft shadow-theme animate-in fade-in slide-in-from-bottom-2 duration-500 overflow-hidden relative">
                     <div className="flex items-center justify-between mb-6 px-4 md:px-0">
                       <h3 className="text-sm font-black text-theme-primary uppercase tracking-widest flex items-center gap-3">
                         <ArrowRightLeft size={16} className="text-theme-brand" /> {t('incomeVsExpenses')}
@@ -989,34 +942,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </button>
                     </div>
                     <div className="h-48">
-                      <Bar 
-                        data={{
-                          labels: [t("income"), t("expense"), t("netCashFlow")],
-                          datasets: [{
-                            data: [
-                              transactions.filter(t => t.type === TransactionType.INCOME).reduce((a,c) => a+formatChartValue(c.normalizedAmountUSD),0),
-                              transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((a,c) => a+formatChartValue(c.normalizedAmountUSD),0),
-                              transactions.reduce((a,c) => a + (c.type === TransactionType.INCOME ? formatChartValue(c.normalizedAmountUSD) : -formatChartValue(c.normalizedAmountUSD)), 0)
-                            ],
-                            backgroundColor: ['rgba(52, 211, 153, 0.7)', 'rgba(248, 113, 113, 0.7)', 'rgba(96, 165, 250, 0.7)'],
-                            borderRadius: 12,
-                            barThickness: 30,
-                          }]
-                        }} 
-                        options={{
-                          ...commonOptions,
-                          plugins: {
-                              ...commonOptions.plugins,
-                              tooltip: {
-                                  ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.raw?.toLocaleString()}` }
-                              }
-                          },
-                          scales: {
-                              x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } },
-                              y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }
-                          }
-                        }} 
+                      <IncomeVsExpenseChart 
+                        type="BAR"
+                        mode="SUMMARY"
+                        transactions={transactions}
+                        lang={userProfile.language}
+                        exchangeRate={exchangeRate}
+                        euroRate={euroRate}
+                        displayCurrency={displayCurrency}
+                        isBalanceVisible={isBalanceVisible}
                       />
                     </div>
                   </div>
@@ -1028,49 +962,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("dailySpending")}</h3>
                     </div>
                     <div className="h-48">
-                      <Line 
-                        data={{
-                          labels: Array.from({length: 7}, (_, i) => {
-                            const d = new Date();
-                            d.setDate(d.getDate() - (6-i));
-                            return d.toLocaleDateString(undefined, { weekday: 'short' });
-                          }),
-                          datasets: [{
-                            label: t('dailySpending'),
-                            data: Array.from({length: 7}, (_, i) => {
-                                const d = new Date();
-                                d.setDate(d.getDate() - (6-i));
-                                const dateStr = d.toISOString().split('T')[0];
-                                return transactions.filter(t => t.date.startsWith(dateStr) && t.type === TransactionType.EXPENSE).reduce((a,c) => a + formatChartValue(c.normalizedAmountUSD), 0);
-                            }),
-                            borderColor: "#fb923c",
-                            backgroundColor: (context) => {
-                                const ctx = context.chart.ctx;
-                                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                                gradient.addColorStop(0, "rgba(251,146,60, 0.3)");
-                                gradient.addColorStop(1, "rgba(251,146,60, 0)");
-                                return gradient;
-                            },
-                            tension: 0.4,
-                            fill: true,
-                            pointRadius: 4,
-                            pointBackgroundColor: "#fb923c",
-                          }]
-                        }} 
-                        options={{
-                          ...commonOptions,
-                          plugins: {
-                              ...commonOptions.plugins,
-                              tooltip: {
-                                  ...commonOptions.plugins.tooltip,
-                                   callbacks: { label: (context: any) => `${context.dataset.label}: ${formatAmount(context.raw, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}` }
-                              }
-                          },
-                          scales: {
-                              x: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } },
-                              y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } }
-                          }
-                        }} 
+                      <DailySpendingChart 
+                        transactions={transactions}
+                        lang={userProfile.language}
+                        exchangeRate={exchangeRate}
+                        euroRate={euroRate}
+                        displayCurrency={displayCurrency}
+                        isBalanceVisible={isBalanceVisible}
                       />
                     </div>
                   </div>
@@ -1082,30 +980,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("categoryBreakdown")}</h3>
                     </div>
                     <div className="h-48">
-                      <Bar 
-                        data={{
-                          labels: expenseSummary.structure.slice(0, 5).map(s => t(s.name)),
-                          datasets: [{
-                            data: expenseSummary.structure.slice(0, 5).map(s => formatChartValue(s.amount)),
-                            backgroundColor: expenseSummary.structure.slice(0, 5).map(s => tailwindToHex(s.color) + 'CC'),
-                            borderRadius: 8,
-                          }]
-                        }} 
-                        options={{
-                          ...commonOptions,
-                          indexAxis: 'y' as const,
-                          plugins: {
-                              ...commonOptions.plugins,
-                              tooltip: {
-                                  ...commonOptions.plugins.tooltip,
-                                  callbacks: { label: (context: any) => `${context.label}: ${getSymbol()}${context.raw?.toLocaleString()}` }
-                              }
-                          },
-                          scales: {
-                              x: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: "#71717a", font: { size: 10 } } },
-                              y: { display: true, grid: { display: false }, border: { display: false }, ticks: { color: "#e4e4e7", font: { size: 10 } } }
-                          }
-                        }} 
+                      <ExpenseStructureChart 
+                        type="BAR"
+                        transactions={transactions}
+                        lang={userProfile.language}
+                        exchangeRate={exchangeRate}
+                        euroRate={euroRate}
+                        displayCurrency={displayCurrency}
+                        isBalanceVisible={isBalanceVisible}
                       />
                     </div>
                   </div>
@@ -1148,6 +1030,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         isOpen={!!selectedTx}
         onClose={() => setSelectedTx(null)}
         onEdit={onEditTransaction}
+        onUpdateTransaction={onUpdateTransaction}
         language={userProfile.language}
         exchangeRate={exchangeRate}
         displayCurrency={displayCurrency}

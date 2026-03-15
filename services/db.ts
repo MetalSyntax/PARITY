@@ -15,7 +15,8 @@ export const KEYS = {
     METADATA: 'metadata',
     BUDGETS: 'budgets',
     GOALS: 'goals',
-    HISTORY: 'rate_history'
+    HISTORY: 'rate_history',
+    SHOPPING: 'shopping_items'
 };
 
 export type StorageType = 'LOCAL_STORAGE' | 'INDEXED_DB';
@@ -32,6 +33,7 @@ export interface AppData {
     budgets: Budget[];
     goals: Goal[];
     rateHistory?: any[];
+    shoppingItems?: any[];
 }
 
 export class IndexedDBService {
@@ -68,7 +70,7 @@ export class IndexedDBService {
         await this.ensureOpen();
         
         // Encrypt everything before opening transaction
-        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory] = await Promise.all([
+        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping] = await Promise.all([
             encryptData(data.accounts),
             encryptData(data.transactions),
             encryptData(data.scheduledPayments),
@@ -76,7 +78,8 @@ export class IndexedDBService {
             encryptData({ exchangeRate: data.exchangeRate }),
             encryptData(data.budgets),
             encryptData(data.goals),
-            encryptData(data.rateHistory || [])
+            encryptData(data.rateHistory || []),
+            encryptData(data.shoppingItems || [])
         ]);
 
         return new Promise((resolve, reject) => {
@@ -92,6 +95,7 @@ export class IndexedDBService {
             store.put(encBudgets, KEYS.BUDGETS);
             store.put(encGoals, KEYS.GOALS);
             store.put(encHistory, KEYS.HISTORY);
+            store.put(encShopping, KEYS.SHOPPING);
             
             // CLEANUP: Remove legacy root key if it exists to prevent read conflicts
             store.delete(KEYS.ROOT);
@@ -109,7 +113,7 @@ export class IndexedDBService {
             const store = tx.objectStore(STORE_NAME);
             
             const rawResults: any = {};
-            const keysToFetch = [KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED, KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS, KEYS.GOALS, KEYS.HISTORY];
+            const keysToFetch = [KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED, KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS, KEYS.GOALS, KEYS.HISTORY, KEYS.SHOPPING];
             const allKeysToFetch = [...keysToFetch, KEYS.ROOT];
             let fetchCompleted = 0;
 
@@ -135,7 +139,8 @@ export class IndexedDBService {
                         exchangeRate: results[KEYS.METADATA]?.exchangeRate || 0,
                         budgets: results[KEYS.BUDGETS] || [],
                         goals: results[KEYS.GOALS] || [],
-                        rateHistory: results[KEYS.HISTORY] || []
+                        rateHistory: results[KEYS.HISTORY] || [],
+                        shoppingItems: results[KEYS.SHOPPING] || []
                     };
                     resolve(appData);
                     return;

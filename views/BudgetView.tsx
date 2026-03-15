@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar, ArrowDownLeft, History } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar, ArrowDownLeft, History, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig, Currency } from '../types';
@@ -90,9 +90,8 @@ interface BudgetViewProps {
   showConfirm: (config: ConfirmConfig) => void;
   exchangeRate: number;
   euroRate?: number;
-  displayCurrency: Currency;
-  onToggleDisplayCurrency: () => void;
   isBalanceVisible: boolean;
+  onSaveTransaction: (data: any) => void;
 }
 
 export const BudgetView: React.FC<BudgetViewProps> = ({ 
@@ -111,7 +110,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     euroRate,
     displayCurrency,
     onToggleDisplayCurrency,
-    isBalanceVisible
+    isBalanceVisible,
+    onSaveTransaction
 }) => {
   const t = (key: any) => getTranslation(lang, key);
 
@@ -134,6 +134,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [showCustomEnvelopeModal, setShowCustomEnvelopeModal] = useState(false); 
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [goalToComplete, setGoalToComplete] = useState<Goal | null>(null);
   const [categorySearch, setCategorySearch] = useState('');
 
   React.useEffect(() => {
@@ -208,6 +209,43 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       });
   };
 
+  const handleCompleteGoal = (goal: Goal, type: TransactionType) => {
+      const contributionsMap = new Map<string, number>();
+      
+      // Sum up contributions per account
+      (goal.contributions || []).forEach(c => {
+          const current = contributionsMap.get(c.accountId) || 0;
+          contributionsMap.set(c.accountId, current + c.amount);
+      });
+
+      // If no contributions but savedAmount was entered manually, use first account as fallback or don't record
+      if (contributionsMap.size === 0 && goal.savedAmount > 0) {
+          if (accounts.length > 0) {
+              contributionsMap.set(accounts[0].id, goal.savedAmount);
+          }
+      }
+
+      // Record transactions
+      contributionsMap.forEach((amount, accountId) => {
+          const acc = accounts.find(a => a.id === accountId);
+          onSaveTransaction({
+              amount: amount,
+              originalCurrency: acc?.currency || Currency.USD,
+              exchangeRate,
+              euroRate,
+              type,
+              category: 'savings',
+              accountId,
+              note: `🎯 ${t('goalReached')}: ${goal.name}`,
+              date: new Date().toISOString()
+          });
+      });
+
+      // Mark as completed and update
+      onUpdateGoals(goals.map(g => g.id === goal.id ? { ...g, completed: true } : g));
+      setGoalToComplete(null);
+  };
+
   const availableCategories = CATEGORIES.filter(c => !budgets.find(b => b.categoryId === c.id));
 
   return (
@@ -230,7 +268,15 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayCurrency === Currency.VES ? <Coins size={14} /> : displayCurrency === Currency.EUR ? <span className="text-xs">€</span> : <DollarSign size={14} />}
+                <div className="w-4 h-4 flex items-center justify-center">
+                    {displayCurrency === Currency.VES ? (
+                        <span className="text-[9px] font-black leading-none">Bs</span>
+                    ) : displayCurrency === Currency.EUR ? (
+                        <Euro size={14} />
+                    ) : (
+                        <DollarSign size={14} />
+                    )}
+                </div>
                 <span className="hidden sm:inline">{displayCurrency}</span>
             </button>
             <div className="relative">
@@ -514,7 +560,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                             className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2"
                           >
                               <span className="text-theme-secondary font-bold">
-                                  {displayCurrency === Currency.VES ? 'Bs.' : displayCurrency === Currency.EUR ? '€' : '$'}
+                                  {displayCurrency === Currency.VES ? 'Bs' : displayCurrency === Currency.EUR ? '€' : '$'}
                               </span>
                               <input 
                                   type="number" 
@@ -721,11 +767,25 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                       <div className="h-full bg-white/90 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ width: `${percent}%` }} />
                                   </div>
                                   
-                                  {percent >= 100 && (
-                                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 backdrop-blur-xl border border-emerald-500/50 px-4 py-2 rounded-xl flex items-center gap-2 animate-in zoom-in">
-                                          <Trophy size={16} className="text-yellow-400" />
-                                          <span className="text-emerald-400 font-bold text-sm whitespace-nowrap">{t('goalReached')}</span>
+                                  {percent >= 100 && !goal.completed && (
+                                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 backdrop-blur-xl border border-emerald-500/50 px-4 py-2 rounded-xl flex flex-col items-center gap-2 animate-in zoom-in group/complete">
+                                          <div className="flex items-center gap-2">
+                                              <Trophy size={16} className="text-yellow-400" />
+                                              <span className="text-emerald-400 font-bold text-sm whitespace-nowrap">{t('goalReached')}</span>
+                                          </div>
+                                          <button 
+                                              onClick={(e) => { e.stopPropagation(); setGoalToComplete(goal); }}
+                                              className="mt-2 bg-emerald-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full hover:scale-105 transition-transform"
+                                          >
+                                              {t('completeGoal')}
+                                          </button>
                                       </div>
+                                  )}
+                                  {goal.completed && (
+                                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 backdrop-blur-xl border border-zinc-500/50 px-4 py-2 rounded-xl flex items-center gap-2 opacity-60">
+                                            <Trophy size={16} className="text-zinc-400" />
+                                            <span className="text-zinc-400 font-bold text-sm whitespace-nowrap">{t('done')}</span>
+                                       </div>
                                   )}
                               </div>
                           </div>
@@ -765,9 +825,61 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     displayCurrency={displayCurrency}
                     exchangeRate={exchangeRate}
                     euroRate={euroRate}
+                    onSaveTransaction={onSaveTransaction}
                   />
               </motion.div>
           </motion.div>
+      )}
+      </AnimatePresence>
+
+      {/* Goal Completion Choice Modal */}
+      <AnimatePresence>
+      {goalToComplete && (
+           <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4"
+           >
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-theme-surface w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl p-6 flex flex-col gap-6"
+                >
+                    <div className="flex flex-col items-center text-center gap-2">
+                        <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mb-2">
+                            <Trophy size={32} />
+                        </div>
+                        <h3 className="font-black text-xl text-theme-primary">{t('completeGoal')}</h3>
+                        <p className="text-sm text-theme-secondary">{t('expenseOrIncome')}</p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <button 
+                            onClick={() => handleCompleteGoal(goalToComplete, TransactionType.EXPENSE)}
+                            className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+                        >
+                            <ArrowDownLeft size={18} />
+                            {t('registerAsExpense')}
+                        </button>
+                        <button 
+                            onClick={() => handleCompleteGoal(goalToComplete, TransactionType.INCOME)}
+                            className="w-full py-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+                        >
+                            <Plus size={18} />
+                            {t('registerAsIncome')}
+                        </button>
+                    </div>
+
+                    <button 
+                        onClick={() => setGoalToComplete(null)}
+                        className="text-theme-secondary text-sm font-bold hover:text-theme-primary transition-colors text-center"
+                    >
+                        {t('cancel')}
+                    </button>
+                </motion.div>
+           </motion.div>
       )}
       </AnimatePresence>
 
@@ -864,7 +976,8 @@ const GoalForm = ({
     showConfirm, 
     displayCurrency, 
     exchangeRate,
-    euroRate
+    euroRate,
+    onSaveTransaction
 }: { 
     initialData: Goal | null, 
     onSave: (g: Goal) => void, 
@@ -876,6 +989,7 @@ const GoalForm = ({
     displayCurrency: Currency;
     exchangeRate: number;
     euroRate?: number;
+    onSaveTransaction: (data: any) => void;
 }) => {
     const [name, setName] = useState(initialData?.name || '');
     const [target, setTarget] = useState(initialData?.targetAmount.toString() || '');
@@ -904,24 +1018,33 @@ const GoalForm = ({
     };
 
     const handleAddContribution = () => {
-        const amount = parseFloat(contributionAmount);
-        if (isNaN(amount) || amount <= 0 || !selectedAccount) return;
+        const amountValue = parseFloat(contributionAmount);
+        if (isNaN(amountValue) || amountValue <= 0 || !selectedAccount) return;
 
         const account = accounts.find(a => a.id === selectedAccount);
         if (!account) return;
 
-        // Deduct from account
-        const updatedAccounts = accounts.map(a => 
-            a.id === selectedAccount ? { ...a, balance: a.balance - amount } : a
-        );
-
         // Normalize amount to USD for the goal's savedAmount
-        const normalizedAmount = account.currency === 'USD' ? amount : amount / exchangeRate;
+        const normalizedAmount = account.currency === Currency.USD || account.currency === Currency.USDT ? amountValue : (account.currency === Currency.EUR ? (amountValue * (euroRate || 0)) / exchangeRate : amountValue / exchangeRate);
         
+        // Record as a TRANSACTION in history
+        onSaveTransaction({
+            amount: amountValue,
+            originalCurrency: account.currency,
+            exchangeRate: exchangeRate,
+            euroRate: euroRate,
+            type: TransactionType.EXPENSE,
+            category: 'savings',
+            accountId: selectedAccount,
+            note: `${t('goalContribution') || 'Contribución a meta'}: ${name}`,
+            date: new Date().toISOString()
+        });
+
+        const newSavedAmount = parseFloat(saved || '0') + normalizedAmount;
         const newContribution = {
             id: Math.random().toString(36).substr(2, 9),
             accountId: selectedAccount,
-            amount: amount,
+            amount: amountValue,
             originalCurrency: account.currency,
             exchangeRate: exchangeRate,
             normalizedAmountUSD: normalizedAmount,
@@ -930,14 +1053,16 @@ const GoalForm = ({
 
         const newContributions = [...contributions, newContribution];
         setContributions(newContributions);
-        setSaved((parseFloat(saved || '0') + normalizedAmount).toString());
+        setSaved(newSavedAmount.toString());
         
-        onUpdateAccounts(updatedAccounts);
+        // Check if goal reached
+        const isReached = newSavedAmount >= parseFloat(target);
+        
         onSave({
             id: initialData?.id || Math.random().toString(),
             name,
             targetAmount: parseFloat(target),
-            savedAmount: parseFloat(saved || '0') + normalizedAmount,
+            savedAmount: newSavedAmount,
             deadline: date || new Date().toISOString().split('T')[0],
             icon,
             color: initialData?.color || 'from-indigo-600 to-purple-600',
@@ -983,7 +1108,7 @@ const GoalForm = ({
         } else if (displayCurrency === Currency.EUR && euroRate) {
             val = usd * (exchangeRate / euroRate);
         }
-        const symbol = displayCurrency === Currency.VES ? 'Bs.' : displayCurrency === Currency.EUR ? '€' : '$';
+        const symbol = displayCurrency === Currency.VES ? 'Bs' : displayCurrency === Currency.EUR ? '€' : '$';
         return `${symbol}${val.toLocaleString(undefined, { maximumFractionDigits: 1 })}`;
     };
 

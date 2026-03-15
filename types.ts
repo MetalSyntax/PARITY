@@ -17,7 +17,7 @@ export type RateType = 'OFFICIAL' | 'PARALLEL';
 
 export type Language = 'en' | 'es' | 'pt';
 
-export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS';
+export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST';
 
 export interface UserProfile {
   name: string;
@@ -110,6 +110,17 @@ export interface Goal {
     icon: string;
     color: string;
     contributions?: GoalContribution[];
+    completed?: boolean;
+}
+
+export interface ShoppingItem {
+    id: string;
+    name: string;
+    quantity: string;
+    completed: boolean;
+    categoryId?: string;
+    price?: number;
+    currency?: Currency;
 }
 
 export interface RateHistoryItem {
@@ -130,6 +141,7 @@ export interface AppData {
     budgets: Budget[];
     goals: Goal[];
     rateHistory?: RateHistoryItem[];
+    shoppingItems?: ShoppingItem[];
 }
 
 export interface ConfirmConfig {

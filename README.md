@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.26`
+# PARITY 💸 `v1.0.27`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,16 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.0.27
+
+- **Goal Milestones & Currency Standardization:**
+  - `feat`: implement **Goal Completion** workflow with automatic multi-wallet transaction recording
+  - `feat`: add option to register goal fulfillment as **Expense** or **Income**
+  - `feat`: standardize currency symbols to "Bs" (VES), "€" (EUR), and "$" (USD) globally
+  - `feat`: integrate goal transactions into multi-language system (EN, ES, PT)
+  - `fix`: remove redundant zero-amount goal reaching transactions
+  - `ux`: mark completed goals with visual "Done" status and celebration trophy
 
 ### v1.0.26
 

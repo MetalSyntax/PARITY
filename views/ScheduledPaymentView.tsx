@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
@@ -43,7 +43,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
     
     if (displayCurrency === Currency.VES) {
       val = usd * exchangeRate;
-      symbol = 'Bs.';
+      symbol = 'Bs';
     } else if (displayCurrency === Currency.EUR) {
       val = (usd * exchangeRate) / (euroRate || 1);
       symbol = '€';
@@ -158,8 +158,16 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
-                {displayCurrency === Currency.VES ? <Coins size={14} /> : <DollarSign size={14} />}
-                <span className="hidden sm:inline">{displayCurrency === Currency.VES ? 'Bs.' : displayCurrency}</span>
+                <div className="w-4 h-4 flex items-center justify-center">
+                    {displayCurrency === Currency.VES ? (
+                        <span className="text-[9px] font-black leading-none">Bs</span>
+                    ) : displayCurrency === Currency.EUR ? (
+                        <Euro size={14} />
+                    ) : (
+                        <DollarSign size={14} />
+                    )}
+                </div>
+                <span className="hidden sm:inline">{displayCurrency}</span>
             </motion.button>
             <motion.button 
                 whileHover={{ scale: 1.1 }}
@@ -452,7 +460,7 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
             <span className={`font-black text-sm ${isIncome ? 'text-emerald-400' : 'text-theme-primary'}`}>
               {isBalanceVisible ? (
                   <>
-                    {displayCurrency === Currency.USD ? '$' : displayCurrency === Currency.EUR ? '€' : 'Bs.'}
+                    {displayCurrency === Currency.USD ? '$' : displayCurrency === Currency.EUR ? '€' : 'Bs'}
                     {(() => {
                         const amountUSD = p.currency === Currency.USD || p.currency === Currency.USDT ? p.amount : (p.currency === Currency.EUR ? (p.amount * (euroRate || 0)) / exchangeRate : p.amount / exchangeRate);
                         if (displayCurrency === Currency.USD) return amountUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -465,7 +473,7 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
             <span className="text-[10px] text-zinc-500 font-mono">
               {isBalanceVisible ? (
                   <>
-                  ~{displayCurrency === Currency.USD ? 'Bs.' : '$'} {(() => {
+                  ~{displayCurrency === Currency.USD ? 'Bs' : '$'} {(() => {
                         const amountUSD = p.currency === Currency.USD || p.currency === Currency.USDT ? p.amount : (p.currency === Currency.EUR ? (p.amount * (euroRate || 0)) / exchangeRate : p.amount / exchangeRate);
                         if (displayCurrency === Currency.USD) return (amountUSD * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
                         return amountUSD.toLocaleString(undefined, { maximumFractionDigits: 0 });
