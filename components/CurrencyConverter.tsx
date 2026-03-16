@@ -97,74 +97,68 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
           </div>
         </div>
         
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="flex-1">
+        <div className="flex flex-col gap-3 relative z-10">
+          {/* FROM ROW */}
+          <div className="relative">
             <motion.button 
-              whileTap={{ scale: 0.98 }}
-              onClick={() => cycleCurrency(fromCurrency, true)}
-              className="w-full flex flex-col items-start bg-theme-bg/50 border border-theme-soft p-4 rounded-[1.5rem] transition-all hover:bg-theme-bg hover:border-theme-soft group/input bg-theme-bg"
+              whileTap={{ scale: 0.99 }}
+              onClick={() => { setIsConverterFocused(true); onToggleBottomNav(false); }}
+              className={`w-full flex flex-col items-start bg-theme-bg/40 border-2 p-5 rounded-[2rem] transition-all hover:bg-theme-bg/60 group/input ${isConverterFocused ? 'border-theme-brand ring-4 ring-theme-brand/10' : 'border-theme-soft'}`}
             >
-              <div className="flex items-center gap-2 mb-2">
-                 <div className={`w-5 h-5 rounded-full flex items-center justify-center ${fromCurrency === Currency.VES ? 'bg-blue-500/20 text-blue-500' : 'bg-emerald-500/20 text-emerald-500'} border border-current shadow-sm`}>
-                    {fromCurrency === Currency.USD ? <DollarSign size={10} /> : fromCurrency === Currency.VES ? <span className="text-[8px] font-black">Bs</span> : <Euro size={10} />}
+              <div className="w-full flex justify-between items-center mb-3">
+                 <span className="text-[10px] font-black text-theme-secondary/60 uppercase tracking-widest">{t('amountToConvert') || 'Monto a convertir'}</span>
+                 <div 
+                    onClick={(e) => { e.stopPropagation(); cycleCurrency(fromCurrency, true); }}
+                    className="flex items-center gap-2 bg-theme-surface/50 border border-white/5 py-1.5 px-3 rounded-xl hover:bg-white/10 transition-colors"
+                 >
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${fromCurrency === Currency.VES ? 'bg-blue-500/20 text-blue-500' : 'bg-emerald-500/20 text-emerald-500'} border border-current shadow-sm`}>
+                       {fromCurrency === Currency.USD ? <DollarSign size={10} /> : fromCurrency === Currency.VES ? <span className="text-[8px] font-black">Bs</span> : <Euro size={10} />}
+                    </div>
+                    <span className="text-xs font-black text-theme-primary tracking-tight">{fromCurrency}</span>
                  </div>
-                 <span className="text-[10px] uppercase font-black text-theme-secondary">
-                   {fromCurrency}
-                 </span>
               </div>
-              <input 
-                type="text"
-                inputMode="none"
-                value={convertAmount}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                onFocus={() => { setIsConverterFocused(true); onToggleBottomNav(false); }}
-                readOnly
-                className={`bg-transparent text-2xl font-black outline-none w-full transition-colors cursor-pointer ${isConverterFocused ? 'text-theme-brand' : 'text-theme-primary'}`}
-              />
+              <div className={`text-xl font-black transition-colors ${isConverterFocused ? 'text-theme-brand' : 'text-theme-primary'}`}>
+                 {convertAmount}
+              </div>
             </motion.button>
+
+            {/* SWAP BUTTON */}
+            <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 z-20">
+              <motion.button 
+                whileHover={{ scale: 1.1, rotate: 180 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    const oldFrom = fromCurrency;
+                    setFromCurrency(toCurrency);
+                    setToCurrency(oldFrom);
+                }}
+                className="w-10 h-10 bg-theme-surface border-2 border-theme-soft shadow-xl rounded-2xl text-theme-brand flex items-center justify-center transition-all"
+              >
+                <RefreshCw size={18} />
+              </motion.button>
+            </div>
           </div>
 
+          {/* TO ROW */}
           <motion.button 
-            whileHover={{ rotate: 180, scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={(e) => { 
-                e.stopPropagation(); 
-                const oldFrom = fromCurrency;
-                setFromCurrency(toCurrency);
-                setToCurrency(oldFrom);
-            }}
-            className="w-12 h-12 flex-shrink-0 bg-theme-surface border border-theme-soft shadow-lg rounded-2xl text-theme-brand flex items-center justify-center transition-all z-20"
+            whileTap={{ scale: 0.99 }}
+            onClick={() => cycleCurrency(toCurrency, false)}
+            className="w-full flex flex-col items-start bg-theme-bg/40 border-2 p-5 rounded-[2rem] transition-all hover:bg-theme-bg/60 group/input border-theme-soft"
           >
-            <RefreshCw size={20} />
+            <div className="w-full flex justify-between items-center mb-3">
+               <span className="text-[10px] font-black text-theme-brand uppercase tracking-widest leading-none">{t('convertedAmount') || 'Monto convertido'}</span>
+               <div className="flex items-center gap-2 bg-theme-surface/50 border border-white/5 py-1.5 px-3 rounded-xl hover:bg-white/10 transition-colors">
+                  <div className={`w-4 h-4 rounded-full flex items-center justify-center ${toCurrency === Currency.VES ? 'bg-blue-500/20 text-blue-500' : 'bg-emerald-500/20 text-emerald-500'} border border-current shadow-sm`}>
+                     {toCurrency === Currency.USD ? <DollarSign size={10} /> : toCurrency === Currency.VES ? <span className="text-[8px] font-black">Bs</span> : <Euro size={10} />}
+                  </div>
+                  <span className="text-xs font-black text-theme-brand tracking-tight">{toCurrency}</span>
+               </div>
+            </div>
+            <div className="text-xl font-black text-theme-brand break-all line-clamp-1 truncate w-full text-left overflow-hidden selection:bg-theme-brand/30">
+              {calculatedResult()}
+            </div>
           </motion.button>
-          
-          <div className="flex-1">
-            <motion.button 
-              whileTap={{ scale: 0.98 }}
-              onClick={() => cycleCurrency(toCurrency, false)}
-              className="w-full flex flex-col items-end bg-theme-bg/50 border-theme-soft/50 p-4 rounded-[1.5rem] transition-all hover:bg-theme-bg hover:border-theme-soft"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                 <span className="text-[10px] uppercase font-black text-theme-secondary">
-                   {toCurrency}
-                 </span>
-                 <div className={`w-5 h-5 rounded-full flex items-center justify-center ${toCurrency === Currency.VES ? 'bg-blue-500/20 text-blue-500' : 'bg-emerald-500/20 text-emerald-500'} border border-current shadow-sm`}>
-                    {toCurrency === Currency.USD ? <DollarSign size={10} /> : toCurrency === Currency.VES ? <span className="text-[8px] font-black">Bs</span> : <Euro size={10} />}
-                 </div>
-              </div>
-              <p className="text-2xl font-black text-theme-primary break-all line-clamp-1 truncate w-full text-right overflow-hidden selection:bg-theme-brand/30">
-                {calculatedResult()}
-              </p>
-            </motion.button>
-          </div>
-        </div>
-        
-        {/* Rate context footer */}
-        <div className="mt-4 flex items-center justify-between px-2">
-           <div className="flex items-center gap-1 opacity-40">
-              <RefreshCw size={8} className="text-theme-secondary" />
-              <span className="text-[8px] font-bold text-theme-secondary uppercase">Auto-updated</span>
-           </div>
         </div>
       </motion.div>
 

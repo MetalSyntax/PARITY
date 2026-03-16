@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, Plus, Trash2, CheckCircle2, Circle, ShoppingCart, Tag, DollarSign, X, ArrowUpRight, ChevronDown, Search } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, CheckCircle2, Circle, ShoppingCart, Pencil, DollarSign, X, ArrowUpRight, ChevronDown, Search, List, PlusSquare, PackagePlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingItem, Language, Currency } from '../types';
+import { ShoppingItem, Language, Currency, ShoppingList, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { formatAmount } from '../utils/formatUtils';
 import { CATEGORIES } from '../constants';
@@ -9,50 +9,99 @@ import { CATEGORIES } from '../constants';
 interface ShoppingListViewProps {
     onBack: () => void;
     lang: Language;
-    items: ShoppingItem[];
-    onUpdateItems: (items: ShoppingItem[]) => void;
+    lists: ShoppingList[];
+    activeListId: string | null;
+    onUpdateLists: (lists: ShoppingList[]) => void;
+    onSetActiveListId: (id: string | null) => void;
     exchangeRate: number;
     displayCurrency: Currency;
     euroRate?: number;
-    onConvertToExpense: (item: ShoppingItem) => void;
+    onConvertToExpense: (item: any) => void;
+    onShowConfirm: (config: ConfirmConfig) => void;
 }
 
 export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
     onBack,
     lang,
-    items,
-    onUpdateItems,
+    lists,
+    activeListId,
+    onUpdateLists,
+    onSetActiveListId,
     exchangeRate,
     displayCurrency,
     euroRate,
-    onConvertToExpense
+    onConvertToExpense,
+    onShowConfirm
 }) => {
     const t = (key: any) => getTranslation(lang, key);
-    const [newItemName, setNewItemName] = useState('');
+    
+    const currentList = useMemo(() => {
+        return lists.find(l => l.id === activeListId) || lists[0] || null;
+    }, [lists, activeListId]);
+
+    const items = currentList?.items || [];
     const [showAddForm, setShowAddForm] = useState(false);
+    const [showAddListForm, setShowAddListForm] = useState(false);
+    const [newListName, setNewListName] = useState('');
+    
+    const [newItemName, setNewItemName] = useState('');
     const [newItemQty, setNewItemQty] = useState('');
     const [newItemPrice, setNewItemPrice] = useState('');
-    const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORIES[1].id); // Default to Food
+    const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORIES[1].id); 
     const [showCategorySelector, setShowCategorySelector] = useState(false);
     const [categorySearch, setCategorySearch] = useState('');
+    const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
+    const [activeRowId, setActiveRowId] = useState<string | null>(null);
+    const [listToEdit, setListToEdit] = useState<ShoppingList | null>(null);
+
+    const onUpdateItems = (newItems: ShoppingItem[]) => {
+        if (!currentList) return;
+        onUpdateLists(lists.map(l => 
+            l.id === currentList.id ? { ...l, items: newItems } : l
+        ));
+    };
 
     const addItem = () => {
         if (!newItemName.trim()) return;
-        const newItem: ShoppingItem = {
-            id: Math.random().toString(36).substr(2, 9),
-            name: newItemName,
-            quantity: newItemQty || '1',
-            completed: false,
-            price: newItemPrice ? parseFloat(newItemPrice) : undefined,
-            currency: displayCurrency,
-            categoryId: selectedCategoryId
-        };
-        onUpdateItems([newItem, ...items]);
+        
+        if (editingItem) {
+            onUpdateItems(items.map(item => 
+                item.id === editingItem.id ? { 
+                    ...item, 
+                    name: newItemName, 
+                    quantity: newItemQty || '1',
+                    price: newItemPrice ? parseFloat(newItemPrice) : undefined,
+                    categoryId: selectedCategoryId
+                } : item
+            ));
+            setEditingItem(null);
+        } else {
+            const newItem: ShoppingItem = {
+                id: Math.random().toString(36).substr(2, 9),
+                name: newItemName,
+                quantity: newItemQty || '1',
+                completed: false,
+                price: newItemPrice ? parseFloat(newItemPrice) : undefined,
+                currency: displayCurrency,
+                categoryId: selectedCategoryId
+            };
+            onUpdateItems([newItem, ...items]);
+        }
+
         setNewItemName('');
         setNewItemQty('');
         setNewItemPrice('');
         setSelectedCategoryId(CATEGORIES[1].id);
         setShowAddForm(false);
+    };
+
+    const editItem = (item: ShoppingItem) => {
+        setEditingItem(item);
+        setNewItemName(item.name);
+        setNewItemQty(item.quantity);
+        setNewItemPrice(item.price?.toString() || '');
+        setSelectedCategoryId(item.categoryId || CATEGORIES[1].id);
+        setShowAddForm(true);
     };
 
     const toggleItem = (id: string) => {
@@ -65,8 +114,34 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         onUpdateItems(items.filter(item => item.id !== id));
     };
 
-    const clearCompleted = () => {
-        onUpdateItems(items.filter(item => !item.completed));
+    const addList = () => {
+        if (!newListName.trim()) return;
+        
+        if (listToEdit) {
+            onUpdateLists(lists.map(l => 
+                l.id === listToEdit.id ? { ...l, name: newListName } : l
+            ));
+            setListToEdit(null);
+        } else {
+            const newList: ShoppingList = {
+                id: 'list_' + Date.now(),
+                name: newListName,
+                items: [],
+                createdAt: new Date().toISOString()
+            };
+            onUpdateLists([...lists, newList]);
+            onSetActiveListId(newList.id);
+        }
+        setNewListName('');
+        setShowAddListForm(false);
+    };
+
+    const deleteList = (id: string) => {
+        const newLists = lists.filter(l => l.id !== id);
+        onUpdateLists(newLists);
+        if (activeListId === id) {
+            onSetActiveListId(newLists.length > 0 ? newLists[0].id : null);
+        }
     };
 
     const totalPrice = useMemo(() => {
@@ -101,21 +176,63 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                         <ChevronLeft size={24} />
                     </button>
                     <div>
-                        <h1 className="text-xl font-black text-theme-primary tracking-tight">{t('shoppingList')}</h1>
-                        <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-widest">{items.length} {t('items') || 'Items'}</p>
+                        <h1 className="text-xl font-black text-theme-primary tracking-tight">{currentList?.name || t('shoppingList')}</h1>
+                        <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-widest">{items.length} {t('product') || 'Products'}</p>
                     </div>
                 </div>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setShowAddForm(true)}
+                        className="p-3 rounded-2xl bg-theme-brand text-white shadow-lg shadow-theme-brand/20 hover:scale-105 active:scale-95 transition-all"
+                        title={t('addShoppingItem')}
+                    >
+                        <PackagePlus size={20} />
+                    </button>
+                </div>
+            </div>
+
+            {/* List Selector */}
+            <div className="px-6 mt-4 flex items-center gap-2 overflow-x-auto no-scrollbar py-2">
                 <button 
-                    onClick={clearCompleted}
-                    className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
-                    title={t('clearCompleted')}
+                    onClick={() => setShowAddListForm(true)}
+                    className="flex-shrink-0 p-2.5 rounded-xl border border-dashed border-theme-soft text-theme-secondary hover:text-theme-brand hover:border-theme-brand transition-all"
                 >
-                    <Trash2 size={20} />
+                    <Plus size={18} />
                 </button>
+                {lists.map(list => {
+                    const isActive = activeListId === list.id || (!activeListId && lists[0]?.id === list.id);
+                    return (
+                        <div key={list.id} className="flex-shrink-0 flex items-center gap-1">
+                            <button
+                                onClick={() => onSetActiveListId(list.id)}
+                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap border flex items-center gap-2 ${
+                                    isActive 
+                                    ? 'bg-theme-brand text-white border-theme-brand shadow-lg shadow-theme-brand/20' 
+                                    : 'bg-theme-surface border-theme-soft text-theme-secondary hover:border-theme-brand/30'
+                                }`}
+                            >
+                                {list.name}
+                                <span className={`opacity-50 font-bold ${isActive ? 'text-white' : ''}`}>{list.items.length}</span>
+                            </button>
+                            {isActive && (
+                                <button 
+                                    onClick={() => {
+                                        setListToEdit(list);
+                                        setNewListName(list.name);
+                                        setShowAddListForm(true);
+                                    }}
+                                    className="p-2 rounded-lg bg-theme-soft text-theme-secondary hover:text-theme-brand transition-all"
+                                >
+                                    <Pencil size={12} />
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-6 pb-32">
+            <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-4 pb-32">
                 <AnimatePresence mode="popLayout">
                     {items.length === 0 ? (
                         <motion.div 
@@ -139,58 +256,73 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
-                                        className={`p-4 rounded-[1.5rem] border transition-all flex flex-col gap-3 group ${
+                                        className={`p-4 rounded-[1.5rem] border transition-all group relative cursor-pointer ${
                                             item.completed 
                                             ? 'bg-theme-soft/30 border-transparent opacity-60' 
                                             : 'bg-theme-surface border-theme-soft shadow-sm'
                                         }`}
+                                        onClick={() => setActiveRowId(activeRowId === item.id ? null : item.id)}
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <button 
-                                                onClick={() => toggleItem(item.id)}
-                                                className={`shrink-0 transition-colors ${item.completed ? 'text-emerald-500' : 'text-theme-secondary hover:text-theme-brand'}`}
-                                            >
-                                                {item.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
-                                            </button>
-                                            
-                                            <div className="flex-1 min-w-0" onClick={() => toggleItem(item.id)}>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`p-1.5 rounded-lg text-[10px] ${cat.color} bg-opacity-10`}>
-                                                        {cat.icon}
-                                                    </span>
-                                                    <h3 className={`font-bold text-sm truncate ${item.completed ? 'line-through text-theme-secondary' : 'text-theme-primary'}`}>
-                                                        {item.name}
-                                                    </h3>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3 overflow-hidden flex-1">
+                                                <button 
+                                                    onClick={() => toggleItem(item.id)}
+                                                    className={`shrink-0 transition-colors ${item.completed ? 'text-emerald-500' : 'text-theme-secondary hover:text-theme-brand'}`}
+                                                >
+                                                    {item.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
+                                                </button>
+                                                <div className="flex flex-col min-w-0" onClick={() => toggleItem(item.id)}>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`p-1 rounded-md text-[8px] ${cat.color} bg-opacity-10 shrink-0`}>
+                                                            {cat.icon}
+                                                        </span>
+                                                        <h3 className={`font-bold text-sm truncate ${item.completed ? 'line-through text-theme-secondary' : 'text-theme-primary'}`}>
+                                                            {item.name}
+                                                        </h3>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-2 mt-1 ml-8">
-                                                    <span className="text-[9px] font-black uppercase text-theme-secondary bg-theme-soft px-1.5 py-0.5 rounded">
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-4 shrink-0">
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-[10px] font-black text-theme-secondary bg-theme-soft px-1.5 py-0.5 rounded uppercase leading-none flex items-center gap-0.5">
+                                                        <span className="opacity-50 text-[8px]">x</span>
                                                         {item.quantity}
                                                     </span>
                                                     {item.price && (
-                                                        <span className="text-[10px] font-bold text-emerald-500">
+                                                        <span className="text-[10px] font-bold text-emerald-500 mt-1 leading-none">
                                                             {formatAmount(item.price, exchangeRate, item.currency || Currency.USD, true, 2, euroRate)}
                                                         </span>
                                                     )}
                                                 </div>
+
+                                                <div className={`flex items-center gap-1 transition-all duration-300 ${
+                                                    activeRowId === item.id 
+                                                    ? 'opacity-100 translate-x-0' 
+                                                    : 'opacity-0 translate-x-4 pointer-events-none sm:group-hover:opacity-100 sm:group-hover:translate-x-0 sm:group-hover:pointer-events-auto'
+                                                }`}>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); editItem(item); }}
+                                                        className="p-2 rounded-lg text-theme-secondary hover:text-theme-brand hover:bg-theme-brand/10 transition-all"
+                                                        title={t('editShoppingItem')}
+                                                    >
+                                                        <Pencil size={18} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { 
+                                                            e.stopPropagation(); 
+                                                            onShowConfirm({
+                                                                message: t('deleteItemConfirm') || '¿Eliminar este producto?',
+                                                                onConfirm: () => deleteItem(item.id)
+                                                            });
+                                                        }}
+                                                        className="p-2 rounded-lg text-theme-secondary hover:text-red-400 hover:bg-red-400/10 transition-all"
+                                                        title={t('delete')}
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
                                             </div>
-
-                                            <button 
-                                                onClick={() => deleteItem(item.id)}
-                                                className="p-2 rounded-lg text-theme-secondary hover:text-red-400 hover:bg-red-400/10 transition-all opacity-0 group-hover:opacity-100"
-                                            >
-                                                <X size={18} />
-                                            </button>
-                                        </div>
-
-                                        {/* Action Bar */}
-                                        <div className="flex items-center justify-end gap-2 border-t border-theme-soft pt-2 transition-opacity">
-                                            <button
-                                                onClick={() => onConvertToExpense(item)}
-                                                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-theme-brand/10 text-theme-brand text-[10px] font-black uppercase tracking-wider hover:bg-theme-brand hover:text-white transition-all"
-                                            >
-                                                <ArrowUpRight size={14} />
-                                                {t('convertToTransaction')}
-                                            </button>
                                         </div>
                                     </motion.div>
                                 );
@@ -202,24 +334,93 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
 
             {/* Total Section */}
             {totalPrice > 0 && (
-                <div className="absolute bottom-24 left-6 right-6 p-4 rounded-2xl bg-theme-surface/80 backdrop-blur-xl border border-theme-soft shadow-xl flex justify-between items-center">
-                    <span className="text-xs font-black uppercase tracking-widest text-theme-secondary">{t('totalPrice')}</span>
-                    <span className="text-lg font-black text-theme-primary">
-                        {formatAmount(totalPrice, exchangeRate, displayCurrency, true, 2, euroRate)}
-                    </span>
+                <div className="absolute bottom-4 left-6 right-6 p-4 rounded-2xl bg-theme-surface/80 backdrop-blur-xl border border-theme-soft shadow-xl flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs font-black uppercase tracking-widest text-theme-secondary">{t('totalPrice')}</span>
+                        <span className="text-lg font-black text-theme-primary">
+                            {formatAmount(totalPrice, exchangeRate, displayCurrency, true, 2, euroRate)}
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => {
+                            // Create a consolidated expense
+                            onConvertToExpense({
+                                id: 'total_' + Date.now(),
+                                name: currentList?.name || t('shoppingList'),
+                                quantity: items.length.toString(),
+                                completed: true,
+                                price: totalPrice,
+                                currency: displayCurrency,
+                                categoryId: CATEGORIES[1].id // Shopping/General
+                            });
+                        }}
+                        className="w-full py-3 rounded-xl bg-theme-brand text-white text-[10px] font-black uppercase tracking-wider hover:brightness-110 shadow-lg shadow-theme-brand/20 transition-all flex items-center justify-center gap-2"
+                    >
+                        <ArrowUpRight size={14} />
+                        {t('convertToTransactionAll')}
+                    </button>
                 </div>
             )}
 
-            {/* Add FAB */}
-            <div className="absolute bottom-8 right-6">
-                <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setShowAddForm(true)}
-                    className="w-14 h-14 rounded-full bg-theme-brand text-white shadow-lg shadow-theme-brand/30 flex items-center justify-center hover:brightness-110 transition-all"
-                >
-                    <Plus size={28} />
-                </motion.button>
-            </div>
+            {/* Add/Edit List Modal */}
+            <AnimatePresence>
+                {showAddListForm && (
+                     <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-[2.5rem] p-8 shadow-2xl"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-lg font-black text-theme-primary">{listToEdit ? 'Editar Lista' : 'Nueva Lista'}</h3>
+                                <button onClick={() => { setShowAddListForm(false); setListToEdit(null); setNewListName(''); }} className="text-theme-secondary"><X size={20} /></button>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">Nombre de la Lista</label>
+                                    <input 
+                                        autoFocus
+                                        type="text" 
+                                        value={newListName}
+                                        onChange={(e) => setNewListName(e.target.value)}
+                                        placeholder="Supermercado, Farmacia..."
+                                        className="w-full bg-theme-soft border border-theme-soft rounded-2xl px-4 py-3 text-sm focus:border-theme-brand outline-none transition-all"
+                                    />
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    {listToEdit && (
+                                        <button 
+                                            onClick={() => {
+                                                onShowConfirm({
+                                                    message: t('deleteListConfirm') || 'Delete this list?',
+                                                    onConfirm: () => {
+                                                        deleteList(listToEdit.id);
+                                                        setShowAddListForm(false);
+                                                        setListToEdit(null);
+                                                        setNewListName('');
+                                                    }
+                                                });
+                                            }}
+                                            className="flex-1 py-4 rounded-2xl bg-red-500/10 text-red-500 font-black hover:bg-red-500/20 transition-all"
+                                        >
+                                            <Trash2 size={18} className="mx-auto" />
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={addList}
+                                        disabled={!newListName.trim()}
+                                        className={`${listToEdit ? 'flex-[2]' : 'w-full'} py-4 rounded-2xl bg-theme-brand text-white font-black hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg shadow-theme-brand/30 transition-all`}
+                                    >
+                                        {listToEdit ? 'Guardar' : 'Crear Lista'}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Add Modal/Form */}
             <AnimatePresence>
@@ -231,10 +432,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
                             className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-[2.5rem] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
                         >
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-black text-theme-primary">{t('addShoppingItem')}</h3>
-                                <button onClick={() => setShowAddForm(false)} className="text-theme-secondary"><X size={20} /></button>
-                            </div>
+                             <div className="flex justify-between items-center mb-6">
+                                 <h3 className="text-lg font-black text-theme-primary">{editingItem ? t('editShoppingItem') : t('addShoppingItem')}</h3>
+                                 <button onClick={() => { setShowAddForm(false); setEditingItem(null); }} className="text-theme-secondary"><X size={20} /></button>
+                             </div>
 
                             <div className="flex flex-col gap-5">
                                 <div className="space-y-1.5">
@@ -289,8 +490,8 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                                         <button
                                                             key={cat.id}
                                                             onClick={() => {
-                                                                setSelectedCategoryId(cat.id);
-                                                                setShowCategorySelector(false);
+                                                                 setSelectedCategoryId(cat.id);
+                                                                 setShowCategorySelector(false);
                                                             }}
                                                             className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${selectedCategoryId === cat.id ? 'bg-theme-brand/10 border-theme-brand/30' : 'bg-theme-bg border-transparent hover:border-theme-soft'}`}
                                                         >
@@ -332,13 +533,32 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                     </div>
                                 </div>
 
-                                <button 
-                                    onClick={addItem}
-                                    disabled={!newItemName.trim()}
-                                    className="w-full mt-4 py-4 rounded-2xl bg-theme-brand text-white font-black hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg shadow-theme-brand/30 transition-all"
-                                >
-                                    {t('addShoppingItem')}
-                                </button>
+                                 <div className="flex gap-2 mt-4">
+                                     {editingItem && (
+                                         <button 
+                                             onClick={() => {
+                                                 onShowConfirm({
+                                                     message: t('deleteItemConfirm') || '¿Eliminar este producto?',
+                                                     onConfirm: () => {
+                                                         deleteItem(editingItem.id);
+                                                         setShowAddForm(false);
+                                                         setEditingItem(null);
+                                                     }
+                                                 });
+                                             }}
+                                             className="flex-1 py-4 rounded-2xl bg-red-500/10 text-red-500 font-black hover:bg-red-500/20 transition-all"
+                                         >
+                                             {t('delete') || 'Eliminar'}
+                                         </button>
+                                     )}
+                                     <button 
+                                         onClick={addItem}
+                                         disabled={!newItemName.trim()}
+                                         className="flex-[2] py-4 rounded-2xl bg-theme-brand text-white font-black hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg shadow-theme-brand/30 transition-all"
+                                     >
+                                         {editingItem ? t('save') : t('addShoppingItem')}
+                                     </button>
+                                 </div>
                             </div>
                         </motion.div>
                     </div>

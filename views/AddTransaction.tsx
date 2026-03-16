@@ -379,7 +379,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       if (/[^0-9+\-*/.]/.test(expression)) return expression;
       // eslint-disable-next-line no-new-func
       const result = new Function(`return ${expression}`)();
-      return isFinite(result) ? String(Math.round(result * 100) / 100) : 'Error';
+      return isFinite(result) ? String(Math.round(result * 10000) / 10000) : 'Error';
     } catch {
       return 'Error';
     }
@@ -400,7 +400,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const handleKeyPress = (val: string) => {
     const update = (prev: string) => {
       if (prev === '0' && val !== '.') return val;
-      if (val === '.' && prev.includes('.')) return prev;
+      if (val === '.') {
+          const parts = prev.split(/[\+\-\*\/]/);
+          const lastPart = parts[parts.length - 1];
+          if (lastPart.includes('.')) return prev;
+      }
       
       const isOperator = ['+', '-', '*', '/'].includes(val);
       const lastChar = prev.slice(-1);
@@ -463,7 +467,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       toAccountId: type === TransactionType.TRANSFER ? toAccountId : undefined,
       note,
       date: new Date(date).toISOString(),
-      fee: type === TransactionType.TRANSFER ? finalFee : 0,
+      fee: finalFee,
       scheduledId: initialData?.scheduledId,
       receipt: receiptImage
     });
@@ -621,7 +625,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 type="text"
                 inputMode="none"
                 value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9\.\+\-\*\/]/g, ''))}
+                onChange={(e) => {
+                    const val = e.target.value.replace(',', '.');
+                    setAmountStr(val.replace(/[^0-9\.\+\-\*\/]/g, ''));
+                }}
                 onFocus={() => setFocusedField('amount')}
                 className={`bg-transparent text-6xl font-bold tracking-tight text-center outline-none w-full ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
              />
@@ -680,58 +687,75 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
            </div>
         </div>
 
-        {/* Transaction Details for Transfer */}
-        {type === TransactionType.TRANSFER && (
+        {/* Transaction Details for Transfer & Expense (Commissions) */}
+        {(type === TransactionType.TRANSFER || type === TransactionType.EXPENSE) && (
             <div className="flex flex-col gap-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
                 {/* Summary Section */}
-                <div className="bg-theme-brand/5 rounded-[2rem] backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-60">
-                           {t('totalTarget') || 'Total to receive'}
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <span className="text-base font-black text-theme-brand">
-                             {(() => {
-                                 const amount = parseFloat(amountStr) || 0;
-                                 let total = amount;
-                                 const fromCurrency = getActiveAccount(fromAccountId).currency;
-                                 const toCurrency = getActiveAccount(toAccountId).currency;
-                                 
-                                 if (fromCurrency !== toCurrency) {
-                                     const rate = parseFloat(manualExchangeRate) || 1;
-                                     total = amount * rate;
-                                 }
-                                 return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
-                             })()}
-                            </span>
-                            <span className="text-[10px] font-black text-theme-brand opacity-60 uppercase">{getActiveAccount(toAccountId).currency}</span>
-                        </div>
-                    </div>
-                    { (parseFloat(commissionFixed) > 0 || parseFloat(commissionPercent) > 0) && (
-                        <div className="flex items-center justify-between border-t border-white/5 pt-3">
-                            <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-40">
-                               {t('totalToDeduct')}
+                <div className="bg-theme-brand/5 rounded-[2rem] p-5 backdrop-blur-sm">
+                    {type === TransactionType.TRANSFER ? (
+                        <>
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-60">
+                                   {t('totalTarget') || 'Total to receive'}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base font-black text-theme-brand">
+                                     {(() => {
+                                         const amount = parseFloat(amountStr) || 0;
+                                         const commF = parseFloat(commissionFixed) || 0;
+                                         const commP = parseFloat(commissionPercent) || 0;
+                                         const fee = commF + (amount * (commP / 100));
+                                         
+                                         let total = amount - fee; // Use inclusive fee as requested
+                                         const fromCurrency = getActiveAccount(fromAccountId).currency;
+                                         const toCurrency = getActiveAccount(toAccountId).currency;
+                                         
+                                         if (fromCurrency !== toCurrency) {
+                                             const rate = parseFloat(manualExchangeRate) || 1;
+                                             total = total * rate;
+                                         }
+                                         return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                     })()}
+                                    </span>
+                                    <span className="text-[10px] font-black text-theme-brand opacity-60 uppercase">{getActiveAccount(toAccountId).currency}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                                <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-40">
+                                   {t('totalToDeduct') || 'Amount to deduct'}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-black text-theme-primary">
+                                     {parseFloat(amountStr || '0').toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-[10px] font-black text-theme-primary opacity-40 uppercase">{getActiveAccount(fromAccountId).currency}</span>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-60">
+                               {t('totalWithFees') || 'Total with commissions'}
                             </p>
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-black text-red-400">
+                                <span className="text-base font-black text-theme-brand">
                                  {(() => {
                                      const amount = parseFloat(amountStr) || 0;
                                      const commF = parseFloat(commissionFixed) || 0;
                                      const commP = parseFloat(commissionPercent) || 0;
                                      const fee = commF + (amount * (commP / 100));
-                                     const total = amount + fee;
-                                     return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                     return (amount + fee).toLocaleString(undefined, { maximumFractionDigits: 2 });
                                  })()}
                                 </span>
-                                <span className="text-[10px] font-black text-red-400 opacity-40 uppercase">{getActiveAccount(fromAccountId).currency}</span>
+                                <span className="text-[10px] font-black text-theme-brand opacity-60 uppercase">{currency}</span>
                             </div>
                         </div>
                     )}
                 </div>
-                {/* Manual Exchange Rate */}
+                {/* Manual Exchange Rate & Commissions Card */}
                 <div className="bg-theme-surface rounded-[2rem] border border-white/5 overflow-hidden shadow-2xl">
                     {/* Manual Exchange Rate for Multi-currency Transfer */}
-                    {getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
+                    {type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
                         <div className="p-5 border-b border-white/5 bg-white/[0.01]">
                             <div className="flex items-center justify-between mb-4">
                                 <span className="text-[10px] uppercase font-black text-theme-secondary tracking-widest flex items-center gap-2">
@@ -748,7 +772,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                         type="text"
                                         inputMode="none"
                                         value={manualExchangeRate}
-                                        onChange={(e) => setManualExchangeRate(e.target.value.replace(/[^0-9\.]/g, ''))}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(',', '.');
+                                            setManualExchangeRate(val.replace(/[^0-9\.]/g, ''));
+                                        }}
                                         onFocus={() => setFocusedField('exchangeRate')}
                                         className={`w-full bg-theme-bg border-[1.5px] rounded-2xl px-4 py-3.5 text-xl font-black outline-none transition-all ${focusedField === 'exchangeRate' ? 'border-theme-brand text-theme-brand ring-4 ring-theme-brand/10' : 'border-white/5 text-theme-primary'}`}
                                     />
@@ -773,13 +800,16 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                         type="text"
                                         inputMode="none"
                                         value={commissionFixed}
-                                        onChange={(e) => setCommissionFixed(e.target.value.replace(/[^0-9\.]/g, ''))}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(',', '.');
+                                            setCommissionFixed(val.replace(/[^0-9\.]/g, ''));
+                                        }}
                                         onFocus={() => setFocusedField('commissionFixed')}
                                         placeholder="0.00"
                                         className={`w-full bg-theme-bg border-[1.5px] rounded-2xl px-4 py-3.5 text-lg font-black outline-none transition-all ${focusedField === 'commissionFixed' ? 'border-theme-brand text-theme-brand ring-4 ring-theme-brand/10' : 'border-white/5 text-theme-primary'}`}
                                     />
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-theme-secondary opacity-40 uppercase">
-                                        {getActiveAccount(fromAccountId).currency}
+                                        {type === TransactionType.TRANSFER ? getActiveAccount(fromAccountId).currency : currency}
                                     </span>
                                 </div>
                                 <p className="text-[9px] font-black text-theme-secondary opacity-40 uppercase pl-1 tracking-tighter">{t('fixed')}</p>
@@ -790,7 +820,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                         type="text"
                                         inputMode="none"
                                         value={commissionPercent}
-                                        onChange={(e) => setCommissionPercent(e.target.value.replace(/[^0-9\.]/g, ''))}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(',', '.');
+                                            setCommissionPercent(val.replace(/[^0-9\.]/g, ''));
+                                        }}
                                         onFocus={() => setFocusedField('commissionPercent')}
                                         placeholder="0"
                                         className={`w-full bg-theme-bg border-[1.5px] rounded-2xl px-4 py-3.5 text-lg font-black outline-none transition-all ${focusedField === 'commissionPercent' ? 'border-theme-brand text-theme-brand ring-4 ring-theme-brand/10' : 'border-white/5 text-theme-primary'}`}

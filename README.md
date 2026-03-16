@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.27`
+# PARITY 💸 `v1.0.28`
 
 **Master the Flux. Two Currencies. One Wallet.**
 

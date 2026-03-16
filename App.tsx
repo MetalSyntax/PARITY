@@ -26,7 +26,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { INITIAL_RATE, INITIAL_USD_RATE_PARALLEL, INITIAL_EURO_RATE, INITIAL_EURO_RATE_PARALLEL, MOCK_ACCOUNTS, CATEGORIES } from './constants';
 import { formatAmount } from './utils/formatUtils';
-import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem } from './types';
+import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
@@ -88,6 +88,8 @@ function AppContent() {
   const [rateHistory, setRateHistory] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: '', language: 'en' });
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
+  const [activeListId, setActiveListId] = useState<string | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(() => {
     const saved = localStorage.getItem("displayCurrency");
     return saved ? (saved as Currency) : Currency.USD;
@@ -232,6 +234,21 @@ function AppContent() {
             setGoals(loadedData.goals || []);
             setRateHistory(loadedData.rateHistory || []);
             setUserProfile(loadedData.userProfile || { name: 'User', language: 'en' });
+            if (loadedData.shoppingLists) {
+                setShoppingLists(loadedData.shoppingLists);
+                if (loadedData.shoppingLists.length > 0) {
+                    setActiveListId(loadedData.shoppingLists[0].id);
+                }
+            } else if (loadedData.shoppingItems && loadedData.shoppingItems.length > 0) {
+                const defaultList: ShoppingList = {
+                    id: 'list_' + Date.now(),
+                    name: 'My List',
+                    items: loadedData.shoppingItems,
+                    createdAt: new Date().toISOString()
+                };
+                setShoppingLists([defaultList]);
+                setActiveListId(defaultList.id);
+            }
             setShoppingItems(loadedData.shoppingItems || []);
             setIsFirstTime(false);
         } else {
@@ -669,11 +686,15 @@ function AppContent() {
     const currentEuroRate = userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate;
     const currentUSDRes = userProfile.rateType === 'PARALLEL' ? (usdRateParallel || exchangeRate) : exchangeRate;
 
+    const totalAmountForStats = data.type === TransactionType.EXPENSE || data.type === TransactionType.TRANSFER 
+      ? (data.amount + (data.fee || 0)) 
+      : data.amount;
+
     const normalizedUSD = (data.originalCurrency === Currency.USD || data.originalCurrency === Currency.USDT)
-      ? data.amount
+      ? totalAmountForStats
       : data.originalCurrency === Currency.EUR
-      ? (data.amount * (data.euroRate || currentEuroRate)) / (data.exchangeRate || currentUSDRes)
-      : data.amount / (data.exchangeRate || currentUSDRes);
+      ? (totalAmountForStats * (data.euroRate || currentEuroRate)) / (data.exchangeRate || currentUSDRes)
+      : totalAmountForStats / (data.exchangeRate || currentUSDRes);
 
     const newTransaction: Transaction = {
       ...data,
@@ -692,7 +713,7 @@ function AppContent() {
     setAccounts(currentAccounts.map(acc => {
       if (acc.id === data.accountId) {
         let deduction = data.amount;
-        if (data.type === TransactionType.TRANSFER && (data.fee || 0) > 0) {
+        if (data.type === TransactionType.EXPENSE && (data.fee || 0) > 0) {
             deduction += data.fee;
         }
 
@@ -717,22 +738,22 @@ function AppContent() {
       }
 
       if (data.type === TransactionType.TRANSFER && data.toAccountId && acc.id === data.toAccountId) {
-        let addition = data.amount;
+        let addition = data.amount - (data.fee || 0);
 
         if (data.originalCurrency !== acc.currency) {
           const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
           const txRate = data.exchangeRate || currentUSDRes;
           const txEuroRate = data.euroRate || currentEuroRate;
 
-          if (isUSDType(acc.currency)) {
-             if (data.originalCurrency === Currency.VES) addition = data.amount / txRate;
-             else if (data.originalCurrency === Currency.EUR) addition = data.amount * (txEuroRate / txRate);
-          } else if (acc.currency === Currency.VES) {
-             if (isUSDType(data.originalCurrency)) addition = data.amount * txRate;
-             else if (data.originalCurrency === Currency.EUR) addition = data.amount * txEuroRate;
+          if (acc.currency === Currency.VES) {
+             if (isUSDType(data.originalCurrency)) addition = (data.amount - (data.fee || 0)) * txRate;
+             else if (data.originalCurrency === Currency.EUR) addition = (data.amount - (data.fee || 0)) * txEuroRate;
           } else if (acc.currency === Currency.EUR) {
-             if (isUSDType(data.originalCurrency)) addition = data.amount * (txRate / txEuroRate);
-             else if (data.originalCurrency === Currency.VES) addition = data.amount / txEuroRate;
+             if (isUSDType(data.originalCurrency)) addition = (data.amount - (data.fee || 0)) * (txRate / txEuroRate);
+             else if (data.originalCurrency === Currency.VES) addition = (data.amount - (data.fee || 0)) / txEuroRate;
+          } else if (isUSDType(acc.currency)) {
+             if (data.originalCurrency === Currency.VES) addition = (data.amount - (data.fee || 0)) / txRate;
+             else if (data.originalCurrency === Currency.EUR) addition = (data.amount - (data.fee || 0)) * (txEuroRate / txRate);
           }
         }
 
@@ -1136,8 +1157,10 @@ function AppContent() {
           {currentView === 'SHOPPING_LIST' && (
             <ShoppingListView
               onBack={() => setCurrentView('DASHBOARD')}
-              items={shoppingItems}
-              onUpdateItems={setShoppingItems}
+              lists={shoppingLists}
+              activeListId={activeListId}
+              onUpdateLists={setShoppingLists}
+              onSetActiveListId={setActiveListId}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
               displayCurrency={displayCurrency}
@@ -1146,6 +1169,7 @@ function AppContent() {
                 setShoppingItemToConvert(item);
                 setShowAdd(true);
               }}
+              onShowConfirm={showConfirm}
             />
           )}
         </motion.div>

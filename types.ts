@@ -123,6 +123,13 @@ export interface ShoppingItem {
     currency?: Currency;
 }
 
+export interface ShoppingList {
+    id: string;
+    name: string;
+    items: ShoppingItem[];
+    createdAt: string;
+}
+
 export interface RateHistoryItem {
     date: string; // ISO string (YYYY-MM-DD)
     rate: number;
@@ -142,6 +149,7 @@ export interface AppData {
     goals: Goal[];
     rateHistory?: RateHistoryItem[];
     shoppingItems?: ShoppingItem[];
+    shoppingLists?: ShoppingList[];
 }
 
 export interface ConfirmConfig {
