@@ -344,7 +344,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/95 z-[200] flex flex-col items-center justify-center p-4 md:p-8"
+            className="fixed inset-0 bg-black/95 z-[200] flex flex-col items-center justify-center p-4 pb-28 md:p-8"
             onClick={() => setShowLightbox(false)}
           >
             <div className="absolute top-0 inset-x-0 p-6 flex justify-between items-center z-10 pointer-events-none">
@@ -374,7 +374,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 />
             </motion.div>
             
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4">
+            <div className="absolute bottom-[100px] left-1/2 -translate-x-1/2 flex gap-4 pointer-events-auto">
                 <a
                     href={transaction.receipt}
                     download={`receipt_${transaction.id}.jpg`}
