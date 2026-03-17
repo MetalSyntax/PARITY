@@ -621,17 +621,19 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         <div className="flex flex-col items-center justify-center mb-6">
            <div className="flex items-baseline justify-center gap-1">
              <span className="text-3xl text-theme-secondary font-light mb-1">{(currency === Currency.USD || currency === Currency.USDT) ? '$' : currency === Currency.EUR ? '€' : 'Bs'}</span>
-             <input
-                type="text"
-                inputMode="none"
-                value={amountStr}
-                onChange={(e) => {
-                    const val = e.target.value.replace(',', '.');
-                    setAmountStr(val.replace(/[^0-9\.\+\-\*\/]/g, ''));
-                }}
-                onFocus={() => setFocusedField('amount')}
-                className={`bg-transparent text-6xl font-bold tracking-tight text-center outline-none w-full ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
-             />
+             <div className="flex-1 w-full max-w-[85vw] overflow-hidden flex justify-center">
+               <input
+                  type="text"
+                  inputMode="none"
+                  value={amountStr}
+                  onChange={(e) => {
+                      const val = e.target.value.replace(',', '.');
+                      setAmountStr(val.replace(/[^0-9\.\+\-\*\/]/g, ''));
+                  }}
+                  onFocus={() => setFocusedField('amount')}
+                  className={`bg-transparent text-4xl sm:text-5xl font-bold tracking-tight outline-none min-w-full ${amountStr.length > 8 ? 'text-right' : 'text-center'} ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
+               />
+             </div>
            </div>
            
            <div className="mt-4 flex items-center gap-2">
@@ -1129,7 +1131,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
        {/* Manual Selection / Crop Modal */}
        {showCropModal && selectedImage && (
-           <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col p-4 animate-in fade-in zoom-in-95 duration-200">
+           <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col p-4 pb-[100px] animate-in fade-in zoom-in-95 duration-200">
                <div className="flex justify-between items-center mb-4">
                    <h3 className="text-white font-bold text-sm uppercase tracking-widest">{t('selectTotalSection')}</h3>
                    <button onClick={() => { setShowCropModal(false); setSelectedImage(null); }} className="p-2 bg-white/10 rounded-full text-white">

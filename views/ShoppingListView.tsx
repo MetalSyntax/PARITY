@@ -3,7 +3,7 @@ import { ChevronLeft, Plus, Trash2, CheckCircle2, Circle, ShoppingCart, Pencil, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingItem, Language, Currency, ShoppingList, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
-import { formatAmount } from '../utils/formatUtils';
+import { formatAmount, formatSecondaryAmount } from '../utils/formatUtils';
 import { CATEGORIES } from '../constants';
 
 interface ShoppingListViewProps {
@@ -43,6 +43,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
     const [showAddForm, setShowAddForm] = useState(false);
     const [showAddListForm, setShowAddListForm] = useState(false);
     const [newListName, setNewListName] = useState('');
+    const [localCurrency, setLocalCurrency] = useState<Currency>(displayCurrency);
     
     const [newItemName, setNewItemName] = useState('');
     const [newItemQty, setNewItemQty] = useState('');
@@ -182,9 +183,25 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 </div>
                 <div className="flex items-center gap-3">
                     <button 
-                        onClick={() => setShowAddForm(true)}
-                        className="p-3 rounded-2xl bg-theme-brand text-white shadow-lg shadow-theme-brand/20 hover:scale-105 active:scale-95 transition-all"
+                        onClick={() => setLocalCurrency(prev => prev === Currency.USD ? Currency.VES : prev === Currency.VES ? Currency.EUR : Currency.USD)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${localCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                    >
+                        <div className="w-4 h-4 flex items-center justify-center">
+                            {localCurrency === Currency.VES ? (
+                                <span className="text-[9px] font-black leading-none">Bs</span>
+                            ) : localCurrency === Currency.EUR ? (
+                                <span className="text-[12px] font-black leading-none">€</span>
+                            ) : (
+                                <DollarSign size={14} />
+                            )}
+                        </div>
+                        <span className="hidden sm:inline">{localCurrency}</span>
+                    </button>
+                    <button 
+                        onClick={() => lists.length > 0 && setShowAddForm(true)}
+                        className={`p-3 rounded-2xl shadow-lg transition-all ${lists.length > 0 ? 'bg-theme-brand text-white shadow-theme-brand/20 hover:scale-105 active:scale-95' : 'bg-theme-soft text-theme-secondary opacity-50 cursor-not-allowed'}`}
                         title={t('addShoppingItem')}
+                        disabled={lists.length === 0}
                     >
                         <PackagePlus size={20} />
                     </button>
@@ -234,7 +251,25 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             {/* List */}
             <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-4 pb-32">
                 <AnimatePresence mode="popLayout">
-                    {items.length === 0 ? (
+                    {lists.length === 0 ? (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            className="bg-theme-surface/30 p-8 rounded-[2.5rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-center mt-10"
+                        >
+                            <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-theme-secondary mb-6 shadow-xl border border-white/5 animate-bounce">
+                                <PlusSquare size={32} />
+                            </div>
+                            <h3 className="text-xl font-black text-theme-primary mb-2">{t('noLists') || 'No hay listas'}</h3>
+                            <p className="text-theme-secondary text-sm max-w-[240px] leading-relaxed mb-6">{t('createFirstListPrompt') || 'Crea tu primera lista de compras para agregar productos.'}</p>
+                            <button 
+                                onClick={() => setShowAddListForm(true)} 
+                                className="px-8 py-4 bg-theme-brand text-white font-black rounded-2xl shadow-xl shadow-theme-brand/20 hover:scale-105 active:scale-95 transition-all text-sm"
+                            >
+                                {t('createList') || 'Crear Lista'}
+                            </button>
+                        </motion.div>
+                    ) : items.length === 0 ? (
                         <motion.div 
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -272,11 +307,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                                     {item.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
                                                 </button>
                                                 <div className="flex flex-col min-w-0" onClick={() => toggleItem(item.id)}>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`p-1 rounded-md text-[8px] ${cat.color} bg-opacity-10 shrink-0`}>
+                                                    <div className="flex items-start gap-2 pt-0.5">
+                                                        <span className={`p-1 rounded-md text-[8px] ${cat.color} bg-opacity-10 shrink-0 mt-0.5`}>
                                                             {cat.icon}
                                                         </span>
-                                                        <h3 className={`font-bold text-sm truncate ${item.completed ? 'line-through text-theme-secondary' : 'text-theme-primary'}`}>
+                                                        <h3 className={`font-bold text-sm whitespace-normal break-words leading-tight ${item.completed ? 'line-through text-theme-secondary' : 'text-theme-primary'}`}>
                                                             {item.name}
                                                         </h3>
                                                     </div>
@@ -290,23 +325,38 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                                         {item.quantity}
                                                     </span>
                                                     {item.price && (
-                                                        <span className="text-[10px] font-bold text-emerald-500 mt-1 leading-none">
-                                                            {formatAmount(item.price, exchangeRate, item.currency || Currency.USD, true, 2, euroRate)}
-                                                        </span>
+                                                        <div className="flex flex-col items-end mt-1 leading-none">
+                                                            <span className="text-[10px] font-bold text-emerald-500">
+                                                                {(() => {
+                                                                    let usdVal = item.price;
+                                                                    if (item.currency === Currency.VES) usdVal = item.price / exchangeRate;
+                                                                    else if (item.currency === Currency.EUR) usdVal = (item.price * (euroRate || exchangeRate)) / exchangeRate;
+                                                                    return formatAmount(usdVal, exchangeRate, localCurrency, true, 2, euroRate);
+                                                                })()}
+                                                            </span>
+                                                            <span className="text-[8px] text-theme-secondary opacity-60 font-mono mt-0.5">
+                                                                {(() => {
+                                                                    let usdVal = item.price;
+                                                                    if (item.currency === Currency.VES) usdVal = item.price / exchangeRate;
+                                                                    else if (item.currency === Currency.EUR) usdVal = (item.price * (euroRate || exchangeRate)) / exchangeRate;
+                                                                    return formatSecondaryAmount(usdVal, exchangeRate, localCurrency, true, 2, euroRate);
+                                                                })()}
+                                                            </span>
+                                                        </div>
                                                     )}
                                                 </div>
 
-                                                <div className={`flex items-center gap-1 transition-all duration-300 ${
+                                                <div className={`flex flex-col items-center gap-0.5 transition-all duration-300 ${
                                                     activeRowId === item.id 
                                                     ? 'opacity-100 translate-x-0' 
                                                     : 'opacity-0 translate-x-4 pointer-events-none sm:group-hover:opacity-100 sm:group-hover:translate-x-0 sm:group-hover:pointer-events-auto'
                                                 }`}>
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); editItem(item); }}
-                                                        className="p-2 rounded-lg text-theme-secondary hover:text-theme-brand hover:bg-theme-brand/10 transition-all"
+                                                        className="p-1.5 rounded-lg text-theme-secondary hover:text-theme-brand hover:bg-theme-brand/10 transition-all"
                                                         title={t('editShoppingItem')}
                                                     >
-                                                        <Pencil size={18} />
+                                                        <Pencil size={14} />
                                                     </button>
                                                     <button 
                                                         onClick={(e) => { 
@@ -316,10 +366,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                                                 onConfirm: () => deleteItem(item.id)
                                                             });
                                                         }}
-                                                        className="p-2 rounded-lg text-theme-secondary hover:text-red-400 hover:bg-red-400/10 transition-all"
+                                                        className="p-1.5 rounded-lg text-theme-secondary hover:text-red-400 hover:bg-red-400/10 transition-all"
                                                         title={t('delete')}
                                                     >
-                                                        <Trash2 size={18} />
+                                                        <Trash2 size={14} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -337,20 +387,29 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 <div className="absolute bottom-4 left-6 right-6 p-4 rounded-2xl bg-theme-surface/80 backdrop-blur-xl border border-theme-soft shadow-xl flex flex-col gap-4">
                     <div className="flex justify-between items-center">
                         <span className="text-xs font-black uppercase tracking-widest text-theme-secondary">{t('totalPrice')}</span>
-                        <span className="text-lg font-black text-theme-primary">
-                            {formatAmount(totalPrice, exchangeRate, displayCurrency, true, 2, euroRate)}
-                        </span>
+                        <div className="flex flex-col items-end">
+                            <span className="text-lg font-black text-theme-primary">
+                                {formatAmount(totalPrice, exchangeRate, localCurrency, true, 2, euroRate)}
+                            </span>
+                            <span className="text-[10px] text-theme-secondary opacity-70 font-mono">
+                                {formatSecondaryAmount(totalPrice, exchangeRate, localCurrency, true, 2, euroRate)}
+                            </span>
+                        </div>
                     </div>
                     <button
                         onClick={() => {
+                            let finalPrice = totalPrice;
+                            if (localCurrency === Currency.VES) finalPrice = totalPrice * exchangeRate;
+                            else if (localCurrency === Currency.EUR && euroRate) finalPrice = totalPrice * (exchangeRate / euroRate);
+
                             // Create a consolidated expense
                             onConvertToExpense({
                                 id: 'total_' + Date.now(),
                                 name: currentList?.name || t('shoppingList'),
                                 quantity: items.length.toString(),
                                 completed: true,
-                                price: totalPrice,
-                                currency: displayCurrency,
+                                price: parseFloat(finalPrice.toFixed(2)),
+                                currency: localCurrency,
                                 categoryId: CATEGORIES[1].id // Shopping/General
                             });
                         }}
@@ -373,18 +432,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                             className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-[2.5rem] p-8 shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-black text-theme-primary">{listToEdit ? 'Editar Lista' : 'Nueva Lista'}</h3>
+                                <h3 className="text-lg font-black text-theme-primary">{listToEdit ? (t('editList') || 'Editar Lista') : (t('newList') || 'Nueva Lista')}</h3>
                                 <button onClick={() => { setShowAddListForm(false); setListToEdit(null); setNewListName(''); }} className="text-theme-secondary"><X size={20} /></button>
                             </div>
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">Nombre de la Lista</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('listName') || 'Nombre de la Lista'}</label>
                                     <input 
                                         autoFocus
                                         type="text" 
                                         value={newListName}
                                         onChange={(e) => setNewListName(e.target.value)}
-                                        placeholder="Supermercado, Farmacia..."
+                                        placeholder={t('listNamePlaceholder') || "Supermercado, Farmacia..."}
                                         className="w-full bg-theme-soft border border-theme-soft rounded-2xl px-4 py-3 text-sm focus:border-theme-brand outline-none transition-all"
                                     />
                                 </div>
@@ -413,7 +472,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                         disabled={!newListName.trim()}
                                         className={`${listToEdit ? 'flex-[2]' : 'w-full'} py-4 rounded-2xl bg-theme-brand text-white font-black hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg shadow-theme-brand/30 transition-all`}
                                     >
-                                        {listToEdit ? 'Guardar' : 'Crear Lista'}
+                                        {listToEdit ? (t('save') || 'Guardar') : (t('createList') || 'Crear Lista')}
                                     </button>
                                 </div>
                             </div>

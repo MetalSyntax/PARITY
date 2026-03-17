@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.28`
+# PARITY 💸 `v1.0.29`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,25 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.0.29
+
+- **Invoices & Image Editing:**
+  - `feat`: implement dedicated Invoice View directly in the Transactions page
+  - `feat`: add manual image cropping and update controls for existing receipts/invoices
+  - `feat`: add new "Invoices" quick action to the Dashboard
+  - `feat`: unified translations for invoices (EN, ES, PT)
+  - `ux`: enhance crop/edit modal spacing to prevent overlap with bottom navigation bar
+
+### v1.0.28
+
+- **UI Redesign & Mobile Stability:**
+  - `feat`: redesign Currency Converter UI layout and improve input logic
+  - `feat`: enhance App Onboarding process and restrict developer-only features
+  - `feat`: improve commission calculation logic
+  - `fix`: fix Android black screen issues, React Hook mismatch, and system effects
+  - `fix`: resolve Dashboard Total Balance UI issues & Currency Performance rendering
+  - `chore`: implemented and reverted experimental mobile permission management
 
 ### v1.0.27
 

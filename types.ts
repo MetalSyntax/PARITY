@@ -17,7 +17,7 @@ export type RateType = 'OFFICIAL' | 'PARALLEL';
 
 export type Language = 'en' | 'es' | 'pt';
 
-export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST';
+export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES';
 
 export interface UserProfile {
   name: string;

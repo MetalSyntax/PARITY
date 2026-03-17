@@ -548,7 +548,8 @@ function AppContent() {
       budgets,
       goals,
       rateHistory,
-      shoppingItems
+      shoppingItems,
+      shoppingLists
     };
 
     const save = async () => {
@@ -561,7 +562,7 @@ function AppContent() {
     };
     
     save();
-  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, shoppingItems, isLoaded, storageType]);
+  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, shoppingItems, shoppingLists, isLoaded, storageType]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -711,6 +712,8 @@ function AppContent() {
     });
 
     setAccounts(currentAccounts.map(acc => {
+      if (data.skipBalanceUpdate) return acc;
+
       if (acc.id === data.accountId) {
         let deduction = data.amount;
         if (data.type === TransactionType.EXPENSE && (data.fee || 0) > 0) {
@@ -1101,7 +1104,7 @@ function AppContent() {
               onNavigate={(v) => setCurrentView(v)}
             />
           )}
-          {currentView === 'TRANSACTIONS' && (
+          {(currentView === 'TRANSACTIONS' || currentView === 'INVOICES') && (
             <TransactionsListView
               onBack={() => setCurrentView('DASHBOARD')}
               transactions={transactions}
@@ -1113,6 +1116,7 @@ function AppContent() {
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
+              initialViewMode={currentView === 'INVOICES' ? 'INVOICES' : 'LIST'}
             />
           )}
           {currentView === 'HEATMAP' && (
@@ -1260,7 +1264,7 @@ function AppContent() {
                 originalCurrency: shoppingItemToConvert.currency || Currency.USD,
                 exchangeRate: exchangeRate,
                 euroRate: euroRate,
-                normalizedAmountUSD: (shoppingItemToConvert.price || 0) / (shoppingItemToConvert.currency === Currency.VES ? exchangeRate : 1),
+                normalizedAmountUSD: shoppingItemToConvert.currency === Currency.VES ? (shoppingItemToConvert.price || 0) / exchangeRate : shoppingItemToConvert.currency === Currency.EUR ? (shoppingItemToConvert.price || 0) * ((euroRate || exchangeRate) / exchangeRate) : (shoppingItemToConvert.price || 0),
                 type: TransactionType.EXPENSE,
                 category: shoppingItemToConvert.categoryId || CATEGORIES[1].id,
                 accountId: accounts[0]?.id || '',

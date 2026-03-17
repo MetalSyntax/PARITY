@@ -332,7 +332,6 @@ export const en = {
     attachImage: 'Attach Image',
     totalNotFound: 'Total not found in the selected area',
     totalFound: 'Total found',
-    selectTotalSection: 'Select TOTAL',
     selectArea: 'Select area',
     totalTarget: 'Total to receive',
     analyzing: 'Analyzing...',
@@ -450,4 +449,14 @@ export const en = {
     registerAsExpense: "Register as Expense",
     registerAsIncome: "Register as Income",
     goalCompletionTransaction: "Goal Completion",
+    editList: "Edit List",
+    newList: "New List",
+    listName: "List Name",
+    listNamePlaceholder: "Supermarket, Pharmacy...",
+    createList: "Create List",
+    noLists: "No lists",
+    createFirstListPrompt: "Create your first shopping list to add products.",
+    invoices: "Invoices",
+    noInvoicesFound: "No invoices found",
+    selectTotalSection: "Crop Invoice"
 };

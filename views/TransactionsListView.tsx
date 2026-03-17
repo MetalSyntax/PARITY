@@ -18,6 +18,7 @@ interface TransactionsListViewProps {
   displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
   onUpdateTransaction: (t: Transaction) => void;
+  initialViewMode?: 'LIST' | 'INVOICES';
 }
 
 export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
@@ -30,7 +31,8 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   isBalanceVisible,
   displayCurrency,
   onToggleDisplayCurrency,
-  onUpdateTransaction
+  onUpdateTransaction,
+  initialViewMode = 'LIST'
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +41,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [viewMode, setViewMode] = useState<'LIST' | 'INVOICES'>(initialViewMode);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -83,7 +86,21 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-bold text-theme-primary">{t('transactions')}</h1>
+          <div className="flex bg-theme-surface rounded-xl p-1 border border-white/5">
+            <button 
+              onClick={() => setViewMode('LIST')} 
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'LIST' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary opacity-50 hover:opacity-100'}`}
+            >
+              {t('transactions')}
+            </button>
+            <button 
+              onClick={() => setViewMode('INVOICES')} 
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'INVOICES' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary opacity-50 hover:opacity-100'}`}
+            >
+              <Receipt size={14} />
+              {t('invoices') || 'Facturas'}
+            </button>
+          </div>
           
           <div className="ml-auto flex items-center gap-2">
             <button 
@@ -171,7 +188,42 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
 
       {/* Transactions List */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-24">
-        {sortedDates.length === 0 ? (
+        {viewMode === 'INVOICES' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
+            {filteredTransactions.filter(tx => tx.receipt).length === 0 ? (
+               <div className="col-span-full flex flex-col items-center justify-center py-20 text-theme-secondary">
+                 <div className="w-16 h-16 rounded-full bg-theme-surface flex items-center justify-center mb-4">
+                   <Receipt size={24} />
+                 </div>
+                 <p className="text-sm">{t('noInvoicesFound') || 'No se encontraron facturas'}</p>
+               </div>
+            ) : (
+                filteredTransactions.filter(tx => tx.receipt).map(tx => (
+                  <motion.div 
+                    key={tx.id}
+                    layoutId={`tx-invoice-${tx.id}`}
+                    onClick={() => setSelectedTx(tx)}
+                    className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black aspect-square cursor-pointer hover:border-theme-brand transition-colors"
+                  >
+                    <img 
+                      src={tx.receipt} 
+                      alt="Receipt" 
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+                      <p className="text-white text-[10px] font-bold truncate">
+                        {tx.note || (CATEGORIES.find(c => c.id === tx.category)?.name) || ''}
+                      </p>
+                      <p className="text-white/70 text-[9px]">
+                        {new Date(tx.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))
+            )}
+          </div>
+        ) : (
+          sortedDates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-theme-secondary">
             <div className="w-16 h-16 rounded-full bg-theme-surface flex items-center justify-center mb-4">
               <Search size={24} />
@@ -219,6 +271,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
               </div>
             ))}
           </div>
+        )
         )}
       </div>
 

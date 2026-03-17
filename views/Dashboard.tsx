@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine, Fingerprint, Delete, ShoppingCart, Euro } from "lucide-react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine, Fingerprint, Delete, ShoppingCart, Euro, Image as ImageIcon } from "lucide-react";
 import { motion, Reorder, useDragControls, AnimatePresence } from "framer-motion";
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
@@ -734,6 +734,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={20} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
                       { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={20} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
                       { id: "SHOPPING_LIST", label: t("shoppingList"), icon: <ShoppingCart size={20} />, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+                      { id: "INVOICES", label: t("invoices"), icon: <ImageIcon size={20} />, color: "bg-pink-500/10 text-pink-400 border-pink-500/20" },
                       { id: "PROFILE", label: t("profile"), icon: <User size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
                     ].map((action, i) => (
                       <button key={i} onClick={() => onNavigate(action.id as any)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">

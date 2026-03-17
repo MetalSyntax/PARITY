@@ -237,7 +237,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
               category: 'savings',
               accountId,
               note: `🎯 ${t('goalReached')}: ${goal.name}`,
-              date: new Date().toISOString()
+              date: new Date().toISOString(),
+              skipBalanceUpdate: true
           });
       });
 

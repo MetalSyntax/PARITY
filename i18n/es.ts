@@ -466,4 +466,13 @@ export const es = {
   registerAsExpense: "Registrar como Gasto",
   registerAsIncome: "Registrar como Ingreso",
   goalCompletionTransaction: "Cumplimiento de Meta",
+  editList: "Editar Lista",
+  newList: "Nueva Lista",
+  listName: "Nombre de la Lista",
+  listNamePlaceholder: "Supermercado, Farmacia...",
+  createList: "Crear Lista",
+  noLists: "No hay listas",
+  createFirstListPrompt: "Crea tu primera lista de compras para agregar productos.",
+  invoices: "Factura",
+  noInvoicesFound: "No se encontraron facturas",
 };

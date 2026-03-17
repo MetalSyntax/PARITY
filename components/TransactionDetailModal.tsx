@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, Plus, Maximize2, Receipt, Info, Camera, Trash2, Edit2, Image as ImageIcon } from 'lucide-react';
+import { X, TrendingUp, Plus, Maximize2, Receipt, Info, Camera, Trash2, Edit2, Image as ImageIcon, Check, RefreshCw } from 'lucide-react';
 import { Transaction, TransactionType, Currency, Language } from '../types';
 import { CATEGORIES } from '../constants';
 import { getTranslation } from '../i18n';
@@ -28,6 +28,13 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'invoice'>('summary');
   const [showLightbox, setShowLightbox] = useState(false);
+  
+  // Crop states
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [cropBox, setCropBox] = useState({ x: 20, y: 30, width: 60, height: 40 });
+  const imgRef = React.useRef<HTMLImageElement>(null);
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const t = (key: any) => getTranslation(language, key);
 
@@ -114,12 +121,43 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        onUpdateTransaction({
-          ...transaction,
-          receipt: base64String
-        });
+        setSelectedImage(base64String);
+        setShowCropModal(true);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleApplyCrop = () => {
+    if (!imgRef.current || !selectedImage) return;
+
+    const canvas = document.createElement('canvas');
+    const img = imgRef.current;
+    
+    // Calculate actual pixel coordinates
+    const scaleX = img.naturalWidth / img.clientWidth;
+    const scaleY = img.naturalHeight / img.clientHeight;
+    
+    const x = (cropBox.x * img.clientWidth / 100) * scaleX;
+    const y = (cropBox.y * img.clientHeight / 100) * scaleY;
+    const width = (cropBox.width * img.clientWidth / 100) * scaleX;
+    const height = (cropBox.height * img.clientHeight / 100) * scaleY;
+
+    canvas.width = width;
+    canvas.height = height;
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+        ctx.drawImage(img, x, y, width, height, 0, 0, width, height);
+        const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        if (onUpdateTransaction) {
+          onUpdateTransaction({
+            ...transaction,
+            receipt: croppedBase64
+          });
+        }
+        setShowCropModal(false);
+        setSelectedImage(null);
     }
   };
 
@@ -159,10 +197,19 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                   <Maximize2 size={20} />
                 </button>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    setSelectedImage(transaction.receipt as string);
+                    setShowCropModal(true);
+                  }}
                   className="p-3 bg-theme-brand text-white rounded-xl shadow-lg hover:brightness-110 transition-all border border-white/10"
                 >
                   <Edit2 size={20} />
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-3 bg-blue-500/80 text-white rounded-xl shadow-lg hover:bg-blue-600 transition-all border border-white/10"
+                >
+                  <RefreshCw size={20} />
                 </button>
                 <button
                   onClick={removeReceipt}
@@ -338,6 +385,161 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 </a>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Manual Crop Modal */}
+      <AnimatePresence>
+        {showCropModal && selectedImage && (
+           <div className="fixed inset-0 bg-black/95 z-[300] flex flex-col p-4 pb-[100px] animate-in fade-in duration-200">
+               <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-white font-bold text-sm uppercase tracking-widest">{t('selectTotalSection') || 'Recortar Factura'}</h3>
+                   <button onClick={() => { setShowCropModal(false); setSelectedImage(null); }} className="p-2 bg-white/10 rounded-full text-white">
+                       <X size={20} />
+                   </button>
+               </div>
+               
+               <div className="flex-1 relative overflow-hidden bg-zinc-900 rounded-2xl flex items-center justify-center border border-white/10">
+                   <img 
+                        ref={imgRef}
+                        src={selectedImage} 
+                        className="max-w-full max-h-full object-contain pointer-events-none" 
+                        alt="Crop Preview" 
+                   />
+                   
+                   {/* Selection Overlay */}
+                   <div 
+                        className="absolute border-2 border-theme-soft shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] cursor-move rounded-lg"
+                        style={{
+                            left: `${cropBox.x}%`,
+                            top: `${cropBox.y}%`,
+                            width: `${cropBox.width}%`,
+                            height: `${cropBox.height}%`
+                        }}
+                        onTouchStart={(e) => {
+                            const touch = e.touches[0];
+                            const startX = touch.clientX;
+                            const startY = touch.clientY;
+                            const initialX = cropBox.x;
+                            const initialY = cropBox.y;
+                            
+                            const onMove = (moveEvent: TouchEvent) => {
+                                const moveTouch = moveEvent.touches[0];
+                                const dx = ((moveTouch.clientX - startX) / window.innerWidth) * 100;
+                                const dy = ((moveTouch.clientY - startY) / window.innerHeight) * 100;
+                                setCropBox(prev => ({
+                                    ...prev,
+                                    x: Math.max(0, Math.min(100 - prev.width, initialX + dx)),
+                                    y: Math.max(0, Math.min(100 - prev.height, initialY + dy))
+                                }));
+                            };
+                            
+                            const onEnd = () => {
+                                window.removeEventListener('touchmove', onMove);
+                                window.removeEventListener('touchend', onEnd);
+                            };
+                            
+                            window.addEventListener('touchmove', onMove);
+                            window.addEventListener('touchend', onEnd);
+                        }}
+                        onMouseDown={(e) => {
+                            const startX = e.clientX;
+                            const startY = e.clientY;
+                            const initialX = cropBox.x;
+                            const initialY = cropBox.y;
+                            
+                            const onMove = (moveEvent: MouseEvent) => {
+                                const dx = ((moveEvent.clientX - startX) / window.innerWidth) * 100;
+                                const dy = ((moveEvent.clientY - startY) / window.innerHeight) * 100;
+                                setCropBox(prev => ({
+                                    ...prev,
+                                    x: Math.max(0, Math.min(100 - prev.width, initialX + dx)),
+                                    y: Math.max(0, Math.min(100 - prev.height, initialY + dy))
+                                }));
+                            };
+                            
+                            const onEnd = () => {
+                                window.removeEventListener('mousemove', onMove);
+                                window.removeEventListener('mouseup', onEnd);
+                            };
+                            
+                            window.addEventListener('mousemove', onMove);
+                            window.addEventListener('mouseup', onEnd);
+                        }}
+                   >
+                       <div className="absolute inset-0 border-2 border-white/30 rounded-lg animate-pulse" />
+                       
+                       {/* Resize Handle (Bottom Right) */}
+                       <div 
+                            className="absolute bottom-0 right-0 w-8 h-8 flex items-center justify-center cursor-nwse-resize"
+                            onTouchStart={(e) => {
+                                e.stopPropagation();
+                                const touch = e.touches[0];
+                                const startX = touch.clientX;
+                                const startY = touch.clientY;
+                                const initialW = cropBox.width;
+                                const initialH = cropBox.height;
+                                
+                                const onMove = (moveEvent: TouchEvent) => {
+                                    const moveTouch = moveEvent.touches[0];
+                                    const dw = ((moveTouch.clientX - startX) / window.innerWidth) * 100;
+                                    const dh = ((moveTouch.clientY - startY) / window.innerHeight) * 100;
+                                    setCropBox(prev => ({
+                                        ...prev,
+                                        width: Math.max(10, Math.min(100 - prev.x, initialW + dw)),
+                                        height: Math.max(5, Math.min(100 - prev.y, initialH + dh))
+                                    }));
+                                };
+                                
+                                const onEnd = () => {
+                                    window.removeEventListener('touchmove', onMove);
+                                    window.removeEventListener('touchend', onEnd);
+                                };
+                                
+                                window.addEventListener('touchmove', onMove);
+                                window.addEventListener('touchend', onEnd);
+                            }}
+                            onMouseDown={(e) => {
+                                e.stopPropagation();
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const initialW = cropBox.width;
+                                const initialH = cropBox.height;
+                                
+                                const onMove = (moveEvent: MouseEvent) => {
+                                    const dw = ((moveEvent.clientX - startX) / window.innerWidth) * 100;
+                                    const dh = ((moveEvent.clientY - startY) / window.innerHeight) * 100;
+                                    setCropBox(prev => ({
+                                        ...prev,
+                                        width: Math.max(10, Math.min(100 - prev.x, initialW + dw)),
+                                        height: Math.max(5, Math.min(100 - prev.y, initialH + dh))
+                                    }));
+                                };
+                                
+                                const onEnd = () => {
+                                    window.removeEventListener('mousemove', onMove);
+                                    window.removeEventListener('mouseup', onEnd);
+                                };
+                                
+                                window.addEventListener('mousemove', onMove);
+                                window.addEventListener('mouseup', onEnd);
+                            }}
+                       >
+                           <div className="w-3 h-3 bg-white rounded-full shadow-lg" />
+                       </div>
+                   </div>
+               </div>
+
+                <div className="mt-4 flex flex-col gap-3">
+                    <button 
+                         onClick={handleApplyCrop}
+                         className="w-full py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-lg shadow-brand/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all uppercase text-xs"
+                    >
+                         <Check size={18} />
+                         {t('save') || 'Guardar Recorte'}
+                    </button>
+                </div>
+           </div>
         )}
       </AnimatePresence>
     </>

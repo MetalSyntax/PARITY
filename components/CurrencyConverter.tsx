@@ -76,12 +76,12 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
     <>
       <motion.div 
         whileHover={{ y: -2 }}
-        className="bg-theme-surface rounded-[2.5rem] p-7 border border-theme-soft shadow-theme relative overflow-hidden group"
+        className="bg-theme-surface rounded-[2.5rem] p-4 border border-theme-soft shadow-theme relative overflow-hidden group"
       >
         {/* Decorative background element */}
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-theme-brand/5 blur-3xl rounded-full" />
         
-        <div className="flex justify-between items-center mb-6 relative z-10">
+        <div className="flex justify-between items-center mb-2 relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-2xl bg-theme-brand/10 flex items-center justify-center text-theme-brand border-theme-brand/20 shadow-inner">
                <ArrowRightLeft size={18} />
@@ -103,7 +103,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
             <motion.button 
               whileTap={{ scale: 0.99 }}
               onClick={() => { setIsConverterFocused(true); onToggleBottomNav(false); }}
-              className={`w-full flex flex-col items-start bg-theme-bg/40 border-2 p-5 rounded-[2rem] transition-all hover:bg-theme-bg/60 group/input ${isConverterFocused ? 'border-theme-brand ring-4 ring-theme-brand/10' : 'border-theme-soft'}`}
+              className={`w-full flex flex-col items-start bg-theme-bg/40 p-2 rounded-[2rem] transition-all hover:bg-theme-bg/60 group/input`}
             >
               <div className="w-full flex justify-between items-center mb-3">
                  <span className="text-[10px] font-black text-theme-secondary/60 uppercase tracking-widest">{t('amountToConvert') || 'Monto a convertir'}</span>
@@ -144,7 +144,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
           <motion.button 
             whileTap={{ scale: 0.99 }}
             onClick={() => cycleCurrency(toCurrency, false)}
-            className="w-full flex flex-col items-start bg-theme-bg/40 border-2 p-5 rounded-[2rem] transition-all hover:bg-theme-bg/60 group/input border-theme-soft"
+            className="w-full flex flex-col items-start bg-theme-bg/40 p-2 transition-all hover:bg-theme-bg/60 group/input"
           >
             <div className="w-full flex justify-between items-center mb-3">
                <span className="text-[10px] font-black text-theme-brand uppercase tracking-widest leading-none">{t('convertedAmount') || 'Monto convertido'}</span>
