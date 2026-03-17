@@ -444,4 +444,9 @@ export const pt = {
     invoices: "Faturas",
     noInvoicesFound: "Nenhuma fatura encontrada",
     selectTotalSection: "Recortar Fatura",
+    realizedIncome: "Receita Realizada",
+    pendingPayments: "Pagamentos Pendentes",
+    editAccount: "Editar Conta",
+    newAccount: "Nova Conta",
+    currency: "Moeda",
 };

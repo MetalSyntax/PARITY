@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Lock, X, Settings, ChartCandlestick, User, Activity, ChevronRight, TrendingDown, Layout, Receipt, BarChart, Shield, Wallet, GripVertical, Coins, DollarSign, RefreshCw, ArrowDownToLine, Fingerprint, Delete, ShoppingCart, Euro, Image as ImageIcon } from "lucide-react";
-import { motion, Reorder, useDragControls, AnimatePresence } from "framer-motion";
+import React, { useState, useMemo, useEffect } from "react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon } from "lucide-react";
+import { motion, Reorder, useDragControls } from "framer-motion";
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
 import { getTranslation } from "../i18n";
@@ -10,7 +10,7 @@ import { TransactionItem } from "../components/TransactionItem";
 import { CurrencyConverter } from "../components/CurrencyConverter";
 import { DashboardCustomizer } from "../components/DashboardCustomizer";
 import { CurrencyAmount } from "../components/CurrencyAmount";
-import { formatAmount, formatSecondaryAmount } from "../utils/formatUtils";
+import { formatSecondaryAmount } from "../utils/formatUtils";
 import { IncomeVsExpenseChart, ExpenseStructureChart, DailySpendingChart, BalanceHistoryChart } from "../components/Charts";
 import { renderAccountIcon } from "../utils/iconUtils";
 
@@ -73,14 +73,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showPinModal, setShowPinModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  
+
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [balanceChartType, setBalanceChartType] = useState<'LINE' | 'BAR'>('LINE');
   const [expenseChartType, setExpenseChartType] = useState<'DOUGHNUT' | 'BAR'>('DOUGHNUT');
-  const [hoveredPoint, setHoveredPoint] = useState<{
-    timestamp: number;
-    balance: number;
-  } | null>(null);
+
 
 
   // Widget Visibility
@@ -111,7 +108,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const saved = localStorage.getItem("dash_left_order");
     const parsed = saved ? JSON.parse(saved) : ["balanceCard", "converter", "balanceChart", "wallets", "actions", "expenses"];
     if (!parsed.includes('converter')) {
-        parsed.splice(1, 0, 'converter');
+      parsed.splice(1, 0, 'converter');
     }
     return parsed;
   });
@@ -184,22 +181,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const totalBalanceVES = totalBalanceUSD * exchangeRate;
   const totalBalanceEUR = totalBalanceVES / (euroRate || 1);
 
-  const formatChartValue = (usd: number) => {
-    if (displayCurrency === Currency.VES) return usd * exchangeRate;
-    if (displayCurrency === Currency.EUR) return (usd * exchangeRate) / (euroRate || 1);
-    return usd;
-  };
 
-  const getSymbol = () => {
-    if (displayCurrency === Currency.VES) return "Bs";
-    if (displayCurrency === Currency.EUR) return "€";
-    return "$";
-  };
-
-  const formatChartAmount = (usd: number) => {
-    if (!isBalanceVisible) return '******';
-    return formatAmount(usd, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate);
-  };
 
   useEffect(() => {
     onToggleBottomNav(!(showPinModal || showCustomizer));
@@ -413,41 +395,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return { structure, totalUSD };
   }, [transactions]);
 
-  const chartRef = useRef<HTMLDivElement>(null);
 
-  const handleChartInteraction = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!balanceHistory.history.length || !chartRef.current) return;
-
-    // Check if we are interacting with the chart area
-    const rect = chartRef.current.getBoundingClientRect();
-    let clientX;
-
-    if ("touches" in e) {
-      clientX = e.touches[0].clientX;
-    } else {
-      clientX = (e as React.MouseEvent).clientX;
-    }
-
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const width = rect.width;
-    const xPercent = (x / width) * 100;
-
-    const targetTs =
-      (xPercent / 100) * balanceHistory.timeRange + balanceHistory.startTime;
-
-    // Find closest point
-    let closest = balanceHistory.history[0];
-    let minDiff = Math.abs(targetTs - closest.timestamp);
-
-    for (let i = 1; i < balanceHistory.history.length; i++) {
-      const diff = Math.abs(targetTs - balanceHistory.history[i].timestamp);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = balanceHistory.history[i];
-      }
-    }
-    setHoveredPoint(closest);
-  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden relative bg-theme-bg">
@@ -455,7 +403,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="flex justify-between items-center px-6 md:px-0 pt-12 pb-4 flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="flex wrap items-center gap-3 group relative">
-              <div 
+              <div
                 onClick={() => onNavigate("PROFILE")}
                 className="w-10 h-10 rounded-full bg-gradient-to-tr from-theme-brand to-purple-500 border border-white/20 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-pointer hover:scale-105 transition-transform overflow-hidden"
               >
@@ -489,32 +437,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-            onClick={() => setShowCustomizer(true)}
-            className="p-2 bg-theme-soft rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
-          >
-            <Settings size={20} />
-          </button>
-          
-          <button
-            onClick={onCheckUpdate}
-            className={`p-2 rounded-full transition-all flex items-center justify-center relative ${needUpdate ? 'bg-theme-brand text-white shadow-lg shadow-theme-brand/20 animate-pulse' : 'bg-theme-soft text-theme-secondary hover:text-theme-primary'}`}
-            title={needUpdate ? t('updateAvailable') : t('checkUpdates')}
-          >
-            {needUpdate ? <ArrowDownToLine size={20} /> : <RefreshCw size={20} />}
-            {needUpdate && (
+              onClick={() => setShowCustomizer(true)}
+              className="p-2 bg-theme-soft rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+            >
+              <Settings size={20} />
+            </button>
+
+            <button
+              onClick={onCheckUpdate}
+              className={`p-2 rounded-full transition-all flex items-center justify-center relative ${needUpdate ? 'bg-theme-brand text-white shadow-lg shadow-theme-brand/20 animate-pulse' : 'bg-theme-soft text-theme-secondary hover:text-theme-primary'}`}
+              title={needUpdate ? t('updateAvailable') : t('checkUpdates')}
+            >
+              {needUpdate ? <ArrowDownToLine size={20} /> : <RefreshCw size={20} />}
+              {needUpdate && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-theme-bg rounded-full" />
-            )}
-          </button>
+              )}
+            </button>
             <button
               onClick={onOpenSettings}
               className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-4 py-2 rounded-2xl flex items-center gap-3"
             >
               <div className="flex flex-col items-end">
                 <span className="text-[10px] font-black text-emerald-500 leading-tight">
-                    USD: {(hasFetchedRates || navigator.onLine) ? exchangeRate?.toFixed(2) : '--.--'} Bs
+                  USD: {(hasFetchedRates || navigator.onLine) ? exchangeRate?.toFixed(2) : '--.--'} Bs
                 </span>
                 <span className="text-[10px] font-black text-blue-400 leading-tight">
-                    EUR: {(hasFetchedRates || navigator.onLine) ? euroRate?.toFixed(2) : '--.--'} Bs
+                  EUR: {(hasFetchedRates || navigator.onLine) ? euroRate?.toFixed(2) : '--.--'} Bs
                 </span>
               </div>
               <div className="w-8 h-8 rounded-full bg-theme-brand/10 hidden md:flex items-center justify-center">
@@ -544,14 +492,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   }
                 }}
               >
-                <div 
+                <div
                   onPointerDown={(e) => leftControls[index].start(e)}
                   className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-surface/90 backdrop-blur-md rounded-xl border border-theme-soft text-theme-secondary flex touch-none shadow-xl ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
                   <GripVertical size={20} />
                 </div>
                 {['balanceChart', 'expenses', 'incomeVsExpense', 'dailySpending', 'categoryBreakdown'].includes(id) && (
-                  <button 
+                  <button
                     onClick={() => setShowCustomizer(true)}
                     className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-surface/90 backdrop-blur-md rounded-xl border border-theme-soft text-theme-secondary flex touch-none shadow-xl ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                   >
@@ -568,11 +516,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         >
                           <div className="w-4 h-4 flex items-center justify-center">
                             {displayCurrency === Currency.VES ? (
-                                <span className="text-[9px] font-black leading-none">Bs</span>
+                              <span className="text-[9px] font-black leading-none">Bs</span>
                             ) : displayCurrency === Currency.EUR ? (
-                                <Euro size={14} />
+                              <Euro size={14} />
                             ) : (
-                                <DollarSign size={14} />
+                              <DollarSign size={14} />
                             )}
                           </div>
                           <span className="hidden sm:inline">{displayCurrency}</span>
@@ -621,28 +569,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <div className="flex flex-col gap-1 mb-2">
                           <h1 className="text-5xl font-black tracking-tighter text-theme-primary leading-tight">
                             <CurrencyAmount
-                                    amount={totalBalanceUSD}
-                                    exchangeRate={exchangeRate}
-                                    euroRate={euroRate}
-                                    displayCurrency={displayCurrency}
-                                    isBalanceVisible={isBalanceVisible}
-                                    size="2xl"
-                                    weight="black"
-                                    className="items-start"
-                                />
+                              amount={totalBalanceUSD}
+                              exchangeRate={exchangeRate}
+                              euroRate={euroRate}
+                              displayCurrency={displayCurrency}
+                              isBalanceVisible={isBalanceVisible}
+                              size="2xl"
+                              weight="black"
+                              className="items-start"
+                            />
                           </h1>
-                           <div className="flex items-center gap-3">
-                             <span className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-lg border border-theme-soft flex items-center gap-1">
-                               <span className="opacity-50 text-[10px] uppercase">≈</span>
-                               {formatSecondaryAmount(
-                                  totalBalanceUSD,
-                                  exchangeRate,
-                                  displayCurrency,
-                                  isBalanceVisible,
-                                  2,
-                                  euroRate
-                               )}
-                             </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-lg border border-theme-soft flex items-center gap-1">
+                              <span className="opacity-50 text-[10px] uppercase">≈</span>
+                              {formatSecondaryAmount(
+                                totalBalanceUSD,
+                                exchangeRate,
+                                displayCurrency,
+                                isBalanceVisible,
+                                2,
+                                euroRate
+                              )}
+                            </span>
                             {isBalanceVisible && (
                               <div className={`p-1 flex items-center gap-1 rounded-full text-[10px] font-black ${balanceHistory.trendPercent >= 0 ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
                                 {balanceHistory.trendPercent >= 0 ? <ArrowUpRight size={10} /> : <TrendingDown size={10} />}
@@ -691,11 +639,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 {id === "converter" && (
                   <div className="px-4 md:px-0">
-                    <CurrencyConverter 
-                      exchangeRate={exchangeRate} 
+                    <CurrencyConverter
+                      exchangeRate={exchangeRate}
                       euroRate={euroRate}
-                      lang={userProfile.language} 
-                      onToggleBottomNav={onToggleBottomNav} 
+                      lang={userProfile.language}
+                      onToggleBottomNav={onToggleBottomNav}
                     />
                   </div>
                 )}
@@ -785,7 +733,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                       <div className="flex justify-center relative group h-48 w-48 mx-auto xl:mx-0">
-                        <ExpenseStructureChart 
+                        <ExpenseStructureChart
                           type={expenseChartType}
                           transactions={transactions}
                           lang={userProfile.language}
@@ -817,18 +765,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               </div>
                               <span className="text-xs font-bold">{t(item.name as any)}</span>
                             </div>
-                             <div className="text-right">
-                               <CurrencyAmount
-                                 amount={item.amount}
-                                 exchangeRate={exchangeRate}
-                                 euroRate={euroRate}
-                                 displayCurrency={displayCurrency}
-                                 isBalanceVisible={isBalanceVisible}
-                                 size="xs"
-                                 weight="black"
-                               />
-                               <p className="text-[9px] font-bold opacity-40">{item.percent?.toFixed(1)}%</p>
-                             </div>
+                            <div className="text-right">
+                              <CurrencyAmount
+                                amount={item.amount}
+                                exchangeRate={exchangeRate}
+                                euroRate={euroRate}
+                                displayCurrency={displayCurrency}
+                                isBalanceVisible={isBalanceVisible}
+                                size="xs"
+                                weight="black"
+                              />
+                              <p className="text-[9px] font-bold opacity-40">{item.percent?.toFixed(1)}%</p>
+                            </div>
                           </button>
                         ))}
                       </div>
@@ -858,14 +806,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   }
                 }}
               >
-                <div 
+                <div
                   onPointerDown={(e) => rightControls[index].start(e)}
                   className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-theme-soft text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
                   <GripVertical size={20} />
                 </div>
                 {['balanceChart', 'expenses', 'incomeVsExpense', 'dailySpending', 'categoryBreakdown'].includes(id) && (
-                  <button 
+                  <button
                     onClick={() => setShowCustomizer(true)}
                     className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-theme-soft text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                   >
@@ -883,12 +831,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         {(() => {
                           let count = 0;
                           const MAX_ITEMS = userProfile.dashboardTxLimit || 5;
-                          const sortedDates = Object.keys(groupedTransactions).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+                          const sortedDates = Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
                           return (
                             <>
                               {sortedDates.map(date => {
                                 if (count >= MAX_ITEMS) return null;
-                                const dayTransactions = groupedTransactions[date].sort((a,b) => (b.id || '').localeCompare(a.id || ''));
+                                const dayTransactions = groupedTransactions[date].sort((a, b) => (b.id || '').localeCompare(a.id || ''));
                                 const itemsToRender = [];
                                 for (const t of dayTransactions) {
                                   if (count < MAX_ITEMS) { itemsToRender.push(t); count++; }
@@ -905,7 +853,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     </h3>
                                     <div className="flex flex-col gap-2 mt-1">
                                       {itemsToRender.map(transaction => (
-                                        <TransactionItem 
+                                        <TransactionItem
                                           key={transaction.id}
                                           transaction={transaction}
                                           accounts={accounts}
@@ -943,7 +891,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </button>
                     </div>
                     <div className="h-48">
-                      <IncomeVsExpenseChart 
+                      <IncomeVsExpenseChart
                         type="BAR"
                         mode="SUMMARY"
                         transactions={transactions}
@@ -963,7 +911,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("dailySpending")}</h3>
                     </div>
                     <div className="h-48">
-                      <DailySpendingChart 
+                      <DailySpendingChart
                         transactions={transactions}
                         lang={userProfile.language}
                         exchangeRate={exchangeRate}
@@ -981,7 +929,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("categoryBreakdown")}</h3>
                     </div>
                     <div className="h-48">
-                      <ExpenseStructureChart 
+                      <ExpenseStructureChart
                         type="BAR"
                         transactions={transactions}
                         lang={userProfile.language}
@@ -1000,7 +948,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {showCustomizer && (
-        <DashboardCustomizer 
+        <DashboardCustomizer
           lang={userProfile.language}
           showBalanceChart={showBalanceChart}
           showExpenseStructure={showExpenseStructure}
@@ -1013,7 +961,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {showPinModal && (
-        <PinModal 
+        <PinModal
           lang={userProfile.language}
           biometricsEnabled={biometricsEnabled}
           onVerifyBiometrics={onVerifyBiometrics}

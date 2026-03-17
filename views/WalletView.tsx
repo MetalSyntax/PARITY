@@ -78,20 +78,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
   const netMonthly = totalIncome - totalExpense;
 
-  // Mocking "Savings" and "Commissions" logic for now as they aren't explicit types yet
-  // We can try to infer from categories if they exist, or just show 0 / Mock for visuals if requested "Justo como en la imagen"
-  // Assuming 'savings' is a category, and 'fees' is commission.
-  const savings = monthlyTransactions
-      .filter(t => t.type === TransactionType.EXPENSE && (t.category === 'savings' || t.category === 'invest')) // Mock IDs
-      .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
-  
-  // Commissions usually expenses? Or Income deductions? Let's assume expenses for 'fees'
-  const commissions = monthlyTransactions
-      .filter(t => t.type === TransactionType.EXPENSE && t.category === 'fees')
-      .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
 
-  // Safe Conversions
-  const safeRate = exchangeRate;
 
 
 
@@ -535,7 +522,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         </div>
 
                         <div>
-                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('currency') || 'Currency'}</label>
+                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('currency')}</label>
                             <div className="grid grid-cols-4 gap-2">
                                 {[Currency.USD, Currency.EUR, Currency.VES, Currency.USDT].map(c => (
                                     <button 
@@ -560,7 +547,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         </div>
 
                         <div>
-                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">Icon</label>
+                            <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2 block">{t('icon')}</label>
                             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                                 {Object.keys(ACCOUNT_ICONS).map(key => (
                                     <button 

@@ -36,21 +36,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   
-  const formatAmount = (usd: number) => {
-    if (!isBalanceVisible) return '******';
-    let val = usd;
-    let symbol = '$';
-    
-    if (displayCurrency === Currency.VES) {
-      val = usd * exchangeRate;
-      symbol = 'Bs';
-    } else if (displayCurrency === Currency.EUR) {
-      val = (usd * exchangeRate) / (euroRate || 1);
-      symbol = '€';
-    }
-    
-    return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

@@ -1,5 +1,6 @@
 import React from 'react';
-import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
+import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank, FaApplePay, FaGooglePay, FaAmazonPay, FaStripe } from 'react-icons/fa6';
+import { SiBinance, SiZelle, SiVenmo, SiMercadopago, SiCashapp } from 'react-icons/si';
 
 export const ACCOUNT_ICONS: Record<string, React.ElementType> = {
   'wallet': FaWallet,
@@ -11,7 +12,16 @@ export const ACCOUNT_ICONS: Record<string, React.ElementType> = {
   'crypto': FaBitcoin,
   'paypal': FaPaypal,
   'mobile': FaMobileScreen,
-  'savings': FaPiggyBank
+  'savings': FaPiggyBank,
+  'binance': SiBinance,
+  'zelle': SiZelle,
+  'venmo': SiVenmo,
+  'mercadopago': SiMercadopago,
+  'cashapp': SiCashapp,
+  'applepay': FaApplePay,
+  'googlepay': FaGooglePay,
+  'amazonpay': FaAmazonPay,
+  'stripe': FaStripe,
 };
 
 export const renderAccountIcon = (iconKey: string, size: number = 24) => {

@@ -458,5 +458,10 @@ export const en = {
     createFirstListPrompt: "Create your first shopping list to add products.",
     invoices: "Invoices",
     noInvoicesFound: "No invoices found",
-    selectTotalSection: "Crop Invoice"
+    selectTotalSection: "Crop Invoice",
+    realizedIncome: "Realized Income",
+    pendingPayments: "Pending Payments",
+    editAccount: "Edit Account",
+    newAccount: "New Account",
+    currency: "Currency",
 };

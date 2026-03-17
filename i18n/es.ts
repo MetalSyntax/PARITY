@@ -475,4 +475,9 @@ export const es = {
   createFirstListPrompt: "Crea tu primera lista de compras para agregar productos.",
   invoices: "Factura",
   noInvoicesFound: "No se encontraron facturas",
+  realizedIncome: "Ingreso Realizado",
+  pendingPayments: "Pagos Pendientes",
+  editAccount: "Editar Cuenta",
+  newAccount: "Nueva Cuenta",
+  currency: "Moneda",
 };

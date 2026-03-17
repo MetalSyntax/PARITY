@@ -37,23 +37,22 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   const isOriginalUSDType = transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT;
 
 
-  
+
   const fromAcc = accounts.find(a => a.id === transaction.accountId);
   const toAcc = accounts.find(a => a.id === transaction.toAccountId);
   const accName = fromAcc?.name || 'Unknown';
 
   const content = (
-    <div 
+    <div
       onClick={(e) => {
         e.stopPropagation();
         onSelect(transaction);
       }}
-      className={`flex items-center justify-between p-3 rounded-xl hover:bg-theme-soft transition-colors group relative ${compact ? 'pr-14' : 'pr-16'} bg-theme-surface border border-theme-soft mb-2 cursor-pointer`}
+      className={`flex items-center justify-between p-3 rounded-xl hover:bg-theme-soft transition-colors group relative ${compact ? 'pr-3' : 'pr-3'} bg-theme-surface border border-theme-soft mb-2 cursor-pointer`}
     >
       <div className="flex items-center gap-4">
-        <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border border-theme-soft ${
-          isTransfer ? 'bg-indigo-500/10 text-indigo-400' : category.color
-        } ${!isTransfer && !compact ? 'bg-opacity-20 shadow-inner' : ''}`}>
+        <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border border-theme-soft ${isTransfer ? 'bg-indigo-500/10 text-indigo-400' : category.color
+          } ${!isTransfer && !compact ? 'bg-opacity-20 shadow-inner' : ''}`}>
           {isTransfer ? <ArrowRightLeft size={20} /> : category.icon}
         </div>
         <div>
@@ -62,7 +61,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
               {isTransfer ? `${fromAcc?.name} → ${toAcc?.name}` : transaction.note || t(category.name as any)}
             </p>
             {transaction.exchangeRate !== undefined && !isTransfer && (
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" title="Custom Rate Used" />
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" title="Custom Rate Used" />
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
@@ -74,7 +73,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
           </div>
           {!compact && transaction.fee !== undefined && transaction.fee > 0 && (
             <p className="text-[9px] text-red-400 font-bold uppercase mt-1">
-                {t('commissions')}: {transaction.fee.toLocaleString()} {(transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT) ? '$' : 'Bs'}
+              {t('commissions')}: {transaction.fee.toLocaleString()} {(transaction.originalCurrency === Currency.USD || transaction.originalCurrency === Currency.USDT) ? '$' : 'Bs'}
             </p>
           )}
         </div>
@@ -93,15 +92,15 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-theme-soft">
         {transaction.receipt && (
-           <button onClick={(e) => { e.stopPropagation(); onSelect(transaction); }} className="p-2 text-theme-brand hover:bg-theme-brand/10 rounded-lg" title={t('viewReceipt')}>
-             <Receipt size={14}/>
-           </button>
+          <button onClick={(e) => { e.stopPropagation(); onSelect(transaction); }} className="p-2 text-theme-brand hover:bg-theme-brand/10 rounded-lg" title={t('viewReceipt')}>
+            <Receipt size={14} />
+          </button>
         )}
         <button onClick={(e) => { e.stopPropagation(); onEdit(transaction); }} className="p-2 text-theme-secondary hover:text-theme-brand rounded-lg">
-            {compact ? <Settings size={14}/> : <Settings size={14}/>}
+          {compact ? <Settings size={14} /> : <Settings size={14} />}
         </button>
         <button onClick={(e) => { e.stopPropagation(); onDelete(transaction.id); }} className="p-2 text-theme-secondary hover:text-red-500 rounded-lg">
-            <X size={14}/>
+          <X size={14} />
         </button>
       </div>
     </div>
