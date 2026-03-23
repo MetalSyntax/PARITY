@@ -156,6 +156,9 @@ export const pt = {
     delay1Min: '1 Minuto',
     delay5Min: '5 Minutos',
     delay15Min: '15 Minutos',
+    delay1MinShort: '1m',
+    delay5MinShort: '5m',
+    delay15MinShort: '15m',
     update: 'Atualizar',
     networkError: 'Erro de rede',
     invalidFormat: 'Formato inválido',
@@ -364,6 +367,8 @@ export const pt = {
     returnFundsConfirm: 'Deseja devolver estes fundos para a carteira?',
     noContributions: 'Nenhuma contribuição registrada',
     savedFromContributions: 'Calculado a partir de contribuições',
+    widgets: 'Widgets',
+    privacy: 'Privacidade',
     hideWelcome: 'Ocultar Saudação de Bem-vindo',
     hideDevMode: 'Ocultar Etiqueta de Modo Dev',
     dashboardTxLimit: 'Limite de Transações no Dashboard',
@@ -449,4 +454,6 @@ export const pt = {
     editAccount: "Editar Conta",
     newAccount: "Nova Conta",
     currency: "Moeda",
+    rateTypeOfficial: "Oficial (BCV)",
+    rateTypeParallel: "Bursátil/Binance"
 };

@@ -48,7 +48,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         e.stopPropagation();
         onSelect(transaction);
       }}
-      className={`flex items-center justify-between p-3 rounded-xl hover:bg-theme-soft transition-colors group relative ${compact ? 'pr-3' : 'pr-3'} bg-theme-surface border border-theme-soft mb-2 cursor-pointer`}
+      className={`flex items-center justify-between p-3 rounded-xl hover:bg-theme-soft transition-colors group/tx relative ${compact ? 'pr-3' : 'pr-3'} bg-theme-surface border border-theme-soft mb-2 cursor-pointer`}
     >
       <div className="flex items-center gap-4">
         <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border border-theme-soft ${isTransfer ? 'bg-indigo-500/10 text-indigo-400' : category.color
@@ -90,7 +90,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         weight="black"
       />
 
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-theme-soft">
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover/tx:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-theme-soft">
         {transaction.receipt && (
           <button onClick={(e) => { e.stopPropagation(); onSelect(transaction); }} className="p-2 text-theme-brand hover:bg-theme-brand/10 rounded-lg" title={t('viewReceipt')}>
             <Receipt size={14} />

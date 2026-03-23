@@ -181,8 +181,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex-1">
                        <p className="font-black text-sm text-theme-primary">{t('rateTypeOfficial')}</p>
                        <div className="flex gap-4 mt-1">
-                          <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-emerald-500 font-black">{(hasFetchedRates || navigator.onLine) ? currentRate.toFixed(2) : '--.--'}</span></span>
-                          <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(hasFetchedRates || navigator.onLine) ? (euroRate || 0).toFixed(2) : '--.--'}</span></span>
+                          <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-emerald-500 font-black">{currentRate.toFixed(2)}</span></span>
+                          <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(euroRate || 0).toFixed(2)}</span></span>
                        </div>
                     </div>
                  </button>
@@ -196,8 +196,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <div className="flex-1">
                         <p className="font-black text-sm text-theme-primary">{t('rateTypeParallel')}</p>
                          <div className="flex gap-4 mt-1">
-                            <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-amber-500 font-black">{(hasFetchedRates || navigator.onLine) ? (usdRateParallel || 0).toFixed(2) : '--.--'}</span></span>
-                            <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(hasFetchedRates || navigator.onLine) ? (euroRateParallel || 0).toFixed(2) : '--.--'}</span></span>
+                            <span className="text-[10px] font-bold text-theme-secondary">USD: <span className="text-amber-500 font-black">{(usdRateParallel || 0).toFixed(2)}</span></span>
+                            <span className="text-[10px] font-bold text-theme-secondary">EUR: <span className="text-blue-400 font-black">{(euroRateParallel || 0).toFixed(2)}</span></span>
                          </div>
                       </div>
                     </button>
@@ -260,8 +260,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 className={`py-2 px-1 rounded-xl text-[10px] font-black transition-all border ${autoLockDelay === delay ? 'bg-theme-brand border-theme-soft text-white shadow-md' : 'bg-theme-surface border-theme-soft text-theme-secondary opacity-60'}`}
                                             >
                                                 {delay === 0 ? t('delayImmediately') : 
-                                                 delay === 60 ? '1m' : 
-                                                 delay === 300 ? '5m' : '15m'}
+                                                 delay === 60 ? t('delay1MinShort') : 
+                                                 delay === 300 ? t('delay5MinShort') : t('delay15MinShort')}
                                             </button>
                                         ))}
                                     </div>

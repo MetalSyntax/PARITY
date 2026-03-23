@@ -40,6 +40,7 @@ interface DashboardProps {
   euroRateParallel?: number;
   onUpdateTransaction: (t: Transaction) => void;
   hasFetchedRates: boolean;
+  onUpdateProfile: (p: UserProfile) => void;
 }
 
 
@@ -67,7 +68,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   euroRate,
   euroRateParallel,
   onUpdateTransaction,
-  hasFetchedRates
+  hasFetchedRates,
+  onUpdateProfile
 }) => {
 
   const [showPinModal, setShowPinModal] = useState(false);
@@ -458,11 +460,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-4 py-2 rounded-2xl flex items-center gap-3"
             >
               <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-emerald-500 leading-tight">
-                  USD: {(hasFetchedRates || navigator.onLine) ? exchangeRate?.toFixed(2) : '--.--'} Bs
+                <span className="text-[10px] font-black text-green-400 leading-tight">
+                    USD: {exchangeRate?.toFixed(2)} Bs
                 </span>
                 <span className="text-[10px] font-black text-blue-400 leading-tight">
-                  EUR: {(hasFetchedRates || navigator.onLine) ? euroRate?.toFixed(2) : '--.--'} Bs
+                    EUR: {euroRate?.toFixed(2)} Bs
                 </span>
               </div>
               <div className="w-8 h-8 rounded-full bg-theme-brand/10 hidden md:flex items-center justify-center">
@@ -957,6 +959,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           showCategoryBreakdown={showCategoryBreakdown}
           toggleWidget={toggleWidget}
           onClose={() => setShowCustomizer(false)}
+          userProfile={userProfile}
+          onUpdateProfile={onUpdateProfile}
+          isDevMode={isDevMode}
         />
       )}
 

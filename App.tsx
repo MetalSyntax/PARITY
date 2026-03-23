@@ -425,7 +425,11 @@ function AppContent() {
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', fetchAllRates);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', fetchAllRates);
+    };
   }, [autoLockEnabled, autoLockDelay, backgroundTime]);
 
   const handleSetAutoLockDelay = (delay: number) => {
@@ -1001,6 +1005,7 @@ function AppContent() {
               euroRateParallel={euroRateParallel}
               onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
               hasFetchedRates={hasFetchedRates}
+              onUpdateProfile={setUserProfile}
             />
           )}
           {currentView === 'TRANSFER' && (

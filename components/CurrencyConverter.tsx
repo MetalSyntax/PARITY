@@ -17,7 +17,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
   lang,
   onToggleBottomNav
 }) => {
-  const [convertAmount, setConvertAmount] = useState<string>('1');
+  const [convertAmount, setConvertAmount] = useState<string>('');
   const [fromCurrency, setFromCurrency] = useState<Currency>(Currency.USD);
   const [toCurrency, setToCurrency] = useState<Currency>(Currency.VES);
   const [isConverterFocused, setIsConverterFocused] = useState(false);
@@ -29,7 +29,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
   };
 
   const calculatedResult = () => {
-    const amt = parseFloat(convertAmount) || 0;
+    const amt = convertAmount === '' ? 1 : (parseFloat(convertAmount) || 0);
     const eRate = euroRate || 1;
     let result = amt;
 
@@ -117,8 +117,8 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
                     <span className="text-xs font-black text-theme-primary tracking-tight">{fromCurrency}</span>
                  </div>
               </div>
-              <div className={`text-xl font-black transition-colors ${isConverterFocused ? 'text-theme-brand' : 'text-theme-primary'}`}>
-                 {convertAmount}
+              <div className={`text-xl font-black transition-all duration-300 ${isConverterFocused ? 'text-theme-brand' : (!convertAmount ? 'text-theme-secondary opacity-40' : 'text-theme-primary')}`}>
+                 {convertAmount || '1'}
               </div>
             </motion.button>
 
@@ -164,74 +164,68 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
 
       <AnimatePresence>
         {isConverterFocused && (
-          <motion.div 
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 bg-theme-surface/95 backdrop-blur-2xl border-t border-theme-soft p-8 pb-12 z-[100] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] rounded-t-[3rem]"
-          >
-            <div className="max-w-md mx-auto">
-              <div className="flex justify-between items-center mb-10">
-                <div className="flex flex-col">
-                  <h4 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1">{t('converterKeypad')}</h4>
-                  <div className="flex items-baseline gap-2">
-                     <span className="text-2xl font-black text-theme-primary">{convertAmount}</span>
-                     <span className="text-xs font-bold text-theme-brand">{fromCurrency}</span>
-                  </div>
-                </div>
-                <motion.button 
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => { setIsConverterFocused(false); onToggleBottomNav(true); }}
-                  className="w-12 h-12 bg-theme-soft rounded-2xl text-theme-primary flex items-center justify-center shadow-inner border border-white/5 transition-all"
-                >
-                  <X size={24} />
-                </motion.button>
-              </div>
-              <div className="grid grid-cols-3 gap-y-8 gap-x-12">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setIsConverterFocused(false); onToggleBottomNav(true); }}
+              className="fixed inset-0 z-[90]"
+            />
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-x-0 bottom-0 bg-theme-surface/95 backdrop-blur-2xl border-t border-theme-soft p-2 z-[100] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] rounded-t-[3rem]"
+            >
+              <div className="max-w-md mx-auto">
+                <div className="w-12 h-1.5 bg-theme-soft rounded-full mx-auto mb-3" />
+                
+                <div className="grid grid-cols-3 gap-y-8 gap-x-12">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                    <motion.button 
+                      key={num} 
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.8 }}
+                      onPointerDown={(e) => e.preventDefault()}
+                      onClick={() => setConvertAmount(prev => prev === '0' ? num.toString() : prev + num.toString())}
+                      className="text-3xl font-black text-theme-primary hover:text-theme-brand transition-all py-2"
+                    >
+                      {num}
+                    </motion.button>
+                  ))}
                   <motion.button 
-                    key={num} 
                     whileHover={{ scale: 1.2 }}
                     whileTap={{ scale: 0.8 }}
                     onPointerDown={(e) => e.preventDefault()}
-                    onClick={() => setConvertAmount(prev => prev === '0' ? num.toString() : prev + num.toString())}
-                    className="text-3xl font-black text-theme-primary hover:text-theme-brand transition-all py-2"
+                    onClick={() => setConvertAmount(prev => prev.includes('.') ? prev : prev + '.')}
+                    className="text-3xl font-black text-theme-secondary hover:text-theme-brand transition-all flex items-center justify-center"
                   >
-                    {num}
+                    ·
                   </motion.button>
-                ))}
-                <motion.button 
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.8 }}
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => setConvertAmount(prev => prev.includes('.') ? prev : prev + '.')}
-                  className="text-3xl font-black text-theme-secondary hover:text-theme-brand transition-all flex items-center justify-center"
-                >
-                  ·
-                </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.8 }}
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => setConvertAmount(prev => prev === '0' ? '0' : prev + '0')}
-                  className="text-3xl font-black text-theme-primary hover:text-theme-brand transition-all"
-                >
-                  0
-                </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.1, x: -5 }}
-                  whileTap={{ scale: 0.9 }}
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => setConvertAmount(prev => prev.length <= 1 ? '0' : prev.slice(0, -1))}
-                  className="flex items-center justify-center text-theme-secondary hover:text-rose-500 transition-all active:rose-500"
-                >
-                  <Delete size={28} />
-                </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.8 }}
+                    onPointerDown={(e) => e.preventDefault()}
+                    onClick={() => setConvertAmount(prev => prev === '0' ? '0' : prev + '0')}
+                    className="text-3xl font-black text-theme-primary hover:text-theme-brand transition-all"
+                  >
+                    0
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.1, x: -5 }}
+                    whileTap={{ scale: 0.9 }}
+                    onPointerDown={(e) => e.preventDefault()}
+                    onClick={() => setConvertAmount(prev => prev.length <= 1 ? '' : prev.slice(0, -1))}
+                    className="flex items-center justify-center text-theme-secondary hover:text-rose-500 transition-all active:rose-500"
+                  >
+                    <Delete size={28} />
+                  </motion.button>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

@@ -161,6 +161,9 @@ export const en = {
     delay1Min: '1 Minute',
     delay5Min: '5 Minutes',
     delay15Min: '15 Minutes',
+    delay1MinShort: '1m',
+    delay5MinShort: '5m',
+    delay15MinShort: '15m',
     update: 'Update',
     networkError: 'Network error',
     invalidFormat: 'Invalid format',
@@ -369,6 +372,8 @@ export const en = {
     returnFundsConfirm: 'Do you want to return these funds to the wallet?',
     noContributions: 'No contributions recorded',
     savedFromContributions: 'Calculated from contributions',
+    widgets: 'Widgets',
+    privacy: 'Privacy',
     hideWelcome: 'Hide Welcome Greeting',
     hideDevMode: 'Hide Dev Mode Label',
     dashboardTxLimit: 'Dashboard Transaction Limit',
@@ -464,4 +469,6 @@ export const en = {
     editAccount: "Edit Account",
     newAccount: "New Account",
     currency: "Currency",
+    rateTypeOfficial: "Official Bank Rate",
+    rateTypeParallel: "Parallel/Binance Rate"
 };

@@ -51,10 +51,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
   const [profileImage, setProfileImage] = useState(profile.profileImage || '');
-  const [hideWelcome, setHideWelcome] = useState(profile.hideWelcome || false);
-  const [hideDevMode, setHideDevMode] = useState(profile.hideDevMode || false);
-  const [hideName, setHideName] = useState(profile.hideName || false);
-  const [dashboardTxLimit, setDashboardTxLimit] = useState(profile.dashboardTxLimit || 5);
   const [notificationsEnabled, setNotificationsEnabled] = useState(profile.notificationsEnabled || false);
   const [notificationLeadTime, setNotificationLeadTime] = useState(profile.notificationLeadTime || 1);
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
@@ -84,10 +80,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       name, 
       language: lang,
       profileImage,
-      hideWelcome,
-      hideDevMode,
-      hideName,
-      dashboardTxLimit,
       notificationsEnabled,
       notificationLeadTime
     });
@@ -310,49 +302,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <p className="text-[10px] text-theme-secondary mt-4 opacity-50 flex items-center gap-1">
             <Info size={10} /> {t('navbarFavoritesDesc')}
           </p>
-
-          <div className="mt-8 space-y-4 pt-6 border-t border-theme-soft">
-            <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-theme-primary">{t('hideWelcome')}</span>
-                <button 
-                    onClick={() => setHideWelcome(!hideWelcome)}
-                    className={`w-10 h-5 rounded-full transition-all relative ${hideWelcome ? "bg-theme-brand" : "bg-theme-soft"}`}
-                >
-                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideWelcome ? "left-6" : "left-1"}`} />
-                </button>
-            </div>
-            {isDevMode && (
-              <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-theme-primary">{t('hideDevMode')}</span>
-                  <button 
-                      onClick={() => setHideDevMode(!hideDevMode)}
-                      className={`w-10 h-5 rounded-full transition-all relative ${hideDevMode ? "bg-theme-brand" : "bg-theme-soft"}`}
-                  >
-                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideDevMode ? "left-6" : "left-1"}`} />
-                  </button>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-theme-primary">{t('hideName')}</span>
-                <button 
-                    onClick={() => setHideName(!hideName)}
-                    className={`w-10 h-5 rounded-full transition-all relative ${hideName ? "bg-theme-brand" : "bg-theme-soft"}`}
-                >
-                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${hideName ? "left-6" : "left-1"}`} />
-                </button>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-                <span className="text-xs font-bold text-theme-primary">{t('dashboardTxLimit')}</span>
-                <input 
-                    type="number" 
-                    value={dashboardTxLimit} 
-                    onChange={(e) => setDashboardTxLimit(parseInt(e.target.value) || 0)}
-                    className="w-16 bg-theme-bg border border-theme-soft rounded-lg px-2 py-1 text-xs font-bold text-theme-primary outline-none"
-                    min="1"
-                    max="50"
-                />
-            </div>
-          </div>
         </motion.div>
 
         {/* Data & Backup Card */}
@@ -524,7 +473,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             onClick={onDevModeTrigger}
             className="text-[10px] font-mono cursor-pointer hover:text-theme-brand transition-colors select-none"
           >
-            v1.0.29 {isDevMode && !hideDevMode && '(DEV)'}
+            v1.0.29 {isDevMode && !profile.hideDevMode && '(DEV)'}
           </p>
         </motion.div>
       </div>
