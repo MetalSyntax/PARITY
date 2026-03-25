@@ -61,6 +61,7 @@ export const pt = {
     selectAccount: 'Selecionar Conta',
     envelopes: 'Envelopes',
     goals: 'Metas',
+    incomeView: 'Receitas',
     manage: 'Gerenciar',
     addScheduled: 'Adicionar Agendamento',
     editScheduled: 'Editar Agendamento',
@@ -88,6 +89,13 @@ export const pt = {
     limitReached: 'Limite atingido',
     goalReached: 'Meta Alcançada!',
     delete: 'Excluir',
+    addMonth: 'Adicionar Mês',
+    duplicatePrevious: 'Duplicar Mês Anterior',
+    noBudgetsInPreviousMonth: 'Sem orçamentos anteriores',
+    createFirstEnvelopeToStart: 'Crie um envelope para começar.',
+    associateEnvelope: 'Associar ao envelope',
+    budgetOfCurrentMonth: 'Orçamento da Data',
+    budgetOf: 'Para:',
     cancel: 'Cancelar',
     close: 'Fechar',
     none: 'Nenhum',
@@ -455,5 +463,6 @@ export const pt = {
     newAccount: "Nova Conta",
     currency: "Moeda",
     rateTypeOfficial: "Oficial (BCV)",
-    rateTypeParallel: "Bursátil/Binance"
+    rateTypeParallel: "Bursátil/Binance",
+    currentMonth: "Mes Actual"
 };

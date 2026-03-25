@@ -24,6 +24,7 @@ interface WalletViewProps {
   displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
   euroRate?: number;
+  initialTab?: 'INCOME' | 'WALLETS';
 }
 
 export const WalletView: React.FC<WalletViewProps> = ({ 
@@ -40,7 +41,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
     onConfirmPayment,
     displayCurrency,
     onToggleDisplayCurrency,
-    euroRate
+    euroRate,
+    initialTab = 'INCOME'
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [isEditing, setIsEditing] = useState(false);
@@ -52,7 +54,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
   const [balance, setBalance] = useState('');
   const [icon, setIcon] = useState('wallet');
   const [payrollClient, setPayrollClient] = useState('');
-  const [activeTab, setActiveTab] = useState<'INCOME' | 'WALLETS'>('INCOME');
+  const [activeTab, setActiveTab] = useState<'INCOME' | 'WALLETS'>(initialTab);
   
   React.useEffect(() => {
     onToggleBottomNav(!isEditing);

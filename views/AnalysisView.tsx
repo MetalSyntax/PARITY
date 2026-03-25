@@ -22,6 +22,7 @@ interface AnalysisViewProps {
   onNavigate: (view: any) => void;
   displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
+  initialViewMode?: 'OVERVIEW' | 'INCOME';
 }
 
 export const AnalysisView: React.FC<AnalysisViewProps> = ({ 
@@ -35,10 +36,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     onToggleBottomNav, 
     onNavigate,
     displayCurrency,
-    onToggleDisplayCurrency
+    onToggleDisplayCurrency,
+    initialViewMode = 'OVERVIEW'
 }) => {
   const t = (key: any) => getTranslation(lang, key);
-  const [viewMode, setViewMode] = useState<'OVERVIEW' | 'INCOME'>('OVERVIEW');
+  const [viewMode, setViewMode] = useState<'OVERVIEW' | 'INCOME'>(initialViewMode);
   const [mainChartType, setMainChartType] = useState<'BAR' | 'LINE'>('BAR');
   const [showDetails, setShowDetails] = useState(false);
   const [showSubs, setShowSubs] = useState(false);

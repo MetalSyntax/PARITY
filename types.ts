@@ -17,7 +17,7 @@ export type RateType = 'OFFICIAL' | 'PARALLEL';
 
 export type Language = 'en' | 'es' | 'pt';
 
-export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES';
+export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES' | 'GOALS' | 'INCOME';
 
 export interface UserProfile {
   name: string;
@@ -59,6 +59,8 @@ export interface Transaction {
   updatedAt?: string;
   scheduledId?: string;
   receipt?: string; // Base64 image
+  budgetMonth?: string; // YYYY-MM
+  skipBalanceUpdate?: boolean;
 }
 
 export interface Category {
@@ -84,6 +86,7 @@ export interface ScheduledPayment {
 export interface Budget {
     categoryId: string;
     limit: number;
+    month?: string; // YYYY-MM
     customName?: string;
     customIcon?: string;
     customColor?: string;
@@ -111,6 +114,7 @@ export interface Goal {
     color: string;
     contributions?: GoalContribution[];
     completed?: boolean;
+    categoryId?: string;
 }
 
 export interface ShoppingItem {

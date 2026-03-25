@@ -68,6 +68,7 @@ export const es = {
   selectAccount: "Seleccionar Cuenta",
   envelopes: "Sobres",
   goals: "Metas",
+  incomeView: "Ingresos",
   manage: "Gestionar",
   addScheduled: "Agregar Planificado",
   editScheduled: "Editar Planificado",
@@ -95,6 +96,13 @@ export const es = {
   limitReached: "Límite alcanzado",
   goalReached: "¡Meta Alcanzada!",
   delete: "Eliminar",
+  addMonth: "Añadir Mes",
+  duplicatePrevious: "Duplicar Mes Anterior",
+  noBudgetsInPreviousMonth: "No hay presupuestos previos",
+  createFirstEnvelopeToStart: "Crea un sobre para comenzar.",
+  associateEnvelope: "Asociar a sobre",
+  budgetOfCurrentMonth: "Presupuesto de Fecha",
+  budgetOf: "Para:",
   cancel: "Cancelar",
   close: "Cerrar",
   none: "Ninguno",
@@ -485,4 +493,5 @@ export const es = {
   editAccount: "Editar Cuenta",
   newAccount: "Nueva Cuenta",
   currency: "Moneda",
+  currentMonth: "Mes Actual"
 };

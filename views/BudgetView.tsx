@@ -92,6 +92,9 @@ interface BudgetViewProps {
   euroRate?: number;
   isBalanceVisible: boolean;
   onSaveTransaction: (data: any) => void;
+  displayCurrency: Currency;
+  onToggleDisplayCurrency: () => void;
+  initialTab?: 'ENVELOPES' | 'GOALS';
 }
 
 export const BudgetView: React.FC<BudgetViewProps> = ({ 
@@ -111,7 +114,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     displayCurrency,
     onToggleDisplayCurrency,
     isBalanceVisible,
-    onSaveTransaction
+    onSaveTransaction,
+    initialTab = 'ENVELOPES'
 }) => {
   const t = (key: any) => getTranslation(lang, key);
 
@@ -124,7 +128,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
   const formatSecondary = (usd: number) => 
     fmtSec(usd, exchangeRate, displayCurrency, isBalanceVisibleLocal, 2, euroRate);
-  const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>('ENVELOPES');
+  const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>(initialTab);
   const [isManaging, setIsManaging] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -136,6 +140,41 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [goalToComplete, setGoalToComplete] = useState<Goal | null>(null);
   const [categorySearch, setCategorySearch] = useState('');
+  const [duplicateLoading, setDuplicateLoading] = useState(false);
+  const [showAddMonthModal, setShowAddMonthModal] = useState(false);
+  const [newMonthInput, setNewMonthInput] = useState(new Date().toISOString().slice(0, 7));
+
+  const handleDeleteMonth = (m: string) => {
+    showConfirm({
+        message: `${t('delete')}: ${m}?`,
+        onConfirm: () => {
+            onUpdateBudgets(budgets.filter(b => b.month !== m));
+            if (selectedMonth === m) setSelectedMonth(new Date().toISOString().slice(0, 7));
+        }
+    });
+  };
+
+  const handleDuplicatePreviousMonth = () => {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const prevDate = new Date(year, month - 2); // month - 2 to go one back
+      const prevMonthStr = prevDate.toISOString().slice(0, 7);
+      
+      const prevBudgets = budgets.filter(b => b.month === prevMonthStr);
+      if (prevBudgets.length === 0) {
+          showConfirm({ message: t('noBudgetsInPreviousMonth') || "No budgets found in previous month to duplicate.", onConfirm: () => {} });
+          return;
+      }
+
+      setDuplicateLoading(true);
+      const duplicated = prevBudgets.map(b => ({
+          ...b,
+          id: Math.random().toString(36).substr(2, 9),
+          month: selectedMonth
+      }));
+      
+      onUpdateBudgets([...budgets, ...duplicated]);
+      setDuplicateLoading(false);
+  };
 
   React.useEffect(() => {
     onToggleBottomNav(!(showGoalModal || showAddBudgetModal || showCustomEnvelopeModal));
@@ -151,12 +190,12 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const handleUpdateLimit = (catId: string, newLimit: string) => {
       const limit = parseFloat(newLimit);
       if (isNaN(limit)) return;
-      onUpdateBudgets(budgets.map(b => b.categoryId === catId ? { ...b, limit } : b));
+      onUpdateBudgets(budgets.map(b => (b.categoryId === catId && (b.month === selectedMonth || (!b.month && selectedMonth === new Date().toISOString().slice(0,7)))) ? { ...b, limit } : b));
   };
 
   const handleAddBudget = (catId: string) => {
-      if (budgets.find(b => b.categoryId === catId)) return;
-      onUpdateBudgets([...budgets, { categoryId: catId, limit: 100 }]);
+      if (budgets.find(b => b.categoryId === catId && b.month === selectedMonth)) return;
+      onUpdateBudgets([...budgets, { categoryId: catId, limit: 100, month: selectedMonth }]);
   };
 
   const handleAddCustomBudget = () => {
@@ -168,7 +207,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
           customName: customName,
           customIcon: customIcon,
           customColor: targetParent ? targetParent.color.split(' ')[1] : 'text-indigo-400',
-          parentCategoryId: parentCategory || undefined
+          parentCategoryId: parentCategory || undefined,
+          month: selectedMonth
       };
       onUpdateBudgets([...budgets, newBudget]);
       setShowCustomEnvelopeModal(false);
@@ -183,7 +223,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       showConfirm({
           message: t('deleteEnvelopeConfirm'),
           onConfirm: () => {
-              onUpdateBudgets(budgets.filter(b => b.categoryId !== catId));
+              onUpdateBudgets(budgets.filter(b => !(b.categoryId === catId && (b.month === selectedMonth || (!b.month && selectedMonth === new Date().toISOString().slice(0, 7))))));
           }
       });
   };
@@ -247,7 +287,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       setGoalToComplete(null);
   };
 
-  const availableCategories = CATEGORIES.filter(c => !budgets.find(b => b.categoryId === c.id));
+  const filteredBudgets = budgets.filter(b => b.month === selectedMonth || (!b.month && selectedMonth === new Date().toISOString().slice(0, 7)));
+  const availableCategories = CATEGORIES.filter(c => !filteredBudgets.find(b => b.categoryId === c.id));
 
   return (
     <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
@@ -298,21 +339,57 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     <div className="max-h-[240px] overflow-y-auto no-scrollbar py-2">
                        {(() => {
                            const months = new Set<string>();
-                           const current = new Date().toISOString().slice(0, 7);
-                           months.add(current);
+                           const currentMonth = new Date().toISOString().slice(0, 7);
+                           
                            transactions.forEach(t => months.add(t.date.slice(0, 7)));
-                           return Array.from(months).sort().reverse().map(m => (
-                               <button
-                                 key={m}
-                                 onClick={() => {
-                                   setSelectedMonth(m);
-                                   setShowMonthPicker(false);
-                                 }}
-                                 className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors hover:bg-white/5 ${selectedMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
-                               >
-                                 {m}
-                               </button>
-                           ));
+                           budgets.forEach(b => {
+                               if (b.month) months.add(b.month);
+                           });
+                           
+                           if (months.size === 0) months.add(currentMonth);
+
+                           const sortedMonths = Array.from(months).sort().reverse();
+
+                           return (
+                             <>
+                               {sortedMonths.map(m => (
+                                 <div key={m} className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors group hover:bg-white/5 ${selectedMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}>
+                                   <button
+                                     onClick={() => {
+                                       setSelectedMonth(m);
+                                       setShowMonthPicker(false);
+                                     }}
+                                     className="flex-1 text-left py-1"
+                                   >
+                                     {m}
+                                   </button>
+                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                       <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteMonth(m);
+                                          }}
+                                          className="p-1 hover:text-red-400"
+                                       >
+                                          <Trash2 size={12} />
+                                       </button>
+                                   </div>
+                                 </div>
+                               ))}
+                               <div className="border-t border-white/5 mt-2 pt-2">
+                                  <button 
+                                    onClick={() => {
+                                        setShowMonthPicker(false);
+                                        setShowAddMonthModal(true);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-3 text-xs font-black text-theme-brand hover:bg-theme-brand/10 transition-colors"
+                                  >
+                                    <Plus size={14} />
+                                    {t('addMonth')}
+                                  </button>
+                               </div>
+                             </>
+                           );
                        })()}
                     </div>
                   </div>
@@ -337,8 +414,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       {/* --- ENVELOPES VIEW --- */}
       {activeTab === 'ENVELOPES' && (
           <div className="animate-in fade-in duration-300">
-              <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-lg font-bold text-theme-primary">{t('digitalEnvelopes')}</h2>
+              <div className="mb-6 flex justify-end items-center">
                 <div className="flex gap-2">
                     <motion.button 
                         whileHover={{ scale: 1.05 }}
@@ -364,9 +440,9 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
               {/* Budget vs Income Summary */}
               {(() => {
-                  const totalBudgetSum = budgets.reduce((acc, b) => acc + b.limit, 0);
+                  const totalBudgetSum = filteredBudgets.reduce((acc, b) => acc + b.limit, 0);
                   const totalIncomeMonth = transactions
-                    .filter(t => t.type === TransactionType.INCOME && t.date.startsWith(selectedMonth))
+                    .filter(t => t.type === TransactionType.INCOME && (t.budgetMonth || t.date).startsWith(selectedMonth))
                     .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
                   
                   const percentOfIncome = totalIncomeMonth > 0 ? (totalBudgetSum / totalIncomeMonth) * 100 : 0;
@@ -451,7 +527,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
               })()}
 
               <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-32">
-                {budgets.map(budget => {
+                {filteredBudgets.map(budget => {
                   let cat = CATEGORIES.find(c => c.id === budget.categoryId);
                   
                   // Handle Custom Budgets which don't have a real category
@@ -468,7 +544,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
                   const targetCatId = budget.parentCategoryId || cat?.id;
                   const spent = transactions
-                    .filter(t => t.category === targetCatId && t.type === TransactionType.EXPENSE && t.date.startsWith(selectedMonth))
+                    .filter(t => t.category === targetCatId && t.type === TransactionType.EXPENSE && (t.budgetMonth || t.date).startsWith(selectedMonth))
                     .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
                   
                   const percent = Math.min((spent / budget.limit) * 100, 100);
@@ -546,14 +622,37 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                       </div>
                       
                       {!isManaging ? (
-                          <div className="h-2.5 w-full bg-[#1e1e1e] rounded-full overflow-hidden">
-                            <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${percent}%` }}
-                                transition={{ duration: 1, ease: "easeOut" }}
-                                className={`h-full rounded-full ${statusColor} shadow-[0_0_10px_rgba(0,0,0,0.5)]`} 
-                            />
-                          </div>
+                          <>
+                             <div className="h-2.5 w-full bg-[#1e1e1e] rounded-full overflow-hidden">
+                               <motion.div 
+                                   initial={{ width: 0 }}
+                                   animate={{ width: `${percent}%` }}
+                                   transition={{ duration: 1, ease: "easeOut" }}
+                                   className={`h-full rounded-full ${statusColor} shadow-[0_0_10px_rgba(0,0,0,0.5)]`} 
+                               />
+                             </div>
+                             
+                             {/* Associated Goals Progress */}
+                             <div className="mt-4 flex flex-col gap-2">
+                                {goals.filter(g => g.categoryId === budget.categoryId && !g.completed).map(g => (
+                                    <div key={g.id} className="flex flex-col gap-1">
+                                        <div className="flex justify-between items-center text-[9px] uppercase tracking-tighter font-black text-theme-secondary">
+                                            <div className="flex items-center gap-1">
+                                                <Trophy size={10} className="text-yellow-400" />
+                                                <span className="truncate">{g.name}</span>
+                                            </div>
+                                            <span className="shrink-0">{Math.min((g.savedAmount / g.targetAmount) * 100, 100).toFixed(0)}%</span>
+                                        </div>
+                                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <div 
+                                               className="h-full bg-yellow-400/50 rounded-full" 
+                                               style={{ width: `${(g.savedAmount / g.targetAmount) * 100}%` }} 
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                             </div>
+                          </>
                       ) : (
                           <motion.div 
                             initial={{ opacity: 0, height: 0 }}
@@ -579,10 +678,35 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     </motion.div>
                   );
                 })}
-                
-                {isManaging && budgets.length === 0 && (
-                     <div className="text-center p-8 border-2 border-dashed border-white/10 rounded-3xl text-theme-secondary">
-                         {t('noEnvelopes')}
+                {filteredBudgets.length === 0 && (
+                     <div className="text-center p-12 border-2 border-dashed border-white/10 rounded-[2.5rem] bg-theme-surface/30 flex flex-col items-center gap-6">
+                         <div className="w-20 h-20 rounded-full bg-theme-surface border border-white/5 flex items-center justify-center text-4xl shadow-2xl">
+                             🎨
+                         </div>
+                         <div>
+                             <p className="text-theme-primary font-black text-lg mb-1">{t('noEnvelopes')}</p>
+                             <p className="text-theme-secondary text-xs">{t('createFirstEnvelopeToStart') || 'Create your first envelope to start budgeting'}</p>
+                         </div>
+                         <div className="flex flex-col sm:flex-row gap-3">
+                             <button 
+                                onClick={() => { 
+                                    setIsManaging(true); 
+                                    setShowAddBudgetModal(true); 
+                                }}
+                                className="bg-theme-brand text-white px-8 py-4 rounded-2xl font-black text-sm shadow-2xl shadow-theme-brand/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                             >
+                                <Plus size={18} />
+                                {t('addBudget')}
+                             </button>
+                             <button 
+                                onClick={handleDuplicatePreviousMonth}
+                                disabled={duplicateLoading}
+                                className="bg-theme-surface border border-white/5 text-theme-primary px-8 py-4 rounded-2xl font-black text-sm hover:bg-white/5 transition-all flex items-center gap-2 "
+                             >
+                                <History size={18} />
+                                {t('duplicatePrevious') || 'Restaurar Anterior'}
+                             </button>
+                         </div>
                      </div>
                 )}
               </motion.div>
@@ -651,7 +775,56 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
              </motion.div>
           </motion.div>
        )}
-       </AnimatePresence>
+      </AnimatePresence>
+
+      <AnimatePresence>
+       {showAddMonthModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          >
+             <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-theme-surface w-full max-w-sm rounded-[32px] border border-white/10 p-8 shadow-2xl relative"
+             >
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-black text-xl text-theme-primary">{t('addMonth')}</h3>
+                    <button onClick={() => setShowAddMonthModal(false)} className="text-theme-secondary hover:text-theme-primary">
+                        <X size={24} />
+                    </button>
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-widest block mb-2">{t('selectDate') || 'Seleccionar Mes'}</label>
+                        <input 
+                            type="month" 
+                            value={newMonthInput}
+                            onChange={(e) => setNewMonthInput(e.target.value)}
+                            className="w-full bg-theme-bg border border-white/5 rounded-2xl px-4 py-4 text-theme-primary font-bold focus:border-theme-brand outline-none transition-all"
+                        />
+                    </div>
+
+                    <button 
+                        onClick={() => {
+                            setSelectedMonth(newMonthInput);
+                            setShowAddMonthModal(false);
+                            // Ensure it's showing the manager view for the new month
+                            setIsManaging(true);
+                        }}
+                        className="w-full py-4 bg-theme-brand text-white rounded-2xl font-black shadow-lg shadow-brand/20 active:scale-95 transition-all"
+                    >
+                        {t('addMonth')}
+                    </button>
+                </div>
+             </motion.div>
+          </motion.div>
+       )}
+      </AnimatePresence>
 
       {/* Custom Envelope Modal */}
       <AnimatePresence>
@@ -930,7 +1103,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     const txs = transactions.filter(t => 
                       t.category === selectedBudgetTransactions.catId && 
                       t.type === TransactionType.EXPENSE && 
-                      t.date.startsWith(selectedMonth)
+                      (t.budgetMonth || t.date).startsWith(selectedMonth)
                     ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
                     if (txs.length === 0) return (
@@ -998,6 +1171,7 @@ const GoalForm = ({
     const [date, setDate] = useState(initialData?.deadline || '');
     const [icon, setIcon] = useState(initialData?.icon || 'target');
     const [contributions, setContributions] = useState<any[]>(initialData?.contributions || []);
+    const [selectedCategoryId, setSelectedCategoryId] = useState(initialData?.categoryId || '');
 
     // Contribution form state
     const [selectedAccount, setSelectedAccount] = useState(accounts[0]?.id || '');
@@ -1067,7 +1241,8 @@ const GoalForm = ({
             deadline: date || new Date().toISOString().split('T')[0],
             icon,
             color: initialData?.color || 'from-indigo-600 to-purple-600',
-            contributions: newContributions
+            contributions: newContributions,
+            categoryId: selectedCategoryId
         });
 
         // Reset
@@ -1137,6 +1312,27 @@ const GoalForm = ({
                         <input type="date" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 pl-10 text-white outline-none focus:border-indigo-500" value={date} onChange={e => setDate(e.target.value)} />
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">
                             <Calendar size={18} />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">{t('associateEnvelope') || 'Asociar a sobre'}</label>
+                    <div className="relative">
+                        <select 
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500 appearance-none"
+                            value={selectedCategoryId}
+                            onChange={e => setSelectedCategoryId(e.target.value)}
+                        >
+                            <option value="" className="bg-theme-surface">{t('none')}</option>
+                            {CATEGORIES.map(cat => (
+                                <option key={cat.id} value={cat.id} className="bg-theme-surface">
+                                    {cat.icon} {cat.name}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">
+                            <ChevronDown size={14} />
                         </div>
                     </div>
                 </div>

@@ -66,6 +66,7 @@ export const en = {
     selectAccount: 'Select Account',
     envelopes: 'Envelopes',
     goals: 'Goals',
+    incomeView: 'Income',
     manage: 'Manage',
     addScheduled: 'Add Scheduled',
     editScheduled: 'Edit Scheduled',
@@ -93,6 +94,13 @@ export const en = {
     limitReached: 'Limit reached',
     goalReached: 'Goal Reached!',
     delete: 'Delete',
+    addMonth: 'Add Month',
+    duplicatePrevious: 'Duplicate Previous Month',
+    noBudgetsInPreviousMonth: 'No previous budgets found',
+    createFirstEnvelopeToStart: 'Create an envelope to start.',
+    associateEnvelope: 'Associate with envelope',
+    budgetOfCurrentMonth: 'Budget of Date',
+    budgetOf: 'For:',
     cancel: 'Cancel',
     close: 'Close',
     none: 'None',
@@ -470,5 +478,6 @@ export const en = {
     newAccount: "New Account",
     currency: "Currency",
     rateTypeOfficial: "Official Bank Rate",
-    rateTypeParallel: "Parallel/Binance Rate"
+    rateTypeParallel: "Parallel/Binance Rate",
+    currentMonth: "Current Month"
 };

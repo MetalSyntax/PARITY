@@ -275,6 +275,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               { id: 'PROFILE', name: t('profile') },
               { id: 'WALLET', name: t('wallet') },
               { id: 'ANALYSIS', name: t('analysis') },
+              { id: 'GOALS', name: t('goals') },
+              { id: 'INCOME', name: t('incomeView') },
               { id: 'BUDGET', name: t('envelopes') },
               { id: 'SCHEDULED', name: t('scheduled') },
               { id: 'TRANSACTIONS', name: t('transactions') },

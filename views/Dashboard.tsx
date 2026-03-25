@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon } from "lucide-react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon, Trophy } from "lucide-react";
 import { motion, Reorder, useDragControls } from "framer-motion";
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
@@ -681,6 +681,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       { id: "SCHEDULED", label: t("scheduled"), icon: <Calendar1 size={20} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
                       { id: "ANALYSIS", label: t("analysis"), icon: <ChartArea size={20} />, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
                       { id: "WALLET", label: t("wallet"), icon: <Wallet size={20} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+                      { id: "GOALS", label: t("goals"), icon: <Trophy size={20} />, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
+                      { id: "INCOME", label: t("incomeView"), icon: <TrendingUp size={20} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
                       { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={20} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
                       { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={20} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
                       { id: "SHOPPING_LIST", label: t("shoppingList"), icon: <ShoppingCart size={20} />, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },

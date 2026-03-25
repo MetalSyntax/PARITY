@@ -8,7 +8,7 @@ declare global {
 }
 const Tesseract = window.Tesseract;
 import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
-import { TransactionType, Currency, Account, Language, Transaction } from '../types';
+import { TransactionType, Currency, Account, Language, Transaction, Budget } from '../types';
 import { CATEGORIES, getSmartCategories } from '../constants';
 import { getTranslation } from '../i18n';
 import { div } from 'framer-motion/client';
@@ -43,9 +43,11 @@ interface AddTransactionProps {
   initialData?: Transaction | null;
   showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
   euroRate?: number;
+  transactions: Transaction[];
+  budgets: Budget[];
 }
 
-export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, euroRate, accounts, lang, initialData, showAlert }) => {
+export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, euroRate, accounts, lang, initialData, showAlert, transactions, budgets }) => {
   const [amountStr, setAmountStr] = useState(initialData ? initialData.amount.toString() : '0');
   const [currency, setCurrency] = useState<Currency>(initialData ? initialData.originalCurrency : Currency.USD);
   const [type, setType] = useState<TransactionType>(initialData ? initialData.type : TransactionType.EXPENSE);
@@ -109,6 +111,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [showMenu, setShowMenu] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [date, setDate] = useState(initialData ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [budgetMonth, setBudgetMonth] = useState(initialData?.budgetMonth || '');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   const [showScanOptions, setShowScanOptions] = useState(false);
@@ -117,6 +120,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [showCropModal, setShowCropModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [receiptImage, setReceiptImage] = useState<string | null>(initialData?.receipt || null);
+  const [showBudgetMonthPicker, setShowBudgetMonthPicker] = useState(false);
   const [cropBox, setCropBox] = useState({ x: 20, y: 30, width: 60, height: 40 }); // Relative %
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -536,6 +540,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       toAccountId: type === TransactionType.TRANSFER ? toAccountId : undefined,
       note,
       date: new Date(date).toISOString(),
+      budgetMonth: budgetMonth || undefined,
       fee: finalFee,
       scheduledId: initialData?.scheduledId,
       receipt: receiptImage
@@ -1015,6 +1020,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         onChange={(e) => setDate(e.target.value)}
                         className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 pl-3 text-theme-primary outline-none focus:border-theme-soft transition-colors text-sm font-bold"
                     />
+
                  </div>
              </div>
              
@@ -1039,7 +1045,63 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       </div>
 
       {/* Keypad */}
-      <div className="bg-theme-bg px-4 pb-6 pt-2 border-t border-white/5">
+      <div className="bg-theme-bg px-4 pb-6 pt-2 border-t border-white/5 relative">
+         {/* Budget Month Picker Toolbar */}
+         <div className="flex justify-center mb-4 pt-1">
+            <div className="relative w-full max-w-[200px]">
+                <button 
+                    type="button"
+                    onClick={() => setShowBudgetMonthPicker(!showBudgetMonthPicker)}
+                    className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-1.5 flex items-center justify-between text-[11px] text-theme-secondary font-black uppercase tracking-widest hover:bg-theme-brand/10 hover:text-theme-brand transition-all cursor-pointer"
+                >
+                    <span className="flex items-center gap-2">
+                        <Calendar size={12} />
+                        {budgetMonth ? budgetMonth : (t('currentMonth') || 'Mes Actual')}
+                    </span>
+                    <ChevronDown size={12} className={`transition-transform duration-200 ${showBudgetMonthPicker ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showBudgetMonthPicker && (
+                    <>
+                        <div className="fixed inset-0 z-[60]" onClick={() => setShowBudgetMonthPicker(false)} />
+                        <div className="absolute bottom-full mb-2 left-0 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 min-w-[160px]">
+                            <div className="max-h-[200px] overflow-y-auto no-scrollbar py-2">
+                                <div className="px-4 py-1 mb-1 border-b border-white/5">
+                                    <p className="text-[10px] text-theme-secondary font-black uppercase tracking-tighter opacity-50">{t('budgetOf') || 'Para:'}</p>
+                                </div>
+                                <button 
+                                    onClick={() => { setBudgetMonth(''); setShowBudgetMonthPicker(false); }}
+                                    className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors hover:bg-white/5 ${!budgetMonth ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
+                                >
+                                    {t('budgetOfCurrentMonth') || 'Presupuesto de Fecha'}
+                                </button>
+                                <div className="h-px bg-white/5 mx-2 my-1" />
+                                {(() => {
+                                    const months = new Set<string>();
+                                    const current = new Date().toISOString().slice(0, 7);
+                                    
+                                    transactions.forEach(t => months.add(t.date.slice(0, 7)));
+                                    budgets.forEach(b => { if(b.month) months.add(b.month) });
+                                    
+                                    if (months.size === 0) months.add(current);
+                                    
+                                    const sortedMonths = Array.from(months).sort().reverse();
+                                    return sortedMonths.map(m => (
+                                        <button 
+                                            key={m}
+                                            onClick={() => { setBudgetMonth(m); setShowBudgetMonthPicker(false); }}
+                                            className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors hover:bg-white/5 ${budgetMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
+                                        >
+                                            {m}
+                                        </button>
+                                    ));
+                                })()}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+         </div>
          {isCalculatorMode && (
            <div className="flex justify-between gap-2 mb-2 px-2">
              {['/', '*', '-', '+'].map(op => (

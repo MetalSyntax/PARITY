@@ -29,8 +29,19 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
   };
 
   const calculatedResult = () => {
-    const amt = convertAmount === '' ? 1 : (parseFloat(convertAmount) || 0);
     const eRate = euroRate || 1;
+    let amt = convertAmount === '' ? 0 : (parseFloat(convertAmount) || 0);
+    
+    // If empty input, default to 1 unit of foreign currency if converting FROM USD/EUR
+    // Or default to exchangeRate if converting FROM VES
+    if (convertAmount === '') {
+      if (fromCurrency === Currency.USD || fromCurrency === Currency.USDT || fromCurrency === Currency.EUR) {
+          amt = 1;
+      } else if (fromCurrency === Currency.VES) {
+          amt = toCurrency === Currency.EUR ? eRate : exchangeRate;
+      }
+    }
+
     let result = amt;
 
     // Convert from source to VES first
@@ -118,7 +129,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
                  </div>
               </div>
               <div className={`text-xl font-black transition-all duration-300 ${isConverterFocused ? 'text-theme-brand' : (!convertAmount ? 'text-theme-secondary opacity-40' : 'text-theme-primary')}`}>
-                 {convertAmount || '1'}
+                 {convertAmount || (fromCurrency === Currency.VES ? (toCurrency === Currency.EUR ? (euroRate || exchangeRate) : exchangeRate).toFixed(2) : '1')}
               </div>
             </motion.button>
 

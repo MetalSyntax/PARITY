@@ -1035,26 +1035,7 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
             />
           )}
-          {currentView === 'BUDGET' && (
-            <BudgetView
-              onBack={() => setCurrentView('DASHBOARD')}
-              transactions={transactions}
-              lang={userProfile.language}
-              budgets={budgets}
-              goals={goals}
-              accounts={accounts}
-              onUpdateBudgets={setBudgets}
-              onUpdateGoals={setGoals}
-              onUpdateAccounts={setAccounts}
-              onToggleBottomNav={setIsNavVisible}
-              showConfirm={showConfirm}
-              exchangeRate={exchangeRate}
-              displayCurrency={displayCurrency}
-              onToggleDisplayCurrency={toggleDisplayCurrency}
-              isBalanceVisible={isBalanceVisible}
-              onSaveTransaction={handleSaveTransaction}
-            />
-          )}
+
           {currentView === 'ANALYSIS' && (
             <AnalysisView
               onBack={() => setCurrentView('DASHBOARD')}
@@ -1084,6 +1065,7 @@ function AppContent() {
               onConfirmPayment={handleConfirmScheduledPayment}
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
+              initialTab="WALLETS"
             />
           )}
           {currentView === 'PROFILE' && (
@@ -1107,6 +1089,84 @@ function AppContent() {
               onUpdateNavbarFavorites={setNavbarFavorites}
               listCloudBackups={listCloudBackups}
               onNavigate={(v) => setCurrentView(v)}
+            />
+          )}
+          {currentView === 'BUDGET' && (
+            <BudgetView 
+              onBack={() => setCurrentView('DASHBOARD')}
+              transactions={transactions}
+              lang={userProfile.language}
+              budgets={budgets}
+              goals={goals}
+              accounts={accounts}
+              onUpdateBudgets={setBudgets}
+              onUpdateGoals={setGoals}
+              onUpdateAccounts={setAccounts}
+              onToggleBottomNav={setIsNavVisible}
+              showConfirm={showConfirm}
+              exchangeRate={exchangeRate}
+              euroRate={euroRate}
+              isBalanceVisible={isBalanceVisible}
+              onSaveTransaction={handleSaveTransaction}
+              displayCurrency={displayCurrency}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
+              initialTab="ENVELOPES"
+            />
+          )}
+          {currentView === 'GOALS' && (
+            <BudgetView 
+              onBack={() => setCurrentView('DASHBOARD')}
+              transactions={transactions}
+              lang={userProfile.language}
+              budgets={budgets}
+              goals={goals}
+              accounts={accounts}
+              onUpdateBudgets={setBudgets}
+              onUpdateGoals={setGoals}
+              onUpdateAccounts={setAccounts}
+              onToggleBottomNav={setIsNavVisible}
+              showConfirm={showConfirm}
+              exchangeRate={exchangeRate}
+              euroRate={euroRate}
+              isBalanceVisible={isBalanceVisible}
+              onSaveTransaction={handleSaveTransaction}
+              displayCurrency={displayCurrency}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
+              initialTab="GOALS"
+            />
+          )}
+          {currentView === 'ANALYSIS' && (
+            <AnalysisView 
+              onBack={() => setCurrentView('DASHBOARD')}
+              transactions={transactions}
+              lang={userProfile.language}
+              scheduledPayments={scheduledPayments}
+              exchangeRate={exchangeRate}
+              euroRate={euroRate}
+              isBalanceVisible={isBalanceVisible}
+              onToggleBottomNav={setIsNavVisible}
+              onNavigate={setCurrentView}
+              displayCurrency={displayCurrency}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
+              initialViewMode="OVERVIEW"
+            />
+          )}
+          {currentView === 'INCOME' && (
+            <WalletView 
+              onBack={() => setCurrentView('DASHBOARD')}
+              accounts={accounts}
+              onUpdateAccounts={handleUpdateAccounts}
+              lang={userProfile.language}
+              transactions={transactions}
+              exchangeRate={exchangeRate}
+              scheduledPayments={scheduledPayments}
+              isBalanceVisible={isBalanceVisible}
+              onToggleBottomNav={setIsNavVisible}
+              showConfirm={showConfirm}
+              onConfirmPayment={handleConfirmScheduledPayment}
+              displayCurrency={displayCurrency}
+              onToggleDisplayCurrency={toggleDisplayCurrency}
+              initialTab="INCOME"
             />
           )}
           {(currentView === 'TRANSACTIONS' || currentView === 'INVOICES') && (
@@ -1263,6 +1323,8 @@ function AppContent() {
             euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
             accounts={accounts}
             lang={userProfile.language}
+            transactions={transactions}
+            budgets={budgets}
             initialData={editingTransaction || (shoppingItemToConvert ? {
                 id: '', 
                 amount: shoppingItemToConvert.price || 0,
