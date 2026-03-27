@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite --port 4000",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docs": "typedoc",
+    "test": "jest",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run"
   },
   "dependencies": {
     "chart.js": "^4.5.1",
@@ -19,8 +23,17 @@
     "workbox-window": "^7.4.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "cypress": "^15.13.0",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "ts-jest": "^29.4.6",
+    "typedoc": "^0.28.18",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^1.2.0"

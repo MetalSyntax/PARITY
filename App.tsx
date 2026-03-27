@@ -35,6 +35,11 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const STORAGE_KEY = 'parity_data_v3';
 
+/**
+ * Main application component that wraps the application with necessary providers.
+ * Initializes the ThemeProvider for dark/light mode support.
+ * @returns {JSX.Element} The rendered application wrapped in a ThemeProvider.
+ */
 export default function App() {
   return (
     <ThemeProvider>
@@ -43,6 +48,11 @@ export default function App() {
   );
 }
 
+/**
+ * Internal component containing the primary application state and layout logic.
+ * Manages views, authentication, storage, transactions state, and offline PWA capabilities.
+ * @returns {JSX.Element} The main layout of the application.
+ */
 function AppContent() {
   const [currentView, setCurrentView] = useState<ViewState>('DASHBOARD');
   const [showAdd, setShowAdd] = useState(false);
