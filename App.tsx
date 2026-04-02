@@ -6,6 +6,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { TransferView } from './views/TransferView';
 import { BudgetView } from './views/BudgetView';
 import { AnalysisView } from './views/AnalysisView';
+import { FiscalReportView } from "./views/FiscalReportView";
 import { WalletView } from './views/WalletView';
 import { ProfileView } from './views/ProfileView';
 import { Onboarding } from './views/Onboarding';
@@ -26,10 +27,12 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { INITIAL_RATE, INITIAL_USD_RATE_PARALLEL, INITIAL_EURO_RATE, INITIAL_EURO_RATE_PARALLEL, MOCK_ACCOUNTS, CATEGORIES } from './constants';
 import { formatAmount } from './utils/formatUtils';
-import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList } from './types';
+import { projectMonthEndSpending, calculateRunway, checkBudgetForecasts } from './utils/forecast';
+import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList, EntityType } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
+import { syncService } from './services/sync';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -58,6 +61,27 @@ function AppContent() {
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(true);
+  const [syncPendingCount, setSyncPendingCount] = useState(0);
+
+  useEffect(() => {
+    const handleSyncReset = async () => {
+      const count = await syncService.getPendingCount();
+      setSyncPendingCount(count);
+    };
+    handleSyncReset();
+
+    const handleSyncReq = () => {
+        // Queue processor logic
+    };
+    window.addEventListener('parity-sync-required', handleSyncReq);
+    return () => window.removeEventListener('parity-sync-required', handleSyncReq);
+  }, []);
+
+  const pushToSyncQueue = async (type: EntityType, id: string, action: 'CREATE'|'UPDATE'|'DELETE', payload: any) => {
+    await syncService.addToQueue(type, id, action, payload);
+    const count = await syncService.getPendingCount();
+    setSyncPendingCount(count);
+  };
   
   // PWA Registration with Prompt
   const {
@@ -186,13 +210,18 @@ function AppContent() {
     localData: {
         userId: userProfile.name, // Extra metadata
         lastBackup: new Date().toISOString(),
-        exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals
+        exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals, shoppingLists, syncQueue: [] // We don't backup the queue itself in the target file
     },
     setLocalData: (data: any) => {
         if (data.userProfile) handleImportData(data, true); 
     },
     googleClientId: GOOGLE_CLIENT_ID,
-    onSyncSuccess: () => showAlert('alert_syncSuccess', 'success'),
+    onSyncSuccess: () => {
+        syncService.markQueueAsSynced().then(() => {
+            syncService.getPendingCount().then(c => setSyncPendingCount(c));
+        });
+        showAlert('alert_syncSuccess', 'success');
+    },
     onSyncError: (e) => showAlert('alert_syncError', 'error'),
     onLoginError: (msg) => {
         setAlertConfig({ message: msg, type: 'error' });
@@ -343,11 +372,45 @@ function AppContent() {
         const currentPayments = scheduledPaymentsRef.current;
         const currentExchangeRate = exchangeRateRef.current;
         const currentEuroRate = euroRateRef.current;
+        const currentBudgets = budgetsRef.current;
+        const currentTransactions = transactionsRef.current;
 
-        if (!currentProfile.notificationsEnabled || !currentPayments.length) return;
+        if (!currentProfile.notificationsEnabled) return;
         
         const now = new Date();
         const todayStr = now.toISOString().split('T')[0];
+        
+        // Smart Alerts: Check Budget Forecasts
+        const overBudgetCategories = checkBudgetForecasts(currentTransactions, currentBudgets, now);
+        
+        overBudgetCategories.forEach(categoryId => {
+            const budget = currentBudgets.find(b => b.categoryId === categoryId);
+            if (!budget) return;
+            const categoryObj = CATEGORIES.find(c => c.id === categoryId);
+            const categoryName = categoryObj ? t(categoryObj.name as any) : (budget.customName || categoryId);
+            
+            const alertKey = `parity_budget_alert_${categoryId}_${todayStr}`;
+            if (!localStorage.getItem(alertKey)) {
+                // Fallback translations if i18n not yet updated
+                const msgTmp = t('budgetAlertBody') === 'budgetAlertBody' ? `You are on track to exceed your budget for ${categoryName}.` : t('budgetAlertBody');
+                const titleTmp = t('budgetAlertTitle') === 'budgetAlertTitle' ? 'Smart Alert: Budget Risk' : t('budgetAlertTitle');
+                const msg = msgTmp.replace('{category}', categoryName as string);
+                
+                showAlert(msg, 'error');
+                
+                if (Notification.permission === 'granted') {
+                    new Notification(titleTmp as string, {
+                        body: msg,
+                        icon: '/icon-192x192.png',
+                        badge: '/icon-192x192.png'
+                    });
+                }
+                localStorage.setItem(alertKey, 'true');
+            }
+        });
+
+        if (!currentPayments.length) return;
+        
         const leadDays = currentProfile.notificationLeadTime || 0;
         let updated = false;
         const newPayments = [...currentPayments];
@@ -391,13 +454,17 @@ function AppContent() {
     const userProfileRef = useRef(userProfile);
     const exchangeRateRef = useRef(exchangeRate);
     const euroRateRef = useRef(euroRate);
+    const budgetsRef = useRef(budgets);
+    const transactionsRef = useRef(transactions);
 
     useEffect(() => {
         scheduledPaymentsRef.current = scheduledPayments;
         userProfileRef.current = userProfile;
         exchangeRateRef.current = exchangeRate;
         euroRateRef.current = euroRate;
-    }, [scheduledPayments, userProfile, exchangeRate, euroRate]);
+        budgetsRef.current = budgets;
+        transactionsRef.current = transactions;
+    }, [scheduledPayments, userProfile, exchangeRate, euroRate, budgets, transactions]);
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -618,6 +685,17 @@ function AppContent() {
 
   const handleUpdateAccounts = (newAccounts: Account[]) => {
     setAccounts(newAccounts);
+    pushToSyncQueue('ACCOUNT', 'all_accounts', 'UPDATE', newAccounts);
+  };
+
+  const handleUpdateBudgets = (newBudgets: Budget[]) => {
+    setBudgets(newBudgets);
+    pushToSyncQueue('BUDGET', 'all_budgets', 'UPDATE', newBudgets);
+  };
+
+  const handleUpdateGoals = (newGoals: Goal[]) => {
+    setGoals(newGoals);
+    pushToSyncQueue('GOAL', 'all_goals', 'UPDATE', newGoals);
   };
 
   const performDeleteTransaction = (id: string): Account[] | null => {
@@ -672,6 +750,7 @@ function AppContent() {
         if (updated && !skipStateUpdate) {
             setAccounts(updated);
             setTransactions(prev => prev.filter(t => t.id !== id));
+            pushToSyncQueue('TRANSACTION', id, 'DELETE', null);
         }
         return updated;
     }
@@ -683,6 +762,7 @@ function AppContent() {
             if (updated) {
                 setAccounts(updated);
                 setTransactions(prev => prev.filter(t => t.id !== id));
+                pushToSyncQueue('TRANSACTION', id, 'DELETE', null);
             }
         }
     });
@@ -720,8 +800,10 @@ function AppContent() {
 
     setTransactions(prev => {
         if (data.id) {
+            pushToSyncQueue('TRANSACTION', newTransaction.id, 'UPDATE', newTransaction);
             return [newTransaction, ...prev.filter(t => t.id !== data.id)];
         }
+        pushToSyncQueue('TRANSACTION', newTransaction.id, 'CREATE', newTransaction);
         return [newTransaction, ...prev];
     });
 
@@ -1016,6 +1098,9 @@ function AppContent() {
               onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
               hasFetchedRates={hasFetchedRates}
               onUpdateProfile={setUserProfile}
+              syncPendingCount={syncPendingCount}
+              isSyncing={isSyncing}
+              onSync={exportToCloud}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -1058,6 +1143,19 @@ function AppContent() {
               onNavigate={setCurrentView}
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
+            />
+          )}
+
+          {currentView === 'FISCAL_REPORT' && (
+            <FiscalReportView
+              onBack={() => setCurrentView('DASHBOARD')}
+              transactions={transactions}
+              accounts={accounts}
+              lang={userProfile.language}
+              exchangeRate={exchangeRate}
+              euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
+              displayCurrency={displayCurrency}
+              isBalanceVisible={isBalanceVisible}
             />
           )}
           {currentView === 'WALLET' && (
@@ -1109,8 +1207,8 @@ function AppContent() {
               budgets={budgets}
               goals={goals}
               accounts={accounts}
-              onUpdateBudgets={setBudgets}
-              onUpdateGoals={setGoals}
+              onUpdateBudgets={handleUpdateBudgets}
+              onUpdateGoals={handleUpdateGoals}
               onUpdateAccounts={setAccounts}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
@@ -1132,7 +1230,7 @@ function AppContent() {
               goals={goals}
               accounts={accounts}
               onUpdateBudgets={setBudgets}
-              onUpdateGoals={setGoals}
+              onUpdateGoals={handleUpdateGoals}
               onUpdateAccounts={setAccounts}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
@@ -1181,6 +1279,7 @@ function AppContent() {
           )}
           {(currentView === 'TRANSACTIONS' || currentView === 'INVOICES') && (
             <TransactionsListView
+              key={currentView}
               onBack={() => setCurrentView('DASHBOARD')}
               transactions={transactions}
               accounts={accounts}

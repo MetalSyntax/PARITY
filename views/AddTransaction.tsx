@@ -112,6 +112,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [isListening, setIsListening] = useState(false);
   const [date, setDate] = useState(initialData ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
   const [budgetMonth, setBudgetMonth] = useState(initialData?.budgetMonth || '');
+  const [fiscalTag, setFiscalTag] = useState<'TAXABLE_INCOME' | 'DEDUCTIBLE_EXPENSE' | 'NEUTRAL'>(initialData?.fiscalTag || 'NEUTRAL');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   const [showScanOptions, setShowScanOptions] = useState(false);
@@ -541,6 +542,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       note,
       date: new Date(date).toISOString(),
       budgetMonth: budgetMonth || undefined,
+      fiscalTag: type !== TransactionType.TRANSFER ? fiscalTag : 'NEUTRAL',
       fee: finalFee,
       scheduledId: initialData?.scheduledId,
       receipt: receiptImage
@@ -1042,6 +1044,43 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                  </button>
              </div>
         </div>
+        
+        {/* Fiscal Tag Selection (Only for Income/Expense) */}
+        {type !== TransactionType.TRANSFER && (
+             <div className="mb-6 animate-in slide-in-from-top-4 duration-500">
+                 <div className="flex items-center justify-between mb-2 px-1">
+                    <label className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.2em] opacity-60 flex items-center gap-2">
+                        <Sparkles size={12} className="text-theme-brand" />
+                        {t('fiscalTag')}
+                    </label>
+                    <span className="text-[10px] text-theme-secondary font-black uppercase tracking-tighter opacity-30">Option</span>
+                 </div>
+                 <div className="flex bg-theme-surface/50 backdrop-blur-md border border-white/5 rounded-2xl p-1.5 gap-1.5">
+                     <button
+                        onClick={() => setFiscalTag('NEUTRAL')}
+                        className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${fiscalTag === 'NEUTRAL' ? 'bg-white/10 text-theme-primary shadow-lg ring-1 ring-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
+                     >
+                         {t('neutral')}
+                     </button>
+                     {type === TransactionType.INCOME && (
+                         <button
+                            onClick={() => setFiscalTag('TAXABLE_INCOME')}
+                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${fiscalTag === 'TAXABLE_INCOME' ? 'bg-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/20' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
+                         >
+                             {t('taxableIncome')}
+                         </button>
+                     )}
+                     {type === TransactionType.EXPENSE && (
+                         <button
+                            onClick={() => setFiscalTag('DEDUCTIBLE_EXPENSE')}
+                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${fiscalTag === 'DEDUCTIBLE_EXPENSE' ? 'bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500/20' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
+                         >
+                             {t('deductibleExpense')}
+                         </button>
+                     )}
+                 </div>
+             </div>
+        )}
       </div>
 
       {/* Keypad */}

@@ -38,7 +38,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<TransactionType | 'ALL'>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string | 'ALL'>('ALL');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState<string | 'ALL'>('ALL'); // YYYY-MM
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [viewMode, setViewMode] = useState<'LIST' | 'INVOICES'>(initialViewMode);
@@ -53,7 +53,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
       
       const matchesType = filterType === 'ALL' || tx.type === filterType;
       const matchesCategory = selectedCategory === 'ALL' || tx.category === selectedCategory;
-      const matchesMonth = tx.date.startsWith(selectedMonth);
+      const matchesMonth = selectedMonth === 'ALL' || tx.date.startsWith(selectedMonth);
       
       return matchesSearch && matchesType && matchesCategory && matchesMonth;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -103,6 +103,14 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           </div>
           
           <div className="ml-auto flex items-center gap-2">
+            <div className="hidden sm:flex flex-col items-end mr-2">
+               <span className="text-[10px] font-black text-theme-brand uppercase tracking-tighter">
+                 {filteredTransactions.length} {t('transactions') || 'Transacciones'}
+               </span>
+               <span className="text-[8px] font-bold text-theme-secondary opacity-50 uppercase tracking-tighter">
+                 {filteredTransactions.filter(tx => tx.receipt).length} {t('invoices') || 'Facturas'}
+               </span>
+            </div>
             <button 
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
@@ -129,9 +137,15 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                      const current = new Date().toISOString().slice(0, 7);
                      months.add(current);
                      transactions.forEach(t => months.add(t.date.slice(0, 7)));
-                     return Array.from(months).sort().reverse().map(m => (
-                         <option key={m} value={m}>{m}</option>
-                     ));
+                     const sortedMonths = Array.from(months).sort().reverse();
+                     return (
+                       <>
+                         <option value="ALL">📅 {t('allPeriods') || t('allTime') || t('all') || 'Todos los periodos'}</option>
+                         {sortedMonths.map(m => (
+                           <option key={m} value={m}>{m}</option>
+                         ))}
+                       </>
+                     );
                  })()}
               </select>
               <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" />

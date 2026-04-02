@@ -127,7 +127,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="bg-theme-surface w-full max-w-sm rounded-t-[32px] sm:rounded-[32px] border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+          className="bg-theme-surface w-full max-w-sm sm:max-w-5xl rounded-t-[32px] sm:rounded-[32px] border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
         >
           <div className="p-6 border-b border-theme-soft flex justify-between items-center bg-theme-surface/50 shrink-0">
             <h2 className="text-xl font-black text-theme-primary tracking-tight">{t('settings')}</h2>
@@ -142,12 +142,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] mb-4 flex items-center gap-2 opacity-60">
                   <Palette size={14} className="text-theme-brand"/> {t('appearance')}
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">
                   {availableThemes.map(theme => (
                       <button
                           key={theme.id}
                           onClick={() => setTheme(theme.id as any)}
-                          className={`p-3 rounded-2xl border text-xs font-black transition-all ${currentTheme === theme.id ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-theme-brand/20' : 'bg-theme-bg border-theme-soft text-theme-secondary hover:bg-theme-soft'}`}
+                          className={`p-3 rounded-2xl border text-[10px] font-black transition-all ${currentTheme === theme.id ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-theme-brand/20' : 'bg-theme-bg border-theme-soft text-theme-secondary hover:bg-theme-soft'}`}
                       >
                           {theme.name}
                       </button>
@@ -172,7 +172,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <p className="text-[11px] font-bold text-theme-secondary mb-5 leading-relaxed opacity-80">{t('rateSourceDescription')}</p>
               
-              <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                  <button 
                      onClick={() => onUpdateRateType('OFFICIAL')}
                      className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${rateType === 'OFFICIAL' ? 'bg-theme-brand/5 border-theme-soft ring-1 ring-theme-brand/20' : 'bg-theme-bg border-theme-soft hover:bg-theme-soft'}`}
@@ -223,78 +223,78 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                  <Lock size={14} className="text-theme-brand"/> {t('security')}
                </h3>
                
-               {!showPinChange ? (
-                    <div className="space-y-3">
-                        <button onClick={() => setShowPinChange(true)} className="w-full text-left p-4 bg-theme-bg border border-theme-soft hover:border-theme-soft/30 rounded-2xl transition-all flex justify-between items-center group shadow-sm">
-                            <div>
-                                <p className="font-black text-sm text-theme-primary">{t('changePin')}</p>
-                                <p className="text-[10px] font-bold text-theme-secondary opacity-60">{t('currentPinLabel')}</p>
-                            </div>
-                            <ChevronRight size={16} className="text-theme-brand group-hover:translate-x-1 transition-transform" />
-                        </button>
+                {!showPinChange ? (
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                         <button onClick={() => setShowPinChange(true)} className="w-full text-left p-4 bg-theme-bg border border-theme-soft hover:border-theme-soft/30 rounded-2xl transition-all flex justify-between items-center group shadow-sm">
+                             <div>
+                                 <p className="font-black text-sm text-theme-primary">{t('changePin')}</p>
+                                 <p className="text-[10px] font-bold text-theme-secondary opacity-60">{t('currentPinLabel')}</p>
+                             </div>
+                             <ChevronRight size={16} className="text-theme-brand group-hover:translate-x-1 transition-transform" />
+                         </button>
 
-                        <div className="w-full p-4 bg-theme-bg border border-theme-soft rounded-2xl transition-all shadow-sm">
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="flex-1">
-                                    <p className="font-black text-sm text-theme-primary">{t('autoLock')}</p>
-                                    <p className="text-[10px] font-bold leading-tight text-theme-secondary opacity-50 mt-1">{t('autoLockDesc')}</p>
-                                </div>
-                                <button
-                                  onClick={() => onToggleAutoLock(!autoLockEnabled)}
-                                  className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${autoLockEnabled ? "bg-theme-brand shadow-lg shadow-theme-brand/20" : "bg-theme-soft"}`}
-                                >
-                                  <div
-                                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${autoLockEnabled ? "left-7" : "left-1"}`}
-                                  />
-                                </button>
-                            </div>
-                            
-                            {autoLockEnabled && (
-                                <div className="pt-4 border-t border-theme-soft">
-                                    <p className="text-[9px] font-black text-theme-secondary uppercase mb-3 tracking-[0.15em] opacity-40">{t('autoLockDelay')}</p>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {[0, 60, 300, 900].map((delay) => (
-                                            <button
-                                                key={delay}
-                                                onClick={() => onSetAutoLockDelay(delay)}
-                                                className={`py-2 px-1 rounded-xl text-[10px] font-black transition-all border ${autoLockDelay === delay ? 'bg-theme-brand border-theme-soft text-white shadow-md' : 'bg-theme-surface border-theme-soft text-theme-secondary opacity-60'}`}
-                                            >
-                                                {delay === 0 ? t('delayImmediately') : 
-                                                 delay === 60 ? t('delay1MinShort') : 
-                                                 delay === 300 ? t('delay5MinShort') : t('delay15MinShort')}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                         <div className="w-full p-4 bg-theme-bg border border-theme-soft rounded-2xl transition-all shadow-sm">
+                             <div className="flex justify-between items-center mb-4">
+                                 <div className="flex-1">
+                                     <p className="font-black text-sm text-theme-primary">{t('autoLock')}</p>
+                                     <p className="text-[10px] font-bold leading-tight text-theme-secondary opacity-50 mt-1">{t('autoLockDesc')}</p>
+                                 </div>
+                                 <button
+                                   onClick={() => onToggleAutoLock(!autoLockEnabled)}
+                                   className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${autoLockEnabled ? "bg-theme-brand shadow-lg shadow-theme-brand/20" : "bg-theme-soft"}`}
+                                 >
+                                   <div
+                                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${autoLockEnabled ? "left-7" : "left-1"}`}
+                                   />
+                                 </button>
+                             </div>
+                             
+                             {autoLockEnabled && (
+                                 <div className="pt-4 border-t border-theme-soft">
+                                     <p className="text-[9px] font-black text-theme-secondary uppercase mb-3 tracking-[0.15em] opacity-40">{t('autoLockDelay')}</p>
+                                     <div className="grid grid-cols-4 gap-2">
+                                         {[0, 60, 300, 900].map((delay) => (
+                                             <button
+                                                 key={delay}
+                                                 onClick={() => onSetAutoLockDelay(delay)}
+                                                 className={`py-2 px-1 rounded-xl text-[10px] font-black transition-all border ${autoLockDelay === delay ? 'bg-theme-brand border-theme-soft text-white shadow-md' : 'bg-theme-surface border-theme-soft text-theme-secondary opacity-60'}`}
+                                             >
+                                                 {delay === 0 ? t('delayImmediately') : 
+                                                  delay === 60 ? t('delay1MinShort') : 
+                                                  delay === 300 ? t('delay5MinShort') : t('delay15MinShort')}
+                                             </button>
+                                         ))}
+                                     </div>
+                                 </div>
+                             )}
+                         </div>
 
-                        <div className="w-full p-4 bg-theme-bg border border-theme-soft rounded-2xl transition-all shadow-sm">
-                            <div className="flex justify-between items-center mb-1">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-black text-sm text-theme-primary">{t('biometrics')}</p>
-                                      {!isBiometricSupported && <span className="text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-black uppercase">{t('notSupported')}</span>}
-                                    </div>
-                                    <p className="text-[10px] font-bold leading-tight text-theme-secondary opacity-50 mt-1">{t('biometricsDesc')}</p>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                      if (!isBiometricSupported && !biometricsEnabled) {
-                                          showAlert('biometricsNotSupported', 'error');
-                                          return;
-                                      }
-                                      onToggleBiometrics(!biometricsEnabled);
-                                  }}
-                                  className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${biometricsEnabled ? "bg-theme-brand shadow-lg shadow-theme-brand/20" : "bg-theme-soft"}`}
-                                >
-                                  <div
-                                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${biometricsEnabled ? "left-7" : "left-1"}`}
-                                  />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                         <div className="w-full p-4 bg-theme-bg border border-theme-soft rounded-2xl transition-all shadow-sm">
+                             <div className="flex justify-between items-center mb-1">
+                                 <div className="flex-1">
+                                     <div className="flex items-center gap-2">
+                                       <p className="font-black text-sm text-theme-primary">{t('biometrics')}</p>
+                                       {!isBiometricSupported && <span className="text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full font-black uppercase">{t('notSupported')}</span>}
+                                     </div>
+                                     <p className="text-[10px] font-bold leading-tight text-theme-secondary opacity-50 mt-1">{t('biometricsDesc')}</p>
+                                 </div>
+                                 <button
+                                   onClick={() => {
+                                       if (!isBiometricSupported && !biometricsEnabled) {
+                                           showAlert('biometricsNotSupported', 'error');
+                                           return;
+                                       }
+                                       onToggleBiometrics(!biometricsEnabled);
+                                   }}
+                                   className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${biometricsEnabled ? "bg-theme-brand shadow-lg shadow-theme-brand/20" : "bg-theme-soft"}`}
+                                 >
+                                   <div
+                                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${biometricsEnabled ? "left-7" : "left-1"}`}
+                                   />
+                                 </button>
+                             </div>
+                         </div>
+                     </div>
                ) : (
                     <div className="bg-theme-bg p-5 rounded-2xl border border-theme-soft/30 animate-in fade-in slide-in-from-top-2 shadow-xl">
                         <p className="font-black text-sm text-theme-primary mb-4">{t('updatePin')}</p>

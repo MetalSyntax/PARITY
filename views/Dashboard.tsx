@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon, Trophy } from "lucide-react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon, Trophy, FileText, Cloud, CloudOff } from "lucide-react";
 import { motion, Reorder, useDragControls } from "framer-motion";
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
@@ -13,6 +13,7 @@ import { CurrencyAmount } from "../components/CurrencyAmount";
 import { formatSecondaryAmount } from "../utils/formatUtils";
 import { IncomeVsExpenseChart, ExpenseStructureChart, DailySpendingChart, BalanceHistoryChart } from "../components/Charts";
 import { renderAccountIcon } from "../utils/iconUtils";
+import { projectMonthEndSpending, calculateRunway } from "../utils/forecast";
 
 
 interface DashboardProps {
@@ -41,6 +42,9 @@ interface DashboardProps {
   onUpdateTransaction: (t: Transaction) => void;
   hasFetchedRates: boolean;
   onUpdateProfile: (p: UserProfile) => void;
+  syncPendingCount: number;
+  isSyncing?: boolean;
+  onSync?: () => void;
 }
 
 
@@ -69,7 +73,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   euroRateParallel,
   onUpdateTransaction,
   hasFetchedRates,
-  onUpdateProfile
+  onUpdateProfile,
+  syncPendingCount,
+  isSyncing,
+  onSync
 }) => {
 
   const [showPinModal, setShowPinModal] = useState(false);
@@ -105,10 +112,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return saved !== null ? JSON.parse(saved) : false;
   });
 
+  const [showForecastCard, setShowForecastCard] = useState(() => {
+    const saved = localStorage.getItem("dash_show_forecast_card");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const [showFiscalSummary, setShowFiscalSummary] = useState(() => {
+    const saved = localStorage.getItem("dash_show_fiscal_summary");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
   // Widget Order persistence
   const [leftOrder, setLeftOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem("dash_left_order");
-    const parsed = saved ? JSON.parse(saved) : ["balanceCard", "converter", "balanceChart", "wallets", "actions", "expenses"];
+    const parsed = saved ? JSON.parse(saved) : ["balanceCard", "converter", "balanceChart", "wallets", "expenses"];
     if (!parsed.includes('converter')) {
       parsed.splice(1, 0, 'converter');
     }
@@ -117,7 +134,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const [rightOrder, setRightOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem("dash_right_order");
-    return saved ? JSON.parse(saved) : ["transactions", "incomeVsExpense", "dailySpending", "categoryBreakdown"];
+    const parsed = saved ? JSON.parse(saved) : ["forecastCard", "fiscalSummary", "transactions", "incomeVsExpense", "dailySpending", "categoryBreakdown"];
+    if (!parsed.includes('forecastCard')) parsed.unshift('forecastCard');
+    if (!parsed.includes('fiscalSummary')) parsed.unshift('fiscalSummary');
+    return parsed;
   });
 
   const [touchedWidget, setTouchedWidget] = useState<string | null>(null);
@@ -134,7 +154,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [rightOrder]);
 
   const toggleWidget = (
-    widget: "balance" | "expense" | "incomeVs" | "category" | "daily",
+    widget: "balance" | "expense" | "incomeVs" | "category" | "daily" | "forecast",
   ) => {
     if (widget === "balance") {
       const next = !showBalanceChart;
@@ -159,6 +179,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const next = !showDailySpending;
       setShowDailySpending(next);
       localStorage.setItem("dash_show_daily_spending", JSON.stringify(next));
+    } else if (widget === "forecast") {
+      const next = !showForecastCard;
+      setShowForecastCard(next);
+      localStorage.setItem("dash_show_forecast_card", JSON.stringify(next));
+    } else if (widget === "fiscalSummary") {
+      const next = !showFiscalSummary;
+      setShowFiscalSummary(next);
+      localStorage.setItem("dash_show_fiscal_summary", JSON.stringify(next));
     }
   };
 
@@ -182,6 +210,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const totalBalanceVES = totalBalanceUSD * exchangeRate;
   const totalBalanceEUR = totalBalanceVES / (euroRate || 1);
+
+  const forecast = useMemo(() => projectMonthEndSpending(transactions), [transactions]);
+  const runwayDays = useMemo(() => calculateRunway(totalBalanceUSD, transactions), [totalBalanceUSD, transactions]);
+
+  const fiscalMetrics = useMemo(() => {
+    let taxableIncome = 0;
+    let deductibleExpense = 0;
+    const currentYear = new Date().getFullYear();
+
+    transactions.forEach(t => {
+       const d = new Date(t.date);
+       if (d.getFullYear() === currentYear) {
+          if (t.fiscalTag === 'TAXABLE_INCOME') taxableIncome += t.normalizedAmountUSD;
+          else if (t.fiscalTag === 'DEDUCTIBLE_EXPENSE') deductibleExpense += t.normalizedAmountUSD;
+       }
+    });
+
+    let netTaxable = taxableIncome - deductibleExpense;
+    return { taxableIncome, deductibleExpense, netTaxable };
+  }, [transactions]);
 
 
 
@@ -439,6 +487,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <div className="flex items-center gap-2">
             <button
+               onClick={() => {
+                 if (navigator.onLine && onSync) onSync();
+               }}
+               className={`p-2 rounded-full transition-all flex items-center justify-center relative ${isSyncing ? 'animate-spin' : ''} ${syncPendingCount > 0 ? 'bg-orange-500/10 text-orange-400' : 'bg-theme-soft text-theme-secondary hover:text-theme-primary'}`}
+               title={syncPendingCount > 0 ? `${syncPendingCount} pending` : (navigator.onLine ? 'Synced' : 'Offline')}
+            >
+               {navigator.onLine ? <Cloud size={20} /> : <CloudOff size={20} className="opacity-50" />}
+               {syncPendingCount > 0 && (
+                 <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 bg-orange-500 border border-theme-bg rounded-full text-[8px] font-black text-white flex items-center justify-center shadow-lg">
+                   {syncPendingCount}
+                 </span>
+               )}
+            </button>
+            <button
               onClick={() => setShowCustomizer(true)}
               className="p-2 bg-theme-soft rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
             >
@@ -473,8 +535,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
           </div>
         </div>
+        {/* Quick Actions Horizontal List */}
+        <div className="px-6 md:px-0 mb-6 animate-in slide-in-from-top-4 duration-700">
+          <div className="flex items-center justify-between mb-3 px-2">
+            <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] opacity-50">{t("quickActions") || "Acciones Rápidas"}</h3>
+            <span className="text-[10px] text-theme-brand font-black uppercase tracking-tighter opacity-40">Slide →</span>
+          </div>
+          <div className="flex gap-1 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0 snap-x">
+            {[
+              { id: "TRANSACTIONS", label: t("transactions"), icon: <Receipt size={28} />, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+              { id: "BUDGET", label: t("budget"), icon: <PieChart size={28} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+              { id: "SCHEDULED", label: t("scheduled"), icon: <Calendar1 size={28} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+              { id: "FISCAL_REPORT", label: t("fiscalReport"), icon: <FileText size={28} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+              { id: "ANALYSIS", label: t("analysis"), icon: <ChartArea size={28} />, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+              { id: "WALLET", label: t("wallet"), icon: <Wallet size={28} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+              { id: "GOALS", label: t("goals"), icon: <Trophy size={28} />, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
+              { id: "INCOME", label: t("incomeView"), icon: <TrendingUp size={28} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+              { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={28} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
+              { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={28} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
+              { id: "SHOPPING_LIST", label: t("shoppingList"), icon: <ShoppingCart size={28} />, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+              { id: "INVOICES", label: t("invoices"), icon: <ImageIcon size={28} />, color: "bg-pink-500/10 text-pink-400 border-pink-500/20" },
+              { id: "PROFILE", label: t("profile"), icon: <User size={28} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
+            ].map((action, i) => (
+              <button 
+                key={i} 
+                onClick={() => onNavigate(action.id as any)} 
+                className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 rounded-[2rem] border border-white/5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start shadow-xl group"
+              >
+                <div className={`w-16 h-16 rounded-2xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  {action.icon}
+                </div>
+                <span className="text-[9px] text-theme-secondary font-black uppercase tracking-tight text-center whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">
+                  {action.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:mt-2">
           <Reorder.Group
             axis="y"
             values={leftOrder}
@@ -673,30 +772,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 )}
 
-                {id === "actions" && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 px-6 md:px-0">
-                    {[
-                      { id: "TRANSACTIONS", label: t("transactions"), icon: <Receipt size={20} />, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-                      { id: "BUDGET", label: t("budget"), icon: <PieChart size={20} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-                      { id: "SCHEDULED", label: t("scheduled"), icon: <Calendar1 size={20} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
-                      { id: "ANALYSIS", label: t("analysis"), icon: <ChartArea size={20} />, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
-                      { id: "WALLET", label: t("wallet"), icon: <Wallet size={20} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
-                      { id: "GOALS", label: t("goals"), icon: <Trophy size={20} />, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
-                      { id: "INCOME", label: t("incomeView"), icon: <TrendingUp size={20} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-                      { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={20} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
-                      { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={20} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
-                      { id: "SHOPPING_LIST", label: t("shoppingList"), icon: <ShoppingCart size={20} />, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-                      { id: "INVOICES", label: t("invoices"), icon: <ImageIcon size={20} />, color: "bg-pink-500/10 text-pink-400 border-pink-500/20" },
-                      { id: "PROFILE", label: t("profile"), icon: <User size={20} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
-                    ].map((action, i) => (
-                      <button key={i} onClick={() => onNavigate(action.id as any)} className="flex flex-col items-center gap-2 group w-full bg-theme-surface py-4 rounded-2xl border border-theme-soft hover:border-theme-soft transition-all hover:shadow-theme active:scale-95 shadow-sm">
-                        <div className={`w-12 h-12 rounded-xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>{action.icon}</div>
-                        <span className="text-xs text-theme-secondary font-medium">{action.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
                 {id === "expenses" && showExpenseStructure && (
                   <div className="bg-theme-surface p-8 rounded-[2rem] border border-theme-soft shadow-theme animate-in fade-in slide-in-from-bottom-2 duration-500 overflow-hidden relative">
                     <div className="flex justify-between items-start mb-8 relative z-10">
@@ -825,6 +900,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </button>
                 )}
 
+                {id === "forecastCard" && showForecastCard && (
+                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-theme-soft shadow-theme overflow-hidden relative group">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp size={14} className="text-theme-brand" />
+                        <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest">{t("monthEndForecast")}</h3>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <p className="text-sm font-black text-theme-primary">
+                          <CurrencyAmount
+                            amount={forecast.base}
+                            exchangeRate={exchangeRate}
+                            euroRate={euroRate}
+                            displayCurrency={displayCurrency}
+                            isBalanceVisible={isBalanceVisible}
+                            size="xl"
+                            weight="black"
+                          />
+                        </p>
+                        <p className="text-xs text-theme-secondary font-medium">
+                          {t("baseProjectedSpend")}
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center bg-theme-bg p-3 rounded-xl border border-theme-soft">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase text-emerald-500 font-bold">{t("optimistic")}</span>
+                          <span className="text-xs text-theme-primary font-bold">
+                            {isBalanceVisible ? forecast.optimistic.toFixed(2) : "****"}
+                          </span>
+                        </div>
+                        <div className="flex flex-col text-right">
+                          <span className="text-[10px] uppercase text-red-500 font-bold">{t("pessimistic")}</span>
+                          <span className="text-xs text-theme-primary font-bold">
+                            {isBalanceVisible ? forecast.pessimistic.toFixed(2) : "****"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-center text-xs font-bold text-theme-secondary">
+                        {t("runway")}: <span className="text-theme-primary">{runwayDays === Infinity ? '∞' : runwayDays} {t("days")}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {id === "transactions" && (
                   <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-theme-soft min-h-[500px]">
                     <h2 className="text-sm font-semibold text-theme-secondary mb-6 px-2 md:px-0 uppercase tracking-wider">{t("recentTransactions")}</h2>
@@ -882,6 +1003,54 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         })()}
                       </div>
                     )}
+                  </div>
+                )}
+                
+                {id === "fiscalSummary" && showFiscalSummary && (
+                  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex justify-between items-center mb-6">
+                      <div className="flex items-center gap-3">
+                         <div className="bg-blue-500/20 text-blue-400 p-2 rounded-xl">
+                            <Receipt size={20} />
+                         </div>
+                         <div>
+                            <h3 className="text-sm font-black text-theme-primary uppercase tracking-widest">{t('fiscalReport')}</h3>
+                            <p className="text-[10px] text-theme-secondary font-bold">YTD {new Date().getFullYear()}</p>
+                         </div>
+                      </div>
+                      <button onClick={() => onNavigate('FISCAL_REPORT')} className="p-2 bg-theme-soft rounded-lg text-theme-secondary hover:text-theme-brand transition-all shadow-sm">
+                         <ArrowUpRight size={14} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-theme-bg p-4 rounded-2xl border border-white/5 relative overflow-hidden">
+                           <p className="text-[10px] font-black text-theme-secondary opacity-60 uppercase mb-1">{t('taxableIncome')}</p>
+                           <CurrencyAmount
+                             amount={fiscalMetrics.taxableIncome}
+                             exchangeRate={exchangeRate}
+                             euroRate={euroRate}
+                             displayCurrency={displayCurrency}
+                             isBalanceVisible={isBalanceVisible}
+                             size="sm"
+                             weight="black"
+                           />
+                           <TrendingUp size={40} className="absolute -bottom-2 -right-2 text-emerald-500/5 opacity-50" />
+                        </div>
+                        <div className="bg-theme-bg p-4 rounded-2xl border border-white/5 relative overflow-hidden">
+                           <p className="text-[10px] font-black text-theme-secondary opacity-60 uppercase mb-1">{t('deductibleExpense')}</p>
+                           <CurrencyAmount
+                             amount={fiscalMetrics.deductibleExpense}
+                             exchangeRate={exchangeRate}
+                             euroRate={euroRate}
+                             displayCurrency={displayCurrency}
+                             isBalanceVisible={isBalanceVisible}
+                             size="sm"
+                             weight="black"
+                           />
+                           <TrendingDown size={40} className="absolute -bottom-2 -right-2 text-blue-500/5 opacity-50" />
+                        </div>
+                    </div>
                   </div>
                 )}
                 {id === "incomeVsExpense" && showIncomeVsExpense && (
@@ -959,6 +1128,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           showIncomeVsExpense={showIncomeVsExpense}
           showDailySpending={showDailySpending}
           showCategoryBreakdown={showCategoryBreakdown}
+          showForecastCard={showForecastCard}
+          showFiscalSummary={showFiscalSummary}
           toggleWidget={toggleWidget}
           onClose={() => setShowCustomizer(false)}
           userProfile={userProfile}

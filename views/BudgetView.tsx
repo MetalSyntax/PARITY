@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar, ArrowDownLeft, History, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
@@ -190,7 +190,18 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const handleUpdateLimit = (catId: string, newLimit: string) => {
       const limit = parseFloat(newLimit);
       if (isNaN(limit)) return;
-      onUpdateBudgets(budgets.map(b => (b.categoryId === catId && (b.month === selectedMonth || (!b.month && selectedMonth === new Date().toISOString().slice(0,7)))) ? { ...b, limit } : b));
+      
+      const hasSpecific = budgets.some(b => b.categoryId === catId && b.month === selectedMonth);
+      if (hasSpecific) {
+          onUpdateBudgets(budgets.map(b => (b.categoryId === catId && b.month === selectedMonth) ? { ...b, limit } : b));
+      } else {
+          const global = budgets.find(b => b.categoryId === catId && !b.month);
+          if (global) {
+              onUpdateBudgets([...budgets, { ...global, limit, month: selectedMonth }]);
+          } else {
+              onUpdateBudgets([...budgets, { categoryId: catId, limit, month: selectedMonth }]);
+          }
+      }
   };
 
   const handleAddBudget = (catId: string) => {
@@ -223,7 +234,13 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       showConfirm({
           message: t('deleteEnvelopeConfirm'),
           onConfirm: () => {
-              onUpdateBudgets(budgets.filter(b => !(b.categoryId === catId && (b.month === selectedMonth || (!b.month && selectedMonth === new Date().toISOString().slice(0, 7))))));
+              // Try to delete specific first, then global
+              const hasSpecific = budgets.some(b => b.categoryId === catId && b.month === selectedMonth);
+              if (hasSpecific) {
+                  onUpdateBudgets(budgets.filter(b => !(b.categoryId === catId && b.month === selectedMonth)));
+              } else {
+                  onUpdateBudgets(budgets.filter(b => !(b.categoryId === catId && !b.month)));
+              }
           }
       });
   };
@@ -287,7 +304,12 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       setGoalToComplete(null);
   };
 
-  const filteredBudgets = budgets.filter(b => b.month === selectedMonth || (!b.month && selectedMonth === new Date().toISOString().slice(0, 7)));
+  const filteredBudgets = useMemo(() => {
+    const specific = budgets.filter(b => b.month === selectedMonth);
+    const global = budgets.filter(b => !b.month);
+    const specificCatIds = new Set(specific.map(b => b.categoryId));
+    return [...specific, ...global.filter(b => !specificCatIds.has(b.categoryId))];
+  }, [budgets, selectedMonth]);
   const availableCategories = CATEGORIES.filter(c => !filteredBudgets.find(b => b.categoryId === c.id));
 
   return (

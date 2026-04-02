@@ -1,0 +1,20 @@
+export const alerts = {
+    alert_walletFirst: 'Por favor, crie uma carteira primeiro!',
+    alert_migrationIDB: 'Dados migrados para IndexedDB (Criptografado)',
+    alert_migrationLocal: 'Dados migrados para LocalStorage (Criptografado)',
+    alert_importError: 'Erro ao processar o arquivo de backup.',
+    alert_importSuccess: 'Dados importados com sucesso!',
+    alert_speechNotSupported: 'Reconhecimento de voz não compatível com este navegador',
+    alert_fetchError: 'Erro ao buscar taxa ao vivo',
+    alert_fetchSuccess: 'Taxas atualizadas!',
+    alert_incorrectPin: 'PIN atual incorreto',
+    alert_pinLengthError: 'O novo PIN deve ter 4 dígitos',
+    alert_pinSuccess: 'PIN atualizado com sucesso',
+    alert_syncSuccess: 'Sincronização concluída!',
+    alert_syncError: 'Erro ao sincronizar com a nuvem.',
+    alert_ocrFailed: 'Falha na digitalização OCR',
+    alert_cameraDenied: 'Acesso à câmera negado',
+    alert_createWalletFirst: 'Por favor, crie uma carteira primeiro antes de adicionar transações.',
+    budgetAlertTitle: 'Alerta Inteligente: Risco no Orçamento',
+    budgetAlertBody: 'Você está prestes a exceder o orçamento de {category}.'
+};

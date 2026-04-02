@@ -1,5 +1,4 @@
-// ... imports
-import { Account, Transaction, ScheduledPayment, UserProfile, Budget, Goal } from '../types';
+import { Account, Transaction, ScheduledPayment, UserProfile, Budget, Goal, SyncAction, RateHistoryItem, ShoppingItem, ShoppingList } from '../types';
 import { encryptData, decryptData } from './crypto';
 
 export const DB_NAME = 'parity_db';
@@ -17,7 +16,8 @@ export const KEYS = {
     GOALS: 'goals',
     HISTORY: 'rate_history',
     SHOPPING: 'shopping_items',
-    SHOPPING_LISTS: 'shopping_lists'
+    SHOPPING_LISTS: 'shopping_lists',
+    SYNC_QUEUE: 'sync_queue'
 };
 
 export type StorageType = 'LOCAL_STORAGE' | 'INDEXED_DB';
@@ -33,9 +33,10 @@ export interface AppData {
     userProfile: UserProfile;
     budgets: Budget[];
     goals: Goal[];
-    rateHistory?: any[];
-    shoppingItems?: any[];
-    shoppingLists?: any[];
+    rateHistory?: RateHistoryItem[];
+    shoppingItems?: ShoppingItem[];
+    shoppingLists?: ShoppingList[];
+    syncQueue?: SyncAction[];
 }
 
 export class IndexedDBService {
@@ -72,7 +73,7 @@ export class IndexedDBService {
         await this.ensureOpen();
         
         // Encrypt everything before opening transaction
-        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping, encShoppingLists] = await Promise.all([
+        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping, encShoppingLists, encQueue] = await Promise.all([
             encryptData(data.accounts),
             encryptData(data.transactions),
             encryptData(data.scheduledPayments),
@@ -82,7 +83,8 @@ export class IndexedDBService {
             encryptData(data.goals),
             encryptData(data.rateHistory || []),
             encryptData(data.shoppingItems || []),
-            encryptData(data.shoppingLists || [])
+            encryptData(data.shoppingLists || []),
+            encryptData(data.syncQueue || [])
         ]);
 
         return new Promise((resolve, reject) => {
@@ -100,6 +102,7 @@ export class IndexedDBService {
             store.put(encHistory, KEYS.HISTORY);
             store.put(encShopping, KEYS.SHOPPING);
             store.put(encShoppingLists, KEYS.SHOPPING_LISTS);
+            store.put(encQueue, KEYS.SYNC_QUEUE);
             
             // CLEANUP: Remove legacy root key if it exists to prevent read conflicts
             store.delete(KEYS.ROOT);
@@ -117,7 +120,7 @@ export class IndexedDBService {
             const store = tx.objectStore(STORE_NAME);
             
             const rawResults: any = {};
-            const keysToFetch = [KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED, KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS, KEYS.GOALS, KEYS.HISTORY, KEYS.SHOPPING, KEYS.SHOPPING_LISTS];
+            const keysToFetch = [KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED, KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS, KEYS.GOALS, KEYS.HISTORY, KEYS.SHOPPING, KEYS.SHOPPING_LISTS, KEYS.SYNC_QUEUE];
             const allKeysToFetch = [...keysToFetch, KEYS.ROOT];
             let fetchCompleted = 0;
 
@@ -145,7 +148,8 @@ export class IndexedDBService {
                         goals: results[KEYS.GOALS] || [],
                         rateHistory: results[KEYS.HISTORY] || [],
                         shoppingItems: results[KEYS.SHOPPING] || [],
-                        shoppingLists: results[KEYS.SHOPPING_LISTS] || []
+                        shoppingLists: results[KEYS.SHOPPING_LISTS] || [],
+                        syncQueue: results[KEYS.SYNC_QUEUE] || []
                     };
                     resolve(appData);
                     return;
@@ -182,6 +186,39 @@ export class IndexedDBService {
                 };
             });
         });
+    }
+
+    // Sync Queue Specific Methods
+    public async pushToSyncQueue(action: any): Promise<void> {
+        const data = await this.read();
+        if (data) {
+            const queue = data.syncQueue || [];
+            queue.push(action);
+            await this.save({ ...data, syncQueue: queue });
+        }
+    }
+
+    public async getSyncQueue(): Promise<any[]> {
+        const data = await this.read();
+        return data?.syncQueue || [];
+    }
+
+    public async updateSyncStatus(actionId: string, status: 'synced'|'conflict', payload?: any): Promise<void> {
+        const data = await this.read();
+        if (data && data.syncQueue) {
+            const queue = data.syncQueue.map(a => 
+                a.id === actionId ? { ...a, syncStatus: status, payload: payload || a.payload } : a
+            );
+            await this.save({ ...data, syncQueue: queue });
+        }
+    }
+
+    public async removeSyncedFromQueue(): Promise<void> {
+        const data = await this.read();
+        if (data && data.syncQueue) {
+            const queue = data.syncQueue.filter(a => a.syncStatus !== 'synced');
+            await this.save({ ...data, syncQueue: queue });
+        }
     }
 
     public async delete(): Promise<void> {

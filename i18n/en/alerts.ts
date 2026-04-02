@@ -1,0 +1,20 @@
+export const alerts = {
+    alert_walletFirst: 'Please create a wallet first!',
+    alert_migrationIDB: 'Data migrated to IndexedDB (Encrypted)',
+    alert_migrationLocal: 'Data migrated to LocalStorage (Encrypted)',
+    alert_importError: 'Failed to parse backup file.',
+    alert_importSuccess: 'Data imported successfully!',
+    alert_speechNotSupported: 'Speech recognition not supported in this browser',
+    alert_fetchError: 'Failed to fetch live rate',
+    alert_fetchSuccess: 'Rates updated successfully!',
+    alert_incorrectPin: 'Incorrect current PIN',
+    alert_pinLengthError: 'New PIN must be 4 digits',
+    alert_pinSuccess: 'PIN updated successfully',
+    alert_syncSuccess: 'Synchronization completed!',
+    alert_syncError: 'Error syncing with the cloud.',
+    alert_ocrFailed: 'OCR Scan failed',
+    alert_cameraDenied: 'Camera access denied',
+    alert_createWalletFirst: 'Please create a wallet first before adding transactions.',
+    budgetAlertTitle: 'Smart Alert: Budget Risk',
+    budgetAlertBody: 'You are on track to exceed your budget for {category}.'
+};

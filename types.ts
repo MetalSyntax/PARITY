@@ -17,7 +17,21 @@ export type RateType = 'OFFICIAL' | 'PARALLEL';
 
 export type Language = 'en' | 'es' | 'pt';
 
-export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES' | 'GOALS' | 'INCOME';
+export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES' | 'GOALS' | 'INCOME' | 'FISCAL_REPORT';
+
+export type SyncStatus = 'pending' | 'synced' | 'conflict';
+
+export type EntityType = 'ACCOUNT' | 'TRANSACTION' | 'SCHEDULED_PAYMENT' | 'BUDGET' | 'GOAL' | 'SHOPPING_LIST' | 'USER_PROFILE';
+
+export interface SyncAction {
+    id: string; // UUID
+    entityType: EntityType;
+    entityId: string;
+    action: 'CREATE' | 'UPDATE' | 'DELETE';
+    payload: any;
+    timestamp: number;
+    syncStatus: SyncStatus;
+}
 
 export interface UserProfile {
   name: string;
@@ -30,6 +44,7 @@ export interface UserProfile {
   rateType?: RateType;
   notificationsEnabled?: boolean;
   notificationLeadTime?: number; // Days before due date
+  updatedAt?: string;
 }
 
 export interface Account {
@@ -40,6 +55,7 @@ export interface Account {
   icon: string;
   color?: string; // For UI styling
   payrollClient?: string;
+  updatedAt?: string;
 }
 
 export interface Transaction {
@@ -61,7 +77,10 @@ export interface Transaction {
   receipt?: string; // Base64 image
   budgetMonth?: string; // YYYY-MM
   skipBalanceUpdate?: boolean;
+  fiscalTag?: FiscalTag;
 }
+
+export type FiscalTag = 'TAXABLE_INCOME' | 'DEDUCTIBLE_EXPENSE' | 'NEUTRAL';
 
 export interface Category {
   id: string;
@@ -81,6 +100,7 @@ export interface ScheduledPayment {
     category?: string; // Optional for backward compatibility
     lastNotified?: string; // ISO date string (YYYY-MM-DD)
     notificationsEnabled?: boolean;
+    updatedAt?: string;
 }
 
 export interface Budget {
@@ -91,6 +111,7 @@ export interface Budget {
     customIcon?: string;
     customColor?: string;
     parentCategoryId?: string;
+    updatedAt?: string;
 }
 
 export interface GoalContribution {
@@ -115,6 +136,7 @@ export interface Goal {
     contributions?: GoalContribution[];
     completed?: boolean;
     categoryId?: string;
+    updatedAt?: string;
 }
 
 export interface ShoppingItem {
@@ -132,6 +154,7 @@ export interface ShoppingList {
     name: string;
     items: ShoppingItem[];
     createdAt: string;
+    updatedAt?: string;
 }
 
 export interface RateHistoryItem {
@@ -154,6 +177,7 @@ export interface AppData {
     rateHistory?: RateHistoryItem[];
     shoppingItems?: ShoppingItem[];
     shoppingLists?: ShoppingList[];
+    syncQueue?: SyncAction[];
 }
 
 export interface ConfirmConfig {
