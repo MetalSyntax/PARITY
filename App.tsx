@@ -132,10 +132,38 @@ function AppContent() {
     const saved = localStorage.getItem("navbarFavorites");
     return saved ? JSON.parse(saved) : ['WALLET', 'ANALYSIS', 'PROFILE'];
   });
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string>(() => {
+    return localStorage.getItem("activeProfileId") || "";
+  });
 
   const [hasFetchedRates, setHasFetchedRates] = useState(() => {
     return localStorage.getItem('last_bcv_update') !== null;
   });
+
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(a => a.profileId === activeProfileId || (!a.profileId && activeProfileId === 'default'));
+  }, [accounts, activeProfileId]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => t.profileId === activeProfileId || (!t.profileId && activeProfileId === 'default'));
+  }, [transactions, activeProfileId]);
+
+  const filteredScheduledPayments = useMemo(() => {
+    return scheduledPayments.filter(p => p.profileId === activeProfileId || (!p.profileId && activeProfileId === 'default'));
+  }, [scheduledPayments, activeProfileId]);
+
+  const filteredBudgets = useMemo(() => {
+    return budgets.filter(b => b.profileId === activeProfileId || (!b.profileId && activeProfileId === 'default'));
+  }, [budgets, activeProfileId]);
+
+  const filteredGoals = useMemo(() => {
+    return goals.filter(g => g.profileId === activeProfileId || (!g.profileId && activeProfileId === 'default'));
+  }, [goals, activeProfileId]);
+
+  const filteredShoppingLists = useMemo(() => {
+    return shoppingLists.filter(l => l.profileId === activeProfileId || (!l.profileId && activeProfileId === 'default'));
+  }, [shoppingLists, activeProfileId]);
 
   const toggleDisplayCurrency = () => {
     const rotation = [Currency.USD, Currency.VES, Currency.EUR];
@@ -272,7 +300,27 @@ function AppContent() {
             setBudgets(loadedData.budgets || []);
             setGoals(loadedData.goals || []);
             setRateHistory(loadedData.rateHistory || []);
-            setUserProfile(loadedData.userProfile || { name: 'User', language: 'en' });
+            
+            // Handle Multi-Profile initialization
+            let currentProfiles = loadedData.profiles || [];
+            let currentActiveId = loadedData.activeProfileId || localStorage.getItem("activeProfileId") || "";
+
+            if (currentProfiles.length === 0) {
+                // If no profiles, migrate the current userProfile into the profiles array
+                const mainProfile: UserProfile = loadedData.userProfile || { id: 'default', name: 'User', language: 'en' };
+                if (!mainProfile.id) mainProfile.id = 'default';
+                currentProfiles = [mainProfile];
+                currentActiveId = mainProfile.id;
+            }
+
+            setProfiles(currentProfiles);
+            
+            // Find the active profile to set the main userProfile state
+            const active = currentProfiles.find(p => p.id === currentActiveId) || currentProfiles[0];
+            setActiveProfileId(active.id);
+            setUserProfile(active);
+            localStorage.setItem("activeProfileId", active.id);
+
             if (loadedData.shoppingLists) {
                 setShoppingLists(loadedData.shoppingLists);
                 if (loadedData.shoppingLists.length > 0) {
@@ -456,6 +504,10 @@ function AppContent() {
     const euroRateRef = useRef(euroRate);
     const budgetsRef = useRef(budgets);
     const transactionsRef = useRef(transactions);
+    const accountsRef = useRef(accounts);
+    const usdRateParallelRef = useRef(usdRateParallel);
+    const euroRateParallelRef = useRef(euroRateParallel);
+    const activeProfileIdRef = useRef(activeProfileId);
 
     useEffect(() => {
         scheduledPaymentsRef.current = scheduledPayments;
@@ -464,13 +516,124 @@ function AppContent() {
         euroRateRef.current = euroRate;
         budgetsRef.current = budgets;
         transactionsRef.current = transactions;
-    }, [scheduledPayments, userProfile, exchangeRate, euroRate, budgets, transactions]);
+        accountsRef.current = accounts;
+        usdRateParallelRef.current = usdRateParallel;
+        euroRateParallelRef.current = euroRateParallel;
+        activeProfileIdRef.current = activeProfileId;
+    }, [scheduledPayments, userProfile, exchangeRate, euroRate, budgets, transactions, accounts, usdRateParallel, euroRateParallel, activeProfileId]);
 
     useEffect(() => {
         if (!isLoaded) return;
         fetchAllRates();
         checkScheduledNotifications();
+        checkAutoPost();
     }, [isLoaded]);
+
+    const checkAutoPost = () => {
+        const currentPayments = scheduledPaymentsRef.current;
+        const currentExchangeRate = exchangeRateRef.current;
+        const currentEuroRate = euroRateRef.current;
+        const currentRateType = userProfileRef.current.rateType;
+        const currentUsdRateParallel = usdRateParallelRef.current;
+        const currentEuroRateParallel = euroRateParallelRef.current;
+
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        
+        let paymentsUpdated = false;
+        let accountsUpdated = false;
+        const newPayments = [...currentPayments];
+        const addedTransactions: Transaction[] = [];
+        let runningAccounts = [...accountsRef.current];
+
+        currentPayments.forEach((p, idx) => {
+            if (!p.autoPost || !p.accountId) return;
+            
+            const dueDate = new Date(p.date.split('T')[0] + 'T00:00:00');
+            if (dueDate <= now) {
+                // Determine rate
+                const rate = currentRateType === 'PARALLEL' ? (currentUsdRateParallel || currentExchangeRate) : currentExchangeRate;
+                const eRate = currentRateType === 'PARALLEL' ? (currentEuroRateParallel || currentEuroRate) : currentEuroRate;
+
+                // Create transaction
+                const normalizedUSD = (p.currency === Currency.USD || p.currency === Currency.USDT) 
+                  ? p.amount 
+                  : p.currency === Currency.EUR 
+                  ? (p.amount * eRate) / rate 
+                  : p.amount / rate;
+
+                const newTx: Transaction = {
+                    id: 'recurring_' + Math.random().toString(36).substr(2, 9),
+                    amount: p.amount,
+                    originalCurrency: p.currency,
+                    exchangeRate: rate,
+                    euroRate: eRate,
+                    normalizedAmountUSD: normalizedUSD,
+                    type: p.type || TransactionType.EXPENSE,
+                    category: p.category || 'OTHER',
+                    accountId: p.accountId!,
+                    note: `${p.name} (Auto)`,
+                    date: p.date, 
+                    updatedAt: new Date().toISOString(),
+                    scheduledId: p.id,
+                    isAutoPosted: true,
+                    profileId: p.profileId || activeProfileIdRef.current
+                };
+
+                addedTransactions.push(newTx);
+
+                // Update Account Balance
+                runningAccounts = runningAccounts.map(acc => {
+                   if (acc.id === p.accountId) {
+                      let delta = p.amount;
+                      if (acc.currency !== p.currency) {
+                         if (acc.currency === Currency.USD) delta = normalizedUSD;
+                         else if (acc.currency === Currency.VES) {
+                            if (p.currency === Currency.USD) delta = p.amount * rate;
+                            else if (p.currency === Currency.EUR) delta = p.amount * eRate;
+                         } else if (acc.currency === Currency.EUR) {
+                            if (p.currency === Currency.USD) delta = p.amount * (rate / eRate);
+                            else if (p.currency === Currency.VES) delta = p.amount / eRate;
+                         }
+                      }
+                      const modifier = p.type === TransactionType.INCOME ? 1 : -1;
+                      return { ...acc , balance: acc.balance + (delta * modifier) };
+                   }
+                   return acc;
+                });
+
+                // Advance the scheduled payment
+                if (p.frequency === 'One-Time') {
+                    newPayments[idx] = { ...p, autoPost: false }; // Disable future auto-posts for one-time
+                } else {
+                    const nextDate = new Date(p.date);
+                    switch (p.frequency) {
+                        case 'Weekly': nextDate.setDate(nextDate.getDate() + 7); break;
+                        case 'Bi-weekly': nextDate.setDate(nextDate.getDate() + 14); break;
+                        case 'Monthly': nextDate.setMonth(nextDate.getMonth() + 1); break;
+                        case 'Yearly': nextDate.setFullYear(nextDate.getFullYear() + 1); break;
+                    }
+                    newPayments[idx] = { ...p, date: nextDate.toISOString().split('T')[0] };
+                }
+                paymentsUpdated = true;
+                accountsUpdated = true;
+            }
+        });
+
+        if (addedTransactions.length > 0) {
+            setTransactions(prev => [...addedTransactions, ...prev]);
+            addedTransactions.forEach(tx => pushToSyncQueue('TRANSACTION', tx.id, 'CREATE', tx));
+            showAlert('transactionsAutoPosted', 'success');
+        }
+        if (paymentsUpdated) {
+            setScheduledPayments(newPayments);
+            pushToSyncQueue('SCHEDULED_PAYMENT', 'batch', 'UPDATE', newPayments);
+        }
+        if (accountsUpdated) {
+            setAccounts(runningAccounts);
+            pushToSyncQueue('ACCOUNT', 'batch', 'UPDATE', runningAccounts);
+        }
+    };
 
 
   // PIN Lock initialization
@@ -630,7 +793,9 @@ function AppContent() {
       goals,
       rateHistory,
       shoppingItems,
-      shoppingLists
+      shoppingLists,
+      profiles,
+      activeProfileId
     };
 
     const save = async () => {
@@ -643,7 +808,7 @@ function AppContent() {
     };
     
     save();
-  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, shoppingItems, shoppingLists, isLoaded, storageType]);
+  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, shoppingItems, shoppingLists, isLoaded, storageType, profiles, activeProfileId]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -683,19 +848,39 @@ function AppContent() {
   const [selectedTxForDetail, setSelectedTxForDetail] = useState<Transaction | null>(null);
   const [shoppingItemToConvert, setShoppingItemToConvert] = useState<ShoppingItem | null>(null);
 
-  const handleUpdateAccounts = (newAccounts: Account[]) => {
-    setAccounts(newAccounts);
-    pushToSyncQueue('ACCOUNT', 'all_accounts', 'UPDATE', newAccounts);
+  const handleUpdateAccounts = (newActiveAccounts: Account[]) => {
+    setAccounts(prev => [
+        ...prev.filter(a => a.profileId !== activeProfileId && (a.profileId || activeProfileId !== 'default')),
+        ...newActiveAccounts.map(a => ({ ...a, profileId: a.profileId || activeProfileId }))
+    ]);
   };
 
-  const handleUpdateBudgets = (newBudgets: Budget[]) => {
-    setBudgets(newBudgets);
-    pushToSyncQueue('BUDGET', 'all_budgets', 'UPDATE', newBudgets);
+  const handleUpdateBudgets = (newActiveBudgets: Budget[]) => {
+    setBudgets(prev => [
+        ...prev.filter(b => b.profileId !== activeProfileId && (b.profileId || activeProfileId !== 'default')),
+        ...newActiveBudgets.map(b => ({ ...b, profileId: b.profileId || activeProfileId }))
+    ]);
   };
 
-  const handleUpdateGoals = (newGoals: Goal[]) => {
-    setGoals(newGoals);
-    pushToSyncQueue('GOAL', 'all_goals', 'UPDATE', newGoals);
+  const handleUpdateGoals = (newActiveGoals: Goal[]) => {
+    setGoals(prev => [
+        ...prev.filter(g => g.profileId !== activeProfileId && (g.profileId || activeProfileId !== 'default')),
+        ...newActiveGoals.map(g => ({ ...g, profileId: g.profileId || activeProfileId }))
+    ]);
+  };
+
+  const handleUpdateShoppingLists = (newActiveLists: ShoppingList[]) => {
+    setShoppingLists(prev => [
+        ...prev.filter(l => l.profileId !== activeProfileId && (l.profileId || activeProfileId !== 'default')),
+        ...newActiveLists.map(l => ({ ...l, profileId: l.profileId || activeProfileId }))
+    ]);
+  };
+
+  const handleUpdateScheduledPayments = (newActivePayments: ScheduledPayment[]) => {
+    setScheduledPayments(prev => [
+        ...prev.filter(p => p.profileId !== activeProfileId && (p.profileId || activeProfileId !== 'default')),
+        ...newActivePayments.map(p => ({ ...p, profileId: p.profileId || activeProfileId }))
+    ]);
   };
 
   const performDeleteTransaction = (id: string): Account[] | null => {
@@ -795,7 +980,8 @@ function AppContent() {
       ...data,
       id: data.id || Math.random().toString(36).substr(2, 9),
       normalizedAmountUSD: normalizedUSD,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      profileId: data.profileId || activeProfileId
     };
 
     setTransactions(prev => {
@@ -1064,8 +1250,8 @@ function AppContent() {
         >
           {currentView === 'DASHBOARD' && (
             <Dashboard
-              accounts={accounts}
-              transactions={transactions}
+              accounts={filteredAccounts}
+              transactions={filteredTransactions}
               exchangeRate={userProfile.rateType === 'PARALLEL' ? (usdRateParallel || exchangeRate) : exchangeRate}
               onOpenSettings={() => setShowSettings(true)}
               onNavigate={setCurrentView}
@@ -1101,12 +1287,13 @@ function AppContent() {
               syncPendingCount={syncPendingCount}
               isSyncing={isSyncing}
               onSync={exportToCloud}
+              goals={goals}
             />
           )}
           {currentView === 'TRANSFER' && (
             <TransferView
-              accounts={accounts}
-              transactions={transactions}
+              accounts={filteredAccounts}
+              transactions={filteredTransactions}
               onBack={() => setCurrentView('DASHBOARD')}
               onTransfer={handleSaveTransaction}
               lang={userProfile.language}
@@ -1119,7 +1306,7 @@ function AppContent() {
             <ScheduledPaymentView
               onBack={() => setCurrentView('DASHBOARD')}
               lang={userProfile.language}
-              scheduledPayments={scheduledPayments}
+              scheduledPayments={filteredScheduledPayments}
               onUpdateScheduledPayments={setScheduledPayments}
               onConfirmPayment={handleConfirmScheduledPayment}
               onToggleBottomNav={setIsNavVisible}
@@ -1128,29 +1315,16 @@ function AppContent() {
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               isBalanceVisible={isBalanceVisible}
+              accounts={filteredAccounts}
             />
           )}
 
-          {currentView === 'ANALYSIS' && (
-            <AnalysisView
-              onBack={() => setCurrentView('DASHBOARD')}
-              transactions={transactions}
-              scheduledPayments={scheduledPayments}
-              lang={userProfile.language}
-              exchangeRate={exchangeRate}
-              isBalanceVisible={isBalanceVisible}
-              onToggleBottomNav={setIsNavVisible}
-              onNavigate={setCurrentView}
-              displayCurrency={displayCurrency}
-              onToggleDisplayCurrency={toggleDisplayCurrency}
-            />
-          )}
 
           {currentView === 'FISCAL_REPORT' && (
             <FiscalReportView
               onBack={() => setCurrentView('DASHBOARD')}
-              transactions={transactions}
-              accounts={accounts}
+              transactions={filteredTransactions}
+              accounts={filteredAccounts}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
               euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
@@ -1161,12 +1335,12 @@ function AppContent() {
           {currentView === 'WALLET' && (
             <WalletView
               onBack={() => setCurrentView('DASHBOARD')}
-              accounts={accounts}
+              accounts={filteredAccounts}
               onUpdateAccounts={handleUpdateAccounts}
               lang={userProfile.language}
-              transactions={transactions}
+              transactions={filteredTransactions}
               exchangeRate={exchangeRate}
-              scheduledPayments={scheduledPayments}
+              scheduledPayments={filteredScheduledPayments}
               isBalanceVisible={isBalanceVisible}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
@@ -1180,9 +1354,12 @@ function AppContent() {
             <ProfileView
               onBack={() => setCurrentView('DASHBOARD')}
               profile={userProfile}
-              onUpdateProfile={setUserProfile}
-              transactions={transactions}
-              accounts={accounts}
+              onUpdateProfile={(p) => {
+                  setUserProfile(p);
+                  setProfiles(prev => prev.map(prof => prof.id === p.id ? p : prof));
+              }}
+              transactions={filteredTransactions}
+              accounts={filteredAccounts}
               onImportData={handleImportData}
               storageType={storageType}
               showAlert={showAlert}
@@ -1197,19 +1374,45 @@ function AppContent() {
               onUpdateNavbarFavorites={setNavbarFavorites}
               listCloudBackups={listCloudBackups}
               onNavigate={(v) => setCurrentView(v)}
+              profiles={profiles}
+              activeProfileId={activeProfileId}
+              onSwitchProfile={(id) => {
+                  const active = profiles.find(p => p.id === id);
+                  if (active) {
+                      setActiveProfileId(id);
+                      setUserProfile(active);
+                      localStorage.setItem("activeProfileId", id);
+                      showAlert('profileSwitched', 'success');
+                  }
+              }}
+              onCreateProfile={(name) => {
+                  const newProfile: UserProfile = {
+                      id: 'prof_' + Date.now(),
+                      name,
+                      language: userProfile.language,
+                      updatedAt: new Date().toISOString()
+                  };
+                  setProfiles(prev => [...prev, newProfile]);
+                  showAlert('profileCreated', 'success');
+              }}
+              onDeleteProfile={(id) => {
+                  if (id === activeProfileId) return;
+                  setProfiles(prev => prev.filter(p => p.id !== id));
+                  showAlert('profileDeleted', 'success');
+              }}
             />
           )}
           {currentView === 'BUDGET' && (
             <BudgetView 
               onBack={() => setCurrentView('DASHBOARD')}
-              transactions={transactions}
+              transactions={filteredTransactions}
               lang={userProfile.language}
-              budgets={budgets}
-              goals={goals}
-              accounts={accounts}
+              budgets={filteredBudgets}
+              goals={filteredGoals}
+              accounts={filteredAccounts}
               onUpdateBudgets={handleUpdateBudgets}
               onUpdateGoals={handleUpdateGoals}
-              onUpdateAccounts={setAccounts}
+              onUpdateAccounts={handleUpdateAccounts}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}
@@ -1224,14 +1427,14 @@ function AppContent() {
           {currentView === 'GOALS' && (
             <BudgetView 
               onBack={() => setCurrentView('DASHBOARD')}
-              transactions={transactions}
+              transactions={filteredTransactions}
               lang={userProfile.language}
-              budgets={budgets}
-              goals={goals}
-              accounts={accounts}
-              onUpdateBudgets={setBudgets}
+              budgets={filteredBudgets}
+              goals={filteredGoals}
+              accounts={filteredAccounts}
+              onUpdateBudgets={handleUpdateBudgets}
               onUpdateGoals={handleUpdateGoals}
-              onUpdateAccounts={setAccounts}
+              onUpdateAccounts={handleUpdateAccounts}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}
@@ -1246,9 +1449,9 @@ function AppContent() {
           {currentView === 'ANALYSIS' && (
             <AnalysisView 
               onBack={() => setCurrentView('DASHBOARD')}
-              transactions={transactions}
+              transactions={filteredTransactions}
               lang={userProfile.language}
-              scheduledPayments={scheduledPayments}
+              scheduledPayments={filteredScheduledPayments}
               exchangeRate={exchangeRate}
               euroRate={euroRate}
               isBalanceVisible={isBalanceVisible}
@@ -1262,12 +1465,12 @@ function AppContent() {
           {currentView === 'INCOME' && (
             <WalletView 
               onBack={() => setCurrentView('DASHBOARD')}
-              accounts={accounts}
+              accounts={filteredAccounts}
               onUpdateAccounts={handleUpdateAccounts}
               lang={userProfile.language}
-              transactions={transactions}
+              transactions={filteredTransactions}
               exchangeRate={exchangeRate}
-              scheduledPayments={scheduledPayments}
+              scheduledPayments={filteredScheduledPayments}
               isBalanceVisible={isBalanceVisible}
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
@@ -1296,7 +1499,7 @@ function AppContent() {
           {currentView === 'HEATMAP' && (
             <CalendarHeatmapView
               onBack={() => setCurrentView('DASHBOARD')}
-              transactions={transactions}
+              transactions={filteredTransactions}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
               displayCurrency={displayCurrency}
@@ -1307,7 +1510,7 @@ function AppContent() {
           {currentView === 'CURRENCY_PERF' && (
             <CurrencyPerformanceView
               onBack={() => setCurrentView('DASHBOARD')}
-              transactions={transactions}
+              transactions={filteredTransactions}
               lang={userProfile.language}
               exchangeRate={exchangeRate}
               isBalanceVisible={isBalanceVisible}
@@ -1322,10 +1525,8 @@ function AppContent() {
             <ScheduledNotificationsView
               onBack={() => setCurrentView('PROFILE')}
               lang={userProfile.language}
-              scheduledPayments={scheduledPayments}
-              onUpdateScheduledPayments={(payments) => {
-                  setScheduledPayments(payments);
-              }}
+              scheduledPayments={filteredScheduledPayments}
+              onUpdateScheduledPayments={handleUpdateScheduledPayments}
               notificationsEnabled={userProfile.notificationsEnabled || false}
               onToggleGlobalNotifications={(enabled) => {
                   setUserProfile(prev => ({ ...prev, notificationsEnabled: enabled }));
@@ -1335,9 +1536,9 @@ function AppContent() {
           {currentView === 'SHOPPING_LIST' && (
             <ShoppingListView
               onBack={() => setCurrentView('DASHBOARD')}
-              lists={shoppingLists}
+              lists={filteredShoppingLists}
               activeListId={activeListId}
-              onUpdateLists={setShoppingLists}
+              onUpdateLists={handleUpdateShoppingLists}
               onSetActiveListId={setActiveListId}
               lang={userProfile.language}
               exchangeRate={exchangeRate}

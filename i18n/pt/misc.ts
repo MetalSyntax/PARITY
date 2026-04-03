@@ -322,5 +322,16 @@ export const misc = {
   pendingPayments: "Pagamentos Pendentes",
   editAccount: "Editar Conta",
   newAccount: "Nova Conta",
-  currentMonth: "Mes Actual"
+  currentMonth: "Mes Actual",
+  autoPost: "Auto-Publicar",
+  enableAutoPost: "Habilitar Auto-Publicação",
+  targetWallet: "Carteira Destino",
+  templateLibrary: "Biblioteca de Modelos",
+  template_salary: "Salário / Renda",
+  template_rent: "Aluguel Mensal",
+  template_electric: "Conta de Luz",
+  template_water: "Conta de Água",
+  template_internet: "Serviço de Internet",
+  template_netflix: "Streaming (Netflix/Spotify)",
+  useBaseBudget: 'Usar Base'
 };

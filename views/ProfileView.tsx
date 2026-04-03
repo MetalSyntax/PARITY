@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, Database, HardDrive, Info, Settings2, Bell } from 'lucide-react';
+import { ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, Database, HardDrive, Info, Settings2, Bell, Trash2, Plus, Users } from 'lucide-react';
 import { UserProfile, Language, Transaction, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { StorageType } from '../services/db';
@@ -25,6 +25,11 @@ interface ProfileViewProps {
   navbarFavorites: string[];
   onUpdateNavbarFavorites: (favs: any[]) => void;
   onNavigate: (view: any) => void;
+  profiles: UserProfile[];
+  activeProfileId: string;
+  onSwitchProfile: (id: string) => void;
+  onCreateProfile: (name: string) => void;
+  onDeleteProfile: (id: string) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -46,7 +51,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onDevModeTrigger,
   navbarFavorites,
   onUpdateNavbarFavorites,
-  onNavigate
+  onNavigate,
+  profiles,
+  activeProfileId,
+  onSwitchProfile,
+  onCreateProfile,
+  onDeleteProfile
 }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
@@ -55,6 +65,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [notificationLeadTime, setNotificationLeadTime] = useState(profile.notificationLeadTime || 1);
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('');
   const t = (key: any) => getTranslation(lang, key);
 
   const containerVariants = {
@@ -171,11 +183,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={onBack} 
-            className="p-2.5 bg-theme-surface border border-theme-soft rounded-2xl text-theme-secondary hover:text-theme-primary transition-colors"
+            className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
           >
             <ArrowLeft size={20} />
           </motion.button>
-          <h1 className="text-2xl font-black text-theme-primary tracking-tight">{t('profile')}</h1>
+          <div>
+            <h1 className="text-xl font-bold text-theme-primary">{t('profile')}</h1>
+            <p className="text-xs text-theme-secondary font-medium">{t('profileSubtitle') || 'Ajustes de cuenta y personalización'}</p>
+          </div>
         </div>
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -186,6 +201,67 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <Save size={16} /> {t('saveProfile')}
         </motion.button>
       </div>
+      
+      {/* Profiles Switcher */}
+      <motion.div variants={itemVariants} className="mb-8">
+        <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-4 block flex items-center gap-2 opacity-60 px-1">
+          <Users size={12} className="text-theme-brand" /> {t('profiles') || 'Profiles'}
+        </label>
+        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+          {profiles.map((p) => {
+            const isActive = p.id === activeProfileId;
+            return (
+              <div key={p.id} className="relative group min-w-[80px]">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => onSwitchProfile(p.id)}
+                  className={`w-20 h-20 rounded-[28px] border-2 transition-all flex flex-col items-center justify-center gap-1.5 relative overflow-hidden ${
+                    isActive 
+                      ? 'bg-theme-brand shadow-lg shadow-theme-brand/20 border-theme-brand text-white' 
+                      : 'bg-theme-surface border-theme-soft text-theme-secondary hover:border-theme-brand/50'
+                  }`}
+                >
+                  {p.profileImage ? (
+                    <img src={p.profileImage} alt={p.name} className="w-full h-full object-cover absolute inset-0 opacity-40" />
+                  ) : (
+                    <div className={`text-lg font-black ${isActive ? 'text-white' : 'text-theme-secondary'}`}>
+                      {p.name.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <span className={`text-[10px] font-black uppercase tracking-tighter truncate w-full px-2 text-center relative z-10 ${isActive ? 'bg-black/20 py-0.5' : ''}`}>
+                    {p.name}
+                  </span>
+                </motion.button>
+                
+                {profiles.length > 1 && !isActive && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(t('confirmDeleteProfile') || 'Delete this profile?')) {
+                        onDeleteProfile(p.id);
+                      }
+                    }}
+                    className="absolute -top-1 -right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowCreateModal(true)}
+            className="w-20 h-20 rounded-[28px] border-2 border-dashed border-theme-soft bg-theme-bg/50 text-theme-secondary flex flex-col items-center justify-center gap-1 hover:border-theme-brand/50 hover:text-theme-brand transition-all"
+          >
+            <Plus size={20} />
+            <span className="text-[9px] font-black uppercase">{t('add') || 'Add'}</span>
+          </motion.button>
+        </div>
+      </motion.div>
 
       <motion.div variants={itemVariants} className="flex flex-col items-center mb-10">
         <div className="relative group">
@@ -263,7 +339,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         {/* Customization Card */}
         <motion.div 
             variants={itemVariants} 
-            whileHover={{ scale: 1.01 }}
             className="bg-theme-surface border border-theme-soft rounded-[24px] p-6 shadow-sm"
         >
           <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-4 block flex items-center gap-2 opacity-60">
@@ -281,7 +356,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               { id: 'SCHEDULED', name: t('scheduled') },
               { id: 'TRANSACTIONS', name: t('transactions') },
               { id: 'HEATMAP', name: t('heatmap') },
-              { id: 'CURRENCY_PERF', name: t('currencyPerformance') }
+              { id: 'CURRENCY_PERF', name: t('currencyPerformance') },
+              { id: 'FISCAL_REPORT', name: t('fiscalReport') },
+              { id: 'SHOPPING_LIST', name: t('shoppingList') }
             ].map((view) => (
               <motion.button
                 key={view.id}
@@ -479,6 +556,58 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </p>
         </motion.div>
       </div>
+
+      {/* New Profile Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+           <motion.div 
+             initial={{ scale: 0.9, opacity: 0, y: 20 }}
+             animate={{ scale: 1, opacity: 1, y: 0 }}
+             className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-[2.5rem] p-8 shadow-2xl"
+           >
+              <h3 className="text-xl font-black text-theme-primary mb-2">{t('newProfile') || 'New Profile'}</h3>
+              <p className="text-xs text-theme-secondary opacity-60 mb-6">{t('newProfileDesc') || 'Create a separate context for your family or household.'}</p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-2 block opacity-60">{t('profileName') || 'Profile Name'}</label>
+                  <input 
+                    autoFocus
+                    type="text" 
+                    value={newProfileName}
+                    onChange={(e) => setNewProfileName(e.target.value)}
+                    placeholder="e.g. Household"
+                    className="w-full bg-theme-bg border border-theme-soft rounded-2xl p-4 text-theme-primary font-bold outline-none focus:border-theme-brand transition-all"
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    onClick={() => {
+                        setShowCreateModal(false);
+                        setNewProfileName('');
+                    }}
+                    className="flex-1 py-4 rounded-2xl bg-theme-bg text-theme-secondary font-bold hover:bg-theme-soft transition-colors text-xs uppercase"
+                  >
+                    {t('cancel')}
+                  </button>
+                  <button 
+                    onClick={() => {
+                        if (newProfileName.trim()) {
+                            onCreateProfile(newProfileName.trim());
+                            setShowCreateModal(false);
+                            setNewProfileName('');
+                        }
+                    }}
+                    className="flex-1 py-4 rounded-2xl bg-theme-brand text-white font-black text-xs uppercase shadow-lg shadow-theme-brand/20 hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    {t('create') || 'Create'}
+                  </button>
+                </div>
+              </div>
+           </motion.div>
+        </div>
+      )}
 
       {cloudBackups !== null && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">

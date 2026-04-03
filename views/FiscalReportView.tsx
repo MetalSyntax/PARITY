@@ -178,10 +178,20 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
       {/* Header */}
       <div className="p-6 pb-2">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={onBack} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="text-xl font-black text-theme-primary uppercase tracking-tight">{t('fiscalReport')}</h1>
+          <div className="flex items-center gap-4">
+             <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onBack} 
+                className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+             >
+                <ArrowLeft size={20} />
+             </motion.button>
+             <div>
+                <h1 className="text-xl font-bold text-theme-primary">{t('fiscalReport')}</h1>
+                <p className="text-xs text-theme-secondary font-medium">{t('fiscalSubtitle') || 'Resumen fiscal anual y exportación'}</p>
+             </div>
+          </div>
           <div className="flex gap-2">
             <button 
                 onClick={handleExportCSV} 

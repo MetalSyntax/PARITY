@@ -87,7 +87,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
     <>
       <motion.div 
         whileHover={{ y: -2 }}
-        className="bg-theme-surface rounded-[2.5rem] p-4 border border-theme-soft shadow-theme relative overflow-hidden group"
+        className="bg-theme-surface rounded-[2.5rem] p-4 border border-theme-soft shadow-theme relative overflow-hidden group mx-4"
       >
         {/* Decorative background element */}
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-theme-brand/5 blur-3xl rounded-full" />

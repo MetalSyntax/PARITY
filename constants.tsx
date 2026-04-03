@@ -1,6 +1,15 @@
 import React from 'react';
 import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent, HandCoins, ArrowRightLeft } from 'lucide-react';
-import { Account, Currency } from './types';
+import { Account, Currency, TransactionType } from './types';
+
+export const RECURRING_TEMPLATES = [
+  { id: 'tpl_salary', name: 'template_salary', type: TransactionType.INCOME, category: 'income', frequency: 'Monthly', icon: <DollarSign size={18} /> },
+  { id: 'tpl_rent', name: 'template_rent', type: TransactionType.EXPENSE, category: 'home', frequency: 'Monthly', icon: <Home size={18} /> },
+  { id: 'tpl_electric', name: 'template_electric', type: TransactionType.EXPENSE, category: 'bills', frequency: 'Monthly', icon: <Zap size={18} /> },
+  { id: 'tpl_water', name: 'template_water', type: TransactionType.EXPENSE, category: 'bills', frequency: 'Monthly', icon: <Zap size={18} /> },
+  { id: 'tpl_internet', name: 'template_internet', type: TransactionType.EXPENSE, category: 'internet', frequency: 'Monthly', icon: <Globe size={18} /> },
+  { id: 'tpl_netflix', name: 'template_netflix', type: TransactionType.EXPENSE, category: 'subscription', frequency: 'Monthly', icon: <Monitor size={18} /> },
+];
 
 export const INITIAL_RATE = 350.50;
 export const INITIAL_USD_RATE_PARALLEL = 450.50;

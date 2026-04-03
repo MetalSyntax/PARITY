@@ -1,5 +1,5 @@
 import React from 'react';
-import { Receipt, Settings, X, ArrowRightLeft } from 'lucide-react';
+import { Receipt, Settings, X, ArrowRightLeft, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Transaction, Currency, TransactionType, Account } from '../types';
 import { CATEGORIES } from '../constants';
@@ -57,7 +57,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-sm font-black text-theme-primary line-clamp-1">
+            <p className="text-sm font-black text-theme-primary line-clamp-1 flex items-center gap-1">
+              {transaction.isAutoPosted && <RefreshCw size={12} className="text-theme-brand animate-spin-slow" />}
               {isTransfer ? `${fromAcc?.name} → ${toAcc?.name}` : transaction.note || t(category.name as any)}
             </p>
             {transaction.exchangeRate !== undefined && !isTransfer && (

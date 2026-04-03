@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Activity, PieChart, BarChart, TrendingUp } from "lucide-react";
+import { X, Activity, PieChart, BarChart, TrendingUp, Trophy } from "lucide-react";
 import { Language, UserProfile } from "../types";
 import { getTranslation } from "../i18n";
 
@@ -12,7 +12,8 @@ interface DashboardCustomizerProps {
   showCategoryBreakdown: boolean;
   showForecastCard: boolean;
   showFiscalSummary: boolean;
-  toggleWidget: (widget: "balance" | "expense" | "incomeVs" | "category" | "daily" | "forecast" | "fiscalSummary") => void;
+  showGoals: boolean;
+  toggleWidget: (widget: "balance" | "expense" | "incomeVs" | "category" | "daily" | "forecast" | "fiscalSummary" | "goals") => void;
   onClose: () => void;
   userProfile: UserProfile;
   onUpdateProfile: (p: UserProfile) => void;
@@ -28,6 +29,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
   showCategoryBreakdown,
   showForecastCard,
   showFiscalSummary,
+  showGoals,
   toggleWidget,
   onClose,
   userProfile,
@@ -84,6 +86,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
               <WidgetToggle icon={BarChart} label={t("categoryBreakdown")} isActive={showCategoryBreakdown} onToggle={() => toggleWidget("category")} rotateIcon={true} />
               <WidgetToggle icon={TrendingUp} label={t("showForecastCard") || "Show Forecast"} isActive={showForecastCard} onToggle={() => toggleWidget("forecast")} />
               <WidgetToggle icon={Activity} label={t("showFiscalSummary") || "Show Fiscal Summary"} isActive={showFiscalSummary} onToggle={() => toggleWidget("fiscalSummary")} rotateIcon={true} />
+              <WidgetToggle icon={Trophy} label={t("goals")} isActive={showGoals} onToggle={() => toggleWidget("goals")} />
             </div>
           </section>
 

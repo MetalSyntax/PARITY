@@ -191,10 +191,12 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       const limit = parseFloat(newLimit);
       if (isNaN(limit)) return;
       
-      const hasSpecific = budgets.some(b => b.categoryId === catId && b.month === selectedMonth);
-      if (hasSpecific) {
-          onUpdateBudgets(budgets.map(b => (b.categoryId === catId && b.month === selectedMonth) ? { ...b, limit } : b));
+      const specific = budgets.find(b => b.categoryId === catId && b.month === selectedMonth);
+      if (specific) {
+          // Update the specific one (even if it was a hider with limit -1)
+          onUpdateBudgets(budgets.map(b => (b === specific) ? { ...b, limit } : b));
       } else {
+          // If no specific for this month, create one to override the global fallback
           const global = budgets.find(b => b.categoryId === catId && !b.month);
           if (global) {
               onUpdateBudgets([...budgets, { ...global, limit, month: selectedMonth }]);
@@ -234,12 +236,13 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       showConfirm({
           message: t('deleteEnvelopeConfirm'),
           onConfirm: () => {
-              // Try to delete specific first, then global
-              const hasSpecific = budgets.some(b => b.categoryId === catId && b.month === selectedMonth);
-              if (hasSpecific) {
-                  onUpdateBudgets(budgets.filter(b => !(b.categoryId === catId && b.month === selectedMonth)));
+              const specific = budgets.find(b => b.categoryId === catId && b.month === selectedMonth);
+              if (specific) {
+                  // If it was already a specific override, delete it
+                  onUpdateBudgets(budgets.filter(b => b !== specific));
               } else {
-                  onUpdateBudgets(budgets.filter(b => !(b.categoryId === catId && !b.month)));
+                  // If it was a global fallback, create a "hider" for this month
+                  onUpdateBudgets([...budgets, { categoryId: catId, limit: -1, month: selectedMonth }]);
               }
           }
       });
@@ -305,29 +308,22 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   };
 
   const filteredBudgets = useMemo(() => {
+    // 1. Get specific overrides for this month
     const specific = budgets.filter(b => b.month === selectedMonth);
-    const global = budgets.filter(b => !b.month);
     const specificCatIds = new Set(specific.map(b => b.categoryId));
-    return [...specific, ...global.filter(b => !specificCatIds.has(b.categoryId))];
+    
+    // 2. Get global budgets (templates) that don't have a specific override OR a hider
+    const global = budgets.filter(b => !b.month && !specificCatIds.has(b.categoryId));
+    
+    // 3. Combine them and filter out hiders (limit: -1)
+    return [...specific, ...global].filter(b => b.limit >= 0);
   }, [budgets, selectedMonth]);
   const availableCategories = CATEGORIES.filter(c => !filteredBudgets.find(b => b.categoryId === c.id));
 
   return (
     <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-             <motion.button 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onBack} 
-                className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-theme-secondary hover:text-theme-primary"
-             >
-                <ArrowLeft size={20} />
-             </motion.button>
-             <h1 className="text-xl font-bold text-theme-primary">{t('budgetsAndGoals')}</h1>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* Top utility bar */}
+      <div className="flex items-center justify-end mb-4 gap-2">
             <button 
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
@@ -346,10 +342,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
-              style={{
-                display: 'ruby'
-              }}>
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
+              >
                 <span>{selectedMonth}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
               </button>
@@ -418,19 +412,42 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 </>
               )}
             </div>
-        </div>
+      </div>
+
+      {/* Main Header */}
+      <div className="flex items-center gap-4 mb-8">
+           <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={onBack} 
+              className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+           >
+              <ArrowLeft size={20} />
+           </motion.button>
+           <div>
+               <h1 className="text-xl font-bold text-theme-primary">{t('budgetsAndGoals')}</h1>
+               <p className="text-xs text-theme-secondary font-medium">{t('manageBudgetsDesc') || 'Gestiona tus sobres y metas de ahorro'}</p>
+           </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-8 bg-theme-surface p-1 rounded-xl border border-white/5">
-          <button onClick={() => { setActiveTab('ENVELOPES'); setIsManaging(false); }}
-             className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'ENVELOPES' ? 'bg-theme-card text-theme-brand shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}>
-             {t('envelopes')}
-          </button>
-          <button onClick={() => { setActiveTab('GOALS'); setIsManaging(false); }}
-             className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'GOALS' ? 'bg-theme-card text-theme-brand shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}>
-             {t('goals')}
-          </button>
+      <div className="flex p-1 bg-theme-surface rounded-2xl border border-white/5 mb-8 flex-shrink-0">
+          <motion.button 
+            whileTap={{ scale: 0.98 }}
+            onClick={() => { setActiveTab('ENVELOPES'); setIsManaging(false); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'ENVELOPES' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+          >
+              <History size={16} className={activeTab === 'ENVELOPES' ? 'text-theme-brand' : ''} />
+              {t('envelopes')}
+          </motion.button>
+          <motion.button 
+            whileTap={{ scale: 0.98 }}
+            onClick={() => { setActiveTab('GOALS'); setIsManaging(false); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'GOALS' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+          >
+              <Trophy size={16} className={activeTab === 'GOALS' ? 'text-theme-brand' : ''} />
+              {t('goals')}
+          </motion.button>
       </div>
 
       {/* --- ENVELOPES VIEW --- */}
@@ -723,11 +740,28 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                              <button 
                                 onClick={handleDuplicatePreviousMonth}
                                 disabled={duplicateLoading}
-                                className="bg-theme-surface border border-white/5 text-theme-primary px-8 py-4 rounded-2xl font-black text-sm hover:bg-white/5 transition-all flex items-center gap-2 "
+                                className="bg-theme-surface border border-white/5 text-theme-primary px-8 py-4 rounded-2xl font-black text-sm hover:bg-white/5 transition-all flex items-center gap-2"
                              >
                                 <History size={18} />
                                 {t('duplicatePrevious') || 'Restaurar Anterior'}
                              </button>
+                             {budgets.some(b => !b.month) && (
+                                <button 
+                                    onClick={() => {
+                                        const base = budgets.filter(b => !b.month);
+                                        const imported = base.map(b => ({
+                                            ...b,
+                                            id: Math.random().toString(36).substr(2, 9),
+                                            month: selectedMonth
+                                        }));
+                                        onUpdateBudgets([...budgets, ...imported]);
+                                    }}
+                                    className="bg-theme-surface border border-theme-soft text-theme-brand px-8 py-4 rounded-2xl font-black text-sm hover:bg-theme-brand/5 transition-all flex items-center gap-2"
+                                >
+                                    <FaEnvelope size={18} />
+                                    {t('useBaseBudget') || 'Usar Base'}
+                                </button>
+                             )}
                          </div>
                      </div>
                 )}

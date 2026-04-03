@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X, Receipt, Euro } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X, Receipt, Euro, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Transaction, Language, Currency, TransactionType, Account } from '../types';
 import { getTranslation } from '../i18n';
@@ -39,6 +39,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   const [filterType, setFilterType] = useState<TransactionType | 'ALL'>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string | 'ALL'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState<string | 'ALL'>('ALL'); // YYYY-MM
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [viewMode, setViewMode] = useState<'LIST' | 'INVOICES'>(initialViewMode);
@@ -76,41 +77,10 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   }, [groupedTransactions]);
 
   return (
-    <div className="h-full flex flex-col bg-theme-bg overflow-hidden animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
+    <div className="h-full flex flex-col bg-theme-bg overflow-y-auto no-scrollbar px-6 py-6 pb-24 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
       {/* Header */}
-      <div className="p-6 pb-2">
-        <div className="flex items-center gap-2 mb-6">
-          <button
-            onClick={onBack}
-            className="p-2 bg-theme-surface rounded-full text-theme-secondary hover:text-theme-primary transition-colors border border-white/5"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div className="flex bg-theme-surface rounded-xl p-1 border border-white/5">
-            <button 
-              onClick={() => setViewMode('LIST')} 
-              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'LIST' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary opacity-50 hover:opacity-100'}`}
-            >
-              {t('transactions')}
-            </button>
-            <button 
-              onClick={() => setViewMode('INVOICES')} 
-              className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'INVOICES' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary opacity-50 hover:opacity-100'}`}
-            >
-              <Receipt size={14} />
-              {t('invoices') || 'Facturas'}
-            </button>
-          </div>
-          
-          <div className="ml-auto flex items-center gap-2">
-            <div className="hidden sm:flex flex-col items-end mr-2">
-               <span className="text-[10px] font-black text-theme-brand uppercase tracking-tighter">
-                 {filteredTransactions.length} {t('transactions') || 'Transacciones'}
-               </span>
-               <span className="text-[8px] font-bold text-theme-secondary opacity-50 uppercase tracking-tighter">
-                 {filteredTransactions.filter(tx => tx.receipt).length} {t('invoices') || 'Facturas'}
-               </span>
-            </div>
+      {/* Top utility bar */}
+      <div className="flex items-center justify-end mb-4 gap-2">
             <button 
                 onClick={onToggleDisplayCurrency}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
@@ -127,33 +97,104 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                 <span className="hidden sm:inline">{displayCurrency}</span>
             </button>
             <div className="relative">
-               <select
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-colors cursor-pointer appearance-none hover:text-theme-primary pr-6"
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                value={selectedMonth}
+              <button 
+                onClick={() => setShowMonthPicker(!showMonthPicker)}
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
               >
-                 {(() => {
-                     const months = new Set<string>();
-                     const current = new Date().toISOString().slice(0, 7);
-                     months.add(current);
-                     transactions.forEach(t => months.add(t.date.slice(0, 7)));
-                     const sortedMonths = Array.from(months).sort().reverse();
-                     return (
-                       <>
-                         <option value="ALL">📅 {t('allPeriods') || t('allTime') || t('all') || 'Todos los periodos'}</option>
-                         {sortedMonths.map(m => (
-                           <option key={m} value={m}>{m}</option>
-                         ))}
-                       </>
-                     );
-                 })()}
-              </select>
-              <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" />
-            </div>
-          </div>
-        </div>
+                <span>{selectedMonth === 'ALL' ? (t('allPeriods') || 'All Time') : selectedMonth}</span>
+                <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
+              </button>
 
-        <div className="flex flex-col gap-4">
+              <AnimatePresence>
+                {showMonthPicker && (
+                  <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setShowMonthPicker(false)} />
+                    <motion.div 
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className="absolute top-full mt-2 right-0 w-48 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden"
+                    >
+                      <div className="max-h-[320px] overflow-y-auto no-scrollbar py-2">
+                        <button 
+                           onClick={() => {
+                             setSelectedMonth('ALL');
+                             setShowMonthPicker(false);
+                           }}
+                           className={`w-full text-left px-4 py-3 text-xs font-black transition-colors hover:bg-white/5 ${selectedMonth === 'ALL' ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+                        >
+                           📅 {t('allPeriods') || 'All Time'}
+                        </button>
+                        <div className="h-[1px] bg-white/5 my-1" />
+                        {(() => {
+                            const months = new Set<string>();
+                            const current = new Date().toISOString().slice(0, 7);
+                            months.add(current);
+                            transactions.forEach(t => months.add(t.date.slice(0, 7)));
+                            return Array.from(months).sort().reverse().map(m => (
+                                <button
+                                  key={m}
+                                  onClick={() => {
+                                    setSelectedMonth(m);
+                                    setShowMonthPicker(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors hover:bg-white/5 ${selectedMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+                                >
+                                  {m}
+                                </button>
+                            ));
+                        })()}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+      </div>
+
+      {/* Main Header */}
+      <div className="flex items-center gap-4 mb-8">
+           <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={onBack} 
+              className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+           >
+              <ArrowLeft size={20} />
+           </motion.button>
+           <div>
+               <h1 className="text-xl font-bold text-theme-primary">{t('transactions')}</h1>
+               <div className="flex items-center gap-2">
+                  <p className="text-xs text-theme-secondary font-medium">{t('fullHistory') || 'Historial completo'}</p>
+                  <div className="w-1 h-1 bg-white/10 rounded-full" />
+                  <span className="text-[10px] font-black text-theme-brand uppercase tracking-tighter">
+                    {filteredTransactions.length}
+                  </span>
+               </div>
+           </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
+          {/* Switcher Tabs */}
+          <div className="flex p-1 bg-theme-surface rounded-2xl border border-white/5 mb-2 w-full max-w-sm">
+            <motion.button 
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setViewMode('LIST')} 
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+            >
+              <Layers size={16} className={viewMode === 'LIST' ? 'text-theme-brand' : ''} />
+              {t('transactions')}
+            </motion.button>
+            <motion.button 
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setViewMode('INVOICES')} 
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${viewMode === 'INVOICES' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+            >
+              <Receipt size={16} className={viewMode === 'INVOICES' ? 'text-theme-brand' : ''} />
+              {t('invoices') || 'Facturas'}
+            </motion.button>
+          </div>
+
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-secondary" size={18} />
@@ -179,7 +220,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
               )}
             </button>
           </div>
-          
+
           <div className="flex flex-col gap-2">
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {(['ALL', TransactionType.INCOME, TransactionType.EXPENSE, TransactionType.TRANSFER] as const).map((type) => (
@@ -195,13 +236,12 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                   {type === 'ALL' ? t('allTypes') || t('all') : t(type.toLowerCase())}
                 </button>
               ))}
-            </div>
           </div>
         </div>
       </div>
 
       {/* Transactions List */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-24">
+      <div className="mt-4">
         {viewMode === 'INVOICES' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
             {filteredTransactions.filter(tx => tx.receipt).length === 0 ? (

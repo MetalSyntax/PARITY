@@ -110,33 +110,24 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
         <div className="flex flex-col h-full bg-theme-bg animate-in fade-in duration-500">
             {/* Header */}
             <div className="p-6 flex items-center justify-between sticky top-0 bg-theme-bg/80 backdrop-blur-md z-10">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                     <motion.button 
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={onBack} 
-                        className="p-2 bg-white/5 rounded-xl text-zinc-400"
+                        className="p-2 bg-theme-surface border border-white/5 rounded-full text-zinc-400 hover:text-white transition-colors"
                     >
                         <ChevronLeft size={20} />
                     </motion.button>
-                    <div className="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-2xl border border-white/5">
-                        <motion.button 
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => changeMonth(-1)} 
-                            className="text-zinc-500 hover:text-white"
-                        >
-                            <ChevronLeft size={16}/>
-                        </motion.button>
-                        <span className="text-sm font-bold text-theme-primary capitalize">{monthYear}</span>
-                        <motion.button 
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => changeMonth(1)} 
-                            className="text-zinc-500 hover:text-white"
-                        >
-                            <ChevronRight size={16}/>
-                        </motion.button>
+                    <div>
+                        <h1 className="text-xl font-bold text-theme-primary">{t('heatmap')}</h1>
+                        <div className="flex items-center gap-2">
+                            <p className="text-xs text-theme-secondary font-medium capitalize">{monthYear}</p>
+                            <div className="flex items-center gap-1">
+                                <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-white/5 rounded-md transition-colors"><ChevronLeft size={12} /></button>
+                                <button onClick={() => changeMonth(1)} className="p-1 hover:bg-white/5 rounded-md transition-colors"><ChevronRight size={12} /></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <motion.button 

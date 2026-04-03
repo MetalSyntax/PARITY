@@ -45,11 +45,14 @@ export const ScheduledNotificationsView: React.FC<ScheduledNotificationsViewProp
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack} 
-          className="p-2.5 bg-theme-surface border border-theme-soft rounded-2xl text-theme-secondary hover:text-theme-primary transition-colors"
+          className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
         >
           <ArrowLeft size={20} />
         </motion.button>
-        <h1 className="text-2xl font-black text-theme-primary tracking-tight">{t('scheduledNotifications')}</h1>
+        <div>
+           <h1 className="text-xl font-bold text-theme-primary">{t('scheduledNotifications')}</h1>
+           <p className="text-xs text-theme-secondary font-medium">{t('notificationsSubtitle') || 'Configuración de alertas inteligentes'}</p>
+        </div>
       </div>
 
       {/* Global Toggle */}

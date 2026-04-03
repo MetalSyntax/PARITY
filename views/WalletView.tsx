@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Wallet, TrendingUp, Filter, Search, Plus, DollarSign, ChevronDown, Edit2, Trash2, X, RefreshCw, Coins, Layers, Calendar, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '../types';
@@ -6,6 +6,7 @@ import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
 import { renderAccountIcon, ACCOUNT_ICONS } from '../utils/iconUtils';
 import { CurrencyAmount } from '../components/CurrencyAmount';
+import { TransactionItem } from '../components/TransactionItem';
 import { formatAmount } from '../utils/formatUtils';
 
 
@@ -61,6 +62,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
   }, [isEditing, onToggleBottomNav]);
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const currentMonth = selectedMonth; 
 
   // Parse YYYY-MM to Date object correctly for local time
@@ -79,10 +81,28 @@ export const WalletView: React.FC<WalletViewProps> = ({
       .reduce((acc, t) => acc + t.normalizedAmountUSD, 0);
 
   const netMonthly = totalIncome - totalExpense;
+  
+  const incomeTransactions = useMemo(() => {
+    return monthlyTransactions
+      .filter(t => t.type === TransactionType.INCOME)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [monthlyTransactions]);
 
+  const groupedTransactions = useMemo(() => {
+    const groups: Record<string, Transaction[]> = {};
+    incomeTransactions.forEach((tx) => {
+      const date = tx.date.split('T')[0];
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(tx);
+    });
+    return groups;
+  }, [incomeTransactions]);
 
-
-
+  const sortedDates = useMemo(() => {
+    return Object.keys(groupedTransactions).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    );
+  }, [groupedTransactions]);
 
   const scheduledIncomes = scheduledPayments.filter(p => p.type === TransactionType.INCOME);
 
@@ -158,41 +178,59 @@ export const WalletView: React.FC<WalletViewProps> = ({
   return (
     <div className="h-full flex flex-col p-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg overflow-hidden">
       
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <div className="flex items-center gap-4">
-             <motion.button 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onBack} 
-                className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
-             >
-                <ArrowLeft size={20} />
-             </motion.button>
-             <div>
-                <h1 className="text-xl font-bold text-theme-primary">{t('wallet')} & {t('income')}</h1>
-                <div className="flex items-center gap-1 group relative w-fit">
-                    <p className="text-[10px] text-theme-brand font-bold uppercase tracking-widest">{currentMonthName}</p>
-                    <ChevronDown size={10} className="text-theme-brand" />
-                    <select
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        value={selectedMonth}
+      {/* Utility Bar */}
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+         <div className="relative">
+            <button 
+                onClick={() => setShowMonthPicker(!showMonthPicker)}
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[140px] justify-between"
+            >
+                <span>{currentMonthName}</span>
+                <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+                {showMonthPicker && (
+                <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setShowMonthPicker(false)} />
+                    <motion.div 
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className="absolute top-full mt-2 left-0 w-48 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden"
                     >
+                    <div className="max-h-[320px] overflow-y-auto no-scrollbar py-2">
                         {(() => {
                             const months = new Set<string>();
                             const current = new Date().toISOString().slice(0, 7);
                             months.add(current);
                             transactions.forEach(t => months.add(t.date.slice(0, 7)));
-                            return Array.from(months).sort().reverse().map(m => (
-                                <option key={m} value={m}>{m}</option>
-                            ));
+                            return Array.from(months).sort().reverse().map(m => {
+                                const [y, mon] = m.split('-').map(Number);
+                                const dObj = new Date(y, mon - 1);
+                                const mName = dObj.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', { month: 'long', year: 'numeric' });
+                                
+                                return (
+                                    <button
+                                        key={m}
+                                        onClick={() => {
+                                            setSelectedMonth(m);
+                                            setShowMonthPicker(false);
+                                        }}
+                                        className={`w-full text-left px-4 py-3 text-xs font-black transition-colors hover:bg-white/5 ${selectedMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+                                    >
+                                        {mName}
+                                    </button>
+                                );
+                            });
                         })()}
-                    </select>
-                </div>
-             </div>
-        </div>
-        <div className="flex items-center gap-2">
+                    </div>
+                    </motion.div>
+                </>
+                )}
+            </AnimatePresence>
+         </div>
+         <div className="flex items-center gap-2">
             <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -220,7 +258,23 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     <Plus size={20} />
                 </motion.button>
             )}
-        </div>
+         </div>
+      </div>
+
+      {/* Main Header */}
+      <div className="flex items-center gap-4 mb-6">
+           <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={onBack} 
+              className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+           >
+              <ArrowLeft size={20} />
+           </motion.button>
+           <div>
+              <h1 className="text-xl font-bold text-theme-primary">{t('wallet')} & {t('income')}</h1>
+              <p className="text-xs text-theme-secondary font-medium">{t('walletSubtitle') || 'Tus fuentes de ingresos y cuentas'}</p>
+           </div>
       </div>
 
       {/* Tabs */}
@@ -347,7 +401,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                  weight="black"
                                  className="items-start"
                                  type="income"
-                               />
+                                />
                            </div>
                            
                            <div className="space-y-3">
@@ -389,6 +443,55 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                {netMonthly >= 0 ? `+ ${t('positiveFlow')}` : `- ${t('negativeFlow')}`}
                            </div>
                        </div>
+                  </div>
+
+                  {/* Realized Income List */}
+                  <div className="mt-8">
+                      <div className="flex items-center gap-2 mb-6 px-1">
+                          <TrendingUp size={14} className="text-theme-brand" />
+                          <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('realizedIncomeHistory') || 'Historial de Ingresos Realizados'}</span>
+                      </div>
+
+                      {sortedDates.length === 0 ? (
+                          <div className="text-center py-12 border border-dashed border-white/5 rounded-[2rem] bg-theme-surface/10">
+                              <p className="text-xs text-theme-secondary font-bold uppercase tracking-widest opacity-40">{t('noTransactionsFound')}</p>
+                          </div>
+                      ) : (
+                          <div className="flex flex-col gap-6">
+                              {sortedDates.map((date) => (
+                                  <div key={date}>
+                                      <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] mb-4 sticky top-0 bg-theme-bg/95 backdrop-blur-md py-2 z-10">
+                                          {(() => {
+                                              const dateObj = new Date(`${date}T12:00:00`);
+                                              const todayStr = new Date().toISOString().split('T')[0];
+                                              const yesterday = new Date();
+                                              yesterday.setDate(yesterday.getDate() - 1);
+                                              const yesterdayStr = yesterday.toISOString().split('T')[0];
+                                              
+                                              if (date === todayStr) return t('today');
+                                              if (date === yesterdayStr) return t('yesterday');
+                                              return dateObj.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', { day: 'numeric', month: 'long' });
+                                          })()}
+                                      </h3>
+                                      <div className="flex flex-col gap-3">
+                                          {groupedTransactions[date].map((tx) => (
+                                              <TransactionItem
+                                                  key={tx.id}
+                                                  transaction={tx}
+                                                  accounts={accounts}
+                                                  lang={lang}
+                                                  displayCurrency={displayCurrency}
+                                                  exchangeRate={exchangeRate}
+                                                  euroRate={euroRate}
+                                                  isBalanceVisible={isBalanceVisible}
+                                                  onClick={() => {}}
+                                              />
+                                          ))}
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      )}
                   </div>
               </div>
           ) : (

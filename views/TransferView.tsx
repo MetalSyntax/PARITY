@@ -95,11 +95,14 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={onBack} 
-                className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
+                className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
              >
                 <ArrowLeft size={20} />
              </motion.button>
-             <h1 className="text-xl font-bold text-theme-primary">{t('transfer')}</h1>
+             <div>
+                <h1 className="text-xl font-bold text-theme-primary">{t('transfer')}</h1>
+                <p className="text-xs text-theme-secondary font-medium">{t('transferSubtitle') || 'Movimientos entre tus cuentas'}</p>
+             </div>
         </div>
         <motion.button 
             whileHover={{ scale: 1.05 }}

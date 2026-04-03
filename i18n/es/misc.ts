@@ -327,5 +327,16 @@ export const misc = {
   pendingPayments: "Pagos Pendientes",
   editAccount: "Editar Cuenta",
   newAccount: "Nueva Cuenta",
-  currentMonth: "Mes Actual"
+  currentMonth: "Mes Actual",
+  autoPost: "Auto-Publicar",
+  enableAutoPost: "Habilitar Auto-Publicación",
+  targetWallet: "Billetera Destino",
+  templateLibrary: "Librería de Plantillas",
+  template_salary: "Sueldo / Ingreso",
+  template_rent: "Alquiler Mensual",
+  template_electric: "Recibo de Luz",
+  template_water: "Recibo de Agua",
+  template_internet: "Servicio de Internet",
+  template_netflix: "Streaming (Netflix/Spotify)",
+  useBaseBudget: 'Usar Base'
 };

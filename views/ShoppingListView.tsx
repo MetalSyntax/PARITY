@@ -170,15 +170,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             {/* Header */}
             <div className="px-6 pt-12 pb-6 flex items-center justify-between bg-theme-surface/50 backdrop-blur-md border-b border-theme-soft shrink-0">
                 <div className="flex items-center gap-4">
-                    <button 
-                        onClick={onBack}
-                        className="p-2 rounded-xl bg-theme-soft text-theme-secondary hover:text-theme-primary transition-colors"
+                    <motion.button 
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={onBack} 
+                        className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
                     >
-                        <ChevronLeft size={24} />
-                    </button>
+                        <ChevronLeft size={20} />
+                    </motion.button>
                     <div>
-                        <h1 className="text-xl font-black text-theme-primary tracking-tight">{currentList?.name || t('shoppingList')}</h1>
-                        <p className="text-[10px] text-theme-secondary font-bold uppercase tracking-widest">{items.length} {t('product') || 'Products'}</p>
+                        <h1 className="text-xl font-bold text-theme-primary">{currentList?.name || t('shoppingList')}</h1>
+                        <p className="text-xs text-theme-secondary font-medium">{items.length} {t('product') || 'productos'}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">

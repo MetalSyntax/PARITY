@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign, Euro } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign, Euro, RefreshCw, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig } from '../types';
+import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig, Account } from '../types';
 import { getTranslation } from '../i18n';
-import { CATEGORIES } from '../constants';
+import { CATEGORIES, RECURRING_TEMPLATES } from '../constants';
 
 interface ScheduledPaymentViewProps {
   onBack: () => void;
@@ -18,6 +18,7 @@ interface ScheduledPaymentViewProps {
   displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
   isBalanceVisible: boolean;
+  accounts: Account[];
 }
 
 export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({ 
@@ -32,7 +33,8 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   euroRate,
   displayCurrency,
   onToggleDisplayCurrency,
-  isBalanceVisible
+  isBalanceVisible,
+  accounts
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   
@@ -48,7 +50,17 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   const [newType, setNewType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [newFrequency, setNewFrequency] = useState<'Monthly' | 'Weekly' | 'Yearly' | 'Bi-weekly' | 'One-Time'>('Monthly');
   const [newCategory, setNewCategory] = useState(CATEGORIES[0].id);
+  const [newAutoPost, setNewAutoPost] = useState(false);
+  const [newAccountId, setNewAccountId] = useState(accounts[0]?.id || '');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  const applyTemplate = (template: any) => {
+      setNewName(t(template.name as any));
+      setNewType(template.type);
+      setNewCategory(template.category);
+      setNewFrequency(template.frequency);
+      setNewAutoPost(true);
+  };
   
   useEffect(() => {
     onToggleBottomNav(!isAdding);
@@ -65,10 +77,12 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
         setNewType(payment.type || TransactionType.EXPENSE);
         setNewFrequency(payment.frequency);
         setNewCategory(payment.category || (payment.type === TransactionType.INCOME ? 'income' : CATEGORIES[0].id));
+        setNewAutoPost(payment.autoPost || false);
+        setNewAccountId(payment.accountId || (accounts[0]?.id || ''));
         setIsAdding(true);
       }
     }
-  }, [editingId, scheduledPayments]);
+  }, [editingId, scheduledPayments, accounts]);
 
   const handleAdd = () => {
       if(!newName || !newAmount || !newDate) return;
@@ -81,7 +95,9 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
           date: newDate,
           frequency: newFrequency,
           type: newType,
-          category: newCategory
+          category: newCategory,
+          autoPost: newAutoPost,
+          accountId: newAutoPost ? newAccountId : undefined
       };
 
       if (editingId) {
@@ -102,6 +118,8 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
       setNewType(TransactionType.EXPENSE);
       setNewFrequency('Monthly');
       setNewCategory(CATEGORIES[0].id);
+      setNewAutoPost(false);
+      setNewAccountId(accounts[0]?.id || '');
   };
 
   const handleDelete = (id: string) => {
@@ -175,7 +193,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {incomeSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} accounts={accounts} />
               ))}
               {incomeSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -193,7 +211,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {expenseSchedules.map(p => (
-                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} />
+                <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} accounts={accounts} />
               ))}
               {expenseSchedules.length === 0 && (
                 <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
@@ -238,7 +256,29 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                           </button>
                       </div>
 
-                      <div className="p-6 overflow-y-auto no-scrollbar space-y-6 flex-1">
+                       <div className="p-6 overflow-y-auto no-scrollbar space-y-6 flex-1">
+                          {!editingId && (
+                            <div className="mb-6">
+                               <label className="text-[10px] font-bold text-theme-secondary uppercase tracking-[0.2em] mb-4 block opacity-60 px-1">{t('templateLibrary') === 'templateLibrary' ? 'Quick Template Library' : t('templateLibrary')}</label>
+                               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1">
+                                  {RECURRING_TEMPLATES.map(tpl => (
+                                     <button
+                                        key={tpl.id}
+                                        onClick={() => applyTemplate(tpl)}
+                                        className="flex-shrink-0 flex flex-col items-center gap-2 p-3 bg-theme-bg border border-white/5 rounded-[2rem] hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 text-center min-w-[85px] group"
+                                     >
+                                        <div className="w-10 h-10 rounded-full bg-theme-surface border border-white/5 flex items-center justify-center text-theme-secondary group-hover:text-theme-brand transition-colors">
+                                            {tpl.icon}
+                                        </div>
+                                        <span className="text-[8px] font-black text-theme-secondary uppercase tracking-tight opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            {t(tpl.name as any)}
+                                        </span>
+                                     </button>
+                                  ))}
+                               </div>
+                               <div className="h-px bg-gradient-to-r from-transparent via-theme-soft to-transparent mt-6 opacity-30" />
+                            </div>
+                          )}
                           {/* Type Toggle */}
                           <div className="flex p-1 bg-theme-bg rounded-2xl border border-white/5">
                             <button
@@ -330,6 +370,49 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                                    </div>
                                </div>
                             </div>
+                             <div className="pt-2">
+                                <label className="text-xs font-bold text-theme-secondary uppercase tracking-wider mb-3 block">{t('autoPost') === 'autoPost' ? 'Auto-Post Transaction' : t('autoPost')}</label>
+                                <div className="flex flex-col gap-4">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setNewAutoPost(!newAutoPost)}
+                                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${newAutoPost ? 'bg-theme-brand/10 border-theme-brand text-theme-brand' : 'bg-theme-bg border-white/5 text-theme-secondary'}`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Zap size={18} className={newAutoPost ? 'animate-pulse' : 'opacity-30'} />
+                                            <span className="font-bold">{t('enableAutoPost') === 'enableAutoPost' ? 'Enable Auto-Posting' : t('enableAutoPost')}</span>
+                                        </div>
+                                        <div className={`w-10 h-5 rounded-full relative transition-colors ${newAutoPost ? 'bg-theme-brand' : 'bg-zinc-700'}`}>
+                                            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${newAutoPost ? 'left-6' : 'left-1'}`} />
+                                        </div>
+                                    </button>
+
+                                    {newAutoPost && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            className="space-y-3 overflow-hidden px-1 pb-2"
+                                        >
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Coins size={14} className="text-theme-secondary" />
+                                                <label className="text-[10px] font-bold text-theme-secondary uppercase tracking-wider">{t('targetWallet') === 'targetWallet' ? 'Source Wallet' : t('targetWallet')}</label>
+                                            </div>
+                                            <div className="relative">
+                                                <select 
+                                                    className="w-full bg-theme-bg border border-white/5 p-4 rounded-2xl text-theme-primary outline-none focus:border-theme-soft/30 transition-colors appearance-none font-bold"
+                                                    value={newAccountId}
+                                                    onChange={e => setNewAccountId(e.target.value)}
+                                                >
+                                                    {accounts.map(acc => (
+                                                        <option key={acc.id} value={acc.id}>{acc.name} ({acc.currency})</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" size={16} />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </div>
+                             </div>
                           </div>
                       </div>
 
@@ -410,14 +493,20 @@ interface ScheduledItemProps {
   isBalanceVisible: boolean;
 }
 
-const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate, euroRate, displayCurrency, isBalanceVisible }) => {
+const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate, euroRate, displayCurrency, isBalanceVisible, accounts }) => {
   const isIncome = p.type === TransactionType.INCOME;
+  const targetAccount = accounts.find(a => a.id === p.accountId);
   
   return (
     <motion.div 
       layout
-      className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors"
+      className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors relative overflow-hidden"
     >
+      {p.autoPost && (
+        <div className="absolute top-0 right-0 p-1 bg-theme-brand/20 text-theme-brand rounded-bl-xl border-l border-b border-theme-brand/20">
+          <Zap size={10} className="animate-pulse" />
+        </div>
+      )}
       <div className="flex items-center gap-4">
           <motion.div 
             whileHover={{ scale: 1.1 }}
@@ -438,6 +527,9 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
               <h4 className="font-bold text-sm text-theme-primary">{p.name}</h4>
               <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
                 {new Date(p.date.split('T')[0] + 'T12:00:00')?.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} • {t(p.frequency === 'Bi-weekly' ? 'biweekly' : p.frequency === 'One-Time' ? 'oneTime' : p.frequency.toLowerCase()) || p.frequency}
+                {p.autoPost && targetAccount && (
+                  <span className="ml-2 text-theme-brand"> • {targetAccount.name} <Zap size={8} className="inline mb-0.5" /></span>
+                )}
               </p>
           </div>
       </div>

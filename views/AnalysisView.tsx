@@ -172,17 +172,20 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   return (
     <div className="h-full flex flex-col p-6 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex justify-between mb-8 flex-col-reverse items-normal">
         <div className="flex items-center gap-4">
             <motion.button 
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={onBack} 
-                className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"
+                className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
             >
                 <ArrowLeft size={20} />
             </motion.button>
-            <h1 className="text-xl font-bold text-theme-primary">{t('analysis')}</h1>
+            <div>
+               <h1 className="text-xl font-bold text-theme-primary">{t('analysis')}</h1>
+               <p className="text-xs text-theme-secondary font-medium">{t('financialOverview') || 'Análisis detallado de tus finanzas'}</p>
+            </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
             <motion.button 

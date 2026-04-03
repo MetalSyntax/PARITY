@@ -17,7 +17,9 @@ export const KEYS = {
     HISTORY: 'rate_history',
     SHOPPING: 'shopping_items',
     SHOPPING_LISTS: 'shopping_lists',
-    SYNC_QUEUE: 'sync_queue'
+    SYNC_QUEUE: 'sync_queue',
+    PROFILES: 'profiles',
+    ACTIVE_PROFILE_ID: 'active_profile_id'
 };
 
 export type StorageType = 'LOCAL_STORAGE' | 'INDEXED_DB';
@@ -37,6 +39,8 @@ export interface AppData {
     shoppingItems?: ShoppingItem[];
     shoppingLists?: ShoppingList[];
     syncQueue?: SyncAction[];
+    profiles?: UserProfile[];
+    activeProfileId?: string;
 }
 
 export class IndexedDBService {
@@ -73,7 +77,7 @@ export class IndexedDBService {
         await this.ensureOpen();
         
         // Encrypt everything before opening transaction
-        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping, encShoppingLists, encQueue] = await Promise.all([
+        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping, encShoppingLists, encQueue, encProfiles, encActiveProfileId] = await Promise.all([
             encryptData(data.accounts),
             encryptData(data.transactions),
             encryptData(data.scheduledPayments),
@@ -84,7 +88,9 @@ export class IndexedDBService {
             encryptData(data.rateHistory || []),
             encryptData(data.shoppingItems || []),
             encryptData(data.shoppingLists || []),
-            encryptData(data.syncQueue || [])
+            encryptData(data.syncQueue || []),
+            encryptData(data.profiles || []),
+            encryptData(data.activeProfileId || '')
         ]);
 
         return new Promise((resolve, reject) => {
@@ -103,6 +109,8 @@ export class IndexedDBService {
             store.put(encShopping, KEYS.SHOPPING);
             store.put(encShoppingLists, KEYS.SHOPPING_LISTS);
             store.put(encQueue, KEYS.SYNC_QUEUE);
+            store.put(encProfiles, KEYS.PROFILES);
+            store.put(encActiveProfileId, KEYS.ACTIVE_PROFILE_ID);
             
             // CLEANUP: Remove legacy root key if it exists to prevent read conflicts
             store.delete(KEYS.ROOT);
@@ -120,7 +128,13 @@ export class IndexedDBService {
             const store = tx.objectStore(STORE_NAME);
             
             const rawResults: any = {};
-            const keysToFetch = [KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED, KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS, KEYS.GOALS, KEYS.HISTORY, KEYS.SHOPPING, KEYS.SHOPPING_LISTS, KEYS.SYNC_QUEUE];
+            const keysToFetch = [
+                KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED, 
+                KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS, 
+                KEYS.GOALS, KEYS.HISTORY, KEYS.SHOPPING, 
+                KEYS.SHOPPING_LISTS, KEYS.SYNC_QUEUE,
+                KEYS.PROFILES, KEYS.ACTIVE_PROFILE_ID
+            ];
             const allKeysToFetch = [...keysToFetch, KEYS.ROOT];
             let fetchCompleted = 0;
 
@@ -149,7 +163,9 @@ export class IndexedDBService {
                         rateHistory: results[KEYS.HISTORY] || [],
                         shoppingItems: results[KEYS.SHOPPING] || [],
                         shoppingLists: results[KEYS.SHOPPING_LISTS] || [],
-                        syncQueue: results[KEYS.SYNC_QUEUE] || []
+                        syncQueue: results[KEYS.SYNC_QUEUE] || [],
+                        profiles: results[KEYS.PROFILES] || [],
+                        activeProfileId: results[KEYS.ACTIVE_PROFILE_ID] || ''
                     };
                     resolve(appData);
                     return;
@@ -232,6 +248,8 @@ export class IndexedDBService {
             store.delete(KEYS.SCHEDULED);
             store.delete(KEYS.PROFILE);
             store.delete(KEYS.METADATA);
+            store.delete(KEYS.PROFILES);
+            store.delete(KEYS.ACTIVE_PROFILE_ID);
 
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);

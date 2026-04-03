@@ -34,6 +34,7 @@ export interface SyncAction {
 }
 
 export interface UserProfile {
+  id: string;
   name: string;
   language: Language;
   profileImage?: string; // Base64 or URL
@@ -55,6 +56,7 @@ export interface Account {
   icon: string;
   color?: string; // For UI styling
   payrollClient?: string;
+  profileId?: string;
   updatedAt?: string;
 }
 
@@ -74,10 +76,12 @@ export interface Transaction {
   fee?: number; // Commission/fee for transfers
   updatedAt?: string;
   scheduledId?: string;
+  isAutoPosted?: boolean; // For recurring transaction badging
   receipt?: string; // Base64 image
   budgetMonth?: string; // YYYY-MM
   skipBalanceUpdate?: boolean;
   fiscalTag?: FiscalTag;
+  profileId?: string;
 }
 
 export type FiscalTag = 'TAXABLE_INCOME' | 'DEDUCTIBLE_EXPENSE' | 'NEUTRAL';
@@ -98,8 +102,12 @@ export interface ScheduledPayment {
     frequency: 'Monthly' | 'Weekly' | 'Yearly' | 'Bi-weekly' | 'One-Time';
     type?: TransactionType; // Optional for backward compatibility, defaults to EXPENSE
     category?: string; // Optional for backward compatibility
+    accountId?: string; // Required if autoPost is true
+    autoPost?: boolean;
+    isTemplate?: boolean; // If it's a template from the library
     lastNotified?: string; // ISO date string (YYYY-MM-DD)
     notificationsEnabled?: boolean;
+    profileId?: string;
     updatedAt?: string;
 }
 
@@ -111,6 +119,7 @@ export interface Budget {
     customIcon?: string;
     customColor?: string;
     parentCategoryId?: string;
+    profileId?: string;
     updatedAt?: string;
 }
 
@@ -136,6 +145,7 @@ export interface Goal {
     contributions?: GoalContribution[];
     completed?: boolean;
     categoryId?: string;
+    profileId?: string;
     updatedAt?: string;
 }
 
@@ -154,6 +164,7 @@ export interface ShoppingList {
     name: string;
     items: ShoppingItem[];
     createdAt: string;
+    profileId?: string;
     updatedAt?: string;
 }
 
@@ -161,6 +172,20 @@ export interface RateHistoryItem {
     date: string; // ISO string (YYYY-MM-DD)
     rate: number;
     currency?: Currency;
+}
+
+export type WidgetId = 'balanceCard' | 'converter' | 'balanceChart' | 'wallets' | 'expenses' | 'forecastCard' | 'fiscalSummary' | 'transactions' | 'incomeVsExpense' | 'dailySpending' | 'categoryBreakdown' | 'goals';
+
+export interface WidgetConfig {
+    id: WidgetId;
+    enabled: boolean;
+    config?: any;
+}
+
+export interface DashboardLayout {
+    leftColumn: WidgetId[];
+    rightColumn: WidgetId[];
+    widgets: WidgetConfig[];
 }
 
 export interface AppData {
@@ -178,6 +203,8 @@ export interface AppData {
     shoppingItems?: ShoppingItem[];
     shoppingLists?: ShoppingList[];
     syncQueue?: SyncAction[];
+    profiles?: UserProfile[];
+    activeProfileId?: string;
 }
 
 export interface ConfirmConfig {

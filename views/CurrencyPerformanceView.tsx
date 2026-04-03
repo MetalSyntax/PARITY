@@ -154,17 +154,19 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
     return (
         <div className="flex flex-col h-full bg-black text-white animate-in slide-in-from-right duration-500 overflow-hidden">
             {/* Header */}
-            <div className="p-6 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-10 font-bold">
+            <div className="p-6 flex items-center gap-4 sticky top-0 bg-black/80 backdrop-blur-md z-10 transition-all">
                 <motion.button 
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={onBack} 
-                    className="p-2 hover:bg-white/5 rounded-xl text-zinc-400 transition-colors"
+                    className="p-2 bg-zinc-900 border border-white/5 rounded-full text-zinc-400 hover:text-white transition-colors"
                 >
-                    <ChevronLeft size={24} />
+                    <ChevronLeft size={20} />
                 </motion.button>
-                <h2 className="text-sm font-black tracking-tight truncate max-w-[200px]">{t('currencyPerformance')}</h2>
-                <div className="w-10 h-10" /> {/* Spacer */}
+                <div>
+                   <h2 className="text-xl font-bold text-white">{t('currencyPerformance')}</h2>
+                   <p className="text-xs text-zinc-500 font-medium">{t('currencySubtitle') || 'Seguimiento de tasas y mercado'}</p>
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-32">
