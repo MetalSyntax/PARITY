@@ -10,28 +10,39 @@ const str2ab = (str: string) => {
   return enc.encode(str);
 };
 
-// Derive a key from the secret
-const getKey = async () => {
-  const keyMaterial = await window.crypto.subtle.importKey(
-    "raw",
-    str2ab(APP_SECRET),
-    { name: "PBKDF2" },
-    false,
-    ["deriveBits", "deriveKey"]
-  );
+// Cache the derived key so PBKDF2 only runs once per session.
+// Previously, each call to getKey() re-derived the key with 100k iterations,
+// causing idbService.save() (which calls encryptData 13x) to take several
+// seconds — long enough that a page refresh would abort the save mid-flight.
+let _cachedKeyPromise: Promise<CryptoKey> | null = null;
 
-  return window.crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: str2ab(APP_SALT), // Use salt from env
-      iterations: 100000,
-      hash: "SHA-256"
-    },
-    keyMaterial,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt"]
-  );
+const getKey = (): Promise<CryptoKey> => {
+  if (_cachedKeyPromise) return _cachedKeyPromise;
+
+  _cachedKeyPromise = (async () => {
+    const keyMaterial = await window.crypto.subtle.importKey(
+      "raw",
+      str2ab(APP_SECRET),
+      { name: "PBKDF2" },
+      false,
+      ["deriveBits", "deriveKey"]
+    );
+
+    return window.crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: str2ab(APP_SALT),
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  })();
+
+  return _cachedKeyPromise;
 };
 
 export const encryptData = async (data: any): Promise<string> => {

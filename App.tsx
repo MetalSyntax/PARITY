@@ -795,15 +795,20 @@ function AppContent() {
       shoppingItems,
       shoppingLists,
       profiles,
-      activeProfileId
+      activeProfileId,
+      syncQueue: [] // syncQueue is managed separately by syncService
     };
 
     const save = async () => {
-        if (storageType === 'INDEXED_DB') {
-            await idbService.save(data);
-        } else {
-             const encrypted = await encryptData(data); // Encrypt localStorage payload
-             localStorage.setItem(STORAGE_KEY, encrypted);
+        try {
+            if (storageType === 'INDEXED_DB') {
+                await idbService.save(data);
+            } else {
+                const encrypted = await encryptData(data);
+                localStorage.setItem(STORAGE_KEY, encrypted);
+            }
+        } catch (e) {
+            console.error('[PARITY] Failed to persist data:', e);
         }
     };
     
@@ -984,16 +989,17 @@ function AppContent() {
       profileId: data.profileId || activeProfileId
     };
 
-    setTransactions(prev => {
-        if (data.id) {
-            pushToSyncQueue('TRANSACTION', newTransaction.id, 'UPDATE', newTransaction);
-            return [newTransaction, ...prev.filter(t => t.id !== data.id)];
-        }
-        pushToSyncQueue('TRANSACTION', newTransaction.id, 'CREATE', newTransaction);
-        return [newTransaction, ...prev];
-    });
+    // Compute final transactions list
+    const finalTransactions: Transaction[] = data.id
+      ? [newTransaction, ...transactions.filter(t => t.id !== data.id)]
+      : [newTransaction, ...transactions];
 
-    setAccounts(currentAccounts.map(acc => {
+    // Compute final accounts list
+    const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
+    const txRate = data.exchangeRate || currentUSDRes;
+    const txEuroRate = data.euroRate || currentEuroRate;
+
+    const finalAccounts = currentAccounts.map(acc => {
       if (data.skipBalanceUpdate) return acc;
 
       if (acc.id === data.accountId) {
@@ -1003,10 +1009,6 @@ function AppContent() {
         }
 
         if (acc.currency !== data.originalCurrency) {
-          const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
-          const txRate = data.exchangeRate || currentUSDRes;
-          const txEuroRate = data.euroRate || currentEuroRate;
-
           if (isUSDType(acc.currency)) {
             if (data.originalCurrency === Currency.VES) deduction = deduction / txRate;
             else if (data.originalCurrency === Currency.EUR) deduction = deduction * (txEuroRate / txRate);
@@ -1026,10 +1028,6 @@ function AppContent() {
         let addition = data.amount - (data.fee || 0);
 
         if (data.originalCurrency !== acc.currency) {
-          const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
-          const txRate = data.exchangeRate || currentUSDRes;
-          const txEuroRate = data.euroRate || currentEuroRate;
-
           if (acc.currency === Currency.VES) {
              if (isUSDType(data.originalCurrency)) addition = (data.amount - (data.fee || 0)) * txRate;
              else if (data.originalCurrency === Currency.EUR) addition = (data.amount - (data.fee || 0)) * txEuroRate;
@@ -1046,7 +1044,34 @@ function AppContent() {
       }
 
       return acc;
-    }));
+    });
+
+    // --- Immediate persistence: save to IDB synchronously with computed values ---
+    // This guarantees data is written even if the user refreshes immediately.
+    idbService.save({
+      exchangeRate,
+      usdRateParallel,
+      euroRate,
+      euroRateParallel,
+      accounts: finalAccounts,
+      transactions: finalTransactions,
+      scheduledPayments,
+      userProfile,
+      budgets,
+      goals,
+      rateHistory,
+      shoppingItems,
+      shoppingLists,
+      profiles,
+      activeProfileId,
+      syncQueue: []
+    }).catch(e => console.error('[PARITY] Immediate save failed:', e));
+
+    // Update React state (also triggers the useEffect save as a backup)
+    setTransactions(finalTransactions);
+    setAccounts(finalAccounts);
+
+    pushToSyncQueue('TRANSACTION', newTransaction.id, data.id ? 'UPDATE' : 'CREATE', newTransaction);
 
     setShowAdd(false);
     if (shoppingItemToConvert) {
