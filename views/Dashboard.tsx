@@ -644,87 +644,93 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden relative bg-theme-bg">
       <div className="flex-1 overflow-y-auto no-scrollbar pb-32 w-full max-w-7xl mx-auto md:px-8 overscroll-y-auto">
-        <div className="flex justify-between items-center px-6 md:px-0 pt-12 pb-4 flex-shrink-0">
+        <div className="flex justify-between items-center px-6 md:px-0 pt-12 pb-6 flex-shrink-0">
           <div className="flex items-center gap-4">
-            <div className="flex wrap items-center gap-3 group relative">
-              <div
-                onClick={() => onNavigate("PROFILE")}
-                className="w-10 h-10 rounded-full bg-gradient-to-tr from-theme-brand to-purple-500 border border-white/20 flex items-center justify-center text-sm font-bold text-white shadow-lg cursor-pointer hover:scale-105 transition-transform overflow-hidden"
-              >
-                {userProfile.profileImage ? (
-                  <img src={userProfile.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  userProfile.name.slice(0, 2).toUpperCase()
-                )}
-              </div>
-              <div className="flex flex-col">
-                {isDevMode && !userProfile.hideDevMode && (
-                  <div className="flex items-center gap-1 mb-1">
-                    <span className="px-1.5 py-0.5 rounded-md bg-theme-brand/20 border border-theme-soft text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
-                      {t('devMode')}
-                    </span>
-                  </div>
-                )}
-                {!userProfile.hideWelcome && (
-                  <p className="text-[10px] text-theme-secondary uppercase tracking-widest font-bold">
-                    {t("welcome")}{(!userProfile.hideName && userProfile.name) ? `,` : ''}
-                  </p>
-                )}
-                {!userProfile.hideName && (
-                  <p className="text-sm font-black text-theme-primary">
-                    {userProfile.name}
-                  </p>
-                )}
-              </div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate("PROFILE")}
+              className="w-14 h-14 rounded-full bg-theme-surface border border-white/10 flex items-center justify-center text-lg font-black text-theme-primary shadow-2xl cursor-pointer overflow-hidden"
+            >
+              {userProfile.profileImage ? (
+                <img src={userProfile.profileImage} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                userProfile.name.slice(0, 2).toUpperCase()
+              )}
+            </motion.div>
+            <div className="flex flex-col">
+              {isDevMode && !userProfile.hideDevMode && (
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="px-1.5 py-0.5 rounded-2xl bg-theme-brand/20 border border-theme-soft text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
+                    {t('devMode') || 'DEV'}
+                  </span>
+                </div>
+              )}
+              {!userProfile.hideWelcome && (
+                <p className="text-[10px] text-theme-secondary uppercase tracking-[0.15em] font-black opacity-60 mb-0.5">
+                  {t("welcome_back") || "WELCOME BACK,"}
+                </p>
+              )}
+              {!userProfile.hideName && (
+                <p className="text-sm font-black text-theme-primary tracking-tight">
+                  {userProfile.name}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-               onClick={() => {
-                 if (navigator.onLine && onSync) onSync();
-               }}
-               className={`p-2 rounded-full transition-all flex items-center justify-center relative ${isSyncing ? 'animate-spin' : ''} ${syncPendingCount > 0 ? 'bg-orange-500/10 text-orange-400' : 'bg-theme-soft text-theme-secondary hover:text-theme-primary'}`}
-               title={syncPendingCount > 0 ? `${syncPendingCount} pending` : (navigator.onLine ? 'Synced' : 'Offline')}
-            >
-               {navigator.onLine ? <Cloud size={20} /> : <CloudOff size={20} className="opacity-50" />}
-               {syncPendingCount > 0 && (
-                 <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 bg-orange-500 border border-theme-bg rounded-full text-[8px] font-black text-white flex items-center justify-center shadow-lg">
-                   {syncPendingCount}
-                 </span>
-               )}
-            </button>
-            <button
-              onClick={() => setShowCustomizer(true)}
-              className="p-2 bg-theme-soft rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
-            >
-              <Settings size={20} />
-            </button>
+          <div className="flex flex-col-reverse items-end gap-3">
+            <div className="flex items-center gap-2">
+              <motion.button
+                 whileHover={{ scale: 1.1 }}
+                 whileTap={{ scale: 0.9 }}
+                 onClick={() => {
+                   if (navigator.onLine && onSync) onSync();
+                 }}
+                 className={`w-10 h-10 rounded-full transition-all flex items-center justify-center relative bg-theme-surface border border-white/5 text-theme-secondary hover:text-theme-primary shadow-lg ${isSyncing ? 'animate-spin' : ''}`}
+              >
+                 {navigator.onLine ? <Cloud size={18} /> : <CloudOff size={18} className="opacity-50" />}
+                 {syncPendingCount > 0 && (
+                   <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 bg-orange-500 border border-theme-bg rounded-full text-[8px] font-black text-white flex items-center justify-center shadow-lg">
+                     {syncPendingCount}
+                   </span>
+                 )}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowCustomizer(true)}
+                className="w-10 h-10 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-all flex items-center justify-center shadow-lg"
+              >
+                <Settings size={18} />
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onCheckUpdate}
+                className={`w-10 h-10 rounded-full transition-all flex items-center justify-center relative bg-theme-surface border border-white/5 text-theme-secondary hover:text-theme-primary shadow-lg ${needUpdate ? 'bg-theme-brand/20 text-theme-brand border-theme-brand/30' : ''}`}
+              >
+                {needUpdate ? <ArrowDownToLine size={18} /> : <RefreshCw size={18} />}
+                {needUpdate && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-theme-bg rounded-full" />
+                )}
+              </motion.button>
+            </div>
 
             <button
-              onClick={onCheckUpdate}
-              className={`p-2 rounded-full transition-all flex items-center justify-center relative ${needUpdate ? 'bg-theme-brand text-white shadow-lg shadow-theme-brand/20 animate-pulse' : 'bg-theme-soft text-theme-secondary hover:text-theme-primary'}`}
-              title={needUpdate ? t('updateAvailable') : t('checkUpdates')}
-            >
-              {needUpdate ? <ArrowDownToLine size={20} /> : <RefreshCw size={20} />}
-              {needUpdate && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-theme-bg rounded-full" />
-              )}
-            </button>
-            <button
               onClick={onOpenSettings}
-              className="bg-theme-soft border border-theme-soft hover:bg-theme-soft transition-colors px-4 py-2 rounded-2xl flex items-center gap-3"
+              className="bg-theme-surface/50 backdrop-blur-md border border-white/5 hover:border-theme-brand/20 transition-all px-5 py-3 rounded-2xl flex flex-col items-end gap-0.5 shadow-xl group"
             >
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-green-400 leading-tight">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black text-emerald-400">
                     USD: {exchangeRate?.toFixed(2)} Bs
                 </span>
-                <span className="text-[10px] font-black text-blue-400 leading-tight">
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black text-blue-400">
                     EUR: {euroRate?.toFixed(2)} Bs
                 </span>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-theme-brand/10 hidden md:flex items-center justify-center">
-                <TrendingUp size={14} className="text-theme-brand" />
               </div>
             </button>
           </div>
@@ -754,7 +760,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button 
                 key={i} 
                 onClick={() => onNavigate(action.id as any)} 
-                className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 rounded-[2rem] border border-white/5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start shadow-xl group"
+                className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start shadow-xl group"
               >
                 <div className={`w-16 h-16 rounded-2xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                   {action.icon}

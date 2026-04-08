@@ -59,7 +59,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/80 z-[70] backdrop-blur-xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-sm sm:max-w-5xl bg-theme-surface border border-white/10 rounded-[2.5rem] p-6 sm:p-10 shadow-2xl animate-in slide-in-from-bottom-10 duration-500 max-h-[90vh] overflow-y-auto no-scrollbar">
+      <div className="w-full max-w-sm sm:max-w-5xl bg-theme-surface border border-white/10 rounded-2xl p-6 sm:p-10 shadow-2xl animate-in slide-in-from-bottom-10 duration-500 max-h-[90vh] overflow-y-auto no-scrollbar">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h3 className="text-xl font-black text-theme-primary tracking-tight">
@@ -131,7 +131,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                       type="number" 
                       value={userProfile.dashboardTxLimit} 
                       onChange={(e) => onUpdateProfile({...userProfile, dashboardTxLimit: parseInt(e.target.value) || 0})}
-                      className="w-16 bg-theme-bg border border-theme-soft rounded-lg px-2 py-1 text-sm font-black text-theme-brand outline-none text-center"
+                      className="w-16 bg-theme-bg border border-theme-soft rounded-2xl px-2 py-1 text-sm font-black text-theme-brand outline-none text-center"
                       min="1"
                       max="50"
                   />

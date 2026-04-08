@@ -196,7 +196,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSave}
-          className="flex items-center gap-2 px-4 py-2 bg-theme-brand rounded-xl text-white font-bold shadow-lg shadow-theme-brand/20 text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-theme-brand rounded-2xl text-white font-bold shadow-lg shadow-theme-brand/20 text-sm"
         >
           <Save size={16} /> {t('saveProfile')}
         </motion.button>
@@ -216,7 +216,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => onSwitchProfile(p.id)}
-                  className={`w-20 h-20 rounded-[28px] border-2 transition-all flex flex-col items-center justify-center gap-1.5 relative overflow-hidden ${
+                  className={`w-20 h-20 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 relative overflow-hidden ${
                     isActive 
                       ? 'bg-theme-brand shadow-lg shadow-theme-brand/20 border-theme-brand text-white' 
                       : 'bg-theme-surface border-theme-soft text-theme-secondary hover:border-theme-brand/50'
@@ -255,7 +255,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowCreateModal(true)}
-            className="w-20 h-20 rounded-[28px] border-2 border-dashed border-theme-soft bg-theme-bg/50 text-theme-secondary flex flex-col items-center justify-center gap-1 hover:border-theme-brand/50 hover:text-theme-brand transition-all"
+            className="w-20 h-20 rounded-2xl border-2 border-dashed border-theme-soft bg-theme-bg/50 text-theme-secondary flex flex-col items-center justify-center gap-1 hover:border-theme-brand/50 hover:text-theme-brand transition-all"
           >
             <Plus size={20} />
             <span className="text-[9px] font-black uppercase">{t('add') || 'Add'}</span>
@@ -275,7 +275,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <label htmlFor="profile-image-upload" className="cursor-pointer">
             <motion.div 
               whileHover={{ scale: 1.05 }}
-              className="w-28 h-28 rounded-[34px] bg-gradient-to-br from-theme-brand to-indigo-600 flex items-center justify-center text-4xl font-black text-white shadow-2xl shadow-theme-brand/30 relative z-10 border-4 border-theme-bg overflow-hidden"
+              className="w-28 h-28 rounded-2xl bg-gradient-to-br from-theme-brand to-indigo-600 flex items-center justify-center text-4xl font-black text-white shadow-2xl shadow-theme-brand/30 relative z-10 border-4 border-theme-bg overflow-hidden"
             >
               {profileImage ? (
                 <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
@@ -303,7 +303,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       <div className="flex flex-col gap-6">
         {/* Profile Card */}
-        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-[24px] p-6 space-y-6 shadow-sm">
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-2xl p-6 space-y-6 shadow-sm">
           <div>
             <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-3 block flex items-center gap-2 opacity-60">
               <User size={12} className="text-theme-brand" /> {t('username')}
@@ -339,7 +339,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         {/* Customization Card */}
         <motion.div 
             variants={itemVariants} 
-            className="bg-theme-surface border border-theme-soft rounded-[24px] p-6 shadow-sm"
+            className="bg-theme-surface border border-theme-soft rounded-2xl p-6 shadow-sm"
         >
           <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-4 block flex items-center gap-2 opacity-60">
             <Layout size={12} className="text-theme-brand" /> {t('navbarFavorites')}
@@ -371,7 +371,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     onUpdateNavbarFavorites([...navbarFavorites, view.id]);
                   }
                 }}
-                className={`p-3 rounded-xl border text-[11px] font-bold transition-all flex items-center justify-between ${navbarFavorites.includes(view.id) ? 'bg-theme-brand/10 border-theme-soft text-theme-brand shadow-inner' : 'bg-theme-bg border-theme-soft text-theme-secondary opacity-70'}`}
+                className={`p-3 rounded-2xl border text-[11px] font-bold transition-all flex items-center justify-between ${navbarFavorites.includes(view.id) ? 'bg-theme-brand/10 border-theme-soft text-theme-brand shadow-inner' : 'bg-theme-bg border-theme-soft text-theme-secondary opacity-70'}`}
               >
                 {view.name}
                 {navbarFavorites.includes(view.id) && <CheckCircle2 size={12} />}
@@ -384,7 +384,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </motion.div>
 
         {/* Data & Backup Card */}
-        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-[24px] p-6 space-y-6 shadow-sm">
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-2xl p-6 space-y-6 shadow-sm">
           <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest block flex items-center gap-2 opacity-60">
             <Database size={12} className="text-theme-brand" /> {t('dataManagement')}
           </label>
@@ -425,7 +425,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </motion.div>
 
         {/* Notifications Card */}
-        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-[24px] p-6 space-y-6 shadow-sm">
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-2xl p-6 space-y-6 shadow-sm">
           <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest block flex items-center gap-2 opacity-60">
             <Bell size={12} className="text-theme-brand" /> {t('notifications')}
           </label>
@@ -456,7 +456,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         type="number" 
                         value={notificationLeadTime} 
                         onChange={(e) => setNotificationLeadTime(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-16 bg-theme-bg border border-theme-soft rounded-lg px-2 py-1 text-xs font-bold text-theme-primary text-center outline-none"
+                        className="w-16 bg-theme-bg border border-theme-soft rounded-2xl px-2 py-1 text-xs font-bold text-theme-primary text-center outline-none"
                         min="0"
                         max="30"
                       />
@@ -486,7 +486,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               initial="hidden"
               animate="visible"
               exit={{ opacity: 0, height: 0, marginTop: 0, overflow: 'hidden' }}
-              className="bg-theme-surface border border-theme-soft rounded-[28px] p-6 relative overflow-hidden group shadow-lg"
+              className="bg-theme-surface border border-theme-soft rounded-2xl p-6 relative overflow-hidden group shadow-lg"
             >
               <div className="absolute top-0 right-0 p-3 bg-theme-brand/10 group-hover:bg-theme-brand/20 transition-colors">
                 <Cloud size={16} className="text-theme-brand" />
@@ -563,7 +563,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
            <motion.div 
              initial={{ scale: 0.9, opacity: 0, y: 20 }}
              animate={{ scale: 1, opacity: 1, y: 0 }}
-             className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-[2.5rem] p-8 shadow-2xl"
+             className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-2xl p-8 shadow-2xl"
            >
               <h3 className="text-xl font-black text-theme-primary mb-2">{t('newProfile') || 'New Profile'}</h3>
               <p className="text-xs text-theme-secondary opacity-60 mb-6">{t('newProfileDesc') || 'Create a separate context for your family or household.'}</p>
@@ -611,7 +611,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {cloudBackups !== null && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+          <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
             <h3 className="text-xl font-black text-theme-primary mb-4">{t('restoreData')}</h3>
             {cloudBackups.length === 0 ? (
               <p className="text-sm text-theme-secondary text-center py-8">{t('noCloudBackups')}</p>
@@ -624,7 +624,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         onImport(bkp.id);
                         setCloudBackups(null);
                      }}
-                     className="w-full text-left p-4 rounded-xl bg-theme-bg/50 border border-theme-soft hover:bg-theme-soft hover:border-theme-brand/50 transition-all flex flex-col gap-1"
+                     className="w-full text-left p-4 rounded-2xl bg-theme-bg/50 border border-theme-soft hover:bg-theme-soft hover:border-theme-brand/50 transition-all flex flex-col gap-1"
                    >
                       <span className="text-sm font-bold text-theme-primary truncate block w-full">{bkp.name}</span>
                       <span className="text-[10px] text-theme-secondary opacity-70">

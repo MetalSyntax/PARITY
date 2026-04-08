@@ -160,7 +160,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 <div className="w-4 h-4 flex items-center justify-center">
                     {displayCurrency === Currency.VES ? (
@@ -245,7 +245,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                     animate={{ y: 0 }}
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="bg-theme-surface w-full max-w-xl rounded-t-[32px] sm:rounded-[32px] border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                    className="bg-theme-surface w-full max-w-xl rounded-t-2xl sm:rounded-2xl border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
                   >
                       <div className="p-6 border-b border-theme-soft flex justify-between items-center bg-theme-surface/50 shrink-0">
                           <h2 className="text-xl font-black text-theme-primary tracking-tight">
@@ -265,7 +265,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                                      <button
                                         key={tpl.id}
                                         onClick={() => applyTemplate(tpl)}
-                                        className="flex-shrink-0 flex flex-col items-center gap-2 p-3 bg-theme-bg border border-white/5 rounded-[2rem] hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 text-center min-w-[85px] group"
+                                        className="flex-shrink-0 flex flex-col items-center gap-2 p-3 bg-theme-bg border border-white/5 rounded-2xl hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 text-center min-w-[85px] group"
                                      >
                                         <div className="w-10 h-10 rounded-full bg-theme-surface border border-white/5 flex items-center justify-center text-theme-secondary group-hover:text-theme-brand transition-colors">
                                             {tpl.icon}
@@ -283,14 +283,14 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                           <div className="flex p-1 bg-theme-bg rounded-2xl border border-white/5">
                             <button
                                 onClick={() => setNewType(TransactionType.EXPENSE)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${newType === TransactionType.EXPENSE ? 'bg-theme-surface text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all ${newType === TransactionType.EXPENSE ? 'bg-theme-surface text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
                             >
                                 <TrendingDown size={18} className="text-red-400" />
                                 {t('expense')}
                             </button>
                             <button
                                 onClick={() => setNewType(TransactionType.INCOME)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${newType === TransactionType.INCOME ? 'bg-theme-surface text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all ${newType === TransactionType.INCOME ? 'bg-theme-surface text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
                             >
                                 <TrendingUp size={18} className="text-emerald-400" />
                                 {t('income')}
@@ -442,7 +442,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                     initial={{ y: "100%" }}
                     animate={{ y: 0 }}
                     exit={{ y: "100%" }}
-                    className="bg-theme-surface w-full max-w-sm rounded-t-[32px] sm:rounded-[32px] border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[80vh]"
+                    className="bg-theme-surface w-full max-w-sm rounded-t-2xl sm:rounded-2xl border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[80vh]"
                   >
                         <div className="p-6 border-b border-theme-soft flex justify-between items-center bg-theme-surface/50 shrink-0">
                             <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory')}</h2>

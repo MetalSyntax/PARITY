@@ -70,7 +70,7 @@ export const BalanceCardWidget: React.FC<{
   t: (key: string) => string;
 }> = ({ totalBalanceUSD, exchangeRate, euroRate, displayCurrency, isBalanceVisible, trendPercent, points, area, onToggleDisplayCurrency, onTogglePrivacy, t }) => (
   <div className="px-4 md:px-0">
-    <div className="bg-theme-surface rounded-[2.5rem] p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-theme border border-theme-soft bg-gradient-to-br from-theme-surface to-theme-bg group">
+    <div className="bg-theme-surface rounded-2xl p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-theme border border-theme-soft bg-gradient-to-br from-theme-surface to-theme-bg group">
       <div className="absolute top-8 right-8 flex gap-3 z-20">
         <button
           onClick={onToggleDisplayCurrency}
@@ -83,7 +83,7 @@ export const BalanceCardWidget: React.FC<{
         </button>
         <button
           onClick={onTogglePrivacy}
-          className="p-2.5 rounded-xl bg-theme-bg border border-theme-soft text-theme-secondary hover:text-theme-brand transition-all shadow-sm"
+          className="p-2.5 rounded-2xl bg-theme-bg border border-theme-soft text-theme-secondary hover:text-theme-brand transition-all shadow-sm"
         >
           {isBalanceVisible ? <Eye size={16} /> : <EyeOff size={16} />}
         </button>
@@ -133,7 +133,7 @@ export const BalanceCardWidget: React.FC<{
             />
           </h1>
           <div className="flex items-center gap-3">
-            <span className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-lg border border-theme-soft flex items-center gap-1">
+            <span className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-2xl border border-theme-soft flex items-center gap-1">
               <span className="opacity-50 text-[10px] uppercase">≈</span>
               {formatSecondaryAmount(totalBalanceUSD, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}
             </span>
@@ -162,20 +162,20 @@ export const BalanceChartWidget: React.FC<{
   t: (key: string) => string;
 }> = ({ type, setType, history, lang, exchangeRate, euroRate, displayCurrency, isBalanceVisible, t }) => (
   <div className="px-4 md:px-0">
-    <div className="bg-theme-surface p-6 rounded-[2rem] border border-theme-soft shadow-theme relative overflow-hidden group">
+    <div className="bg-theme-surface p-6 rounded-2xl border border-theme-soft shadow-theme relative overflow-hidden group">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Activity size={14} className="text-theme-brand" />
             <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-widest">{t("balanceHistory")}</h3>
           </div>
-          <div className="flex bg-theme-soft p-1 mr-5 rounded-lg border border-theme-soft">
-            <button onClick={() => setType('LINE')} className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${type === 'LINE' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('line')}</button>
-            <button onClick={() => setType('BAR')} className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${type === 'BAR' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('bar')}</button>
+          <div className="flex bg-theme-soft p-1 mr-5 rounded-2xl border border-theme-soft">
+            <button onClick={() => setType('LINE')} className={`px-2 py-0.5 rounded-2xl text-[8px] font-black transition-all ${type === 'LINE' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('line')}</button>
+            <button onClick={() => setType('BAR')} className={`px-2 py-0.5 rounded-2xl text-[8px] font-black transition-all ${type === 'BAR' ? 'bg-theme-brand text-white shadow-lg' : 'text-theme-secondary'}`}>{t('bar')}</button>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-theme-secondary px-2 py-1 bg-theme-soft rounded-lg">7D</span>
+          <span className="text-[10px] font-bold text-theme-secondary px-2 py-1 bg-theme-soft rounded-2xl">7D</span>
         </div>
       </div>
       <div className="h-48 w-full">
@@ -205,10 +205,10 @@ export const WalletsWidget: React.FC<{
     </div>
     <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
       {accounts.map((acc) => (
-        <div key={acc.id} className="min-w-[140px] bg-theme-surface border border-theme-soft p-3 rounded-xl flex flex-col gap-2 shadow-sm">
+        <div key={acc.id} className="min-w-[140px] bg-theme-surface border border-theme-soft p-3 rounded-2xl flex flex-col gap-2 shadow-sm">
           <div className="flex justify-between items-start">
             <div className="text-xl text-theme-primary">{renderAccountIcon(acc.icon, 20)}</div>
-            <span className="text-[10px] bg-theme-soft px-1.5 py-0.5 rounded text-theme-secondary">{acc.currency}</span>
+            <span className="text-[10px] bg-theme-soft px-1.5 py-0.5 rounded-2xl text-theme-secondary">{acc.currency}</span>
           </div>
           <div>
             <p className="text-theme-primary font-bold text-sm">{isBalanceVisible ? acc.balance?.toLocaleString() : "****"}</p>
@@ -236,7 +236,7 @@ export const ExpenseStructureWidget: React.FC<{
   onNavigate: (view: any) => void;
   t: (key: string) => string;
 }> = ({ type, setType, transactions, expenseSummary, selectedCategory, setSelectedCategory, lang, exchangeRate, euroRate, displayCurrency, isBalanceVisible, onNavigate, t }) => (
-  <div className="bg-theme-surface p-8 rounded-[2rem] border border-theme-soft shadow-theme overflow-hidden relative mx-4">
+  <div className="bg-theme-surface p-8 rounded-2xl border border-theme-soft shadow-theme overflow-hidden relative mx-4 sm:mx-0">
     <div className="flex justify-between items-start mb-8 relative z-10">
       <div>
         <div className="flex items-center gap-4 mb-1">
@@ -325,7 +325,7 @@ export const ForecastWidget: React.FC<{
   isBalanceVisible: boolean;
   t: (key: string) => string;
 }> = ({ forecast, runwayDays, exchangeRate, euroRate, displayCurrency, isBalanceVisible, t }) => (
-  <div className="bg-theme-surface p-6 rounded-[2rem] border border-theme-soft shadow-theme overflow-hidden relative group">
+  <div className="bg-theme-surface p-6 rounded-2xl border border-theme-soft shadow-theme overflow-hidden relative group">
     <div className="flex justify-between items-center mb-4">
       <div className="flex items-center gap-2">
         <TrendingUp size={14} className="text-theme-brand" />
@@ -365,7 +365,7 @@ export const FiscalSummaryWidget: React.FC<{
   onNavigate: (view: any) => void;
   t: (key: string) => string;
 }> = ({ fiscalMetrics, exchangeRate, euroRate, displayCurrency, isBalanceVisible, onNavigate, t }) => (
-  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
+  <div className="bg-theme-surface p-6 rounded-2xl border border-white/5 shadow-xl group relative overflow-hidden">
     <div className="flex justify-between items-center mb-6">
       <div className="flex items-center gap-3">
          <div className="bg-blue-500/20 text-blue-400 p-2 rounded-xl"><Receipt size={20} /></div>
@@ -406,7 +406,7 @@ export const TransactionsWidget: React.FC<{
   setSelectedTx: (t: Transaction) => void;
   t: (key: string) => string;
 }> = ({ transactions, groupedTransactions, accounts, userProfile, isBalanceVisible, displayCurrency, onNavigate, onEditTransaction, onDeleteTransaction, setSelectedTx, t }) => (
-  <div className="bg-theme-surface/50 md:bg-theme-surface rounded-3xl md:p-6 md:border border-theme-soft min-h-[500px]">
+  <div className="bg-theme-surface/50 md:bg-theme-surface rounded-2xl md:p-6 md:border border-theme-soft min-h-[500px]">
     <h2 className="text-sm font-semibold text-theme-secondary mb-6 px-2 md:px-0 uppercase tracking-wider">{t("recentTransactions")}</h2>
     {transactions.length === 0 ? (
       <div className="text-center py-20 text-theme-secondary text-sm">{t("noTransactions")}</div>
@@ -475,7 +475,7 @@ export const IncomeVsExpenseWidget: React.FC<{
   onNavigate: (view: any) => void;
   t: (key: string) => string;
 }> = ({ transactions, lang, exchangeRate, euroRate, displayCurrency, isBalanceVisible, onNavigate, t }) => (
-  <div className="bg-theme-surface p-8 rounded-[2rem] border border-theme-soft shadow-theme overflow-hidden relative mx-4">
+  <div className="bg-theme-surface p-8 rounded-2xl border border-theme-soft shadow-theme overflow-hidden relative">
     <div className="flex items-center justify-between mb-6 px-4 md:px-0">
       <h3 className="text-sm font-black text-theme-primary uppercase tracking-widest flex items-center gap-3">
         <ArrowRightLeft size={16} className="text-theme-brand" /> {t('incomeVsExpenses')}
@@ -499,7 +499,7 @@ export const DailySpendingWidget: React.FC<{
   isBalanceVisible: boolean;
   t: (key: string) => string;
 }> = ({ transactions, lang, exchangeRate, euroRate, displayCurrency, isBalanceVisible, t }) => (
-  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
+  <div className="bg-theme-surface p-6 rounded-2xl border border-white/5 shadow-xl group relative overflow-hidden">
     <div className="flex justify-between items-center mb-4">
       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("dailySpending")}</h3>
     </div>
@@ -521,7 +521,7 @@ export const GoalsWidget: React.FC<{
   const activeGoals = goals.filter(g => !g.completed);
 
   return (
-    <div className="bg-theme-surface p-6 rounded-[2rem] border border-theme-soft shadow-theme relative overflow-hidden group">
+    <div className="bg-theme-surface p-6 rounded-2xl border border-theme-soft shadow-theme relative overflow-hidden group">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <Trophy size={14} className="text-yellow-400" />
@@ -602,7 +602,7 @@ export const CategoryBreakdownWidget: React.FC<{
   isBalanceVisible: boolean;
   t: (key: string) => string;
 }> = ({ transactions, lang, exchangeRate, euroRate, displayCurrency, isBalanceVisible, t }) => (
-  <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group relative overflow-hidden">
+  <div className="bg-theme-surface p-6 rounded-2xl border border-white/5 shadow-xl group relative overflow-hidden">
     <div className="flex justify-between items-center mb-4">
       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("categoryBreakdown")}</h3>
     </div>

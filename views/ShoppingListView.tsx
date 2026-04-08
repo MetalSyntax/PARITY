@@ -186,7 +186,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => setLocalCurrency(prev => prev === Currency.USD ? Currency.VES : prev === Currency.VES ? Currency.EUR : Currency.USD)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${localCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/5 transition-all font-black text-[10px] ${localCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
                     >
                         <div className="w-4 h-4 flex items-center justify-center">
                             {localCurrency === Currency.VES ? (
@@ -214,7 +214,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             <div className="px-6 mt-4 flex items-center gap-2 overflow-x-auto no-scrollbar py-2">
                 <button 
                     onClick={() => setShowAddListForm(true)}
-                    className="flex-shrink-0 p-2.5 rounded-xl border border-dashed border-theme-soft text-theme-secondary hover:text-theme-brand hover:border-theme-brand transition-all"
+                    className="flex-shrink-0 p-2.5 rounded-2xl border border-dashed border-theme-soft text-theme-secondary hover:text-theme-brand hover:border-theme-brand transition-all"
                 >
                     <Plus size={18} />
                 </button>
@@ -224,7 +224,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                         <div key={list.id} className="flex-shrink-0 flex items-center gap-1">
                             <button
                                 onClick={() => onSetActiveListId(list.id)}
-                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap border flex items-center gap-2 ${
+                                className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap border flex items-center gap-2 ${
                                     isActive 
                                     ? 'bg-theme-brand text-white border-theme-brand shadow-lg shadow-theme-brand/20' 
                                     : 'bg-theme-surface border-theme-soft text-theme-secondary hover:border-theme-brand/30'
@@ -257,7 +257,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                         <motion.div 
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            className="bg-theme-surface/30 p-8 rounded-[2.5rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-center mt-10"
+                            className="bg-theme-surface/30 p-8 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-center mt-10"
                         >
                             <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-theme-secondary mb-6 shadow-xl border border-white/5 animate-bounce">
                                 <PlusSquare size={32} />
@@ -293,7 +293,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
-                                        className={`p-4 rounded-[1.5rem] border transition-all group relative cursor-pointer ${
+                                        className={`p-4 rounded-2xl border transition-all group relative cursor-pointer ${
                                             item.completed 
                                             ? 'bg-theme-soft/30 border-transparent opacity-60' 
                                             : 'bg-theme-surface border-theme-soft shadow-sm'
@@ -322,7 +322,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                             
                                             <div className="flex items-center gap-4 shrink-0">
                                                 <div className="flex flex-col items-end">
-                                                    <span className="text-[10px] font-black text-theme-secondary bg-theme-soft px-1.5 py-0.5 rounded uppercase leading-none flex items-center gap-0.5">
+                                                    <span className="text-[10px] font-black text-theme-secondary bg-theme-soft px-1.5 py-0.5 rounded-2xl uppercase leading-none flex items-center gap-0.5">
                                                         <span className="opacity-50 text-[8px]">x</span>
                                                         {item.quantity}
                                                     </span>
@@ -431,7 +431,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-[2.5rem] p-8 shadow-2xl"
+                            className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-2xl p-8 shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-lg font-black text-theme-primary">{listToEdit ? (t('editList') || 'Editar Lista') : (t('newList') || 'Nueva Lista')}</h3>
@@ -491,7 +491,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-[2.5rem] p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
+                            className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
                         >
                              <div className="flex justify-between items-center mb-6">
                                  <h3 className="text-lg font-black text-theme-primary">{editingItem ? t('editShoppingItem') : t('addShoppingItem')}</h3>
@@ -515,10 +515,10 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                     <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('category')}</label>
                                     <button 
                                         onClick={() => setShowCategorySelector(!showCategorySelector)}
-                                        className="w-full bg-theme-soft border border-theme-soft rounded-2xl px-4 py-3 flex items-center justify-between group hover:border-theme-brand/50 transition-all"
+                                        className="w-full p-4 bg-theme-brand text-white rounded-2xl font-bold mb-4 flex items-center justify-center gap-2 shadow-lg shadow-brand/20 transition-all"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${selectedCategory.color} bg-opacity-20`}>
+                                            <span className={`w-8 h-8 rounded-2xl flex items-center justify-center ${selectedCategory.color} bg-opacity-20`}>
                                                 {selectedCategory.icon}
                                             </span>
                                             <span className="text-sm font-bold text-theme-primary">{t(selectedCategory.name as any) || selectedCategory.name}</span>

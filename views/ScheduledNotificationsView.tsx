@@ -56,7 +56,7 @@ export const ScheduledNotificationsView: React.FC<ScheduledNotificationsViewProp
       </div>
 
       {/* Global Toggle */}
-      <div className="bg-theme-surface border border-theme-soft rounded-[2rem] p-6 mb-8 shadow-sm">
+      <div className="bg-theme-surface border border-theme-soft rounded-2xl p-6 mb-8 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`p-3 rounded-2xl ${notificationsEnabled ? 'bg-theme-brand/10 text-theme-brand' : 'bg-theme-soft text-theme-secondary'}`}>
@@ -82,7 +82,7 @@ export const ScheduledNotificationsView: React.FC<ScheduledNotificationsViewProp
 
       <div className="space-y-3">
         {scheduledPayments.length === 0 ? (
-          <div className="py-20 text-center border-2 border-dashed border-theme-soft rounded-[2.5rem] bg-theme-surface/30">
+          <div className="py-20 text-center border-2 border-dashed border-theme-soft rounded-2xl bg-theme-surface/30">
             <p className="text-sm text-theme-secondary font-bold">{t('noScheduledForNotifications')}</p>
           </div>
         ) : (
@@ -124,7 +124,7 @@ export const ScheduledNotificationsView: React.FC<ScheduledNotificationsViewProp
       </div>
 
       {notificationsEnabled && scheduledPayments.length > 0 && (
-         <div className="mt-8 p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-[2rem] flex items-start gap-4">
+         <div className="mt-8 p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex items-start gap-4">
             <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
                <CheckCircle2 size={16} />
             </div>

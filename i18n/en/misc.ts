@@ -339,4 +339,10 @@ export const misc = {
   template_internet: "Internet Service",
   template_netflix: "Streaming (Netflix/Spotify)",
   useBaseBudget: 'Use Base Budget',
+  welcome_back: 'WELCOME BACK',
+  noTransactions: 'No transactions',
+  noInvoices: 'No invoices',
+  noTransactionsFound: 'No transactions found',
+  layoutControl: 'Layout Control',
+  layoutControlDesc: 'Customize your dashboard layout.'
 };

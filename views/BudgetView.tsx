@@ -326,7 +326,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       <div className="flex items-center justify-end mb-4 gap-2">
             <button 
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 <div className="w-4 h-4 flex items-center justify-center">
                     {displayCurrency === Currency.VES ? (
@@ -342,7 +342,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-2xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
               >
                 <span>{selectedMonth}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
@@ -431,11 +431,11 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex p-1 bg-theme-surface rounded-2xl border border-white/5 mb-8 flex-shrink-0">
+      <div className="flex p-1 bg-theme-surface rounded-2xl mb-8 flex-shrink-0">
           <motion.button 
             whileTap={{ scale: 0.98 }}
             onClick={() => { setActiveTab('ENVELOPES'); setIsManaging(false); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'ENVELOPES' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${activeTab === 'ENVELOPES' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
           >
               <History size={16} className={activeTab === 'ENVELOPES' ? 'text-theme-brand' : ''} />
               {t('envelopes')}
@@ -443,7 +443,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
           <motion.button 
             whileTap={{ scale: 0.98 }}
             onClick={() => { setActiveTab('GOALS'); setIsManaging(false); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'GOALS' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${activeTab === 'GOALS' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
           >
               <Trophy size={16} className={activeTab === 'GOALS' ? 'text-theme-brand' : ''} />
               {t('goals')}
@@ -491,7 +491,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-8 bg-theme-surface border border-white/5 rounded-3xl p-6 shadow-2xl relative overflow-hidden group"
+                        className="mb-8 bg-theme-surface border border-white/5 rounded-2xl p-6 shadow-2xl relative overflow-hidden group"
                     >
                         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
                             <DollarSign size={120} />
@@ -603,7 +603,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                           <div className="flex items-center gap-4">
                               <motion.div 
                                 whileHover={{ rotate: [0, -10, 10, 0] }}
-                                className={`w-12 h-12 rounded-xl flex items-center justify-center ${cat.color.replace('text', 'bg').split('-')[0] + '-500/20'} border border-white/5`}
+                                className={`w-12 h-12 rounded-2xl flex items-center justify-center ${cat.color.replace('text', 'bg').split('-')[0] + '-500/20'} border border-white/5`}
                               >
                                 {typeof cat.icon === 'string' ? renderIcon(cat.icon, ENVELOPE_ICONS, 24) : cat.icon}
                               </motion.div>
@@ -718,7 +718,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                   );
                 })}
                 {filteredBudgets.length === 0 && (
-                     <div className="text-center p-12 border-2 border-dashed border-white/10 rounded-[2.5rem] bg-theme-surface/30 flex flex-col items-center gap-6">
+                     <div className="text-center p-12 border-2 border-dashed border-white/10 rounded-2xl bg-theme-surface/30 flex flex-col items-center gap-6">
                          <div className="w-20 h-20 rounded-full bg-theme-surface border border-white/5 flex items-center justify-center text-4xl shadow-2xl">
                              🎨
                          </div>
@@ -782,7 +782,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
-                className="bg-theme-surface w-full max-w-sm rounded-t-3xl sm:rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+                className="bg-theme-surface w-full max-w-sm rounded-t-2xl sm:rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
              >
                 <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                     <h3 className="font-bold text-theme-primary">{t('addEnvelopeTitle')}</h3>

@@ -216,7 +216,7 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
             <button
               key={year}
               onClick={() => setSelectedYear(year)}
-              className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${selectedYear === year ? 'bg-theme-brand text-white shadow-lg shadow-brand/20' : 'bg-theme-surface text-theme-secondary border border-white/5'}`}
+              className={`px-4 py-2 rounded-2xl text-xs font-black transition-all ${selectedYear === year ? 'bg-theme-brand text-white shadow-lg shadow-brand/20' : 'bg-theme-surface text-theme-secondary border border-white/5'}`}
             >
               {year}
             </button>
@@ -230,7 +230,7 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden"
+            className="bg-theme-surface p-6 rounded-2xl border border-white/5 shadow-xl relative overflow-hidden"
           >
             <div className="flex justify-between items-start mb-4">
                <div>
@@ -293,7 +293,7 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
              <button
                key={f}
                onClick={() => setFilter(f)}
-               className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${filter === f ? 'bg-theme-bg text-theme-primary shadow-sm' : 'text-theme-secondary opacity-50'}`}
+               className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all ${filter === f ? 'bg-theme-bg text-theme-primary shadow-sm' : 'text-theme-secondary opacity-50'}`}
              >
                {f === 'ALL' ? t('all') : f === 'TAXABLE' ? t('taxable') : t('deductible')}
              </button>
@@ -306,7 +306,7 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
           {displayedItems.length > 0 ? (
             displayedItems.map(tx => (
               <div key={tx.id} className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center gap-4 group hover:border-theme-soft transition-colors">
-                 <div className={`p-3 rounded-xl ${tx.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                 <div className={`p-3 rounded-2xl ${tx.type === TransactionType.INCOME ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'}`}>
                     {tx.type === TransactionType.INCOME ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                  </div>
                  <div className="flex-1 min-w-0">
@@ -330,7 +330,7 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
               </div>
             ))
           ) : (
-            <div className="text-center py-20 bg-theme-surface rounded-[2rem] border border-dashed border-white/10">
+            <div className="text-center py-20 bg-theme-surface rounded-2xl border border-dashed border-white/10">
                <Receipt size={40} className="mx-auto text-theme-secondary opacity-20 mb-4" />
                <p className="text-xs font-bold text-theme-secondary opacity-40 uppercase tracking-widest">{t('noTaggedTransactions')}</p>
             </div>

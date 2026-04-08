@@ -164,7 +164,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                                     setSelectedDay({ date: day, txs });
                                 }
                             }}
-                            className={`aspect-square rounded-xl transition-all duration-300 cursor-pointer ${day ? getIntensity(day) : 'opacity-0 cursor-default'}`}
+                            className={`aspect-square rounded-2xl transition-all duration-300 cursor-pointer ${day ? getIntensity(day) : 'opacity-0 cursor-default'}`}
                         />
                     ))}
                 </div>
@@ -188,7 +188,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                 {/* Spending Pattern Card */}
                 <motion.div 
                     whileHover={{ scale: 1.02 }}
-                    className="bg-gradient-to-br from-theme-surface to-zinc-900 p-6 rounded-[2.5rem] border border-white/5 mb-6 relative overflow-hidden group"
+                    className="bg-gradient-to-br from-theme-surface to-zinc-900 p-6 rounded-2xl border border-white/5 mb-6 relative overflow-hidden group"
                 >
                     <div className="flex items-start gap-4">
                         <motion.div 
@@ -219,7 +219,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                 </motion.div>
 
                 {/* Potential Savings */}
-                <div className="bg-zinc-900/50 p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+                <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-theme-brand/20 flex items-center justify-center text-theme-brand">
                             <TrendingUp size={16} className="rotate-45" />
@@ -245,7 +245,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: "100%", opacity: 0 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="bg-theme-surface w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl"
+                        className="bg-theme-surface w-full max-w-sm rounded-t-2xl sm:rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
                     >
                         <div className="p-8 border-b border-white/5 flex justify-between items-center">
                             <div>
@@ -310,7 +310,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
             {/* Pattern Details Modal */}
             {showPatternDetails && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-300">
-                    <div className="bg-theme-surface w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl animate-in slide-in-from-bottom-full duration-400">
+                    <div className="bg-theme-surface w-full max-w-sm rounded-t-2xl sm:rounded-2xl border border-white/10 overflow-hidden shadow-2xl animate-in slide-in-from-bottom-full duration-400">
                         <div className="p-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-red-500/10 to-transparent">
                             <div>
                                 <h3 className="text-sm font-black text-red-500 uppercase tracking-widest mb-1">{t('patternAnalysis')}</h3>
@@ -336,7 +336,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-red-500/5 rounded-3xl border border-red-500/10">
+                            <div className="p-6 bg-red-500/5 rounded-2xl border border-red-500/10">
                                 <h4 className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">{t('recommendation')}</h4>
                                 <p className="text-sm text-theme-secondary leading-relaxed font-medium">
                                     {t('recommendationDesc')}

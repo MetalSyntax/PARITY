@@ -83,7 +83,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
       <div className="flex items-center justify-end mb-4 gap-2">
             <button 
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 <div className="w-4 h-4 flex items-center justify-center">
                     {displayCurrency === Currency.VES ? (
@@ -99,7 +99,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-2xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
               >
                 <span>{selectedMonth === 'ALL' ? (t('allPeriods') || 'All Time') : selectedMonth}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
@@ -174,27 +174,27 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
            </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-          {/* Switcher Tabs */}
-          <div className="flex p-1 bg-theme-surface rounded-2xl border border-white/5 mb-2 w-full max-w-sm">
-            <motion.button 
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setViewMode('LIST')} 
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
-            >
-              <Layers size={16} className={viewMode === 'LIST' ? 'text-theme-brand' : ''} />
-              {t('transactions')}
-            </motion.button>
-            <motion.button 
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setViewMode('INVOICES')} 
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${viewMode === 'INVOICES' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
-            >
-              <Receipt size={16} className={viewMode === 'INVOICES' ? 'text-theme-brand' : ''} />
-              {t('invoices') || 'Facturas'}
-            </motion.button>
-          </div>
+      {/* Switcher Tabs */}
+      <div className="flex p-1 bg-theme-surface rounded-2xl mb-8 flex-shrink-0">
+        <motion.button 
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setViewMode('LIST')} 
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${viewMode === 'LIST' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
+        >
+          <Layers size={16} className={viewMode === 'LIST' ? 'text-theme-brand' : ''} />
+          {t('transactions')}
+        </motion.button>
+        <motion.button 
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setViewMode('INVOICES')} 
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${viewMode === 'INVOICES' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
+        >
+          <Receipt size={16} className={viewMode === 'INVOICES' ? 'text-theme-brand' : ''} />
+          {t('invoices') || 'Facturas'}
+        </motion.button>
+      </div>
 
+      <div className="flex flex-col gap-4">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-secondary" size={18} />
@@ -227,7 +227,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border ${
                     filterType === type
                       ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-brand/20'
                       : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary'
@@ -342,7 +342,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              className="bg-theme-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+              className="bg-theme-surface w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
             >
               <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <div className="flex items-center gap-3">
@@ -368,7 +368,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                         : 'bg-white/5 border-white/5 text-theme-secondary hover:text-theme-primary'
                     }`}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
                       <Filter size={18} />
                     </div>
                     <span className="font-bold text-sm tracking-wide uppercase">{t('allCategories') || t('all')}</span>

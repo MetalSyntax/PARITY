@@ -173,7 +173,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 {/* Inflation Shield Card */}
                 <motion.div 
                     whileHover={{ scale: 1.02 }}
-                    className="bg-zinc-900/50 p-6 rounded-[2.5rem] border border-white/5 mb-8 mt-4"
+                    className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5 mb-8 mt-4"
                 >
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-3">
@@ -220,7 +220,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-zinc-900 border border-amber-500/20 p-6 rounded-[2rem] mb-8 relative overflow-hidden group"
+                        className="bg-zinc-900 border border-amber-500/20 p-6 rounded-2xl mb-8 relative overflow-hidden group"
                     >
                         {/* Background Decoration */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -mr-16 -mt-16 rounded-full group-hover:bg-amber-500/10 transition-colors" />
@@ -279,7 +279,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 <div className="grid grid-cols-2 gap-4 mb-8">
                     <motion.div 
                         whileHover={{ scale: 1.02 }}
-                        className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem] flex flex-col items-center text-center justify-center"
+                        className="bg-zinc-900 border border-white/5 p-6 rounded-2xl flex flex-col items-center text-center justify-center"
                     >
                         <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('dollarBCV')}</p>
                         <div className="flex items-baseline gap-2 mb-2">
@@ -290,7 +290,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
 
                     <motion.div 
                         whileHover={{ scale: 1.02 }}
-                        className="bg-zinc-900 border border-white/5 p-6 rounded-[2rem] flex flex-col items-center text-center justify-center"
+                        className="bg-zinc-900 border border-white/5 p-6 rounded-2xl flex flex-col items-center text-center justify-center"
                     >
                         <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">{t('euroBCV')}</p>
                         <div className="flex items-baseline gap-2 mb-2">
@@ -319,7 +319,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 </div>
 
                 {/* Volatility Chart */}
-                <div className="bg-zinc-900/50 p-6 rounded-[2.5rem] border border-white/5 mb-8">
+                <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5 mb-8">
                     <div className="flex justify-between items-start mb-6">
                         <div>
                             <h3 className="font-bold text-theme-primary">{t('volatilitySpread')}</h3>
@@ -369,7 +369,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                                 <div key={i} className="bg-zinc-900/50 border border-white/5 p-4 rounded-2xl animate-pulse h-16" />
                             ))
                         ) : activeHistory.length === 0 ? (
-                            <div className="p-8 text-center text-zinc-600 text-sm border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                            <div className="p-8 text-center text-zinc-600 text-sm border-2 border-dashed border-white/5 rounded-2xl">
                                 {t('noData')}
                             </div>
                         ) : (
@@ -439,7 +439,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="absolute inset-0 bg-zinc-900/80 p-8 rounded-[2.5rem] border border-white/10 flex flex-col items-center text-center justify-center"
+                            className="absolute inset-0 bg-zinc-900/80 p-8 rounded-2xl border border-white/10 flex flex-col items-center text-center justify-center"
                         >
                             <div className={`w-16 h-16 rounded-full ${achievementSlides[currentSlide].bg} flex items-center justify-center ${achievementSlides[currentSlide].color} mb-6 shadow-lg`}>
                                 {achievementSlides[currentSlide].icon}

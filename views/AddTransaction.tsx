@@ -573,7 +573,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       {/* Account Selector Modal */}
       {showAccountSelector && (
           <div className="absolute inset-0 bg-black/90 z-50 flex flex-col justify-end animate-in fade-in duration-200">
-              <div className="bg-theme-surface rounded-t-3xl p-6 h-[70%] overflow-y-auto no-scrollbar">
+              <div className="bg-theme-surface rounded-t-2xl p-6 h-[70%] overflow-y-auto no-scrollbar">
                   <div className="flex justify-between items-center mb-6">
                       <h3 className="font-bold text-xl text-theme-primary">{t('selectAccount')}</h3>
                       <button onClick={() => setShowAccountSelector(null)} className="p-2 bg-white/10 rounded-full text-theme-secondary"><X size={20}/></button>
@@ -634,7 +634,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                  }
                                  setShowAccountSelector(null);
                              }}
-                             className={`p-4 rounded-xl flex items-center justify-between border ${
+                             className={`p-4 rounded-2xl flex items-center justify-between border ${
                                  (showAccountSelector === 'FROM' ? fromAccountId : toAccountId) === acc.id 
                                  ? 'border-theme-soft bg-theme-brand/10' 
                                  : 'border-white/5 bg-white/5'
@@ -657,17 +657,17 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-4 relative">
-        <button onClick={handleClose} className="p-2 bg-white/10 rounded-full text-theme-secondary hover:bg-white/20 transition-colors">
+        <button onClick={handleClose} className="p-2 bg-white/10 rounded-2xl text-theme-secondary hover:bg-white/20 transition-colors">
           <X size={20} />
         </button>
         
         {/* Type Switcher */}
-        <div className="flex items-center bg-theme-surface rounded-full p-1 border border-white/5">
+        <div className="flex items-center bg-theme-surface rounded-2xl p-1 border border-white/5">
             {[TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.TRANSFER].map((tType) => (
                 <button
                     key={tType}
                     onClick={() => setType(tType)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    className={`px-3 py-1.5 rounded-2xl text-xs font-bold transition-all ${
                         type === tType 
                         ? (tType === TransactionType.EXPENSE ? 'bg-red-500/20 text-red-400' : tType === TransactionType.INCOME ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400') 
                         : 'text-theme-secondary hover:text-theme-primary'
@@ -679,12 +679,12 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         </div>
 
         <div className="relative">
-            <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white/10 rounded-full text-theme-secondary hover:bg-white/20 transition-colors">
+            <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white/10 rounded-2xl text-theme-secondary hover:bg-white/20 transition-colors">
               <div className="w-5 h-5 flex items-center justify-center font-bold pb-2">...</div>
             </button>
             {showMenu && (
-                <div className="absolute right-0 top-12 bg-theme-surface border border-white/10 rounded-xl shadow-2xl p-2 min-w-[150px] z-50 animate-in fade-in zoom-in-95">
-                    <button onClick={handleReset} className="w-full text-left px-4 py-2 text-sm text-theme-primary hover:bg-white/5 rounded-lg">{t('resetForm')}</button>
+                <div className="absolute right-0 top-12 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[150px] z-50 animate-in fade-in zoom-in-95">
+                    <button onClick={handleReset} className="w-full text-left px-4 py-2 text-sm text-theme-primary hover:bg-white/5 rounded-2xl">{t('resetForm')}</button>
                 </div>
             )}
         </div>
@@ -734,17 +734,17 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                        }
                    }
                }}
-               className="flex items-center gap-1 bg-theme-surface hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition-all"
+               className="flex items-center gap-1 bg-theme-surface hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-2xl transition-all"
              >
                <span className="text-sm font-bold text-theme-brand">{currency === Currency.VES ? 'Bs' : currency}</span>
                <ChevronDown size={14} className="text-theme-secondary" />
              </button>
 
              {/* Account Selection UX */}
-             <div className="flex items-center bg-theme-surface rounded-full p-1 border border-white/10">
+             <div className="flex items-center bg-theme-surface rounded-2xl p-1 border border-white/10">
                  <button 
                     onClick={() => setShowAccountSelector('FROM')}
-                    className="flex items-center gap-2 px-3 py-1 rounded-full hover:bg-white/5"
+                    className="flex items-center gap-2 px-3 py-1 rounded-2xl hover:bg-white/5"
                  >
                      <span className="text-sm">{renderAccountIcon(getActiveAccount(fromAccountId).icon, 16)}</span>
                      <span className="text-xs font-bold text-theme-secondary max-w-[60px] truncate">{getActiveAccount(fromAccountId).name}</span>
@@ -755,7 +755,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         <ArrowRightLeft size={12} className="text-theme-secondary mx-1" />
                         <button 
                             onClick={() => setShowAccountSelector('TO')}
-                            className="flex items-center gap-2 px-3 py-1 rounded-full hover:bg-white/5"
+                            className="flex items-center gap-2 px-3 py-1 rounded-2xl hover:bg-white/5"
                         >
                             <span className="text-sm">{renderAccountIcon(getActiveAccount(toAccountId).icon, 16)}</span>
                             <span className="text-xs font-bold text-theme-secondary max-w-[60px] truncate">{getActiveAccount(toAccountId).name}</span>
@@ -770,7 +770,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         {(type === TransactionType.TRANSFER || type === TransactionType.EXPENSE) && (
             <div className="flex flex-col gap-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
                 {/* Summary Section */}
-                <div className="bg-theme-brand/5 rounded-[2rem] p-5 backdrop-blur-sm">
+                <div className="bg-theme-brand/5 rounded-2xl p-5 backdrop-blur-sm">
                     {type === TransactionType.TRANSFER ? (
                         <>
                             <div className="flex items-center justify-between mb-3">
@@ -832,7 +832,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     )}
                 </div>
                 {/* Manual Exchange Rate & Commissions Card */}
-                <div className="bg-theme-surface rounded-[2rem] border border-white/5 overflow-hidden shadow-2xl">
+                <div className="bg-theme-surface rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
                     {/* Manual Exchange Rate for Multi-currency Transfer */}
                     {type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
                         <div className="p-5 border-b border-white/5 bg-white/[0.01]">
@@ -841,7 +841,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                     <TrendingUp size={14} className="text-theme-brand" />
                                     {t('exchangeRate')}
                                 </span>
-                                <span className="text-[10px] font-black text-theme-secondary opacity-50 px-2 py-0.5 bg-white/5 rounded-lg">
+                                <span className="text-[10px] font-black text-theme-secondary opacity-50 px-2 py-0.5 bg-white/5 rounded-2xl">
                                     1 {getActiveAccount(fromAccountId).currency}
                                 </span>
                             </div>
@@ -938,7 +938,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     <button 
                         onClick={() => setShowScanOptions(!showScanOptions)} 
                         title={t('scanOptions')} 
-                        className={`p-2.5 rounded-xl transition-all shadow-lg border ${showScanOptions || isScanning ? 'bg-theme-brand text-white border-theme-soft' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
+                        className={`p-2.5 rounded-2xl transition-all shadow-lg border ${showScanOptions || isScanning ? 'bg-theme-brand text-white border-theme-soft' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
                     >
                         {isScanning ? <Loader2 size={18} className="animate-spin text-white" /> : <Camera size={18} />}
                     </button>
@@ -948,7 +948,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             <div className="relative">
                                 <button
                                     onClick={() => { setShowScanOptions(false); startCamera(); }} 
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
                                 >
                                     <Camera size={16} className="text-theme-brand" />
                                     <span className="font-bold">{t('openCamera')}</span>
@@ -965,7 +965,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                 />
                                 <label 
                                     htmlFor="gallery-input-main" 
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
                                 >
                                     <ImageIcon size={16} className="text-theme-brand" />
                                     <span className="font-bold">{t('attachImage')}</span>
@@ -977,7 +977,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
                 <button 
                     onClick={handleSpeechInput} 
-                    className={`p-2.5 rounded-xl transition-all shadow-lg ${isListening ? 'bg-red-500 text-white animate-pulse shadow-red-500/20' : 'bg-theme-brand hover:brightness-110 text-white shadow-brand/20'}`}
+                    className={`p-2.5 rounded-2xl transition-all shadow-lg ${isListening ? 'bg-red-500 text-white animate-pulse shadow-red-500/20' : 'bg-theme-brand hover:brightness-110 text-white shadow-brand/20'}`}
                 >
                     <Mic size={18} />
                 </button>
@@ -991,18 +991,18 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     <img 
                       src={receiptImage} 
                       alt="Receipt" 
-                      className="w-20 h-24 object-cover rounded-xl border-2 border-theme-brand shadow-lg" 
+                      className="w-20 h-24 object-cover rounded-2xl border-2 border-theme-brand shadow-lg" 
                     />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-1.5 backdrop-blur-sm">
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center gap-1.5 backdrop-blur-sm">
                         <button 
                           onClick={() => { setSelectedImage(receiptImage); setShowCropModal(true); }}
-                          className="p-1.5 bg-amber-500 text-white rounded-lg shadow-lg hover:scale-110 transition-transform"
+                          className="p-1.5 bg-amber-500 text-white rounded-2xl shadow-lg hover:scale-110 transition-transform"
                         >
                             <Edit2 size={14} />
                         </button>
                         <button 
                           onClick={() => setReceiptImage(null)}
-                          className="p-1.5 bg-red-500 text-white rounded-lg shadow-lg hover:scale-110 transition-transform"
+                          className="p-1.5 bg-red-500 text-white rounded-2xl shadow-lg hover:scale-110 transition-transform"
                         >
                             <Trash2 size={14} />
                         </button>
@@ -1020,7 +1020,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         type="date" 
                         value={date} 
                         onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 pl-3 text-theme-primary outline-none focus:border-theme-soft transition-colors text-sm font-bold"
+                        className="w-full bg-theme-surface border border-white/5 rounded-2xl p-3 pl-3 text-theme-primary outline-none focus:border-theme-soft transition-colors text-sm font-bold"
                     />
 
                  </div>
@@ -1030,7 +1030,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                  <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('category') || 'Category'}</label>
                  <button 
                      onClick={() => setShowCategoryModal(true)}
-                     className="w-full bg-theme-surface border border-white/5 rounded-xl p-3 flex items-center justify-between group hover:border-theme-soft transition-colors h-[46px]"
+                     className="w-full bg-theme-surface border border-white/5 rounded-2xl p-3 flex items-center justify-between group hover:border-theme-soft transition-colors h-[46px]"
                  >
                     <div className="flex items-center gap-2 overflow-hidden">
                         <span className={`${CATEGORIES.find(c => c.id === categoryId)?.color || 'text-theme-primary'}`}>
@@ -1058,14 +1058,14 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                  <div className="flex bg-theme-surface/50 backdrop-blur-md border border-white/5 rounded-2xl p-1.5 gap-1.5">
                      <button
                         onClick={() => setFiscalTag('NEUTRAL')}
-                        className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${fiscalTag === 'NEUTRAL' ? 'bg-white/10 text-theme-primary shadow-lg ring-1 ring-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
+                        className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all duration-300 ${fiscalTag === 'NEUTRAL' ? 'bg-white/10 text-theme-primary shadow-lg ring-1 ring-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
                      >
                          {t('neutral')}
                      </button>
                      {type === TransactionType.INCOME && (
                          <button
                             onClick={() => setFiscalTag('TAXABLE_INCOME')}
-                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${fiscalTag === 'TAXABLE_INCOME' ? 'bg-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/20' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
+                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all duration-300 ${fiscalTag === 'TAXABLE_INCOME' ? 'bg-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/20' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
                          >
                              {t('taxableIncome')}
                          </button>
@@ -1073,7 +1073,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                      {type === TransactionType.EXPENSE && (
                          <button
                             onClick={() => setFiscalTag('DEDUCTIBLE_EXPENSE')}
-                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${fiscalTag === 'DEDUCTIBLE_EXPENSE' ? 'bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500/20' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
+                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all duration-300 ${fiscalTag === 'DEDUCTIBLE_EXPENSE' ? 'bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500/20' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
                          >
                              {t('deductibleExpense')}
                          </button>
@@ -1091,7 +1091,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 <button 
                     type="button"
                     onClick={() => setShowBudgetMonthPicker(!showBudgetMonthPicker)}
-                    className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-1.5 flex items-center justify-between text-[11px] text-theme-secondary font-black uppercase tracking-widest hover:bg-theme-brand/10 hover:text-theme-brand transition-all cursor-pointer"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-1.5 flex items-center justify-between text-[11px] text-theme-secondary font-black uppercase tracking-widest hover:bg-theme-brand/10 hover:text-theme-brand transition-all cursor-pointer"
                 >
                     <span className="flex items-center gap-2">
                         <Calendar size={12} />
@@ -1148,7 +1148,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                   key={op}
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => handleKeyPress(op)}
-                  className="flex-1 bg-theme-brand/10 hover:bg-theme-brand/20 text-theme-brand py-2 rounded-lg font-bold"
+                  className="flex-1 bg-theme-brand/10 hover:bg-theme-brand/20 text-theme-brand py-2 rounded-2xl font-bold"
                >
                  {op}
                </button>
@@ -1224,7 +1224,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             <div className="p-4 border-b border-white/5 bg-theme-surface">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory') || 'Select Category'}</h2>
-                    <button onClick={() => { setShowCategoryModal(false); setCategorySearch(''); }} className="p-2 bg-white/5 rounded-full text-theme-secondary hover:text-theme-primary"><X size={20}/></button>
+                    <button onClick={() => { setShowCategoryModal(false); setCategorySearch(''); }} className="p-2 bg-white/5 rounded-2xl text-theme-secondary hover:text-theme-primary"><X size={20}/></button>
                 </div>
                 {/* Search Bar */}
                 <div className="relative">
@@ -1233,7 +1233,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
                         placeholder={t('search') || 'Search...'}
-                        className="w-full bg-theme-bg border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-sm text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-soft transition-colors"
+                        className="w-full bg-theme-bg border border-white/5 rounded-2xl py-2.5 pl-10 pr-4 text-sm text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-soft transition-colors"
                         autoFocus
                     />
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary" />
@@ -1274,9 +1274,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                              <div key={cat.id} className="bg-theme-surface border border-white/5 rounded-2xl p-4">
                                  <button
                                      onClick={() => { setCategoryId(cat.id); setShowCategoryModal(false); setCategorySearch(''); }}
-                                     className={`w-full flex items-center gap-3 mb-3 p-2 rounded-xl transition-colors ${categoryId === cat.id ? 'bg-theme-brand/10 text-theme-brand' : 'hover:bg-white/5'}`}
+                                     className={`w-full flex items-center gap-3 mb-3 p-2 rounded-2xl transition-colors ${categoryId === cat.id ? 'bg-theme-brand/10 text-theme-brand' : 'hover:bg-white/5'}`}
                                  >
-                                     <div className={`p-2 rounded-lg ${cat.color} bg-opacity-20`}>
+                                     <div className={`p-2 rounded-2xl ${cat.color} bg-opacity-20`}>
                                          {cat.icon}
                                      </div>
                                      <span className="text-lg font-bold text-theme-primary flex-1 text-left">
@@ -1296,7 +1296,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                                      setShowCategoryModal(false); 
                                                      setCategorySearch('');
                                                  }}
-                                                 className="px-3 py-1.5 bg-theme-bg/50 border border-white/5 rounded-lg text-xs font-medium text-theme-secondary hover:bg-white/10 hover:text-theme-primary transition-colors capitalize"
+                                                 className="px-3 py-1.5 bg-theme-bg/50 border border-white/5 rounded-2xl text-xs font-medium text-theme-secondary hover:bg-white/10 hover:text-theme-primary transition-colors capitalize"
                                              >
                                                  {key}
                                              </button>
@@ -1316,7 +1316,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
            <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col p-4 pb-[100px] animate-in fade-in zoom-in-95 duration-200">
                <div className="flex justify-between items-center mb-4">
                    <h3 className="text-white font-bold text-sm uppercase tracking-widest">{t('selectTotalSection')}</h3>
-                   <button onClick={() => { setShowCropModal(false); setSelectedImage(null); }} className="p-2 bg-white/10 rounded-full text-white">
+                   <button onClick={() => { setShowCropModal(false); setSelectedImage(null); }} className="p-2 bg-white/10 rounded-2xl text-white">
                        <X size={20} />
                    </button>
                </div>
@@ -1332,7 +1332,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                    
                    {/* Selection Overlay */}
                    <div 
-                        className="absolute border-2 border-theme-soft shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] cursor-move rounded-lg"
+                        className="absolute border-2 border-theme-soft shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] cursor-move rounded-2xl"
                         style={{
                             left: `${cropBox.x}%`,
                             top: `${cropBox.y}%`,
@@ -1390,7 +1390,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             window.addEventListener('mouseup', onEnd);
                         }}
                    >
-                       <div className="absolute inset-0 border-2 border-white/30 rounded-lg animate-pulse" />
+                       <div className="absolute inset-0 border-2 border-white/30 rounded-2xl animate-pulse" />
                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-theme-brand/50 animate-scan-line" />
                        
                        {/* Resize Handles */}

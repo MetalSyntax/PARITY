@@ -338,5 +338,11 @@ export const misc = {
   template_water: "Recibo de Agua",
   template_internet: "Servicio de Internet",
   template_netflix: "Streaming (Netflix/Spotify)",
-  useBaseBudget: 'Usar Base'
+  useBaseBudget: 'Usar Base',
+  welcome_back: 'BIENVENIDO DE NUEVO',
+  noTransactions: 'No hay transacciones',
+  noInvoices: 'No hay facturas',
+  noTransactionsFound: 'No se encontraron transacciones',
+  layoutControl: 'Control de Diseño',
+  layoutControlDesc: 'Personaliza el diseño de tu dashboard.'
 };

@@ -68,7 +68,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
             <div className="relative z-10 w-full max-w-sm flex flex-col items-center text-center">
                 {/* Icon Container */}
                 <div className="mb-12 transition-all duration-500 transform hover:scale-105">
-                    <div className="w-40 h-40 rounded-[3rem] bg-theme-surface border border-white/10 flex items-center justify-center shadow-2xl relative group overflow-hidden">
+                    <div className="w-40 h-40 rounded-2xl bg-theme-surface border border-white/10 flex items-center justify-center shadow-2xl relative group overflow-hidden">
                         <div className="absolute inset-0 bg-theme-brand/10 blur-3xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
                         <div key={step} className="animate-in zoom-in-50 duration-500">
                              {currentSlide.icon}

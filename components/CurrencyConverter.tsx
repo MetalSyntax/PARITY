@@ -87,7 +87,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
     <>
       <motion.div 
         whileHover={{ y: -2 }}
-        className="bg-theme-surface rounded-[2.5rem] p-4 border border-theme-soft shadow-theme relative overflow-hidden group mx-4"
+        className="bg-theme-surface rounded-2xl p-4 border border-theme-soft shadow-theme relative overflow-hidden group mx-4 sm:mx-0"
       >
         {/* Decorative background element */}
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-theme-brand/5 blur-3xl rounded-full" />
@@ -114,7 +114,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
             <motion.button 
               whileTap={{ scale: 0.99 }}
               onClick={() => { setIsConverterFocused(true); onToggleBottomNav(false); }}
-              className={`w-full flex flex-col items-start bg-theme-bg/40 p-2 rounded-[2rem] transition-all hover:bg-theme-bg/60 group/input`}
+              className={`w-full flex flex-col items-start bg-theme-bg/40 p-2 rounded-2xl transition-all hover:bg-theme-bg/60 group/input`}
             >
               <div className="w-full flex justify-between items-center mb-3">
                  <span className="text-[10px] font-black text-theme-secondary/60 uppercase tracking-widest">{t('amountToConvert') || 'Monto a convertir'}</span>
@@ -188,7 +188,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-x-0 bottom-0 bg-theme-surface/95 backdrop-blur-2xl border-t border-theme-soft p-2 z-[100] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] rounded-t-[3rem]"
+              className="fixed inset-x-0 bottom-0 bg-theme-surface/95 backdrop-blur-2xl border-t border-theme-soft p-2 z-[100] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] rounded-t-2xl"
             >
               <div className="max-w-md mx-auto">
                 <div className="w-12 h-1.5 bg-theme-soft rounded-full mx-auto mb-3" />

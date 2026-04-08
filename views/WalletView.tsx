@@ -183,7 +183,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
          <div className="relative">
             <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[140px] justify-between"
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-2xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[140px] justify-between"
             >
                 <span>{currentMonthName}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
@@ -235,7 +235,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 <div className="w-4 h-4 flex items-center justify-center">
                     {displayCurrency === Currency.VES ? (
@@ -278,11 +278,11 @@ export const WalletView: React.FC<WalletViewProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex p-1 bg-theme-surface rounded-2xl border border-white/5 mb-8 flex-shrink-0">
+      <div className="flex p-1 bg-theme-surface rounded-2xl mb-8 flex-shrink-0">
           <motion.button 
             whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab('INCOME')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'INCOME' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${activeTab === 'INCOME' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
           >
               <TrendingUp size={16} className={activeTab === 'INCOME' ? 'text-theme-brand' : ''} />
               {t('income')}
@@ -290,7 +290,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
           <motion.button 
             whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab('WALLETS')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'WALLETS' ? 'bg-theme-bg text-theme-primary shadow-lg border border-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${activeTab === 'WALLETS' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
           >
               <Wallet size={16} className={activeTab === 'WALLETS' ? 'text-theme-brand' : ''} />
               {t('wallet')}
@@ -310,7 +310,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       {activeSources.length > 0 ? (
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-2">
                             {activeSources.map(source => (
-                                <div key={source.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-4 rounded-3xl flex flex-col gap-3 group hover:border-theme-soft/50 transition-colors">
+                                <div key={source.id} className="min-w-[140px] bg-theme-surface border border-white/5 p-4 rounded-2xl flex flex-col gap-3 group hover:border-theme-soft/50 transition-colors">
                                     <div className="flex justify-between items-start">
                                         <span className="text-2xl filter drop-shadow-lg">{source.icon}</span>
                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${source.color.includes('green') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-zinc-400'}`}>
@@ -337,7 +337,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                             ))}
                           </div>
                       ) : (
-                          <div className="p-8 border border-dashed border-white/10 rounded-3xl text-center text-sm text-theme-secondary bg-theme-surface/30">
+                          <div className="p-8 border border-dashed border-white/10 rounded-2xl text-center text-sm text-theme-secondary bg-theme-surface/30">
                               {t('noActiveSources')}
                           </div>
                       )}
@@ -351,7 +351,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                               </div>
                               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-2">
                                 {scheduledIncomes.map(income => (
-                                    <div key={income.id} className="min-w-[140px] bg-theme-surface/50 border border-white/5 p-4 rounded-3xl flex flex-col gap-3 border-l-4 border-l-emerald-500 shadow-xl shadow-black/20 relative group">
+                                    <div key={income.id} className="min-w-[140px] bg-theme-surface/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 border-l-4 border-l-emerald-500 shadow-xl shadow-black/20 relative group">
                                         <div className="flex justify-between items-start">
                                             <span className="text-xs font-bold text-theme-primary truncate max-w-[100px]">{income.name}</span>
                                             <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
@@ -384,7 +384,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   {/* Stats Summary Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        {/* Total Incomes */}
-                       <div className="bg-theme-surface p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
+                       <div className="bg-theme-surface p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
                            <div className="absolute bottom-0 right-0 p-6 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
                                <TrendingUp size={120} className="text-emerald-500" />
                            </div>
@@ -417,7 +417,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                        </div>
 
                        {/* Net Monthly */}
-                       <div className="bg-gradient-to-br from-theme-surface to-black p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden flex flex-col justify-between group">
+                       <div className="bg-gradient-to-br from-theme-surface to-black p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between group">
                            <div className="absolute bottom-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
                                <Wallet size={120} />
                            </div>
@@ -453,7 +453,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       </div>
 
                       {sortedDates.length === 0 ? (
-                          <div className="text-center py-12 border border-dashed border-white/5 rounded-[2rem] bg-theme-surface/10">
+                          <div className="text-center py-12 border border-dashed border-white/5 rounded-2xl bg-theme-surface/10">
                               <p className="text-xs text-theme-secondary font-bold uppercase tracking-widest opacity-40">{t('noTransactionsFound')}</p>
                           </div>
                       ) : (
@@ -505,7 +505,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {accounts.length === 0 && (
-                        <div className="text-center py-16 px-8 border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center gap-6 bg-theme-surface/20">
+                        <div className="text-center py-16 px-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center gap-6 bg-theme-surface/20">
                             <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-4xl shadow-xl border border-white/5 animate-bounce">
                                 <Wallet size={24} className="text-theme-secondary" />
                             </div>
@@ -524,7 +524,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       <motion.div 
                         layout
                         key={acc.id} 
-                        className="bg-theme-surface p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all flex-shrink-0 shadow-xl hover:shadow-black/40"
+                        className="bg-theme-surface p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all flex-shrink-0 shadow-xl hover:shadow-black/40"
                       >
                         <div className={`absolute left-0 top-0 bottom-0 w-2.5 ${stripClass}`} />
                         
@@ -532,7 +532,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                             <div className="flex items-center gap-4">
                                 <motion.div 
                                     whileHover={{ rotate: 10 }}
-                                    className="w-14 h-14 rounded-[1.25rem] bg-theme-bg flex items-center justify-center text-theme-brand border border-white/5 shadow-inner"
+                                    className="w-14 h-14 rounded-2xl bg-theme-bg flex items-center justify-center text-theme-brand border border-white/5 shadow-inner"
                                 >
                                     {renderAccountIcon(acc.icon, 28)}
                                 </motion.div>
@@ -552,7 +552,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => startEdit(acc)} 
-                                    className="p-2.5 bg-theme-bg border border-white/5 rounded-xl text-theme-secondary hover:text-theme-brand transition-colors"
+                                    className="p-2.5 bg-theme-bg border border-white/5 rounded-2xl text-theme-secondary hover:text-theme-brand transition-colors"
                                 >
                                     <Edit2 size={18} />
                                 </motion.button>
@@ -560,7 +560,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => handleDelete(acc.id)} 
-                                    className="p-2.5 bg-theme-bg border border-white/5 rounded-xl text-red-400 hover:text-white hover:bg-red-500 transition-all"
+                                    className="p-2.5 bg-theme-bg border border-white/5 rounded-2xl text-red-400 hover:text-white hover:bg-red-500 transition-all"
                                 >
                                     <Trash2 size={18} />
                                 </motion.button>
@@ -606,7 +606,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     animate={{ y: 0 }}
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="bg-theme-surface w-full max-w-sm rounded-t-[32px] sm:rounded-[32px] border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                    className="bg-theme-surface w-full max-w-sm rounded-t-2xl sm:rounded-2xl border border-theme-soft overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
                 >
                     <div className="p-6 border-b border-theme-soft flex justify-between items-center bg-theme-surface/50 shrink-0">
                         <h2 className="text-xl font-black text-theme-primary tracking-tight">{editingId ? t('editAccount') : t('newAccount')}</h2>
@@ -633,7 +633,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                     <button 
                                         key={c} 
                                         onClick={() => setCurrency(c)} 
-                                        className={`py-3 rounded-xl border text-xs font-black transition-all ${currency === c ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-theme-brand/20' : 'bg-theme-bg border-white/10 text-theme-secondary hover:bg-theme-soft'}`}
+                                        className={`py-3 rounded-2xl border text-xs font-black transition-all ${currency === c ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-theme-brand/20' : 'bg-theme-bg border-white/10 text-theme-secondary hover:bg-theme-soft'}`}
                                     >
                                         {c === Currency.VES ? 'Bs' : c}
                                     </button>
@@ -658,7 +658,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                     <button 
                                         key={key} 
                                         onClick={() => setIcon(key)} 
-                                        className={`p-4 rounded-xl transition-all border shrink-0 ${icon === key ? 'bg-theme-brand border-theme-soft text-white shadow-lg' : 'bg-theme-bg border-white/10 text-theme-secondary hover:bg-theme-soft'}`}
+                                        className={`p-4 rounded-2xl transition-all border shrink-0 ${icon === key ? 'bg-theme-brand border-theme-soft text-white shadow-lg' : 'bg-theme-bg border-white/10 text-theme-secondary hover:bg-theme-soft'}`}
                                     >
                                         {renderAccountIcon(key, 22)}
                                     </button>

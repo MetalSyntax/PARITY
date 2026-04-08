@@ -192,7 +192,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onToggleDisplayCurrency}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
             >
                 <div className="w-4 h-4 flex items-center justify-center">
                     {displayCurrency === Currency.VES ? (
@@ -209,7 +209,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[90px] sm:min-w-[100px] justify-between relative"
+                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-2xl px-3 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[90px] sm:min-w-[100px] justify-between relative"
               >
                 <span>{selectedMonth}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
@@ -305,7 +305,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                   onPointerDown={(e) => analysisControls[index].start(e)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9, cursor: 'grabbing' }}
-                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                  className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-bg/90 rounded-2xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
                   <GripVertical size={20} />
                 </motion.div>
@@ -313,17 +313,17 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                   whileHover={{ rotate: 90, scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setShowAnalysisCustomizer(true)}
-                  className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+                  className={`absolute bottom-2 right-2 transition-opacity z-50 p-2.5 bg-theme-bg/90 rounded-2xl border border-white/10 text-theme-secondary flex touch-none ${touchedWidget === id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
                 >
                   <Settings size={20} />
                 </motion.button>
 
                 {id === "incomeVsExpenses" && showIncomeVsExpenseC && (
-                  <div className="bg-theme-surface rounded-3xl border border-white/10 p-6 relative transition-all">
+                  <div className="bg-theme-surface rounded-2xl border border-white/10 p-6 relative transition-all">
                       <div className="flex justify-between items-center mb-10 relative z-10">
                           <div className="flex items-center gap-4">
                               <h3 className="font-bold text-lg text-theme-primary">{t('incomeVsExpenses')}</h3>
-                              <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                              <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10">
                                   <motion.button 
                                       whileTap={{ scale: 0.95 }}
                                       onClick={() => setMainChartType('BAR')}
@@ -386,7 +386,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                 {id === "extraCharts" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {showNetFlowC && (
-                          <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
+                          <div className="bg-theme-surface p-6 rounded-2xl border border-white/5 shadow-xl group">
                                 <div className="flex justify-between items-center mb-4">
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('monthlyNetFlow')}</h3>
                                 </div>
@@ -405,7 +405,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                       {showCatTrendC && (
                              <motion.div 
                                 whileHover={{ scale: 1.02 }}
-                                className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group"
+                                className="bg-theme-surface p-6 rounded-2xl border border-white/5 shadow-xl group"
                             >
                                 <div className="flex justify-between items-center mb-4">
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('topSpendingCategories')}</h3>
@@ -424,7 +424,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                             </motion.div>
                       )}
                       {showIncomeDistC && (
-                            <div className="bg-theme-surface p-6 rounded-[2rem] border border-white/5 shadow-xl group">
+                            <div className="bg-theme-surface p-6 rounded-2xl border border-white/5 shadow-xl group">
                                 <div className="flex justify-between items-center mb-4">
                                   <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('incomeDistribution')}</h3>
                                 </div>
@@ -454,7 +454,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {leaks.length > 0 ? leaks.map((leak, idx) => (
-                              <div key={idx} className="bg-theme-surface p-5 rounded-3xl border border-white/5 hover:border-theme-soft/30 transition-all flex items-start gap-4 group">
+                              <div key={idx} className="bg-theme-surface p-5 rounded-2xl border border-white/5 hover:border-theme-soft/30 transition-all flex items-start gap-4 group">
                                   <div className={`p-3 rounded-2xl ${leak.type === 'overspend' ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400'} border border-white/5`}>
                                       {leak.type === 'overspend' ? <Zap size={20} /> : <AlertCircle size={20} />}
                                   </div>
@@ -476,7 +476,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                                   </div>
                               </div>
                           )) : (
-                              <div className="col-span-full py-8 px-6 bg-emerald-500/5 rounded-3xl border border-emerald-500/10 flex items-center gap-4">
+                              <div className="col-span-full py-8 px-6 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 flex items-center gap-4">
                                    <TrendingUp size={24} className="text-emerald-400" />
                                    <div>
                                        <p className="text-sm font-bold text-emerald-400">{t('noLeaksDetected')}</p>
@@ -533,7 +533,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                   {incomeCategories.map(cat => (
-                      <div key={cat.id} className="bg-theme-surface p-6 rounded-3xl border border-white/5 relative overflow-hidden group hover:scale-[1.02] transition-transform">
+                      <div key={cat.id} className="bg-theme-surface p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:scale-[1.02] transition-transform">
                           <div className={`absolute left-0 top-0 bottom-0 w-2 ${cat.color}`} />
                           <div className="flex justify-between items-center mb-2">
                              <div className="flex items-center gap-3">
@@ -556,7 +556,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                       </div>
                   ))}
                   {incomeCategories.length === 0 && (
-                      <div className="text-center py-20 text-theme-secondary border-2 border-dashed border-white/10 rounded-3xl">
+                      <div className="text-center py-20 text-theme-secondary border-2 border-dashed border-white/10 rounded-2xl">
                           {t('noIncomeSources')}
                       </div>
                   )}
@@ -578,7 +578,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl"
+                    className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-t-2xl sm:rounded-2xl p-8 shadow-2xl"
                 >
                    <div className="flex justify-between items-center mb-8">
                        <div>

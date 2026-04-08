@@ -108,7 +108,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onToggleDisplayCurrency}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-2xl border border-white/5 transition-all font-black text-[10px] ${displayCurrency !== Currency.USD ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface text-theme-secondary hover:text-theme-primary'}`}
         >
             <div className="w-4 h-4 flex items-center justify-center">
                 {displayCurrency === Currency.VES ? (
@@ -162,7 +162,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
 
       <motion.div 
         layout
-        className="mt-8 bg-[#121212] p-6 rounded-3xl border border-white/5"
+        className="mt-8 bg-[#121212] p-6 rounded-2xl border border-white/5"
       >
         <label className="text-xs text-zinc-500 mb-2 block uppercase tracking-wider">{t('amount')}</label>
         <div className="flex items-baseline gap-2">
@@ -218,7 +218,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
                     onClick={() => setSelectedCategory(cat.id)}
                     className={`flex flex-col items-center gap-2 min-w-[80px] p-3 rounded-2xl border transition-all ${selectedCategory === cat.id ? 'bg-theme-bg border-theme-soft scale-105 shadow-lg' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
                 >
-                    <div className={`w-10 h-10 rounded-xl ${cat.color} flex items-center justify-center`}>
+                    <div className={`w-10 h-10 rounded-2xl ${cat.color} flex items-center justify-center`}>
                         {cat.icon}
                     </div>
                     <span className="text-[10px] font-bold text-center truncate w-full uppercase">{t(cat.name)}</span>
@@ -231,7 +231,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleTransfer}
-        className="mt-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-900/40 transition-all font-bold"
+        className="mt-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-900/40 transition-all font-bold"
       >
         {t('transferNow')}
       </motion.button>
@@ -244,7 +244,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
                   const transfers = transactions?.filter((t: any) => t.type === TransactionType.TRANSFER).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5) || [];
                   
                   if (transfers.length === 0) {
-                      return <div className="p-8 text-center text-zinc-600 text-sm border-2 border-dashed border-white/5 rounded-3xl">{t('noTransactions')}</div>;
+                      return <div className="p-8 text-center text-zinc-600 text-sm border-2 border-dashed border-white/5 rounded-2xl">{t('noTransactions')}</div>;
                   }
 
                   return transfers.map((tx: any) => {

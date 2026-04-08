@@ -12,15 +12,10 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState<ThemeName>('original');
-
-  useEffect(() => {
-    // Load saved theme
+  const [currentTheme, setCurrentTheme] = useState<ThemeName>(() => {
     const saved = localStorage.getItem('app_theme') as ThemeName;
-    if (saved && themeData.themes[saved]) {
-      setCurrentTheme(saved);
-    }
-  }, []);
+    return (saved && themeData.themes[saved]) ? saved : 'original';
+  });
 
   useEffect(() => {
     // Apply theme variables
