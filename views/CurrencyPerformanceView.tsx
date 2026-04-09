@@ -165,7 +165,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                 </motion.button>
                 <div>
                    <h2 className="text-xl font-bold text-white">{t('currencyPerformance')}</h2>
-                   <p className="text-xs text-zinc-500 font-medium">{t('currencySubtitle') || 'Seguimiento de tasas y mercado'}</p>
+                   <p className="text-xs text-zinc-500 font-medium">{t('currencySubtitle')}</p>
                 </div>
             </div>
 
@@ -235,14 +235,12 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                                     <p className="text-[10px] font-bold text-zinc-500 uppercase">{t('marketAnalysis')}</p>
                                 </div>
                             </div>
-                            <span className="px-3 py-1 bg-amber-500/10 text-amber-500 rounded-full text-[10px] font-black border border-amber-500/20">
-                                GAP ANALYSIS
-                            </span>
+                                {t('gapAnalysis')}
                         </div>
 
                         <div className="grid grid-cols-2 gap-6 relative z-10">
                             <div>
-                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Brecha en Bs</p>
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">{t('gapInBs')}</p>
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-2xl font-black text-white">
                                         {(usdRateParallel - exchangeRate).toFixed(2)}
@@ -251,7 +249,7 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
                                 </div>
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Porcentaje de Brecha</p>
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">{t('gapPercentage')}</p>
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-2xl font-black text-amber-400">
                                         {(((usdRateParallel - exchangeRate) / exchangeRate) * 100).toFixed(2)}%
@@ -263,12 +261,12 @@ export const CurrencyPerformanceView: React.FC<CurrencyPerformanceViewProps> = (
 
                         <div className="mt-6 pt-6 border-t border-white/5 flex justify-between items-center">
                             <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">Oficial (BCV)</span>
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">{t('officialBCV')}</span>
                                 <span className="text-sm font-bold text-zinc-300">{exchangeRate.toFixed(2)}</span>
                             </div>
                             <div className="h-4 w-px bg-white/10" />
                             <div className="flex flex-col items-end">
-                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">Paralelo</span>
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">{t('parallel')}</span>
                                 <span className="text-sm font-bold text-zinc-300">{usdRateParallel.toFixed(2)}</span>
                             </div>
                         </div>

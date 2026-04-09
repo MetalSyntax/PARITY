@@ -44,7 +44,7 @@ export const CalendarHeatmapView: React.FC<CalendarHeatmapViewProps> = ({
         return `${symbol}${val?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    const monthYear = currentDate?.toLocaleString(lang === 'en' ? 'en-US' : 'es-ES', { month: 'long', year: 'numeric' });
+    const monthYear = currentDate?.toLocaleString(lang === 'en' ? 'en-US' : lang === 'pt' ? 'pt-BR' : 'es-ES', { month: 'long', year: 'numeric' });
     
     const daysInMonth = useMemo(() => {
         const year = currentDate.getFullYear();

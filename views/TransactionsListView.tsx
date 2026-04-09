@@ -101,7 +101,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
                 className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-2xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
               >
-                <span>{selectedMonth === 'ALL' ? (t('allPeriods') || 'All Time') : selectedMonth}</span>
+                <span>{selectedMonth === 'ALL' ? t('allPeriods') : selectedMonth}</span>
                 <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
               </button>
 
@@ -123,7 +123,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                            }}
                            className={`w-full text-left px-4 py-3 text-xs font-black transition-colors hover:bg-white/5 ${selectedMonth === 'ALL' ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
                         >
-                           📅 {t('allPeriods') || 'All Time'}
+                           📅 {t('allPeriods')}
                         </button>
                         <div className="h-[1px] bg-white/5 my-1" />
                         {(() => {
@@ -165,7 +165,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
            <div>
                <h1 className="text-xl font-bold text-theme-primary">{t('transactions')}</h1>
                <div className="flex items-center gap-2">
-                  <p className="text-xs text-theme-secondary font-medium">{t('fullHistory') || 'Historial completo'}</p>
+                  <p className="text-xs text-theme-secondary font-medium">{t('fullHistory')}</p>
                   <div className="w-1 h-1 bg-white/10 rounded-full" />
                   <span className="text-[10px] font-black text-theme-brand uppercase tracking-tighter">
                     {filteredTransactions.length}
@@ -190,7 +190,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${viewMode === 'INVOICES' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
         >
           <Receipt size={16} className={viewMode === 'INVOICES' ? 'text-theme-brand' : ''} />
-          {t('invoices') || 'Facturas'}
+          {t('invoices')}
         </motion.button>
       </div>
 
@@ -233,7 +233,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                       : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary'
                   }`}
                 >
-                  {type === 'ALL' ? t('allTypes') || t('all') : t(type.toLowerCase())}
+                  {type === 'ALL' ? t('allTypes') : t(type.toLowerCase())}
                 </button>
               ))}
           </div>
@@ -249,7 +249,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                  <div className="w-16 h-16 rounded-full bg-theme-surface flex items-center justify-center mb-4">
                    <Receipt size={24} />
                  </div>
-                 <p className="text-sm">{t('noInvoicesFound') || 'No se encontraron facturas'}</p>
+                 <p className="text-sm">{t('noInvoicesFound')}</p>
                </div>
             ) : (
                 filteredTransactions.filter(tx => tx.receipt).map(tx => (
@@ -371,7 +371,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                     <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
                       <Filter size={18} />
                     </div>
-                    <span className="font-bold text-sm tracking-wide uppercase">{t('allCategories') || t('all')}</span>
+                    <span className="font-bold text-sm tracking-wide uppercase">{t('allCategories')}</span>
                   </motion.button>
 
                   <div className="grid grid-cols-2 gap-2 mt-2">

@@ -251,14 +251,14 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
         if (detectedCurrency) {
             setCurrency(detectedCurrency);
-            showAlert(`${t('totalFound') || 'Total found'}: ${detectedCurrency === Currency.USD ? '$' : 'Bs '}${cleanedAmount}`, 'success');
+            showAlert(`${t('totalFound')}: ${detectedCurrency === Currency.USD ? '$' : 'Bs '}${cleanedAmount}`, 'success');
         } else {
-            showAlert(`${t('totalFound') || 'Total found'}: ${cleanedAmount}`, 'success');
+            showAlert(`${t('totalFound')}: ${cleanedAmount}`, 'success');
         }
         setShowCropModal(false);
         setSelectedImage(null);
       } else {
-        showAlert(t('totalNotFound') || 'Total not found in the selected area', 'info');
+        showAlert(t('totalNotFound'), 'info');
       }
     } catch (err) {
       console.error("OCR Error:", err);
@@ -775,7 +775,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         <>
                             <div className="flex items-center justify-between mb-3">
                                 <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-60">
-                                   {t('totalTarget') || 'Total to receive'}
+                                   {t('totalTarget')}
                                 </p>
                                 <div className="flex items-center gap-2">
                                     <span className="text-base font-black text-theme-brand">
@@ -801,7 +801,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             </div>
                             <div className="flex items-center justify-between border-t border-white/5 pt-3">
                                 <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-40">
-                                   {t('totalToDeduct') || 'Amount to deduct'}
+                                   {t('quantity')}
                                 </p>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-black text-theme-primary">
@@ -814,7 +814,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     ) : (
                         <div className="flex items-center justify-between">
                             <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-60">
-                               {t('totalWithFees') || 'Total with commissions'}
+                               {t('totalWithFees')}
                             </p>
                             <div className="flex items-center gap-2">
                                 <span className="text-base font-black text-theme-brand">
@@ -1014,7 +1014,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         {/* Date and Category Selection */}
         <div className="flex gap-4 mb-4">
              <div className="flex-1">
-                 <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('date') || 'Date'}</label>
+                 <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('date')}</label>
                  <div>
                     <input 
                         type="date" 
@@ -1027,7 +1027,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
              </div>
              
              <div className="flex-1">
-                 <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('category') || 'Category'}</label>
+                 <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('category')}</label>
                  <button 
                      onClick={() => setShowCategoryModal(true)}
                      className="w-full bg-theme-surface border border-white/5 rounded-2xl p-3 flex items-center justify-between group hover:border-theme-soft transition-colors h-[46px]"
@@ -1095,7 +1095,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 >
                     <span className="flex items-center gap-2">
                         <Calendar size={12} />
-                        {budgetMonth ? budgetMonth : (t('currentMonth') || 'Mes Actual')}
+                        {budgetMonth ? budgetMonth : t('currentMonth')}
                     </span>
                     <ChevronDown size={12} className={`transition-transform duration-200 ${showBudgetMonthPicker ? 'rotate-180' : ''}`} />
                 </button>
@@ -1106,13 +1106,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         <div className="absolute bottom-full mb-2 left-0 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 min-w-[160px]">
                             <div className="max-h-[200px] overflow-y-auto no-scrollbar py-2">
                                 <div className="px-4 py-1 mb-1 border-b border-white/5">
-                                    <p className="text-[10px] text-theme-secondary font-black uppercase tracking-tighter opacity-50">{t('budgetOf') || 'Para:'}</p>
+                                    <p className="text-[10px] text-theme-secondary font-black uppercase tracking-tighter opacity-50">{t('from')}</p>
                                 </div>
                                 <button 
                                     onClick={() => { setBudgetMonth(''); setShowBudgetMonthPicker(false); }}
                                     className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors hover:bg-white/5 ${!budgetMonth ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
                                 >
-                                    {t('budgetOfCurrentMonth') || 'Presupuesto de Fecha'}
+                                    {t('selectDate')}
                                 </button>
                                 <div className="h-px bg-white/5 mx-2 my-1" />
                                 {(() => {
@@ -1223,7 +1223,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             {/* Header */}
             <div className="p-4 border-b border-white/5 bg-theme-surface">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory') || 'Select Category'}</h2>
+                    <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory')}</h2>
                     <button onClick={() => { setShowCategoryModal(false); setCategorySearch(''); }} className="p-2 bg-white/5 rounded-2xl text-theme-secondary hover:text-theme-primary"><X size={20}/></button>
                 </div>
                 {/* Search Bar */}
@@ -1232,7 +1232,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         type="text"
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
-                        placeholder={t('search') || 'Search...'}
+                        placeholder={t('search')}
                         className="w-full bg-theme-bg border border-white/5 rounded-2xl py-2.5 pl-10 pr-4 text-sm text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-soft transition-colors"
                         autoFocus
                     />

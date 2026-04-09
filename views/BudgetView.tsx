@@ -146,7 +146,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
   const handleDeleteMonth = (m: string) => {
     showConfirm({
-        message: `${t('delete')}: ${m}?`,
+        message: `${t('delete')}: ${m}`,
         onConfirm: () => {
             onUpdateBudgets(budgets.filter(b => b.month !== m));
             if (selectedMonth === m) setSelectedMonth(new Date().toISOString().slice(0, 7));
@@ -161,7 +161,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       
       const prevBudgets = budgets.filter(b => b.month === prevMonthStr);
       if (prevBudgets.length === 0) {
-          showConfirm({ message: t('noBudgetsInPreviousMonth') || "No budgets found in previous month to duplicate.", onConfirm: () => {} });
+           showConfirm({ message: t('noBudgetsInPreviousMonth'), onConfirm: () => {} });
           return;
       }
 
@@ -426,7 +426,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
            </motion.button>
            <div>
                <h1 className="text-xl font-bold text-theme-primary">{t('budgetsAndGoals')}</h1>
-               <p className="text-xs text-theme-secondary font-medium">{t('manageBudgetsDesc') || 'Gestiona tus sobres y metas de ahorro'}</p>
+               <p className="text-xs text-theme-secondary font-medium">{t('manageBudgetsDesc')}</p>
            </div>
       </div>
 
@@ -724,7 +724,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                          </div>
                          <div>
                              <p className="text-theme-primary font-black text-lg mb-1">{t('noEnvelopes')}</p>
-                             <p className="text-theme-secondary text-xs">{t('createFirstEnvelopeToStart') || 'Create your first envelope to start budgeting'}</p>
+                             <p className="text-theme-secondary text-xs">{t('createFirstEnvelopeToStart')}</p>
                          </div>
                          <div className="flex flex-col sm:flex-row gap-3">
                              <button 
@@ -743,7 +743,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                 className="bg-theme-surface border border-white/5 text-theme-primary px-8 py-4 rounded-2xl font-black text-sm hover:bg-white/5 transition-all flex items-center gap-2"
                              >
                                 <History size={18} />
-                                {t('duplicatePrevious') || 'Restaurar Anterior'}
+                                {t('duplicatePrevious')}
                              </button>
                              {budgets.some(b => !b.month) && (
                                 <button 
@@ -759,7 +759,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                     className="bg-theme-surface border border-theme-soft text-theme-brand px-8 py-4 rounded-2xl font-black text-sm hover:bg-theme-brand/5 transition-all flex items-center gap-2"
                                 >
                                     <FaEnvelope size={18} />
-                                    {t('useBaseBudget') || 'Usar Base'}
+                                    {t('useBaseBudget')}
                                 </button>
                              )}
                          </div>
@@ -856,7 +856,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
                 <div className="space-y-6">
                     <div>
-                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-widest block mb-2">{t('selectDate') || 'Seleccionar Mes'}</label>
+                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-widest block mb-2">{t('selectDate')}</label>
                         <input 
                             type="month" 
                             value={newMonthInput}
@@ -1267,7 +1267,7 @@ const GoalForm = ({
             type: TransactionType.EXPENSE,
             category: 'savings',
             accountId: selectedAccount,
-            note: `${t('goalContribution') || 'Contribución a meta'}: ${name}`,
+            note: `${t('goalContribution')}: ${name}`,
             date: new Date().toISOString()
         });
 
@@ -1373,7 +1373,7 @@ const GoalForm = ({
                 </div>
 
                 <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">{t('associateEnvelope') || 'Asociar a sobre'}</label>
+                    <label className="text-xs text-zinc-500 mb-1 block">{t('associateEnvelope')}</label>
                     <div className="relative">
                         <select 
                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-indigo-500 appearance-none"

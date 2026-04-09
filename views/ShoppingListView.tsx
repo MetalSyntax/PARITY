@@ -180,7 +180,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                     </motion.button>
                     <div>
                         <h1 className="text-xl font-bold text-theme-primary">{currentList?.name || t('shoppingList')}</h1>
-                        <p className="text-xs text-theme-secondary font-medium">{items.length} {t('product') || 'productos'}</p>
+                        <p className="text-xs text-theme-secondary font-medium">{items.length} {t('product')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -262,13 +262,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                             <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-theme-secondary mb-6 shadow-xl border border-white/5 animate-bounce">
                                 <PlusSquare size={32} />
                             </div>
-                            <h3 className="text-xl font-black text-theme-primary mb-2">{t('noLists') || 'No hay listas'}</h3>
-                            <p className="text-theme-secondary text-sm max-w-[240px] leading-relaxed mb-6">{t('createFirstListPrompt') || 'Crea tu primera lista de compras para agregar productos.'}</p>
+                            <h3 className="text-xl font-black text-theme-primary mb-2">{t('noLists')}</h3>
+                            <p className="text-theme-secondary text-sm max-w-[240px] leading-relaxed mb-6">{t('createFirstListPrompt')}</p>
                             <button 
                                 onClick={() => setShowAddListForm(true)} 
                                 className="px-8 py-4 bg-theme-brand text-white font-black rounded-2xl shadow-xl shadow-theme-brand/20 hover:scale-105 active:scale-95 transition-all text-sm"
                             >
-                                {t('createList') || 'Crear Lista'}
+                                {t('createList')}
                             </button>
                         </motion.div>
                     ) : items.length === 0 ? (
@@ -364,7 +364,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                                         onClick={(e) => { 
                                                             e.stopPropagation(); 
                                                             onShowConfirm({
-                                                                message: t('deleteItemConfirm') || '¿Eliminar este producto?',
+                                                                message: t('deleteItemConfirm'),
                                                                 onConfirm: () => deleteItem(item.id)
                                                             });
                                                         }}
@@ -434,18 +434,18 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                             className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-2xl p-8 shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-black text-theme-primary">{listToEdit ? (t('editList') || 'Editar Lista') : (t('newList') || 'Nueva Lista')}</h3>
+                                <h3 className="text-lg font-black text-theme-primary">{listToEdit ? t('editList') : t('newList')}</h3>
                                 <button onClick={() => { setShowAddListForm(false); setListToEdit(null); setNewListName(''); }} className="text-theme-secondary"><X size={20} /></button>
                             </div>
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('listName') || 'Nombre de la Lista'}</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('listName')}</label>
                                     <input 
                                         autoFocus
                                         type="text" 
                                         value={newListName}
                                         onChange={(e) => setNewListName(e.target.value)}
-                                        placeholder={t('listNamePlaceholder') || "Supermercado, Farmacia..."}
+                                        placeholder={t('listNamePlaceholder')}
                                         className="w-full bg-theme-soft border border-theme-soft rounded-2xl px-4 py-3 text-sm focus:border-theme-brand outline-none transition-all"
                                     />
                                 </div>
@@ -455,7 +455,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                         <button 
                                             onClick={() => {
                                                 onShowConfirm({
-                                                    message: t('deleteListConfirm') || 'Delete this list?',
+                                                    message: t('deleteListConfirm'),
                                                     onConfirm: () => {
                                                         deleteList(listToEdit.id);
                                                         setShowAddListForm(false);
@@ -474,7 +474,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                         disabled={!newListName.trim()}
                                         className={`${listToEdit ? 'flex-[2]' : 'w-full'} py-4 rounded-2xl bg-theme-brand text-white font-black hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg shadow-theme-brand/30 transition-all`}
                                     >
-                                        {listToEdit ? (t('save') || 'Guardar') : (t('createList') || 'Crear Lista')}
+                                        {listToEdit ? t('save') : t('createList')}
                                     </button>
                                 </div>
                             </div>
@@ -570,7 +570,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('quantity') || 'Qty'}</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('quantity')}</label>
                                         <input 
                                             type="text" 
                                             value={newItemQty}
@@ -599,7 +599,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                          <button 
                                              onClick={() => {
                                                  onShowConfirm({
-                                                     message: t('deleteItemConfirm') || '¿Eliminar este producto?',
+                                                     message: t('deleteItemConfirm'),
                                                      onConfirm: () => {
                                                          deleteItem(editingItem.id);
                                                          setShowAddForm(false);
@@ -609,7 +609,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                              }}
                                              className="flex-1 py-4 rounded-2xl bg-red-500/10 text-red-500 font-black hover:bg-red-500/20 transition-all"
                                          >
-                                             {t('delete') || 'Eliminar'}
+                                             {t('delete')}
                                          </button>
                                      )}
                                      <button 

@@ -184,7 +184,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
             </motion.button>
             <div>
                <h1 className="text-xl font-bold text-theme-primary">{t('analysis')}</h1>
-               <p className="text-xs text-theme-secondary font-medium">{t('financialOverview') || 'Análisis detallado de tus finanzas'}</p>
+               <p className="text-xs text-theme-secondary font-medium">{t('financialOverview')}</p>
             </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">

@@ -101,7 +101,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ accounts, transactio
              </motion.button>
              <div>
                 <h1 className="text-xl font-bold text-theme-primary">{t('transfer')}</h1>
-                <p className="text-xs text-theme-secondary font-medium">{t('transferSubtitle') || 'Movimientos entre tus cuentas'}</p>
+                <p className="text-xs text-theme-secondary font-medium">{t('transferSubtitle')}</p>
              </div>
         </div>
         <motion.button 

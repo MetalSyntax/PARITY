@@ -51,7 +51,7 @@ export const ScheduledNotificationsView: React.FC<ScheduledNotificationsViewProp
         </motion.button>
         <div>
            <h1 className="text-xl font-bold text-theme-primary">{t('scheduledNotifications')}</h1>
-           <p className="text-xs text-theme-secondary font-medium">{t('notificationsSubtitle') || 'Configuración de alertas inteligentes'}</p>
+           <p className="text-xs text-theme-secondary font-medium">{t('notificationsSubtitle')}</p>
         </div>
       </div>
 

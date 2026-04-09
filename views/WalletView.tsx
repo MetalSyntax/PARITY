@@ -273,7 +273,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
            </motion.button>
            <div>
               <h1 className="text-xl font-bold text-theme-primary">{t('wallet')} & {t('income')}</h1>
-              <p className="text-xs text-theme-secondary font-medium">{t('walletSubtitle') || 'Tus fuentes de ingresos y cuentas'}</p>
+              <p className="text-xs text-theme-secondary font-medium">{t('walletSubtitle')}</p>
            </div>
       </div>
 
@@ -449,7 +449,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   <div className="mt-8">
                       <div className="flex items-center gap-2 mb-6 px-1">
                           <TrendingUp size={14} className="text-theme-brand" />
-                          <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('realizedIncomeHistory') || 'Historial de Ingresos Realizados'}</span>
+                          <span className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t('realizedIncomeHistory')}</span>
                       </div>
 
                       {sortedDates.length === 0 ? (

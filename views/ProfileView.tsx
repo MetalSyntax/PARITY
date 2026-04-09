@@ -123,9 +123,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   const handleExportCSV = () => {
-    const headers = ['ID', 'Date', 'Type', 'Amount', 'Currency', 'Category', 'Account', 'Note', 'Exchange Rate', 'USD Equivalent'];
+    const headers = [t('csv_id'), t('csv_date'), t('csv_type'), t('csv_amount'), t('csv_currency'), t('csv_category'), t('csv_account'), t('csv_note'), t('csv_exchangeRate'), t('csv_usdEquivalent')];
     const rows = transactions.map(tx => {
-      const accName = accounts.find(a => a.id === tx.accountId)?.name || 'Unknown';
+      const accName = accounts.find(a => a.id === tx.accountId)?.name || t('unknown');
       return [
         tx.id,
         new Date(tx.date).toLocaleDateString(),
@@ -189,7 +189,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </motion.button>
           <div>
             <h1 className="text-xl font-bold text-theme-primary">{t('profile')}</h1>
-            <p className="text-xs text-theme-secondary font-medium">{t('profileSubtitle') || 'Ajustes de cuenta y personalización'}</p>
+            <p className="text-xs text-theme-secondary font-medium">{t('profileSubtitle')}</p>
           </div>
         </div>
         <motion.button
@@ -205,7 +205,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* Profiles Switcher */}
       <motion.div variants={itemVariants} className="mb-8">
         <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-4 block flex items-center gap-2 opacity-60 px-1">
-          <Users size={12} className="text-theme-brand" /> {t('profiles') || 'Profiles'}
+          <Users size={12} className="text-theme-brand" /> {t('profiles')}
         </label>
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
           {profiles.map((p) => {
@@ -238,7 +238,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm(t('confirmDeleteProfile') || 'Delete this profile?')) {
+                      if (window.confirm(t('confirmDeleteProfile'))) {
                         onDeleteProfile(p.id);
                       }
                     }}
@@ -258,7 +258,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             className="w-20 h-20 rounded-2xl border-2 border-dashed border-theme-soft bg-theme-bg/50 text-theme-secondary flex flex-col items-center justify-center gap-1 hover:border-theme-brand/50 hover:text-theme-brand transition-all"
           >
             <Plus size={20} />
-            <span className="text-[9px] font-black uppercase">{t('add') || 'Add'}</span>
+            <span className="text-[9px] font-black uppercase">{t('add')}</span>
           </motion.button>
         </div>
       </motion.div>
@@ -552,7 +552,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             onClick={onDevModeTrigger}
             className="text-[10px] font-mono cursor-pointer hover:text-theme-brand transition-colors select-none"
           >
-            v1.1.0 {isDevMode && !profile.hideDevMode && '(DEV)'}
+            v1.1.0 {isDevMode && !profile.hideDevMode && t('dev_mode_label')}
           </p>
         </motion.div>
       </div>
@@ -565,18 +565,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
              animate={{ scale: 1, opacity: 1, y: 0 }}
              className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-2xl p-8 shadow-2xl"
            >
-              <h3 className="text-xl font-black text-theme-primary mb-2">{t('newProfile') || 'New Profile'}</h3>
-              <p className="text-xs text-theme-secondary opacity-60 mb-6">{t('newProfileDesc') || 'Create a separate context for your family or household.'}</p>
+              <h3 className="text-xl font-black text-theme-primary mb-2">{t('newProfile')}</h3>
+              <p className="text-xs text-theme-secondary opacity-60 mb-6">{t('newProfileDesc')}</p>
               
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-2 block opacity-60">{t('profileName') || 'Profile Name'}</label>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-2 block opacity-60">{t('profileName')}</label>
                   <input 
                     autoFocus
                     type="text" 
                     value={newProfileName}
                     onChange={(e) => setNewProfileName(e.target.value)}
-                    placeholder="e.g. Household"
+                    placeholder={t('profiles')}
                     className="w-full bg-theme-bg border border-theme-soft rounded-2xl p-4 text-theme-primary font-bold outline-none focus:border-theme-brand transition-all"
                   />
                 </div>
@@ -601,7 +601,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     }}
                     className="flex-1 py-4 rounded-2xl bg-theme-brand text-white font-black text-xs uppercase shadow-lg shadow-theme-brand/20 hover:brightness-110 active:scale-95 transition-all"
                   >
-                    {t('create') || 'Create'}
+                    {t('create')}
                   </button>
                 </div>
               </div>

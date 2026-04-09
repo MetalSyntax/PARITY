@@ -475,7 +475,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         const cat = CATEGORIES.find((c) => c.id === catId);
         return {
           id: catId,
-          name: cat?.name || "Other",
+          name: cat?.name || t('unknown_category'),
           icon: cat?.icon,
           color: cat?.color || "text-gray-500",
           bg: cat?.color ? cat.color.replace("text-", "bg-") : "bg-gray-500",
@@ -662,13 +662,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {isDevMode && !userProfile.hideDevMode && (
                 <div className="flex items-center gap-1 mb-1">
                   <span className="px-1.5 py-0.5 rounded-2xl bg-theme-brand/20 border border-theme-soft text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
-                    {t('devMode') || 'DEV'}
+                    {t('devMode')}
                   </span>
                 </div>
               )}
               {!userProfile.hideWelcome && (
                 <p className="text-[10px] text-theme-secondary uppercase tracking-[0.15em] font-black opacity-60 mb-0.5">
-                  {t("welcome_back") || "WELCOME BACK,"}
+                  {t("welcome_back")}
                 </p>
               )}
               {!userProfile.hideName && (
@@ -724,12 +724,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
             >
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-black text-emerald-400">
-                    USD: {exchangeRate?.toFixed(2)} Bs
+                    {t('usd_rate')}: {exchangeRate?.toFixed(2)} Bs
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-black text-blue-400">
-                    EUR: {euroRate?.toFixed(2)} Bs
+                    {t('eur_rate')}: {euroRate?.toFixed(2)} Bs
                 </span>
               </div>
             </button>
@@ -738,8 +738,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Quick Actions Horizontal List */}
         <div className="px-6 md:px-0 mb-6 animate-in slide-in-from-top-4 duration-700">
           <div className="flex items-center justify-between mb-3 px-2">
-            <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] opacity-50">{t("quickActions") || "Acciones Rápidas"}</h3>
-            <span className="text-[10px] text-theme-brand font-black uppercase tracking-tighter opacity-40">Slide →</span>
+            <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] opacity-50">{t("quickActions")}</h3>
+            <span className="text-[10px] text-theme-brand font-black uppercase tracking-tighter opacity-40">{t("slide_hint")}</span>
           </div>
           <div className="flex gap-1 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0 snap-x">
             {[
