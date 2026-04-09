@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.0.29`
+# PARITY 💸 `v1.1.0`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,19 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.1.0
+
+- **Standardization & Productivity:**
+  - `feat`: standardize UI/UX navigation, budget isolation, and custom dropdowns
+  - `feat`: implement project documentation (TypeDoc) and setup unit/E2E testing environments
+- **Offline & Reliability:**
+  - `feat`: implement **Offline-First Sync Queue** for reliable data management
+  - `feat`: enhance dashboard Quick Actions and overall app responsiveness
+- **Features & Enhancements:**
+  - `feat`: budget enhancements, goal associations, and multiple UI refinements
+  - `feat`: update exchange rate update logic and restructure customizer
+  - `refactor`: extract unused code and improve Transaction Detail view logic
 
 ### v1.0.29
 

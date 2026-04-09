@@ -552,7 +552,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             onClick={onDevModeTrigger}
             className="text-[10px] font-mono cursor-pointer hover:text-theme-brand transition-colors select-none"
           >
-            v1.0.29 {isDevMode && !profile.hideDevMode && '(DEV)'}
+            v1.1.0 {isDevMode && !profile.hideDevMode && '(DEV)'}
           </p>
         </motion.div>
       </div>
