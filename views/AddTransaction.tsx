@@ -903,23 +903,63 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         {/* Metadata Slider (Horizontal) */}
         <div className="flex overflow-x-auto no-scrollbar gap-3 mb-2 px-2 py-1 scroll-smooth">
 
-            {/* Wallet Button */}
+            {/* Wallet Selection */}
             {(() => {
-                const activeAcc = accounts.find(a => a.id === fromAccountId) || accounts[0];
-                return activeAcc ? (
+                const fromAcc = accounts.find(a => a.id === fromAccountId) || accounts[0];
+                const toAcc = accounts.find(a => a.id === toAccountId) || (accounts.length > 1 ? accounts[1] : accounts[0]);
+                
+                if (type === TransactionType.TRANSFER) {
+                    return (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Source Wallet */}
+                            <button
+                                onClick={() => setShowAccountSelector('FROM')}
+                                className="flex-shrink-0 bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all min-w-[140px] border border-theme-brand/20 shadow-lg shadow-brand/5"
+                            >
+                                <div className="text-theme-brand bg-theme-brand/10 w-11 h-11 rounded-full flex items-center justify-center">
+                                    {renderAccountIcon(fromAcc.icon, 18)}
+                                </div>
+                                <div className="flex flex-col items-start leading-tight">
+                                    <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('source')}</span>
+                                    <span className="text-[13px] font-bold text-theme-primary truncate max-w-[70px]">{fromAcc.name}</span>
+                                </div>
+                            </button>
+
+                            <div className="text-theme-secondary opacity-30">
+                                <ChevronRight size={16} />
+                            </div>
+
+                            {/* Destination Wallet */}
+                            <button
+                                onClick={() => setShowAccountSelector('TO')}
+                                className="flex-shrink-0 bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all min-w-[140px] border border-blue-500/20 shadow-lg shadow-blue-500/5 animate-in slide-in-from-left-2 duration-300"
+                            >
+                                <div className="text-blue-400 bg-blue-400/10 w-11 h-11 rounded-full flex items-center justify-center">
+                                    {renderAccountIcon(toAcc.icon, 18)}
+                                </div>
+                                <div className="flex flex-col items-start leading-tight">
+                                    <span className="text-[8px] font-black text-theme-secondary underline decoration-blue-500/30 uppercase tracking-widest">{t('target')}</span>
+                                    <span className="text-[13px] font-bold text-theme-primary truncate max-w-[70px]">{toAcc.name}</span>
+                                </div>
+                            </button>
+                        </div>
+                    );
+                }
+
+                return (
                     <button
                         onClick={() => setShowAccountSelector('FROM')}
                         className="flex-shrink-0 bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all min-w-[140px] border border-white/5"
                     >
                         <div className="text-theme-brand bg-theme-brand/10 w-11 h-11 rounded-full flex items-center justify-center shadow-lg">
-                            {renderAccountIcon(activeAcc.icon, 18)}
+                            {renderAccountIcon(fromAcc.icon, 18)}
                         </div>
                         <div className="flex flex-col items-start leading-tight">
                             <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('wallet')}</span>
-                            <span className="text-[13px] font-bold text-theme-primary truncate max-w-[70px]">{activeAcc.name}</span>
+                            <span className="text-[13px] font-bold text-theme-primary truncate max-w-[70px]">{fromAcc.name}</span>
                         </div>
                     </button>
-                ) : null;
+                );
             })()}
 
             {/* Category Button */}
@@ -1027,7 +1067,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         <div className="fixed inset-0 z-[9998]" onClick={() => setShowBudgetMonthPicker(false)} />
                         <div
                             className="fixed bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-                            style={{ top: '178px', left: '183px', width: '170px' }}
+                            style={{ top: '113px', right: '22px', width: '170px', position: 'fixed' }}
                         >
                             <div className="max-h-[220px] overflow-y-auto no-scrollbar py-1">
                                 <button

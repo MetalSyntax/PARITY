@@ -109,4 +109,6 @@ export const common = {
   current: "Mes Actual",
   wallet: "Billetera",
   selectAccount: "Seleccionar Cuenta",
+  source: "Origen",
+  target: "Destino",
 };
