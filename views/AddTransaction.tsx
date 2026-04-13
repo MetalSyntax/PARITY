@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCcw, Image as ImageIcon, Calendar, Edit2, Trash2 } from 'lucide-react';
+import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCcw, Image as ImageIcon, Calendar, Edit2, Trash2, ArrowLeft, MoreVertical } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -65,8 +65,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [manualExchangeRate, setManualExchangeRate] = useState<string>(initialData?.exchangeRate?.toString() || exchangeRate.toString());
   const [commissionFixed, setCommissionFixed] = useState<string>(initialData?.fee?.toString() || '0');
   const [commissionPercent, setCommissionPercent] = useState<string>('0');
+  const dateInputRef = useRef<HTMLInputElement>(null);
+  const monthBtnRef = useRef<HTMLButtonElement>(null);
+  const [monthDropPos, setMonthDropPos] = useState<{top:number;left:number;width:number} | null>(null);
 
-  
   const [categoryId, setCategoryId] = useState<string>(initialData ? initialData.category : CATEGORIES[0].id);
 
   // Auto-set category for transfers
@@ -569,7 +571,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   }
 
   return (
-    <div className="fixed inset-0 bg-theme-bg z-50 flex flex-col font-sans h-[100dvh] overflow-hidden">
+    <div className="fixed inset-0 bg-theme-bg z-50 flex flex-col h-[100dvh] overflow-hidden select-none">
+      {/* Main Container 100dvh */}
       {/* Account Selector Modal */}
       {showAccountSelector && (
           <div className="absolute inset-0 bg-black/90 z-50 flex flex-col justify-end animate-in fade-in duration-200">
@@ -655,577 +658,490 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
           </div>
       )}
 
-      {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-4 relative">
-        <button onClick={handleClose} className="p-2 bg-white/10 rounded-2xl text-theme-secondary hover:bg-white/20 transition-colors">
-          <X size={20} />
+      {/* Header — BudgetView Style */}
+      <div className="flex items-center gap-4 px-6 py-4 bg-theme-bg">
+        <button
+          onClick={handleClose}
+          className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+        >
+          <ArrowLeft size={20} />
         </button>
-        
-        {/* Type Switcher */}
-        <div className="flex items-center bg-theme-surface rounded-2xl p-1 border border-white/5">
-            {[TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.TRANSFER].map((tType) => (
-                <button
-                    key={tType}
-                    onClick={() => setType(tType)}
-                    className={`px-3 py-1.5 rounded-2xl text-xs font-bold transition-all ${
-                        type === tType 
-                        ? (tType === TransactionType.EXPENSE ? 'bg-red-500/20 text-red-400' : tType === TransactionType.INCOME ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400') 
-                        : 'text-theme-secondary hover:text-theme-primary'
-                    }`}
-                >
-                    {tType === TransactionType.EXPENSE ? t('expense') : tType === TransactionType.INCOME ? t('income') : t('transfer')}
-                </button>
-            ))}
+        <div className="flex-1">
+          <h2 className="text-xl font-bold text-theme-primary tracking-tight">{t('add_transaction')}</h2>
         </div>
-
         <div className="relative">
-            <button onClick={() => setShowMenu(!showMenu)} className="p-2 bg-white/10 rounded-2xl text-theme-secondary hover:bg-white/20 transition-colors">
-              <div className="w-5 h-5 flex items-center justify-center font-bold pb-2">...</div>
-            </button>
-            {showMenu && (
-                <div className="absolute right-0 top-12 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[150px] z-50 animate-in fade-in zoom-in-95">
-                    <button onClick={handleReset} className="w-full text-left px-4 py-2 text-sm text-theme-primary hover:bg-white/5 rounded-2xl">{t('resetForm')}</button>
-                </div>
-            )}
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+          >
+            <MoreVertical size={20} />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-12 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[200px] z-50 animate-in fade-in zoom-in-95">
+              <button onClick={handleReset} className="w-full text-left px-4 py-3 text-sm font-bold text-theme-primary hover:bg-white/5 rounded-2xl flex items-center gap-3">
+                <RefreshCcw size={16} className="text-theme-secondary" />
+                {t('resetForm')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col px-6 pt-2 pb-2 overflow-y-auto no-scrollbar">
-        
-        {/* Amount Display */}
-        <div className="flex flex-col items-center justify-center mb-6">
-           <div className="flex items-baseline justify-center gap-1">
-             <span className="text-3xl text-theme-secondary font-light mb-1">{(currency === Currency.USD || currency === Currency.USDT) ? '$' : currency === Currency.EUR ? '€' : 'Bs'}</span>
-             <div className="flex-1 w-full max-w-[85vw] overflow-hidden flex justify-center">
-               <input
-                  ref={amountRef}
-                  type="text"
-                  inputMode="none"
-                  value={amountStr}
-                  onChange={(e) => {
-                      const val = e.target.value.replace(',', '.');
-                      setAmountStr(val.replace(/[^0-9\.\+\-\*\/]/g, ''));
-                  }}
-                  onFocus={() => setFocusedField('amount')}
-                  className={`bg-transparent text-4xl sm:text-5xl font-bold tracking-tight outline-none min-w-full selection:bg-theme-brand/20 ${amountStr.length > 8 ? 'text-right' : 'text-center'} ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
-               />
-             </div>
-           </div>
-           
-           <div className="mt-4 flex items-center gap-2">
-             <button 
-               onClick={() => {
-                   const hasEUR = accounts.some(a => a.currency === Currency.EUR);
-                   const rotation = [Currency.USD, Currency.VES];
-                   if (hasEUR) rotation.push(Currency.EUR);
-
-                   const currentIndex = rotation.indexOf(currency as any);
-                   const nextIndex = (currentIndex + 1) % rotation.length;
-                   const newCur = rotation[nextIndex] as Currency;
-                   
-                   setCurrency(newCur);
-                   const matchingAcc = accounts.find(a => a.currency === newCur);
-                   if (matchingAcc) {
-                       setFromAccountId(matchingAcc.id);
-                       if (type === TransactionType.TRANSFER) {
-                           const diffAcc = accounts.find(a => a.id !== matchingAcc.id);
-                           if (diffAcc) setToAccountId(diffAcc.id);
-                       }
-                   }
-               }}
-               className="flex items-center gap-1 bg-theme-surface hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-2xl transition-all"
-             >
-               <span className="text-sm font-bold text-theme-brand">{currency === Currency.VES ? 'Bs' : currency}</span>
-               <ChevronDown size={14} className="text-theme-secondary" />
-             </button>
-
-             {/* Account Selection UX */}
-             <div className="flex items-center bg-theme-surface rounded-2xl p-1 border border-white/10">
-                 <button 
-                    onClick={() => setShowAccountSelector('FROM')}
-                    className="flex items-center gap-2 px-3 py-1 rounded-2xl hover:bg-white/5"
-                 >
-                     <span className="text-sm">{renderAccountIcon(getActiveAccount(fromAccountId).icon, 16)}</span>
-                     <span className="text-xs font-bold text-theme-secondary max-w-[60px] truncate">{getActiveAccount(fromAccountId).name}</span>
-                 </button>
-                 
-                 {type === TransactionType.TRANSFER && (
-                     <>
-                        <ArrowRightLeft size={12} className="text-theme-secondary mx-1" />
-                        <button 
-                            onClick={() => setShowAccountSelector('TO')}
-                            className="flex items-center gap-2 px-3 py-1 rounded-2xl hover:bg-white/5"
-                        >
-                            <span className="text-sm">{renderAccountIcon(getActiveAccount(toAccountId).icon, 16)}</span>
-                            <span className="text-xs font-bold text-theme-secondary max-w-[60px] truncate">{getActiveAccount(toAccountId).name}</span>
-                        </button>
-                     </>
-                 )}
-             </div>
-           </div>
+      {/* Type Switcher — BudgetView Tab Style */}
+      <div className="flex px-4 mb-3">
+        <div className="flex bg-theme-surface rounded-2xl p-1 w-full shadow-inner border border-white/5">
+          {[TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.TRANSFER].map((tType) => (
+            <button
+              key={tType}
+              onClick={() => setType(tType)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-2xl text-[11px] font-bold transition-all duration-200 ${
+                type === tType
+                  ? 'bg-theme-bg text-theme-primary shadow-lg'
+                  : 'text-theme-secondary hover:text-theme-primary'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                type === tType
+                  ? tType === TransactionType.EXPENSE ? 'bg-red-400' : tType === TransactionType.INCOME ? 'bg-emerald-400' : 'bg-blue-400'
+                  : 'bg-transparent'
+              }`} />
+              {tType === TransactionType.EXPENSE ? t('expense') : tType === TransactionType.INCOME ? t('income') : t('transfer')}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Transaction Details for Transfer & Expense (Commissions) */}
-        {(type === TransactionType.TRANSFER || type === TransactionType.EXPENSE) && (
-            <div className="flex flex-col gap-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                {/* Summary Section */}
-                <div className="bg-theme-brand/5 rounded-2xl p-5 backdrop-blur-sm">
-                    {type === TransactionType.TRANSFER ? (
-                        <>
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-60">
-                                   {t('totalTarget')}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-base font-black text-theme-brand">
-                                     {(() => {
-                                         const amount = parseFloat(amountStr) || 0;
-                                         const commF = parseFloat(commissionFixed) || 0;
-                                         const commP = parseFloat(commissionPercent) || 0;
-                                         const fee = commF + (amount * (commP / 100));
-                                         
-                                         let total = amount - fee; // Use inclusive fee as requested
-                                         const fromCurrency = getActiveAccount(fromAccountId).currency;
-                                         const toCurrency = getActiveAccount(toAccountId).currency;
-                                         
-                                         if (fromCurrency !== toCurrency) {
-                                             const rate = parseFloat(manualExchangeRate) || 1;
-                                             total = total * rate;
-                                         }
-                                         return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
-                                     })()}
-                                    </span>
-                                    <span className="text-[10px] font-black text-theme-brand opacity-60 uppercase">{getActiveAccount(toAccountId).currency}</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between border-t border-white/5 pt-3">
-                                <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-40">
-                                   {t('quantity')}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-black text-theme-primary">
-                                     {parseFloat(amountStr || '0').toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                    </span>
-                                    <span className="text-[10px] font-black text-theme-primary opacity-40 uppercase">{getActiveAccount(fromAccountId).currency}</span>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="flex items-center justify-between">
-                            <p className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.15em] opacity-60">
-                               {t('totalWithFees')}
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <span className="text-base font-black text-theme-brand">
-                                 {(() => {
-                                     const amount = parseFloat(amountStr) || 0;
-                                     const commF = parseFloat(commissionFixed) || 0;
-                                     const commP = parseFloat(commissionPercent) || 0;
-                                     const fee = commF + (amount * (commP / 100));
-                                     return (amount + fee).toLocaleString(undefined, { maximumFractionDigits: 2 });
-                                 })()}
-                                </span>
-                                <span className="text-[10px] font-black text-theme-brand opacity-60 uppercase">{currency}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-                {/* Manual Exchange Rate & Commissions Card */}
-                <div className="bg-theme-surface rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                    {/* Manual Exchange Rate for Multi-currency Transfer */}
-                    {type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
-                        <div className="p-5 border-b border-white/5 bg-white/[0.01]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-[10px] uppercase font-black text-theme-secondary tracking-widest flex items-center gap-2">
-                                    <TrendingUp size={14} className="text-theme-brand" />
-                                    {t('exchangeRate')}
-                                </span>
-                                <span className="text-[10px] font-black text-theme-secondary opacity-50 px-2 py-0.5 bg-white/5 rounded-2xl">
-                                    1 {getActiveAccount(fromAccountId).currency}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1 relative">
-                                    <input 
-                                        ref={exchangeRateRef}
-                                        type="text"
-                                        inputMode="none"
-                                        value={manualExchangeRate}
-                                        onChange={(e) => {
-                                            const val = e.target.value.replace(',', '.');
-                                            setManualExchangeRate(val.replace(/[^0-9\.]/g, ''));
-                                        }}
-                                        onFocus={() => setFocusedField('exchangeRate')}
-                                        className={`w-full bg-theme-bg border-[1.5px] rounded-2xl px-4 py-3.5 text-xl font-black outline-none transition-all selection:bg-theme-brand/20 ${focusedField === 'exchangeRate' ? 'border-theme-brand text-theme-brand ring-4 ring-theme-brand/10' : 'border-white/5 text-theme-primary'}`}
-                                    />
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black text-theme-secondary opacity-30">
-                                        {getActiveAccount(toAccountId).currency}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Commission Field */}
-                    <div className="p-5">
-                        <span className="text-[10px] uppercase font-black text-theme-secondary tracking-widest mb-4 block flex items-center gap-2">
-                            <Sparkles size={14} className="text-amber-400" />
-                            {t('commissions')}
-                        </span>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <div className="relative">
-                                    <input 
-                                        ref={commFixedRef}
-                                        type="text"
-                                        inputMode="none"
-                                        value={commissionFixed}
-                                        onChange={(e) => {
-                                            const val = e.target.value.replace(',', '.');
-                                            setCommissionFixed(val.replace(/[^0-9\.]/g, ''));
-                                        }}
-                                        onFocus={() => setFocusedField('commissionFixed')}
-                                        placeholder="0.00"
-                                        className={`w-full bg-theme-bg border-[1.5px] rounded-2xl px-4 py-3.5 text-lg font-black outline-none transition-all selection:bg-theme-brand/20 ${focusedField === 'commissionFixed' ? 'border-theme-brand text-theme-brand ring-4 ring-theme-brand/10' : 'border-white/5 text-theme-primary'}`}
-                                    />
-                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-theme-secondary opacity-40 uppercase">
-                                        {type === TransactionType.TRANSFER ? getActiveAccount(fromAccountId).currency : currency}
-                                    </span>
-                                </div>
-                                <p className="text-[9px] font-black text-theme-secondary opacity-40 uppercase pl-1 tracking-tighter">{t('fixed')}</p>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="relative">
-                                    <input 
-                                        ref={commPercentRef}
-                                        type="text"
-                                        inputMode="none"
-                                        value={commissionPercent}
-                                        onChange={(e) => {
-                                            const val = e.target.value.replace(',', '.');
-                                            setCommissionPercent(val.replace(/[^0-9\.]/g, ''));
-                                        }}
-                                        onFocus={() => setFocusedField('commissionPercent')}
-                                        placeholder="0"
-                                        className={`w-full bg-theme-bg border-[1.5px] rounded-2xl px-4 py-3.5 text-lg font-black outline-none transition-all selection:bg-theme-brand/20 ${focusedField === 'commissionPercent' ? 'border-theme-brand text-theme-brand ring-4 ring-theme-brand/10' : 'border-white/5 text-theme-primary'}`}
-                                    />
-                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-theme-secondary opacity-40">
-                                        %
-                                    </span>
-                                </div>
-                                <p className="text-[9px] font-black text-theme-secondary opacity-40 uppercase pl-1 tracking-tighter">%</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                
-            </div>
-        )}
-
-        {/* Input Field */}
-        <div className="bg-theme-surface border border-white/5 rounded-2xl p-1 flex items-center mb-6">
-           <input 
-             type="text" 
-             value={note}
-             onChange={(e) => setNote(e.target.value)}
-             placeholder={t('notePlaceholder')}
-             className="bg-transparent flex-1 px-4 py-3 text-sm text-theme-primary placeholder:text-theme-secondary outline-none w-full select-text"
-           />
-             <div className="flex gap-2 p-1">
-                <div className="relative">
-                    <button 
-                        onClick={() => setShowScanOptions(!showScanOptions)} 
-                        title={t('scanOptions')} 
-                        className={`p-2.5 rounded-2xl transition-all shadow-lg border ${showScanOptions || isScanning ? 'bg-theme-brand text-white border-theme-soft' : 'bg-theme-surface hover:bg-white/10 text-theme-secondary border-white/5'}`}
-                    >
-                        {isScanning ? <Loader2 size={18} className="animate-spin text-white" /> : <Camera size={18} />}
-                    </button>
-                    
-                    {showScanOptions && (
-                        <div className="absolute bottom-full mb-2 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[200px] z-[60] animate-in fade-in slide-in-from-bottom-2">
-                            <div className="relative">
-                                <button
-                                    onClick={() => { setShowScanOptions(false); startCamera(); }} 
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
-                                >
-                                    <Camera size={16} className="text-theme-brand" />
-                                    <span className="font-bold">{t('openCamera')}</span>
-                                </button>
-                            </div>
-                            
-                            <div className="relative">
-                                <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    onChange={(e) => { setShowScanOptions(false); handleFileSelect(e); }} 
-                                    className="hidden" 
-                                    id="gallery-input-main" 
-                                />
-                                <label 
-                                    htmlFor="gallery-input-main" 
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
-                                >
-                                    <ImageIcon size={16} className="text-theme-brand" />
-                                    <span className="font-bold">{t('attachImage')}</span>
-                                </label>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <button 
-                    onClick={handleSpeechInput} 
-                    className={`p-2.5 rounded-2xl transition-all shadow-lg ${isListening ? 'bg-red-500 text-white animate-pulse shadow-red-500/20' : 'bg-theme-brand hover:brightness-110 text-white shadow-brand/20'}`}
-                >
-                    <Mic size={18} />
-                </button>
-            </div>
-        </div>
-
-        {/* Receipt Preview */}
+      {/* Footer Area with Input and Toolbar */}
+      <div className="flex-1 bg-theme-bg px-4 pb-3 pt-2 relative flex flex-col">
+        {/* Receipt Preview Row */}
         {receiptImage && (
-            <div className="mb-6 animate-in zoom-in-95 duration-300">
+            <div className="px-2 mb-4 animate-in slide-in-from-left duration-300">
                 <div className="relative inline-block group">
                     <img 
                       src={receiptImage} 
                       alt="Receipt" 
-                      className="w-20 h-24 object-cover rounded-2xl border-2 border-theme-brand shadow-lg" 
+                      className="w-16 h-20 object-cover rounded-2xl border-2 border-theme-brand shadow-2xl" 
                     />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center gap-1.5 backdrop-blur-sm">
+                    <div className="absolute -top-2 -right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={() => { setSelectedImage(receiptImage); setShowCropModal(true); }}
-                          className="p-1.5 bg-amber-500 text-white rounded-2xl shadow-lg hover:scale-110 transition-transform"
+                          className="p-1.5 bg-theme-brand text-white rounded-lg shadow-lg"
                         >
-                            <Edit2 size={14} />
+                            <Edit2 size={12} />
                         </button>
                         <button 
                           onClick={() => setReceiptImage(null)}
-                          className="p-1.5 bg-red-500 text-white rounded-2xl shadow-lg hover:scale-110 transition-transform"
+                          className="p-1.5 bg-red-500 text-white rounded-lg shadow-lg"
                         >
-                            <Trash2 size={14} />
+                            <Trash2 size={12} />
                         </button>
                     </div>
                 </div>
             </div>
         )}
-
-        {/* Date and Category Selection */}
-        <div className="flex gap-4 mb-4">
-             <div className="flex-1">
-                 <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('date')}</label>
-                 <div>
-                    <input 
-                        type="date" 
-                        value={date} 
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-theme-surface border border-white/5 rounded-2xl p-3 pl-3 text-theme-primary outline-none focus:border-theme-soft transition-colors text-sm font-bold"
+        {/* Amount Section */}
+        <div className="flex flex-col items-center justify-center mb-4 mt-1 relative">
+            <div className="flex items-center gap-4">
+                <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl text-theme-secondary font-light">{(currency === Currency.USD || currency === Currency.USDT) ? '$' : currency === Currency.EUR ? '€' : 'Bs'}</span>
+                    <input
+                        ref={amountRef}
+                        type="text"
+                        inputMode="none"
+                        value={amountStr}
+                        onChange={(e) => { const val = e.target.value.replace(',', '.'); setAmountStr(val.replace(/[^0-9\.\+\-\*\/]/g, '')); }}
+                        onFocus={() => setFocusedField('amount')}
+                        className={`bg-transparent text-5xl font-bold tracking-tighter outline-none w-48 text-center selection:bg-theme-brand/20 ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
                     />
+                </div>
+                
+                {/* Currency Pill Toggle */}
+                <div className="flex bg-theme-surface border border-white/10 p-1 rounded-2xl shadow-lg">
+                    {[Currency.USD, Currency.VES].map((cur) => (
+                        <button
+                            key={cur}
+                            onClick={() => {
+                                setCurrency(cur);
+                                const matchingAcc = accounts.find(a => a.currency === cur);
+                                if (matchingAcc) {
+                                    setFromAccountId(matchingAcc.id);
+                                    if (type === TransactionType.TRANSFER) { 
+                                        const d = accounts.find(a => a.id !== matchingAcc.id && a.currency !== (cur === Currency.USD ? Currency.EUR : '')); 
+                                        if (d) setToAccountId(d.id); 
+                                    }
+                                }
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${currency === cur ? 'bg-theme-brand text-white shadow-md' : 'text-theme-secondary hover:text-theme-primary opacity-60'}`}
+                        >
+                            {cur === Currency.VES ? 'VES' : 'USD'}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-                 </div>
-             </div>
-             
-             <div className="flex-1">
-                 <label className="text-xs text-theme-secondary mb-1 block uppercase tracking-wider font-bold">{t('category')}</label>
-                 <button 
-                     onClick={() => setShowCategoryModal(true)}
-                     className="w-full bg-theme-surface border border-white/5 rounded-2xl p-3 flex items-center justify-between group hover:border-theme-soft transition-colors h-[46px]"
-                 >
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <span className={`${CATEGORIES.find(c => c.id === categoryId)?.color || 'text-theme-primary'}`}>
-                            {CATEGORIES.find(c => c.id === categoryId)?.icon}
-                        </span>
-                        <span className="text-xs font-bold text-theme-primary truncate">
-                            {t(CATEGORIES.find(c => c.id === categoryId)?.name) || CATEGORIES.find(c => c.id === categoryId)?.name}
+            {/* Conversion Summary */}
+            <div className="mt-1 flex items-center justify-center gap-1.5 opacity-60">
+                <span className="text-xs font-medium text-theme-secondary italic">
+                    ≈ {(() => {
+                        const amt = parseFloat(amountStr) || 0;
+                        if (currency === Currency.USD || currency === Currency.USDT) {
+                            return `Bs. ${(amt * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                        } else if (currency === Currency.VES) {
+                            return `$ ${(amt / exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                        } else if (currency === Currency.EUR) {
+                            return `Bs. ${(amt * (euroRate || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                        }
+                        return '';
+                    })()}
+                </span>
+            </div>
+
+            {/* Compact Commissions (New Position) */}
+            {(type === TransactionType.TRANSFER || type === TransactionType.EXPENSE) && (
+                <div className="mt-2 w-full max-w-md mx-auto px-2 animate-in fade-in zoom-in duration-300">
+                    <div className="bg-theme-surface rounded-2xl p-2 flex items-center gap-4 border border-white/5 shadow-inner">
+                        <div className="flex flex-col flex-1 pl-1">
+                            <span className="text-[7px] font-black text-theme-secondary opacity-50 uppercase tracking-[0.2em]">TOTAL</span>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-sm font-black text-theme-brand">
+                                    {(() => {
+                                        const amount = parseFloat(amountStr) || 0;
+                                        const commF = parseFloat(commissionFixed) || 0;
+                                        const commP = parseFloat(commissionPercent) || 0;
+                                        const fee = commF + (amount * (commP / 100));
+                                        if (type === TransactionType.TRANSFER) {
+                                            let total = amount - fee;
+                                            if (getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency)
+                                                total = total * (parseFloat(manualExchangeRate) || 1);
+                                            return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                        }
+                                        return (amount + fee).toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                    })()}
+                                </span>
+                                <span className="text-[8px] font-black text-theme-brand opacity-60">
+                                    {type === TransactionType.TRANSFER ? getActiveAccount(toAccountId).currency : currency}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="h-8 w-px bg-white/5" />
+
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                             <div className="flex flex-col">
+                                <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">{t('fixed')}</span>
+                                <input ref={commFixedRef} type="text" inputMode="none" value={commissionFixed}
+                                    onChange={(e) => { const v = e.target.value.replace(',', '.'); setCommissionFixed(v.replace(/[^0-9\.]/g, '')); }}
+                                    onFocus={() => setFocusedField('commissionFixed')}
+                                    className="bg-transparent text-[11px] font-bold text-theme-primary outline-none focus:text-theme-brand w-12"
+                                />
+                             </div>
+                             <div className="flex flex-col">
+                                <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">%</span>
+                                <input ref={commPercentRef} type="text" inputMode="none" value={commissionPercent}
+                                    onChange={(e) => { const v = e.target.value.replace(',', '.'); setCommissionPercent(v.replace(/[^0-9\.]/g, '')); }}
+                                    onFocus={() => setFocusedField('commissionPercent')}
+                                    className="bg-transparent text-[11px] font-bold text-theme-primary outline-none focus:text-theme-brand w-12"
+                                />
+                             </div>
+                        </div>
+
+                        {type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (
+                             <>
+                                <div className="h-8 w-px bg-white/5" />
+                                <div className="flex flex-col pr-1">
+                                    <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">{t('rate')}</span>
+                                    <input ref={exchangeRateRef} type="text" inputMode="none" value={manualExchangeRate}
+                                        onChange={(e) => { const v = e.target.value.replace(',', '.'); setManualExchangeRate(v.replace(/[^0-9\.]/g, '')); }}
+                                        onFocus={() => setFocusedField('exchangeRate')}
+                                        className="bg-transparent text-[11px] font-bold text-theme-brand outline-none w-14"
+                                    />
+                                </div>
+                             </>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+
+        {/* Note / Search Bar — moved below amount */}
+        <div className="px-1 mb-2">
+            <div className="bg-theme-surface rounded-2xl p-1 flex items-center shadow-sm">
+                <input 
+                    type="text" 
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={t('notePlaceholder')}
+                    className="bg-transparent flex-1 px-4 py-2 text-sm font-medium text-theme-primary placeholder:text-theme-secondary outline-none w-full"
+                />
+                <button onClick={handleSpeechInput} className={`p-2.5 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-theme-secondary hover:text-theme-primary'}`}>
+                    <Mic size={18} />
+                </button>
+                <div className="relative">
+                    <button onClick={() => setShowScanOptions(!showScanOptions)} className="p-2.5 text-theme-secondary hover:text-theme-primary"><Camera size={18} /></button>
+                    {showScanOptions && (
+                        <div className="absolute top-full mt-2 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[200px] z-[60] animate-in fade-in slide-in-from-top-2">
+                            <button onClick={() => { setShowScanOptions(false); startCamera(); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl">
+                                <Camera size={18} className="text-theme-brand" />
+                                <span className="font-bold">{t('openCamera')}</span>
+                            </button>
+                            <button onClick={() => { const input = document.getElementById('gallery-input-footer'); if(input) input.click(); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl">
+                                <ImageIcon size={18} className="text-theme-brand" />
+                                <span className="font-bold">{t('attachImage')}</span>
+                                <input type="file" accept="image/*" onChange={(e) => { setShowScanOptions(false); handleFileSelect(e); }} className="hidden" id="gallery-input-footer" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+
+        {/* Row 2: Commissions (if applicable) */}
+            {(type === TransactionType.TRANSFER || type === TransactionType.EXPENSE) && (
+                <div className="hidden" /> /* Replaced by new compact version above Amount */
+            )}
+
+        {/* Metadata Slider (Horizontal) */}
+        <div className="flex overflow-x-auto no-scrollbar gap-3 mb-2 px-2 py-1 scroll-smooth">
+
+            {/* Wallet Button */}
+            {(() => {
+                const activeAcc = accounts.find(a => a.id === fromAccountId) || accounts[0];
+                return activeAcc ? (
+                    <button
+                        onClick={() => setShowAccountSelector('FROM')}
+                        className="flex-shrink-0 bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all min-w-[140px] border border-white/5"
+                    >
+                        <div className="text-theme-brand bg-theme-brand/10 w-11 h-11 rounded-full flex items-center justify-center shadow-lg">
+                            {renderAccountIcon(activeAcc.icon, 18)}
+                        </div>
+                        <div className="flex flex-col items-start leading-tight">
+                            <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('wallet')}</span>
+                            <span className="text-[13px] font-bold text-theme-primary truncate max-w-[70px]">{activeAcc.name}</span>
+                        </div>
+                    </button>
+                ) : null;
+            })()}
+
+            {/* Category Button */}
+            <button 
+                onClick={() => setShowCategoryModal(true)}
+                className="flex-shrink-0 bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all min-w-[140px] border border-white/5"
+            >
+                <div className={`${CATEGORIES.find(c => c.id === categoryId)?.color || 'text-theme-primary'} bg-white/5 w-11 h-11 rounded-full flex items-center justify-center shadow-lg`}>
+                    {CATEGORIES.find(c => c.id === categoryId)?.icon}
+                </div>
+                <div className="flex flex-col items-start leading-tight">
+                    <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('category')}</span>
+                    <span className="text-[13px] font-bold text-theme-primary truncate max-w-[70px]">
+                        {t(CATEGORIES.find(c => c.id === categoryId)?.name) || CATEGORIES.find(c => c.id === categoryId)?.name}
+                    </span>
+                </div>
+            </button>
+
+            {/* Date Button */}
+            <div className="flex-shrink-0 relative group min-w-[140px]">
+                <input 
+                    ref={dateInputRef}
+                    type="date" 
+                    value={date} 
+                    onChange={(e) => setDate(e.target.value)}
+                    className="absolute inset-x-0 inset-y-0 opacity-0 z-0 pointer-events-none"
+                    style={{ visibility: 'hidden', position: 'absolute' }}
+                />
+                <button 
+                  onClick={() => {
+                    if (dateInputRef.current) {
+                        try {
+                            if ('showPicker' in HTMLInputElement.prototype) {
+                                (dateInputRef.current as any).showPicker();
+                            } else {
+                                dateInputRef.current.click();
+                            }
+                        } catch (e) {
+                            dateInputRef.current.click();
+                        }
+                    }
+                  }}
+                  className="w-full h-full bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all border border-white/5"
+                >
+                    <div className="text-theme-brand bg-theme-brand/10 w-11 h-11 rounded-full flex items-center justify-center shadow-lg">
+                        <Calendar size={18} />
+                    </div>
+                    <div className="flex flex-col items-start leading-tight">
+                        <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('date')}</span>
+                        <span className="text-[13px] font-bold text-theme-primary">
+                            {new Date(date).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
                         </span>
                     </div>
-                    <ChevronDown size={14} className="text-theme-secondary group-hover:text-theme-primary flex-shrink-0" />
-                 </button>
-             </div>
-        </div>
-        
-        {/* Fiscal Tag Selection (Only for Income/Expense) */}
-        {type !== TransactionType.TRANSFER && (
-             <div className="mb-6 animate-in slide-in-from-top-4 duration-500">
-                 <div className="flex items-center justify-between mb-2 px-1">
-                    <label className="text-[10px] text-theme-secondary font-black uppercase tracking-[0.2em] opacity-60 flex items-center gap-2">
-                        <Sparkles size={12} className="text-theme-brand" />
-                        {t('fiscalTag')}
-                    </label>
-                    <span className="text-[10px] text-theme-secondary font-black uppercase tracking-tighter opacity-30">Option</span>
-                 </div>
-                 <div className="flex bg-theme-surface/50 backdrop-blur-md border border-white/5 rounded-2xl p-1.5 gap-1.5">
-                     <button
-                        onClick={() => setFiscalTag('NEUTRAL')}
-                        className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all duration-300 ${fiscalTag === 'NEUTRAL' ? 'bg-white/10 text-theme-primary shadow-lg ring-1 ring-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
-                     >
-                         {t('neutral')}
-                     </button>
-                     {type === TransactionType.INCOME && (
-                         <button
-                            onClick={() => setFiscalTag('TAXABLE_INCOME')}
-                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all duration-300 ${fiscalTag === 'TAXABLE_INCOME' ? 'bg-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/20' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
-                         >
-                             {t('taxableIncome')}
-                         </button>
-                     )}
-                     {type === TransactionType.EXPENSE && (
-                         <button
-                            onClick={() => setFiscalTag('DEDUCTIBLE_EXPENSE')}
-                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all duration-300 ${fiscalTag === 'DEDUCTIBLE_EXPENSE' ? 'bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500/20' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}
-                         >
-                             {t('deductibleExpense')}
-                         </button>
-                     )}
-                 </div>
-             </div>
-        )}
-      </div>
-
-      {/* Keypad */}
-      <div className="bg-theme-bg px-4 pb-6 pt-2 border-t border-white/5 relative">
-         {/* Budget Month Picker Toolbar */}
-         <div className="flex justify-center mb-4 pt-1">
-            <div className="relative w-full max-w-[200px]">
-                <button 
-                    type="button"
-                    onClick={() => setShowBudgetMonthPicker(!showBudgetMonthPicker)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-1.5 flex items-center justify-between text-[11px] text-theme-secondary font-black uppercase tracking-widest hover:bg-theme-brand/10 hover:text-theme-brand transition-all cursor-pointer"
-                >
-                    <span className="flex items-center gap-2">
-                        <Calendar size={12} />
-                        {budgetMonth ? budgetMonth : t('currentMonth')}
-                    </span>
-                    <ChevronDown size={12} className={`transition-transform duration-200 ${showBudgetMonthPicker ? 'rotate-180' : ''}`} />
                 </button>
-                
-                {showBudgetMonthPicker && (
+            </div>
+
+            {/* Fiscal Tag Button */}
+            <button 
+                onClick={() => {
+                    if (type === TransactionType.TRANSFER) return;
+                    const next: Record<string, any> = { 'NEUTRAL': type === TransactionType.INCOME ? 'TAXABLE_INCOME' : 'DEDUCTIBLE_EXPENSE', 'TAXABLE_INCOME': 'NEUTRAL', 'DEDUCTIBLE_EXPENSE': 'NEUTRAL' };
+                    setFiscalTag(next[fiscalTag] || 'NEUTRAL');
+                }}
+                disabled={type === TransactionType.TRANSFER}
+                className={`flex-shrink-0 bg-theme-surface rounded-2xl p-2.5 flex items-center gap-3 active:scale-[0.98] transition-all min-w-[140px] border border-white/5 ${type === TransactionType.TRANSFER ? 'opacity-30' : ''}`}
+            >
+                <div className={`${fiscalTag !== 'NEUTRAL' ? 'text-theme-brand bg-theme-brand/10' : 'text-theme-secondary bg-white/5'} w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-colors`}>
+                    <Sparkles size={18} />
+                </div>
+                <div className="flex flex-col items-start leading-tight">
+                    <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('fiscal')}</span>
+                    <span className="text-[13px] font-bold text-theme-primary truncate max-w-[70px]">{t(fiscalTag.toLowerCase())}</span>
+                </div>
+            </button>
+
+            {/* Budget Month Picker */}
+            <div className="flex-shrink-0 relative min-w-[140px]">
+                <button
+                    ref={monthBtnRef}
+                    onClick={() => {
+                        if (monthBtnRef.current) {
+                            const rect = monthBtnRef.current.getBoundingClientRect();
+                            setMonthDropPos({ top: rect.bottom + 8, left: rect.left, width: Math.max(rect.width, 180) });
+                        }
+                        setShowBudgetMonthPicker(!showBudgetMonthPicker);
+                    }}
+                    className="w-full bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all border border-white/5"
+                >
+                    <div className="text-theme-secondary bg-white/5 w-11 h-11 rounded-full flex items-center justify-center shadow-lg">
+                        <ChevronDown size={18} className={`transition-transform duration-300 ${showBudgetMonthPicker ? 'rotate-180' : ''}`} />
+                    </div>
+                    <div className="flex flex-col items-start leading-tight text-left">
+                        <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('month')}</span>
+                        <span className="text-[13px] font-bold text-theme-primary">
+                            {budgetMonth
+                                ? (() => { const [y,mo] = budgetMonth.split('-').map(Number); return new Date(y, mo-1).toLocaleDateString(undefined, {month:'short', year:'2-digit'}); })()
+                                : t('current')
+                            }
+                        </span>
+                    </div>
+                </button>
+
+                {showBudgetMonthPicker && monthDropPos && (
                     <>
-                        <div className="fixed inset-0 z-[60]" onClick={() => setShowBudgetMonthPicker(false)} />
-                        <div className="absolute bottom-full mb-2 left-0 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 min-w-[160px]">
-                            <div className="max-h-[200px] overflow-y-auto no-scrollbar py-2">
-                                <div className="px-4 py-1 mb-1 border-b border-white/5">
-                                    <p className="text-[10px] text-theme-secondary font-black uppercase tracking-tighter opacity-50">{t('from')}</p>
-                                </div>
-                                <button 
+                        <div className="fixed inset-0 z-[9998]" onClick={() => setShowBudgetMonthPicker(false)} />
+                        <div
+                            className="fixed bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+                            style={{ top: '178px', left: '183px', width: '170px' }}
+                        >
+                            <div className="max-h-[220px] overflow-y-auto no-scrollbar py-1">
+                                <button
                                     onClick={() => { setBudgetMonth(''); setShowBudgetMonthPicker(false); }}
-                                    className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors hover:bg-white/5 ${!budgetMonth ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
+                                    className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${
+                                        !budgetMonth ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'
+                                    }`}
                                 >
-                                    {t('selectDate')}
+                                    {t('current')}
                                 </button>
-                                <div className="h-px bg-white/5 mx-2 my-1" />
                                 {(() => {
                                     const months = new Set<string>();
-                                    const current = new Date().toISOString().slice(0, 7);
-                                    
-                                    transactions.forEach(t => months.add(t.date.slice(0, 7)));
-                                    budgets.forEach(b => { if(b.month) months.add(b.month) });
-                                    
-                                    if (months.size === 0) months.add(current);
-                                    
-                                    const sortedMonths = Array.from(months).sort().reverse();
-                                    return sortedMonths.map(m => (
-                                        <button 
-                                            key={m}
-                                            onClick={() => { setBudgetMonth(m); setShowBudgetMonthPicker(false); }}
-                                            className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors hover:bg-white/5 ${budgetMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
-                                        >
-                                            {m}
-                                        </button>
-                                    ));
+                                    const cur = new Date().toISOString().slice(0, 7);
+                                    transactions.forEach(tx => months.add(tx.date.slice(0, 7)));
+                                    budgets.forEach(b => { if(b.month) months.add(b.month); });
+                                    if (months.size === 0) months.add(cur);
+                                    return Array.from(months).sort().reverse().map(m => {
+                                        const [y, mo] = m.split('-').map(Number);
+                                        const label = new Date(y, mo - 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+                                        return (
+                                            <button
+                                                key={m}
+                                                onClick={() => { setBudgetMonth(m); setShowBudgetMonthPicker(false); }}
+                                                className={`w-full text-left px-4 py-2.5 text-xs font-bold capitalize transition-colors ${
+                                                    budgetMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'
+                                                }`}
+                                            >
+                                                {label}
+                                            </button>
+                                        );
+                                    });
                                 })()}
                             </div>
                         </div>
                     </>
                 )}
             </div>
-         </div>
-         {isCalculatorMode && (
-           <div className="flex justify-between gap-2 mb-2 px-2">
-             {['/', '*', '-', '+'].map(op => (
-               <button 
+        </div>
+        <div className="relative flex-1 flex flex-col">
+          {isCalculatorMode && (
+            <div className="bg-black absolute bottom-full left-0 right-0 flex justify-between gap-2 mb-2 p-1 pt-3 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              {['/', '*', '-', '+'].map((op) => (
+                <button
                   key={op}
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => handleKeyPress(op)}
-                  className="flex-1 bg-theme-brand/10 hover:bg-theme-brand/20 text-theme-brand py-2 rounded-2xl font-bold"
-               >
-                 {op}
-               </button>
-             ))}
-           </div>
-         )}
+                  className="flex-1 bg-theme-surface border border-white/10 text-theme-primary py-1 rounded-2xl font-black text-xl shadow-2xl active:scale-95 transition-all flex items-center justify-center"
+                >
+                  {op === '*' ? '×' : op === '/' ? '÷' : op}
+                </button>
+              ))}
+            </div>
+          )}
 
-         <div className="grid grid-cols-3 gap-y-6 gap-x-8 px-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-              <button 
-                key={num} 
+          {/* Keypad — grows to fill available space */}
+          <div className="flex-1 grid grid-cols-3 gap-2 px-1 pb-1 mb-1">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+              <button
+                key={num}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => handleKeyPress(num.toString())}
-                className="text-2xl font-medium text-theme-primary hover:text-theme-brand transition-colors py-2"
+                className="text-2xl sm:text-lg font-bold text-theme-primary hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center bg-theme-surface rounded-lg w-full h-full"
               >
                 {num}
               </button>
             ))}
-            
-            <button 
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => handleKeyPress('.')}
-              className="text-2xl font-medium text-theme-primary hover:text-theme-brand transition-colors pb-2"
-            >
-              .
+            <button onPointerDown={(e) => e.preventDefault()} onClick={() => handleKeyPress('.')} className="text-2xl sm:text-lg font-bold text-theme-primary hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center bg-theme-surface rounded-lg w-full h-full">.</button>
+            <button onPointerDown={(e) => e.preventDefault()} onClick={() => handleKeyPress('0')} className="text-2xl sm:text-lg font-bold text-theme-primary hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center bg-theme-surface rounded-lg w-full h-full">0</button>
+            <button onPointerDown={(e) => e.preventDefault()} onClick={handleDelete} className="flex items-center justify-center text-theme-secondary hover:text-theme-primary active:scale-95 transition-all bg-theme-surface rounded-lg w-full h-full">
+              <Delete size={28} />
             </button>
-            
-            <button 
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => handleKeyPress('0')}
-              className="text-2xl font-medium text-theme-primary hover:text-theme-brand transition-colors pb-2"
-            >
-              0
-            </button>
-            
-            <button 
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={handleDelete}
-              className="flex items-center justify-center text-theme-secondary hover:text-theme-primary transition-colors pb-2"
-            >
-              <Delete size={24} />
-            </button>
-         </div>
+          </div>
+        </div>
 
-         <div className="flex items-center gap-4 mt-6 px-2">
-            <button 
-              onClick={() => setIsCalculatorMode(!isCalculatorMode)}
-              className={`p-4 rounded-2xl transition-colors ${isCalculatorMode ? 'bg-theme-brand text-white' : 'bg-white/5 text-theme-secondary hover:bg-white/10'}`}
-            >
-              <Calculator size={24} />
-            </button>
-            
-            <button 
-              onClick={isCalculatorMode ? handleCalculate : handleSave}
-              className="flex-1 bg-theme-brand hover:brightness-110 active:scale-[0.98] text-white font-semibold h-14 rounded-2xl shadow-lg shadow-brand/30 flex items-center justify-center gap-2 transition-all"
-            >
-               {isCalculatorMode ? (
-                 <span>=</span>
-               ) : (
-                 <>
-                   <span>{t('save')} {type === TransactionType.EXPENSE ? t('expense') : type === TransactionType.INCOME ? t('income') : t('transfer')}</span>
-                   <Check size={18} />
-                 </>
-               )}
-            </button>
+        {/* Bottom Actions */}
+        <div className="flex flex-col gap-4 px-2 pt-2">
+            <div className="flex items-center gap-3 mt-1">
+                <button 
+                  onClick={() => setIsCalculatorMode(!isCalculatorMode)}
+                  className={`p-4 rounded-3xl transition-colors ${isCalculatorMode ? 'bg-theme-brand text-white shadow-lg' : 'bg-theme-surface border border-white/5 text-theme-secondary'}`}
+                >
+                  <Calculator size={22} />
+                </button>
+                
+                <button 
+                  onClick={isCalculatorMode ? handleCalculate : handleSave}
+                  className="flex-1 bg-theme-brand hover:brightness-110 active:scale-[0.98] text-white font-bold h-14 rounded-3xl shadow-xl shadow-brand/20 flex items-center justify-center gap-3 transition-all text-sm"
+                >
+                   {isCalculatorMode ? (
+                     <span className="text-3xl">=</span>
+                   ) : (
+                     <>
+                        <span className="uppercase tracking-widest">{t('save')}</span>
+                        <Check size={24} />
+                     </>
+                   )}
+                </button>
+            </div>
          </div>
       </div>
       
        {/* Category Modal */}
        {showCategoryModal && (
-        <div className="fixed inset-0 bg-theme-bg z-[60] flex flex-col animate-in slide-in-from-bottom duration-200">
+        <div className="fixed inset-0 bg-theme-bg z-[60] flex flex-col animate-in slide-in-from-bottom duration-300">
             {/* Header */}
-            <div className="p-4 border-b border-white/5 bg-theme-surface">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-theme-primary">{t('selectCategory')}</h2>
-                    <button onClick={() => { setShowCategoryModal(false); setCategorySearch(''); }} className="p-2 bg-white/5 rounded-2xl text-theme-secondary hover:text-theme-primary"><X size={20}/></button>
-                </div>
+            <div className="px-6 py-4 border-b border-white/5 bg-theme-bg flex items-center justify-between">
+                <button onClick={() => { setShowCategoryModal(false); setCategorySearch(''); }} className="p-2 -ml-2 text-theme-secondary hover:text-theme-primary transition-colors">
+                    <X size={24}/>
+                </button>
+                <h2 className="text-xl font-bold text-theme-primary tracking-tight">{t('selectCategory')}</h2>
+                <div className="w-10" /> {/* Spacer for centering */}
+            </div>
+
+            <div className="p-4 bg-theme-bg">
                 {/* Search Bar */}
                 <div className="relative">
                     <input 
@@ -1233,10 +1149,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
                         placeholder={t('search')}
-                        className="w-full bg-theme-bg border border-white/5 rounded-2xl py-2.5 pl-10 pr-4 text-sm text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-soft transition-colors"
+                        className="w-full bg-theme-surface border border-white/10 rounded-3xl py-4 pl-12 pr-4 text-sm font-bold text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-brand/50 transition-all shadow-inner"
                         autoFocus
                     />
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary" />
+                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-secondary" />
                     {categorySearch && (
                         <button 
                             onClick={() => setCategorySearch('')}

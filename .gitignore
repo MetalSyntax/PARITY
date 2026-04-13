@@ -28,3 +28,6 @@ dev-dist
 .env.local
 .env.*.local
 parity_agent_prompt.md
+.plans
+Captura*
+views/AddTransaction_BAK.tsx
