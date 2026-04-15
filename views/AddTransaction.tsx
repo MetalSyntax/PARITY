@@ -61,6 +61,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       ? initialData.toAccountId 
       : (accounts.length > 1 ? accounts[1].id : (accounts.length > 0 ? accounts[0].id : ''))
   );
+
+  const fAcc = accounts.find(a => a.id === fromAccountId) || accounts[0];
+  const tAcc = accounts.find(a => a.id === toAccountId) || (accounts.length > 1 ? accounts[1] : accounts[0]);
+  const isSameCurrencyTransfer = type === TransactionType.TRANSFER && fAcc.currency === tAcc.currency;
   const [focusedField, setFocusedField] = useState<'amount' | 'exchangeRate' | 'commissionFixed' | 'commissionPercent'>('amount');
   const [manualExchangeRate, setManualExchangeRate] = useState<string>(initialData?.exchangeRate?.toString() || exchangeRate.toString());
   const [commissionFixed, setCommissionFixed] = useState<string>(initialData?.fee?.toString() || '0');
@@ -81,6 +85,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       setCategoryId(CATEGORIES[1].id);
     }
   }, [type, initialData, categoryId]);
+
+  // Force same currency for same-account/same-currency transfers
+  useEffect(() => {
+    if (isSameCurrencyTransfer && currency !== fAcc.currency) {
+      setCurrency(fAcc.currency);
+    }
+  }, [isSameCurrencyTransfer, fAcc.currency, currency]);
   // Update manualExchangeRate when accounts change in transfer
   useEffect(() => {
     if (type !== TransactionType.TRANSFER || initialData) return;
@@ -527,7 +538,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
     const commFixedVal = parseFloat(commissionFixed) || 0;
     const commPercentVal = parseFloat(commissionPercent) || 0;
-    const finalFee = commFixedVal + (finalAmount * (commPercentVal / 100));
+    const finalFee = isSameCurrencyTransfer ? 0 : (commFixedVal + (finalAmount * (commPercentVal / 100)));
 
     onSave({
       id: initialData?.id, // Pass ID if editing
@@ -755,49 +766,51 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     />
                 </div>
                 
+                
                 {/* Currency Pill Toggle */}
-                <div className="flex bg-theme-surface border border-white/10 p-1 rounded-2xl shadow-lg">
-                    {[Currency.USD, Currency.VES].map((cur) => (
-                        <button
-                            key={cur}
-                            onClick={() => {
-                                setCurrency(cur);
-                                const matchingAcc = accounts.find(a => a.currency === cur);
-                                if (matchingAcc) {
-                                    setFromAccountId(matchingAcc.id);
-                                    if (type === TransactionType.TRANSFER) { 
-                                        const d = accounts.find(a => a.id !== matchingAcc.id && a.currency !== (cur === Currency.USD ? Currency.EUR : '')); 
-                                        if (d) setToAccountId(d.id); 
+                {!isSameCurrencyTransfer && (
+                    <div className="flex bg-theme-surface border border-white/10 p-1 rounded-2xl shadow-lg">
+                        {[Currency.USD, Currency.VES].map((cur) => (
+                            <button
+                                key={cur}
+                                onClick={() => {
+                                    if (type === TransactionType.TRANSFER && currency !== cur) {
+                                        const prevFrom = fromAccountId;
+                                        setFromAccountId(toAccountId);
+                                        setToAccountId(prevFrom);
                                     }
-                                }
-                            }}
-                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${currency === cur ? 'bg-theme-brand text-white shadow-md' : 'text-theme-secondary hover:text-theme-primary opacity-60'}`}
-                        >
-                            {cur === Currency.VES ? 'VES' : 'USD'}
-                        </button>
-                    ))}
-                </div>
+                                    setCurrency(cur);
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${currency === cur ? 'bg-theme-brand text-white shadow-md' : 'text-theme-secondary hover:text-theme-primary opacity-60'}`}
+                            >
+                                {cur === Currency.VES ? 'VES' : 'USD'}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Conversion Summary */}
-            <div className="mt-1 flex items-center justify-center gap-1.5 opacity-60">
-                <span className="text-xs font-medium text-theme-secondary italic">
-                    ≈ {(() => {
-                        const amt = parseFloat(amountStr) || 0;
-                        if (currency === Currency.USD || currency === Currency.USDT) {
-                            return `Bs. ${(amt * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-                        } else if (currency === Currency.VES) {
-                            return `$ ${(amt / exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-                        } else if (currency === Currency.EUR) {
-                            return `Bs. ${(amt * (euroRate || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-                        }
-                        return '';
-                    })()}
-                </span>
-            </div>
+            {!isSameCurrencyTransfer && (
+                <div className="mt-1 flex items-center justify-center gap-1.5 opacity-60">
+                    <span className="text-xs font-medium text-theme-secondary italic">
+                        ≈ {(() => {
+                            const amt = parseFloat(amountStr) || 0;
+                            if (currency === Currency.USD || currency === Currency.USDT) {
+                                return `Bs. ${(amt * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                            } else if (currency === Currency.VES) {
+                                return `$ ${(amt / exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                            } else if (currency === Currency.EUR) {
+                                return `Bs. ${(amt * (euroRate || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                            }
+                            return '';
+                        })()}
+                    </span>
+                </div>
+            )}
 
             {/* Compact Commissions (New Position) */}
-            {(type === TransactionType.TRANSFER || type === TransactionType.EXPENSE) && (
+            {((type === TransactionType.TRANSFER && !isSameCurrencyTransfer) || type === TransactionType.EXPENSE) && (
                 <div className="mt-2 w-full max-w-md mx-auto px-2 animate-in fade-in zoom-in duration-300">
                     <div className="bg-theme-surface rounded-2xl p-2 flex items-center gap-4 border border-white/5 shadow-inner">
                         <div className="flex flex-col flex-1 pl-1">
@@ -925,9 +938,17 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                 </div>
                             </button>
 
-                            <div className="text-theme-secondary opacity-30">
-                                <ChevronRight size={16} />
-                            </div>
+                             <button
+                                onClick={() => {
+                                    const prevFrom = fromAccountId;
+                                    setFromAccountId(toAccountId);
+                                    setToAccountId(prevFrom);
+                                }}
+                                title="Swap Wallets"
+                                className="p-1.5 bg-theme-surface border border-white/10 rounded-full text-theme-secondary hover:text-theme-primary transition-all active:scale-90 active:rotate-180 duration-300 shadow-lg"
+                            >
+                                <ArrowRightLeft size={16} />
+                            </button>
 
                             {/* Destination Wallet */}
                             <button
@@ -985,8 +1006,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     type="date" 
                     value={date} 
                     onChange={(e) => setDate(e.target.value)}
-                    className="absolute inset-x-0 inset-y-0 opacity-0 z-0 pointer-events-none"
-                    style={{ visibility: 'hidden', position: 'absolute' }}
+                    className="absolute inset-0 opacity-0 pointer-events-none"
+                    style={{ position: 'absolute' }}
                 />
                 <button 
                   onClick={() => {

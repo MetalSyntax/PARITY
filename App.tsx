@@ -137,6 +137,11 @@ function AppContent() {
     return localStorage.getItem("activeProfileId") || "";
   });
 
+  const handleUpdateProfile = (p: UserProfile) => {
+    setUserProfile(p);
+    setProfiles(prev => prev.map(prof => prof.id === p.id ? p : prof));
+  };
+
   const [hasFetchedRates, setHasFetchedRates] = useState(() => {
     return localStorage.getItem('last_bcv_update') !== null;
   });
@@ -1304,7 +1309,7 @@ function AppContent() {
               euroRateParallel={euroRateParallel}
               onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
               hasFetchedRates={hasFetchedRates}
-              onUpdateProfile={setUserProfile}
+              onUpdateProfile={handleUpdateProfile}
               syncPendingCount={syncPendingCount}
               isSyncing={isSyncing}
               onSync={exportToCloud}
@@ -1550,7 +1555,7 @@ function AppContent() {
               onUpdateScheduledPayments={handleUpdateScheduledPayments}
               notificationsEnabled={userProfile.notificationsEnabled || false}
               onToggleGlobalNotifications={(enabled) => {
-                  setUserProfile(prev => ({ ...prev, notificationsEnabled: enabled }));
+                  handleUpdateProfile({ ...userProfile, notificationsEnabled: enabled });
               }}
             />
           )}

@@ -387,4 +387,6 @@ export const misc = {
   page: 'Page',
   export_csv_title: 'Export CSV',
   export_pdf_title: 'Export PDF',
+  showForecastCard: "Show Forecast",
+  showFiscalSummary: "Show Fiscal Summary",
 };
