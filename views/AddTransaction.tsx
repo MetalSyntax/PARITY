@@ -69,7 +69,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [manualExchangeRate, setManualExchangeRate] = useState<string>(initialData?.exchangeRate?.toString() || exchangeRate.toString());
   const [commissionFixed, setCommissionFixed] = useState<string>(initialData?.fee?.toString() || '0');
   const [commissionPercent, setCommissionPercent] = useState<string>('0');
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const monthBtnRef = useRef<HTMLButtonElement>(null);
   const [monthDropPos, setMonthDropPos] = useState<{top:number;left:number;width:number} | null>(null);
 
@@ -1002,39 +1001,22 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             {/* Date Button */}
             <div className="flex-shrink-0 relative group min-w-[140px]">
                 <input 
-                    ref={dateInputRef}
                     type="date" 
                     value={date} 
                     onChange={(e) => setDate(e.target.value)}
-                    className="absolute inset-0 opacity-0 pointer-events-none"
-                    style={{ position: 'absolute' }}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
                 />
-                <button 
-                  onClick={() => {
-                    if (dateInputRef.current) {
-                        try {
-                            if ('showPicker' in HTMLInputElement.prototype) {
-                                (dateInputRef.current as any).showPicker();
-                            } else {
-                                dateInputRef.current.click();
-                            }
-                        } catch (e) {
-                            dateInputRef.current.click();
-                        }
-                    }
-                  }}
-                  className="w-full h-full bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all border border-white/5"
-                >
+                <div className="w-full h-full bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all border border-white/5">
                     <div className="text-theme-brand bg-theme-brand/10 w-11 h-11 rounded-full flex items-center justify-center shadow-lg">
                         <Calendar size={18} />
                     </div>
                     <div className="flex flex-col items-start leading-tight">
                         <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('date')}</span>
                         <span className="text-[13px] font-bold text-theme-primary">
-                            {new Date(date).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                            {new Date(date + 'T12:00:00').toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
                         </span>
                     </div>
-                </button>
+                </div>
             </div>
 
             {/* Fiscal Tag Button */}
