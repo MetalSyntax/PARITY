@@ -537,7 +537,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
     const commFixedVal = parseFloat(commissionFixed) || 0;
     const commPercentVal = parseFloat(commissionPercent) || 0;
-    const finalFee = isSameCurrencyTransfer ? 0 : (commFixedVal + (finalAmount * (commPercentVal / 100)));
+    const finalFee = (commFixedVal + (finalAmount * (commPercentVal / 100)));
 
     onSave({
       id: initialData?.id, // Pass ID if editing
@@ -809,7 +809,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             )}
 
             {/* Compact Commissions (New Position) */}
-            {((type === TransactionType.TRANSFER && !isSameCurrencyTransfer) || type === TransactionType.EXPENSE) && (
+            {(type === TransactionType.TRANSFER || type === TransactionType.EXPENSE) && (
                 <div className="mt-2 w-full max-w-md mx-auto px-2 animate-in fade-in zoom-in duration-300">
                     <div className="bg-theme-surface rounded-2xl p-2 flex items-center gap-4 border border-white/5 shadow-inner">
                         <div className="flex flex-col flex-1 pl-1">
