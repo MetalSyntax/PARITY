@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar, ArrowDownLeft, History, Euro } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Trophy, ChevronDown, Coins, DollarSign, Search, Filter, Calendar, ArrowDownLeft, History, Euro, Check, Edit2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig, Currency } from '../types';
 import { getTranslation } from '../i18n';
 import { PinModal } from '../components/PinModal';
 import { TransactionItem } from '../components/TransactionItem';
-import { formatAmount as fmtAmt, formatSecondaryAmount as fmtSec } from '../utils/formatUtils';
+import { formatAmount as fmtAmt, formatSecondaryAmount as fmtSec, formatMonth } from '../utils/formatUtils';
 import { renderAccountIcon as renderAccIcon } from '../utils/iconUtils';
 import { Eye, EyeOff } from 'lucide-react';
 import { 
@@ -129,7 +129,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const formatSecondary = (usd: number) => 
     fmtSec(usd, exchangeRate, displayCurrency, isBalanceVisibleLocal, 2, euroRate);
   const [activeTab, setActiveTab] = useState<'ENVELOPES' | 'GOALS'>(initialTab);
-  const [isManaging, setIsManaging] = useState(false);
+  const [editingBudgetCatId, setEditingBudgetCatId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   
@@ -143,11 +143,36 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   const [duplicateLoading, setDuplicateLoading] = useState(false);
   const [showAddMonthModal, setShowAddMonthModal] = useState(false);
   const [newMonthInput, setNewMonthInput] = useState(new Date().toISOString().slice(0, 7));
+  const [addedMonths, setAddedMonths] = useState<string[]>(() => {
+    const saved = localStorage.getItem('parity_custom_months');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [monthFormat, setMonthFormat] = useState(() => localStorage.getItem('parity_month_format') || 'YYYY-MM');
+
+  React.useEffect(() => {
+    const handleSync = () => {
+        const saved = localStorage.getItem('parity_custom_months');
+        if (saved) setAddedMonths(JSON.parse(saved));
+        const fmt = localStorage.getItem('parity_month_format');
+        if (fmt) setMonthFormat(fmt);
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('parity-format-changed', handleSync);
+    window.addEventListener('parity-months-changed', handleSync);
+    return () => {
+        window.removeEventListener('storage', handleSync);
+        window.removeEventListener('parity-format-changed', handleSync);
+        window.removeEventListener('parity-months-changed', handleSync);
+    };
+  }, []);
 
   const handleDeleteMonth = (m: string) => {
     showConfirm({
         message: `${t('delete')}: ${m}`,
         onConfirm: () => {
+            const next = addedMonths.filter(x => x !== m);
+            setAddedMonths(next);
+            localStorage.setItem('parity_custom_months', JSON.stringify(next));
             onUpdateBudgets(budgets.filter(b => b.month !== m));
             if (selectedMonth === m) setSelectedMonth(new Date().toISOString().slice(0, 7));
         }
@@ -342,10 +367,13 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-2xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
+                className="bg-theme-surface border border-white/5 text-xs font-black text-theme-secondary rounded-2xl px-5 py-3 outline-none focus:border-theme-brand/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-3 min-w-[140px] justify-between shadow-lg active:scale-95"
               >
-                <span>{selectedMonth}</span>
-                <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
+                <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-theme-brand" />
+                    <span className="truncate">{formatMonth(selectedMonth, monthFormat, lang)}</span>
+                </div>
+                <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-300 ${showMonthPicker ? 'rotate-180' : ''}`} />
               </button>
 
               {showMonthPicker && (
@@ -361,6 +389,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                            budgets.forEach(b => {
                                if (b.month) months.add(b.month);
                            });
+                           addedMonths.forEach(m => months.add(m));
                            
                            if (months.size === 0) months.add(currentMonth);
 
@@ -377,31 +406,46 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                      }}
                                      className="flex-1 text-left py-1"
                                    >
-                                     {m}
+                                     {formatMonth(m, monthFormat, lang)}
                                    </button>
-                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                       <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteMonth(m);
-                                          }}
-                                          className="p-1 hover:text-red-400"
-                                       >
-                                          <Trash2 size={12} />
-                                       </button>
-                                   </div>
+                                   {(addedMonths.includes(m) || budgets.some(b => b.month === m)) && (
+                                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                           <button 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteMonth(m);
+                                              }}
+                                              className="p-1 hover:text-red-400"
+                                           >
+                                              <Trash2 size={12} />
+                                           </button>
+                                       </div>
+                                   )}
                                  </div>
                                ))}
-                               <div className="border-t border-white/5 mt-2 pt-2">
+                               <div className="border-t border-white/5 mt-2 pt-2 flex items-center px-2 pb-1">
                                   <button 
                                     onClick={() => {
                                         setShowMonthPicker(false);
                                         setShowAddMonthModal(true);
                                     }}
-                                    className="w-full flex items-center gap-2 px-4 py-3 text-xs font-black text-theme-brand hover:bg-theme-brand/10 transition-colors"
+                                    className="flex-1 flex items-center gap-2 px-2 py-2 text-[10px] font-black text-theme-brand hover:bg-theme-brand/10 rounded-lg transition-colors border border-theme-brand/20"
                                   >
                                     <Plus size={14} />
                                     {t('addMonth')}
+                                  </button>
+                                  <button 
+                                      onClick={() => {
+                                          const formats = ['YYYY-MM', 'MM/YYYY', 'MMM YYYY', 'MMMM YYYY'];
+                                          const next = formats[(formats.indexOf(monthFormat) + 1) % formats.length];
+                                          setMonthFormat(next);
+                                          localStorage.setItem('parity_month_format', next);
+                                          window.dispatchEvent(new Event('parity-format-changed'));
+                                      }}
+                                      className="p-2 text-theme-secondary hover:text-theme-primary hover:bg-white/5 rounded-lg transition-colors"
+                                      title={t('dateFormat')}
+                                  >
+                                      <RefreshCw size={14} />
                                   </button>
                                </div>
                              </>
@@ -434,7 +478,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       <div className="flex p-1 bg-theme-surface rounded-2xl mb-8 flex-shrink-0">
           <motion.button 
             whileTap={{ scale: 0.98 }}
-            onClick={() => { setActiveTab('ENVELOPES'); setIsManaging(false); }}
+            onClick={() => { setActiveTab('ENVELOPES'); setEditingBudgetCatId(null); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${activeTab === 'ENVELOPES' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
           >
               <History size={16} className={activeTab === 'ENVELOPES' ? 'text-theme-brand' : ''} />
@@ -442,7 +486,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
           </motion.button>
           <motion.button 
             whileTap={{ scale: 0.98 }}
-            onClick={() => { setActiveTab('GOALS'); setIsManaging(false); }}
+            onClick={() => { setActiveTab('GOALS'); setEditingBudgetCatId(null); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold transition-all ${activeTab === 'GOALS' ? 'bg-theme-bg text-theme-primary shadow-lg' : 'text-theme-secondary hover:text-theme-primary'}`}
           >
               <Trophy size={16} className={activeTab === 'GOALS' ? 'text-theme-brand' : ''} />
@@ -453,28 +497,14 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       {/* --- ENVELOPES VIEW --- */}
       {activeTab === 'ENVELOPES' && (
           <div className="animate-in fade-in duration-300">
-              <div className="mb-6 flex justify-end items-center">
-                <div className="flex gap-2">
-                    <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setIsManaging(!isManaging)}
-                        className={`text-sm font-medium px-3 py-1 rounded-full transition-colors ${isManaging ? 'bg-theme-brand text-white' : 'text-theme-brand hover:bg-white/5'}`}
-                    >
-                        {isManaging ? t('done') : t('manage')}
-                    </motion.button>
-                    {isManaging && (
-                         <motion.button 
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            whileHover={{ rotate: 90 }}
-                            onClick={() => setShowAddBudgetModal(true)} 
-                            className="bg-theme-brand text-white p-1 rounded-full"
-                         >
-                            <Plus size={16} />
-                         </motion.button>
-                    )}
-                </div>
+              <div className="mb-6 flex justify-between items-center">
+                <h2 className="text-lg font-bold text-theme-primary">{t('envelopes')}</h2>
+                <button 
+                    onClick={() => setShowAddBudgetModal(true)}
+                    className="flex items-center gap-1 bg-theme-brand hover:brightness-110 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg shadow-brand/20 transition-all active:scale-95"
+                >
+                    <Plus size={14} /> {t('addBudget')}
+                </button>
               </div>
 
               {/* Budget vs Income Summary */}
@@ -488,6 +518,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                   const remainingToBudget = totalIncomeMonth - totalBudgetSum;
 
                   return (
+                    <>
                     <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -499,17 +530,9 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                         
                         <div className="grid grid-cols-2 gap-8 mb-6">
                             <div>
-                                <div className="text-[10px] text-theme-secondary uppercase font-black tracking-widest mb-2 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-theme-brand" />
-                                        {t('totalEnvelopes')}
-                                    </div>
-                                    <button 
-                                        onClick={() => isBalanceVisibleLocal ? setIsBalanceVisibleLocal(false) : setShowPinModal(true)}
-                                        className="p-1 hover:bg-white/5 rounded-md text-theme-secondary transition-colors"
-                                    >
-                                        {isBalanceVisibleLocal ? <EyeOff size={12} /> : <Eye size={12} />}
-                                    </button>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-theme-brand" />
+                                    <span className="text-[10px] text-theme-secondary uppercase font-black tracking-widest">{t('totalEnvelopes')}</span>
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-black text-theme-primary">{formatAmount(totalBudgetSum)}</span>
@@ -562,6 +585,11 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                             )}
                         </div>
                     </motion.div>
+
+                    <div className="mb-6 mt-2">
+                        <h2 className="text-xs font-black text-theme-secondary uppercase tracking-[0.2em]">{t('activeEnvelopes')}</h2>
+                    </div>
+                    </>
                   );
               })()}
 
@@ -596,8 +624,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     <motion.div 
                       layout
                       key={budget.categoryId} 
-                      onClick={() => !isManaging && setSelectedBudgetTransactions({ catId: targetCatId, name: t(cat.name) })}
-                      className={`bg-theme-surface p-5 rounded-2xl border border-white/5 shadow-lg relative group overflow-hidden ${!isManaging ? 'cursor-pointer hover:bg-white/5 transition-colors' : ''}`}
+                      onClick={() => !editingBudgetCatId && setSelectedBudgetTransactions({ catId: targetCatId, name: t(cat.name) })}
+                      className={`bg-theme-surface p-5 rounded-2xl border transition-all relative group overflow-hidden ${editingBudgetCatId === budget.categoryId ? 'border-theme-brand shadow-2xl ring-1 ring-theme-brand/20' : 'border-white/5 shadow-lg hover:bg-white/5 active:scale-[0.99]'} ${!editingBudgetCatId ? 'cursor-pointer' : ''}`}
                     >
                       <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-4">
@@ -615,7 +643,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                                        </p>
                                   )}
                                   <AnimatePresence mode="wait">
-                                  {!isManaging && (
+                                  {editingBudgetCatId !== budget.categoryId && (
                                       percent > 90 ? (
                                           <motion.p 
                                             initial={{ opacity: 0, y: 5 }}
@@ -642,25 +670,47 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                               </div>
                           </div>
                           
-                          {isManaging ? (
-                              <motion.button 
-                                whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleDeleteBudget(budget.categoryId)} 
-                                className="p-2 bg-red-500/10 text-red-500 rounded-lg"
-                              >
-                                  <Trash2 size={18} />
-                              </motion.button>
-                          ) : (
-                               <div className="text-right">
-                                  <p className="text-lg font-bold text-theme-primary">{formatAmount(spent)}</p>
-                                  <p className="text-[10px] text-zinc-500">{formatSecondary(spent)}</p>
-                                  <p className="text-xs text-theme-secondary">{t('of')} {formatAmount(budget.limit)}</p>
-                              </div>
-                          )}
+                          <div className="flex items-center gap-1">
+                              {editingBudgetCatId === budget.categoryId ? (
+                                  <motion.button 
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={(e) => { e.stopPropagation(); setEditingBudgetCatId(null); }} 
+                                    className="p-2 bg-theme-brand/10 text-theme-brand rounded-xl"
+                                  >
+                                      <Check size={18} />
+                                  </motion.button>
+                              ) : (
+                                  <motion.button 
+                                    onClick={(e) => { e.stopPropagation(); setEditingBudgetCatId(budget.categoryId); }} 
+                                    className="p-2 text-theme-secondary opacity-0 group-hover:opacity-100 hover:text-theme-primary hover:bg-white/5 rounded-xl transition-all"
+                                  >
+                                      <Edit2 size={16} />
+                                  </motion.button>
+                              )}
+                              
+                              {editingBudgetCatId === budget.categoryId && (
+                                  <motion.button 
+                                    whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteBudget(budget.categoryId); setEditingBudgetCatId(null); }} 
+                                    className="p-2 bg-red-500/10 text-red-500 rounded-xl"
+                                  >
+                                      <Trash2 size={18} />
+                                  </motion.button>
+                              )}
+                              
+                              {editingBudgetCatId !== budget.categoryId && (
+                                   <div className="text-right ml-2">
+                                      <p className="text-lg font-bold text-theme-primary">{formatAmount(spent)}</p>
+                                      <p className="text-[10px] text-zinc-500">{formatSecondary(spent)}</p>
+                                      <p className="text-xs text-theme-secondary">{t('of')} {formatAmount(budget.limit)}</p>
+                                  </div>
+                              )}
+                           </div>
                       </div>
                       
-                      {!isManaging ? (
+                      {editingBudgetCatId !== budget.categoryId ? (
                           <>
                              <div className="h-2.5 w-full bg-[#1e1e1e] rounded-full overflow-hidden">
                                <motion.div 
@@ -729,7 +779,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                          <div className="flex flex-col sm:flex-row gap-3">
                              <button 
                                 onClick={() => { 
-                                    setIsManaging(true); 
+                                    setEditingBudgetCatId(null); 
                                     setShowAddBudgetModal(true); 
                                 }}
                                 className="bg-theme-brand text-white px-8 py-4 rounded-2xl font-black text-sm shadow-2xl shadow-theme-brand/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
@@ -1191,6 +1241,57 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
         )}
       </AnimatePresence>
 
+      {/* Add Month Modal */}
+      <AnimatePresence>
+      {showAddMonthModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] flex items-end sm:items-center justify-center p-4"
+          >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-theme-surface w-full max-w-sm rounded-[32px] border border-white/10 p-8 shadow-2xl relative"
+             >
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-black text-xl text-theme-primary">{t('addMonth')}</h3>
+                    <button onClick={() => setShowAddMonthModal(false)} className="text-theme-secondary hover:text-theme-primary">
+                        <X size={24} />
+                    </button>
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-widest block mb-2">{t('selectDate')}</label>
+                        <input 
+                            type="month" 
+                            value={newMonthInput}
+                            onChange={(e) => setNewMonthInput(e.target.value)}
+                            className="w-full bg-theme-bg border border-white/5 rounded-2xl px-4 py-4 text-theme-primary font-bold focus:border-theme-brand outline-none transition-all"
+                        />
+                    </div>
+
+                    <button 
+                        onClick={() => {
+                            const next = Array.from(new Set([...addedMonths, newMonthInput]));
+                            setAddedMonths(next);
+                            localStorage.setItem('parity_custom_months', JSON.stringify(next));
+                            window.dispatchEvent(new Event('parity-months-changed'));
+                            setSelectedMonth(newMonthInput);
+                            setShowAddMonthModal(false);
+                        }}
+                        className="w-full py-4 bg-theme-brand text-white rounded-2xl font-black shadow-lg shadow-brand/20 active:scale-95 transition-all"
+                    >
+                        {t('addMonth')}
+                    </button>
+                </div>
+             </motion.div>
+          </motion.div>
+       )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCcw, Image as ImageIcon, Calendar, Edit2, Trash2, ArrowLeft, MoreVertical } from 'lucide-react';
+import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCw, Image as ImageIcon, Calendar, Edit2, Trash2, ArrowLeft, MoreVertical } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -11,6 +11,7 @@ import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, 
 import { TransactionType, Currency, Account, Language, Transaction, Budget } from '../types';
 import { CATEGORIES, getSmartCategories } from '../constants';
 import { getTranslation } from '../i18n';
+import { formatMonth } from '../utils/formatUtils';
 import { div } from 'framer-motion/client';
 
 // Icon Map for Financial Services
@@ -73,6 +74,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [monthDropPos, setMonthDropPos] = useState<{top:number;left:number;width:number} | null>(null);
 
   const [categoryId, setCategoryId] = useState<string>(initialData ? initialData.category : CATEGORIES[0].id);
+  const [isManualCategory, setIsManualCategory] = useState(false);
 
   // Auto-set category for transfers
   useEffect(() => {
@@ -135,6 +137,29 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [receiptImage, setReceiptImage] = useState<string | null>(initialData?.receipt || null);
   const [showBudgetMonthPicker, setShowBudgetMonthPicker] = useState(false);
   const [cropBox, setCropBox] = useState({ x: 20, y: 30, width: 60, height: 40 }); // Relative %
+  const [addedMonths, setAddedMonths] = useState<string[]>(() => {
+    const saved = localStorage.getItem('parity_custom_months');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [monthFormat, setMonthFormat] = useState(() => localStorage.getItem('parity_month_format') || 'YYYY-MM');
+
+  useEffect(() => {
+    const handleSync = () => {
+        const saved = localStorage.getItem('parity_custom_months');
+        if (saved) setAddedMonths(JSON.parse(saved));
+        const fmt = localStorage.getItem('parity_month_format');
+        if (fmt) setMonthFormat(fmt);
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('parity-format-changed', handleSync);
+    window.addEventListener('parity-months-changed', handleSync);
+    return () => {
+        window.removeEventListener('storage', handleSync);
+        window.removeEventListener('parity-format-changed', handleSync);
+        window.removeEventListener('parity-months-changed', handleSync);
+    };
+  }, []);
+
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -401,6 +426,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
     setAmountStr('0');
     setNote('');
     setCategoryId(CATEGORIES[0].id);
+    setIsManualCategory(false);
     setShowMenu(false);
   };
 
@@ -417,7 +443,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   };
 
   useEffect(() => {
-    if (initialData) return; // Don't auto-categorize if editing
+    if (initialData || isManualCategory) return; // Don't auto-categorize if editing or manually selected
     const lowerNote = note.toLowerCase();
     const smartCats = getSmartCategories(lang);
     for (const key in smartCats) {
@@ -750,7 +776,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             </div>
         )}
         {/* Amount Section */}
-        <div className="flex flex-col items-center justify-center mb-4 mt-1 relative">
+        <div className="flex flex-col items-center justify-center mb-2 mt-1 relative">
             <div className="flex items-center gap-4">
                 <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl text-theme-secondary font-light">{(currency === Currency.USD || currency === Currency.USDT) ? '$' : currency === Currency.EUR ? '€' : 'Bs'}</span>
@@ -1034,7 +1060,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 </div>
                 <div className="flex flex-col items-start leading-tight">
                     <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('fiscal')}</span>
-                    <span className="text-[13px] font-bold text-theme-primary truncate max-w-[70px]">{t(fiscalTag.toLowerCase())}</span>
+                    <span className="text-[12px] font-bold text-theme-primary whitespace-nowrap">
+                        {t(fiscalTag === 'TAXABLE_INCOME' ? 'taxableIncome' : fiscalTag === 'DEDUCTIBLE_EXPENSE' ? 'deductibleExpense' : 'neutral')}
+                    </span>
                 </div>
             </button>
 
@@ -1057,10 +1085,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     <div className="flex flex-col items-start leading-tight text-left">
                         <span className="text-[8px] font-black text-theme-secondary underline decoration-theme-brand/30 uppercase tracking-widest">{t('month')}</span>
                         <span className="text-[13px] font-bold text-theme-primary">
-                            {budgetMonth
-                                ? (() => { const [y,mo] = budgetMonth.split('-').map(Number); return new Date(y, mo-1).toLocaleDateString(undefined, {month:'short', year:'2-digit'}); })()
-                                : t('current')
-                            }
+                            {budgetMonth ? formatMonth(budgetMonth, monthFormat, lang) : t('current')}
                         </span>
                     </div>
                 </button>
@@ -1072,38 +1097,54 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             className="fixed bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
                             style={{ top: '113px', right: '22px', width: '170px', position: 'fixed' }}
                         >
-                            <div className="max-h-[220px] overflow-y-auto no-scrollbar py-1">
-                                <button
-                                    onClick={() => { setBudgetMonth(''); setShowBudgetMonthPicker(false); }}
-                                    className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${
-                                        !budgetMonth ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'
-                                    }`}
-                                >
-                                    {t('current')}
-                                </button>
-                                {(() => {
-                                    const months = new Set<string>();
-                                    const cur = new Date().toISOString().slice(0, 7);
-                                    transactions.forEach(tx => months.add(tx.date.slice(0, 7)));
-                                    budgets.forEach(b => { if(b.month) months.add(b.month); });
-                                    if (months.size === 0) months.add(cur);
-                                    return Array.from(months).sort().reverse().map(m => {
-                                        const [y, mo] = m.split('-').map(Number);
-                                        const label = new Date(y, mo - 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+                                <div className="max-h-[220px] overflow-y-auto no-scrollbar py-1">
+                                    {(() => {
+                                        const months = new Set<string>();
+                                        const cur = new Date().toISOString().slice(0, 7);
+                                        transactions.forEach(tx => months.add(tx.date.slice(0, 7)));
+                                        budgets.forEach(b => { if(b.month) months.add(b.month); });
+                                        addedMonths.forEach(m => months.add(m));
+                                        if (months.size === 0) months.add(cur);
+                                        
                                         return (
-                                            <button
-                                                key={m}
-                                                onClick={() => { setBudgetMonth(m); setShowBudgetMonthPicker(false); }}
-                                                className={`w-full text-left px-4 py-2.5 text-xs font-bold capitalize transition-colors ${
-                                                    budgetMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'
-                                                }`}
-                                            >
-                                                {label}
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => { setBudgetMonth(''); setShowBudgetMonthPicker(false); }}
+                                                    className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${
+                                                        !budgetMonth ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'
+                                                    }`}
+                                                >
+                                                    {t('transactionDate')}
+                                                </button>
+                                                {Array.from(months).sort().reverse().map(m => (
+                                                    <button
+                                                        key={m}
+                                                        onClick={() => { setBudgetMonth(m); setShowBudgetMonthPicker(false); }}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs font-bold capitalize transition-colors ${
+                                                            budgetMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'
+                                                        }`}
+                                                    >
+                                                        {formatMonth(m, monthFormat, lang)}
+                                                    </button>
+                                                ))}
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const formats = ['YYYY-MM', 'MM/YYYY', 'MMM YYYY', 'MMMM YYYY'];
+                                                        const next = formats[(formats.indexOf(monthFormat) + 1) % formats.length];
+                                                        setMonthFormat(next);
+                                                        localStorage.setItem('parity_month_format', next);
+                                                        window.dispatchEvent(new Event('parity-format-changed'));
+                                                    }}
+                                                    className="w-full flex items-center justify-between px-4 py-2.5 text-[10px] font-black text-theme-secondary hover:bg-white/5 border-t border-white/5"
+                                                >
+                                                    <span className="uppercase tracking-widest opacity-50">{t('dateFormat')}</span>
+                                                    <RefreshCw size={12} className="text-theme-brand" />
+                                                </button>
+                                            </>
                                         );
-                                    });
-                                })()}
-                            </div>
+                                    })()}
+                                </div>
                         </div>
                     </>
                 )}
@@ -1232,7 +1273,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                          return (
                              <div key={cat.id} className="bg-theme-surface border border-white/5 rounded-2xl p-4">
                                  <button
-                                     onClick={() => { setCategoryId(cat.id); setShowCategoryModal(false); setCategorySearch(''); }}
+                                     onClick={() => { setCategoryId(cat.id); setIsManualCategory(true); setShowCategoryModal(false); setCategorySearch(''); }}
                                      className={`w-full flex items-center gap-3 mb-3 p-2 rounded-2xl transition-colors ${categoryId === cat.id ? 'bg-theme-brand/10 text-theme-brand' : 'hover:bg-white/5'}`}
                                  >
                                      <div className={`p-2 rounded-2xl ${cat.color} bg-opacity-20`}>
@@ -1251,6 +1292,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                                  key={key}
                                                  onClick={() => { 
                                                      setCategoryId(cat.id); 
+                                                     setIsManualCategory(true);
                                                      setNote(key.charAt(0).toUpperCase() + key.slice(1)); 
                                                      setShowCategoryModal(false); 
                                                      setCategorySearch('');

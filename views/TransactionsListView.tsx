@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X, Receipt, Euro, Layers } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, TrendingUp, ChevronDown, Coins, DollarSign, X, Receipt, Euro, Layers, Trash2, Calendar, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Transaction, Language, Currency, TransactionType, Account } from '../types';
 import { getTranslation } from '../i18n';
+import { formatMonth } from '../utils/formatUtils';
 import { CATEGORIES } from '../constants';
 import { TransactionDetailModal } from '../components/TransactionDetailModal';
 import { TransactionItem } from '../components/TransactionItem';
@@ -19,6 +20,7 @@ interface TransactionsListViewProps {
   onToggleDisplayCurrency: () => void;
   onUpdateTransaction: (t: Transaction) => void;
   initialViewMode?: 'LIST' | 'INVOICES';
+  showConfirm: (config: { message: string, onConfirm: () => void }) => void;
 }
 
 export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
@@ -32,7 +34,8 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   displayCurrency,
   onToggleDisplayCurrency,
   onUpdateTransaction,
-  initialViewMode = 'LIST'
+  initialViewMode = 'LIST',
+  showConfirm
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,8 +43,44 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | 'ALL'>('ALL');
   const [selectedMonth, setSelectedMonth] = useState<string | 'ALL'>('ALL'); // YYYY-MM
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showAddMonthModal, setShowAddMonthModal] = useState(false);
+  const [newMonthInput, setNewMonthInput] = useState(new Date().toISOString().slice(0, 7));
+  const [addedMonths, setAddedMonths] = useState<string[]>(() => {
+    const saved = localStorage.getItem('parity_custom_months');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [monthFormat, setMonthFormat] = useState(() => localStorage.getItem('parity_month_format') || 'YYYY-MM');
+
+  React.useEffect(() => {
+    const handleSync = () => {
+        const saved = localStorage.getItem('parity_custom_months');
+        if (saved) setAddedMonths(JSON.parse(saved));
+        const fmt = localStorage.getItem('parity_month_format');
+        if (fmt) setMonthFormat(fmt);
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('parity-format-changed', handleSync);
+    window.addEventListener('parity-months-changed', handleSync);
+    return () => {
+        window.removeEventListener('storage', handleSync);
+        window.removeEventListener('parity-format-changed', handleSync);
+        window.removeEventListener('parity-months-changed', handleSync);
+    };
+  }, []);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+
+  const handleDeleteMonth = (m: string) => {
+    showConfirm({
+        message: `${t('delete')}: ${m}`,
+        onConfirm: () => {
+            const next = addedMonths.filter(x => x !== m);
+            setAddedMonths(next);
+            localStorage.setItem('parity_custom_months', JSON.stringify(next));
+            if (selectedMonth === m) setSelectedMonth('ALL');
+        }
+    });
+  };
   const [viewMode, setViewMode] = useState<'LIST' | 'INVOICES'>(initialViewMode);
 
   const filteredTransactions = useMemo(() => {
@@ -99,10 +138,13 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
             <div className="relative">
               <button 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="bg-theme-surface border border-white/5 text-xs font-bold text-theme-secondary rounded-2xl px-4 py-2 outline-none focus:border-theme-soft/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 min-w-[100px] justify-between relative"
+                className="bg-theme-surface border border-white/5 text-[10px] sm:text-xs font-black text-theme-secondary rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 outline-none focus:border-theme-brand/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-2 sm:gap-3 min-w-[100px] sm:min-w-[140px] justify-between shadow-lg active:scale-95"
               >
-                <span>{selectedMonth === 'ALL' ? t('allPeriods') : selectedMonth}</span>
-                <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Calendar size={14} className="text-theme-brand flex-shrink-0" />
+                    <span className="truncate">{selectedMonth === 'ALL' ? t('allPeriods') : formatMonth(selectedMonth, monthFormat, lang)}</span>
+                  </div>
+                  <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-300 flex-shrink-0 ${showMonthPicker ? 'rotate-180' : ''}`} />
               </button>
 
               <AnimatePresence>
@@ -123,7 +165,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                            }}
                            className={`w-full text-left px-4 py-3 text-xs font-black transition-colors hover:bg-white/5 ${selectedMonth === 'ALL' ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
                         >
-                           📅 {t('allPeriods')}
+                          {t('allPeriods')}
                         </button>
                         <div className="h-[1px] bg-white/5 my-1" />
                         {(() => {
@@ -131,18 +173,63 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                             const current = new Date().toISOString().slice(0, 7);
                             months.add(current);
                             transactions.forEach(t => months.add(t.date.slice(0, 7)));
-                            return Array.from(months).sort().reverse().map(m => (
-                                <button
-                                  key={m}
-                                  onClick={() => {
-                                    setSelectedMonth(m);
-                                    setShowMonthPicker(false);
-                                  }}
-                                  className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors hover:bg-white/5 ${selectedMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}
-                                >
-                                  {m}
-                                </button>
-                            ));
+                            addedMonths.forEach(m => months.add(m));
+
+                            return (
+                                <>
+                                {Array.from(months).sort().reverse().map(m => (
+                                    <div key={m} className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors group hover:bg-white/5 ${selectedMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary hover:text-theme-primary'}`}>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedMonth(m);
+                                                setShowMonthPicker(false);
+                                            }}
+                                            className="flex-1 text-left py-1"
+                                        >
+                                            {formatMonth(m, monthFormat, lang)}
+                                        </button>
+                                        {addedMonths.includes(m) && (
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteMonth(m);
+                                                    }}
+                                                    className="p-1 hover:text-red-400"
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                <div className="border-t border-white/5 mt-2 pt-2 flex items-center px-2 pb-1">
+                                    <button 
+                                        onClick={() => {
+                                            setShowMonthPicker(false);
+                                            setShowAddMonthModal(true);
+                                        }}
+                                        className="flex-1 flex items-center gap-2 px-2 py-2 text-[10px] font-black text-theme-brand hover:bg-theme-brand/10 rounded-lg transition-colors border border-theme-brand/20"
+                                    >
+                                        <Plus size={14} />
+                                        {t('addMonth')}
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            const formats = ['YYYY-MM', 'MM/YYYY', 'MMM YYYY', 'MMMM YYYY'];
+                                            const next = formats[(formats.indexOf(monthFormat) + 1) % formats.length];
+                                            setMonthFormat(next);
+                                            localStorage.setItem('parity_month_format', next);
+                                            window.dispatchEvent(new Event('parity-format-changed'));
+                                        }}
+                                        className="p-2 text-theme-secondary hover:text-theme-primary hover:bg-white/5 rounded-lg transition-colors"
+                                        title={t('dateFormat')}
+                                    >
+                                        <RefreshCw size={14} />
+                                    </button>
+                                </div>
+                                </>
+                            );
                         })()}
                       </div>
                     </motion.div>
@@ -266,7 +353,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                     />
                     <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
                       <p className="text-white text-[10px] font-bold truncate">
-                        {tx.note || (CATEGORIES.find(c => c.id === tx.category)?.name) || ''}
+                        {tx.note || (t(CATEGORIES.find(c => c.id === tx.category)?.name.toLowerCase() || ''))}
                       </p>
                       <p className="text-white/70 text-[9px]">
                         {new Date(tx.date).toLocaleDateString()}
@@ -418,6 +505,57 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         language={lang}
         displayCurrency={displayCurrency}
       />
+      {/* Add Month Modal */}
+      <AnimatePresence>
+      {showAddMonthModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] flex items-end sm:items-center justify-center p-4"
+          >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-theme-surface w-full max-w-sm rounded-[32px] border border-white/10 p-8 shadow-2xl relative"
+             >
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-black text-xl text-theme-primary">{t('addMonth')}</h3>
+                    <button onClick={() => setShowAddMonthModal(false)} className="text-theme-secondary hover:text-theme-primary">
+                        <X size={24} />
+                    </button>
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <label className="text-xs font-bold text-theme-secondary uppercase tracking-widest block mb-2">{t('selectDate')}</label>
+                        <input 
+                            type="month" 
+                            value={newMonthInput}
+                            onChange={(e) => setNewMonthInput(e.target.value)}
+                            className="w-full bg-theme-bg border border-white/5 rounded-2xl px-4 py-4 text-theme-primary font-bold focus:border-theme-brand outline-none transition-all"
+                        />
+                    </div>
+
+                    <button 
+                        onClick={() => {
+                            const next = Array.from(new Set([...addedMonths, newMonthInput]));
+                            setAddedMonths(next);
+                            localStorage.setItem('parity_custom_months', JSON.stringify(next));
+                            window.dispatchEvent(new Event('parity-months-changed'));
+                            setSelectedMonth(newMonthInput);
+                            setShowAddMonthModal(false);
+                        }}
+                        className="w-full py-4 bg-theme-brand text-white rounded-2xl font-black shadow-lg shadow-brand/20 active:scale-95 transition-all"
+                    >
+                        {t('addMonth')}
+                    </button>
+                </div>
+             </motion.div>
+          </motion.div>
+       )}
+      </AnimatePresence>
     </div>
   );
 };

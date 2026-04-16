@@ -202,6 +202,7 @@ export const WalletsWidget: React.FC<{
   <div className="px-4 md:px-0">
     <div className="flex items-center justify-between mb-2">
       <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">{t("wallet")}</h3>
+      <span className="text-[10px] text-theme-brand font-black uppercase tracking-tighter opacity-40">{t("slide_hint")}</span>
     </div>
     <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
       {accounts.map((acc) => (

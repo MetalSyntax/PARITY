@@ -57,3 +57,21 @@ export const formatSecondaryAmount = (
     maximumFractionDigits: decimals 
   })}`;
 };
+
+export const formatMonth = (monthStr: string, format: string, lang: string) => {
+  if (monthStr === 'ALL') return monthStr;
+  const [year, month] = monthStr.split('-');
+  const date = new Date(parseInt(year), parseInt(month) - 1);
+  
+  switch (format) {
+    case 'MM/YYYY':
+      return `${month}/${year}`;
+    case 'MMM YYYY':
+      return date.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'pt-BR', { month: 'short', year: 'numeric' });
+    case 'MMMM YYYY':
+      return date.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'pt-BR', { month: 'long', year: 'numeric' });
+    case 'YYYY-MM':
+    default:
+      return monthStr;
+  }
+};

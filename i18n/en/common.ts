@@ -98,4 +98,8 @@ export const common = {
     selectAccount: 'Select Account',
     source: 'Source',
     target: 'Destination',
+    activeEnvelopes: 'Active Envelopes',
+    addMonth: 'Add Month',
+    dateFormat: 'Date Format',
+    transactionDate: 'Transaction Date',
 };

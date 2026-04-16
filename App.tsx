@@ -1486,6 +1486,7 @@ function AppContent() {
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               initialViewMode="OVERVIEW"
+              showConfirm={showConfirm}
             />
           )}
           {currentView === 'INCOME' && (
@@ -1520,6 +1521,7 @@ function AppContent() {
               onToggleDisplayCurrency={toggleDisplayCurrency}
               onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
               initialViewMode={currentView === 'INVOICES' ? 'INVOICES' : 'LIST'}
+              showConfirm={showConfirm}
             />
           )}
           {currentView === 'HEATMAP' && (
