@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign, Euro, RefreshCw, Zap } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign, Euro, RefreshCw, Zap, GripVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDragAndDrop } from "@formkit/drag-and-drop/react";
+import { animations } from "@formkit/drag-and-drop";
 import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES, RECURRING_TEMPLATES } from '../constants';
@@ -138,6 +140,31 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
   const incomeSchedules = scheduledPayments.filter(p => p.type === TransactionType.INCOME);
   const expenseSchedules = scheduledPayments.filter(p => p.type !== TransactionType.INCOME);
 
+  const [incomeParent, listIncomes, setListIncomes] = useDragAndDrop<ScheduledPayment>(incomeSchedules, {
+    dragHandle: ".drag-handle",
+    plugins: [animations()],
+  });
+
+  const [expenseParent, listExpenses, setListExpenses] = useDragAndDrop<ScheduledPayment>(expenseSchedules, {
+    dragHandle: ".drag-handle",
+    plugins: [animations()],
+  });
+
+  useEffect(() => {
+    setListIncomes(incomeSchedules);
+  }, [incomeSchedules]);
+
+  useEffect(() => {
+    setListExpenses(expenseSchedules);
+  }, [expenseSchedules]);
+
+  useEffect(() => {
+    const combined = [...listIncomes, ...listExpenses];
+    if (JSON.stringify(combined) !== JSON.stringify(scheduledPayments)) {
+      onUpdateScheduledPayments(combined);
+    }
+  }, [listIncomes, listExpenses]);
+
   return (
     <div className="h-full flex flex-col p-6 pb-32 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg">
       <div className="flex items-center justify-between mb-8">
@@ -191,8 +218,8 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               <TrendingUp size={14} className="text-emerald-400" />
               <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">{t('incomeSchedules')}</h3>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {incomeSchedules.map(p => (
+            <div ref={incomeParent} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {listIncomes.map(p => (
                 <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} accounts={accounts} />
               ))}
               {incomeSchedules.length === 0 && (
@@ -209,8 +236,8 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               <TrendingDown size={14} className="text-red-400" />
               <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">{t('expenseSchedules')}</h3>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {expenseSchedules.map(p => (
+            <div ref={expenseParent} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {listExpenses.map(p => (
                 <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} accounts={accounts} />
               ))}
               {expenseSchedules.length === 0 && (
@@ -491,6 +518,7 @@ interface ScheduledItemProps {
   euroRate?: number;
   displayCurrency: Currency;
   isBalanceVisible: boolean;
+  accounts: Account[];
 }
 
 const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, onConfirm, exchangeRate, euroRate, displayCurrency, isBalanceVisible, accounts }) => {
@@ -498,16 +526,19 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
   const targetAccount = accounts.find(a => a.id === p.accountId);
   
   return (
-    <motion.div 
-      layout
-      className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors relative overflow-hidden"
+    <div 
+      data-label={p.id}
+      className="bg-theme-surface p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors relative overflow-hidden touch-pan-y"
     >
+      <div className="drag-handle absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-theme-secondary transition-opacity touch-none">
+        <GripVertical size={16} />
+      </div>
       {p.autoPost && (
         <div className="absolute top-0 right-0 p-1 bg-theme-brand/20 text-theme-brand rounded-bl-xl border-l border-b border-theme-brand/20">
           <Zap size={10} className="animate-pulse" />
         </div>
       )}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 pl-4 transition-all group-hover:pl-6">
           <motion.div 
             whileHover={{ scale: 1.1 }}
             className={`w-12 h-12 ${isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'} rounded-xl flex items-center justify-center relative`}
@@ -579,6 +610,6 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
             </motion.button>
           </div>
       </div>
-    </motion.div>
+    </div>
   )
 };

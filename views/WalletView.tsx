@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Wallet, TrendingUp, Filter, Search, Plus, DollarSign, ChevronDown, Edit2, Trash2, X, RefreshCw, Coins, Layers, Calendar, Euro } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingUp, Filter, Search, Plus, DollarSign, ChevronDown, Edit2, Trash2, X, RefreshCw, Coins, Layers, Calendar, Euro, GripVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDragAndDrop } from "@formkit/drag-and-drop/react";
+import { animations } from "@formkit/drag-and-drop";
 import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES } from '../constants';
@@ -48,6 +50,21 @@ export const WalletView: React.FC<WalletViewProps> = ({
   const t = (key: any) => getTranslation(lang, key);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const [parent, listAccounts, setListAccounts] = useDragAndDrop<Account>(accounts, {
+    dragHandle: ".drag-handle",
+    plugins: [animations()],
+  });
+
+  React.useEffect(() => {
+    setListAccounts(accounts);
+  }, [accounts]);
+
+  React.useEffect(() => {
+    if (JSON.stringify(listAccounts) !== JSON.stringify(accounts)) {
+      onUpdateAccounts(listAccounts);
+    }
+  }, [listAccounts]);
 
   // Form State
   const [name, setName] = useState('');
@@ -578,8 +595,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {accounts.length === 0 && (
+                  <div ref={parent} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {listAccounts.length === 0 && (
                         <div className="text-center py-16 px-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center gap-6 bg-theme-surface/20">
                             <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-4xl shadow-xl border border-white/5 animate-bounce">
                                 <Wallet size={24} className="text-theme-secondary" />
@@ -591,16 +608,19 @@ export const WalletView: React.FC<WalletViewProps> = ({
                              <button onClick={() => startEdit()} className="px-8 py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-xl shadow-brand/20 hover:scale-105 transition-all mt-2">{t('createWallet')}</button>
                         </div>
                     )}
-                    {accounts.map(acc => {
+                    {listAccounts.map(acc => {
                       const stripClass = acc.color ? `bg-gradient-to-b ${acc.color}` : 'bg-theme-brand';
                       const amountUSD = acc.currency === Currency.USD || acc.currency === Currency.USDT ? acc.balance : (acc.currency === Currency.EUR ? (acc.balance * (euroRate || 0)) / exchangeRate : acc.balance / exchangeRate);
 
                       return (
-                      <motion.div 
-                        layout
+                      <div 
                         key={acc.id} 
-                        className="bg-theme-surface p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all flex-shrink-0 shadow-xl hover:shadow-black/40"
+                        data-label={acc.id}
+                        className="bg-theme-surface p-6 rounded-2xl border border-white/5 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all flex-shrink-0 shadow-xl hover:shadow-black/40 touch-pan-y"
                       >
+                        <div className={`drag-handle absolute top-4 right-4 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-theme-secondary z-20 p-1.5 touch-none`}>
+                          <GripVertical size={16} />
+                        </div>
                         <div className={`absolute left-0 top-0 bottom-0 w-2.5 ${stripClass}`} />
                         
                         <div className="flex justify-between items-start mb-8">
@@ -660,7 +680,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                 />
                             </div>
                         </div>
-                      </motion.div>
+                      </div>
                     )})}
                   </div>
               </div>

@@ -389,4 +389,12 @@ export const misc = {
   export_pdf_title: 'Export PDF',
   showForecastCard: "Show Forecast",
   showFiscalSummary: "Show Fiscal Summary",
+  create: "Create",
+  last7DaysShort: "7D",
+  ytd: "YTD",
+  profileSwitched: "Profile switched",
+  profileCreated: "Profile created",
+  profileDeleted: "Profile deleted",
+  transactionsAutoPosted: "Scheduled transactions posted",
+  checkingUpdates: "Checking for updates...",
 };

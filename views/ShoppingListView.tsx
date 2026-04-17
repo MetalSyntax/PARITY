@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, Plus, Trash2, CheckCircle2, Circle, ShoppingCart, Pencil, DollarSign, X, ArrowUpRight, ChevronDown, Search, List, PlusSquare, PackagePlus } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, CheckCircle2, Circle, ShoppingCart, Pencil, DollarSign, X, ArrowUpRight, ChevronDown, Search, List, PlusSquare, PackagePlus, GripVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDragAndDrop } from "@formkit/drag-and-drop/react";
+import { animations } from "@formkit/drag-and-drop";
 import { ShoppingItem, Language, Currency, ShoppingList, ConfirmConfig } from '../types';
 import { getTranslation } from '../i18n';
 import { formatAmount, formatSecondaryAmount } from '../utils/formatUtils';
@@ -61,6 +63,21 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             l.id === currentList.id ? { ...l, items: newItems } : l
         ));
     };
+
+    const [parent, listItems, setListItems] = useDragAndDrop<ShoppingItem>(items, {
+        dragHandle: ".drag-handle",
+        plugins: [animations()],
+    });
+
+    React.useEffect(() => {
+        setListItems(items);
+    }, [items]);
+
+    React.useEffect(() => {
+        if (JSON.stringify(listItems) !== JSON.stringify(items)) {
+            onUpdateItems(listItems);
+        }
+    }, [listItems]);
 
     const addItem = () => {
         if (!newItemName.trim()) return;
@@ -283,17 +300,14 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                             <p className="text-theme-secondary font-medium">{t('noShoppingItems')}</p>
                         </motion.div>
                     ) : (
-                        <div className="flex flex-col gap-3">
-                            {items.map((item) => {
+                        <div ref={parent} className="flex flex-col gap-3">
+                            {listItems.map((item) => {
                                 const cat = CATEGORIES.find(c => c.id === item.categoryId) || CATEGORIES[1];
                                 return (
-                                    <motion.div
+                                    <div
                                         key={item.id}
-                                        layout
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        className={`p-4 rounded-2xl border transition-all group relative cursor-pointer ${
+                                        data-label={item.id}
+                                        className={`p-4 rounded-2xl border transition-all group relative cursor-pointer touch-pan-y ${
                                             item.completed 
                                             ? 'bg-theme-soft/30 border-transparent opacity-60' 
                                             : 'bg-theme-surface border-theme-soft shadow-sm'
@@ -302,8 +316,11 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                     >
                                         <div className="flex items-center justify-between gap-4">
                                             <div className="flex items-center gap-3 overflow-hidden flex-1">
+                                                <div className="drag-handle p-1.5 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-theme-secondary touch-none">
+                                                    <GripVertical size={16} />
+                                                </div>
                                                 <button 
-                                                    onClick={() => toggleItem(item.id)}
+                                                    onClick={(e) => { e.stopPropagation(); toggleItem(item.id); }}
                                                     className={`shrink-0 transition-colors ${item.completed ? 'text-emerald-500' : 'text-theme-secondary hover:text-theme-brand'}`}
                                                 >
                                                     {item.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
@@ -376,7 +393,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                                 </div>
                                             </div>
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 );
                             })}
                         </div>

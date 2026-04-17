@@ -36,8 +36,7 @@ export const WidgetWrapper: React.FC<WidgetWrapperProps> = ({
   >
     {isDraggable && (
       <div
-        onPointerDown={onDragStart}
-        className={`absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-surface/90 backdrop-blur-md rounded-xl border border-theme-soft text-theme-secondary flex touch-none shadow-xl ${touched ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
+        className={`drag-handle absolute top-2 right-2 transition-opacity z-50 cursor-grab active:cursor-grabbing p-2.5 bg-theme-surface/90 backdrop-blur-md rounded-xl border border-theme-soft text-theme-secondary flex touch-none shadow-xl ${touched ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}
       >
         <GripVertical size={20} />
       </div>
@@ -175,7 +174,7 @@ export const BalanceChartWidget: React.FC<{
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-theme-secondary px-2 py-1 bg-theme-soft rounded-2xl">7D</span>
+          <span className="text-[10px] font-bold text-theme-secondary px-2 py-1 bg-theme-soft rounded-2xl">{t('last7DaysShort')}</span>
         </div>
       </div>
       <div className="h-48 w-full">
@@ -372,7 +371,7 @@ export const FiscalSummaryWidget: React.FC<{
          <div className="bg-blue-500/20 text-blue-400 p-2 rounded-xl"><Receipt size={20} /></div>
          <div>
             <h3 className="text-sm font-black text-theme-primary uppercase tracking-widest">{t('fiscalReport')}</h3>
-            <p className="text-[10px] text-theme-secondary font-bold">YTD {new Date().getFullYear()}</p>
+            <p className="text-[10px] text-theme-secondary font-bold">{t('ytd')} {new Date().getFullYear()}</p>
          </div>
       </div>
       <button onClick={() => onNavigate('FISCAL_REPORT')} className="p-2 bg-theme-soft rounded-lg text-theme-secondary hover:text-theme-brand transition-all shadow-sm">
@@ -537,7 +536,7 @@ export const GoalsWidget: React.FC<{
         {activeGoals.length === 0 ? (
           <div className="py-6 flex flex-col items-center justify-center gap-3 opacity-50 border-2 border-dashed border-theme-soft rounded-2xl bg-theme-bg/30">
             <Trophy size={24} className="text-theme-secondary opacity-30" />
-            <p className="text-[10px] font-bold text-theme-secondary uppercase tracking-wider">{t('noActiveGoals') || 'No tienes metas activas'}</p>
+            <p className="text-[10px] font-bold text-theme-secondary uppercase tracking-wider">{t('noActiveGoals')}</p>
             <button 
                 onClick={() => onNavigate("BUDGET", { initialTab: 'GOALS' })}
                 className="text-[10px] font-black text-theme-brand hover:scale-105 transition-transform"
@@ -584,7 +583,7 @@ export const GoalsWidget: React.FC<{
             })}
             {goals.length > 3 && (
               <button onClick={() => onNavigate("BUDGET", { initialTab: 'GOALS' })} className="text-[10px] font-bold text-theme-brand uppercase hover:underline text-center mt-2">
-                + {goals.length - 3} {t('moreGoals') || 'more goals'}
+                + {goals.length - 3} {t('moreGoals')}
               </button>
             )}
           </>

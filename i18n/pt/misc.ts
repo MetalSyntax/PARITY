@@ -384,4 +384,12 @@ export const misc = {
   layoutControl: "Controle de Layout",
   showForecastCard: "Exibir Previsão",
   showFiscalSummary: "Exibir Resumo Fiscal",
+  create: "Criar",
+  last7DaysShort: "7D",
+  ytd: "ATD",
+  profileSwitched: "Perfil alterado",
+  profileCreated: "Perfil criado",
+  profileDeleted: "Perfil excluído",
+  transactionsAutoPosted: "Transações agendadas publicadas",
+  checkingUpdates: "Verificando atualizações...",
 };

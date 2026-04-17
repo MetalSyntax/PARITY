@@ -433,8 +433,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-theme-primary">{t('enableNotifications')}</span>
-                <button 
-                    onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                <button
+                    onClick={async () => {
+                        const next = !notificationsEnabled;
+                        if (next && 'Notification' in window && Notification.permission === 'default') {
+                            await Notification.requestPermission();
+                        }
+                        if (next && 'Notification' in window && Notification.permission === 'granted') {
+                            // @ts-ignore
+                            window.OneSignalDeferred?.push((os: any) => os.User?.PushSubscription?.optIn?.());
+                        }
+                        setNotificationsEnabled(next);
+                    }}
                     className={`w-10 h-5 rounded-full transition-all relative ${notificationsEnabled ? "bg-theme-brand" : "bg-theme-soft"}`}
                 >
                     <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${notificationsEnabled ? "left-6" : "left-1"}`} />
@@ -628,7 +638,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                    >
                       <span className="text-sm font-bold text-theme-primary truncate block w-full">{bkp.name}</span>
                       <span className="text-[10px] text-theme-secondary opacity-70">
-                        {new Date(bkp.modifiedTime).toLocaleString()} • {bkp.size ? (parseInt(bkp.size) / 1024).toFixed(1) + ' KB' : 'Desconocido'}
+                        {new Date(bkp.modifiedTime).toLocaleString()} • {bkp.size ? (parseInt(bkp.size) / 1024).toFixed(1) + ' KB' : t('unknown')}
                       </span>
                    </button>
                 ))}

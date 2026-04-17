@@ -1,50 +1,169 @@
 import React, { useState } from 'react';
-import { Target, ShieldCheck, CloudDownload, ArrowRight, Wallet, BarChart3, Rocket } from 'lucide-react';
+import { Target, ShieldCheck, CloudDownload, ArrowRight, Wallet, BarChart3, Rocket, X, Globe, Eye, EyeOff, Layout, Star, CheckCircle2, List, ShoppingCart } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getTranslation } from '../i18n';
-import { Language } from '../types';
+import { Language, Currency, UserProfile } from '../types';
+import { Button, IconButton, Typography, Input, SegmentedControl, ToggleSwitch, Card } from '../components/ui';
+
+interface OnboardingInitialData {
+    profile: Partial<UserProfile>;
+    displayCurrency: Currency;
+    isBalanceVisible: boolean;
+    navbarFavorites: string[];
+}
 
 interface OnboardingProps {
     lang: Language;
-    onStartFresh: () => void;
+    onStartFresh: (data: OnboardingInitialData) => void;
     onSyncFromCloud: () => void;
     isSyncing: boolean;
     isDevMode: boolean;
 }
 
-export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSyncFromCloud, isSyncing, isDevMode }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ lang: initialLang, onStartFresh, onSyncFromCloud, isSyncing, isDevMode }) => {
     const [step, setStep] = useState(0);
+    
+    // Configuración local que se enviará al finalizar
+    const [name, setName] = useState('');
+    const [lang, setLang] = useState<Language>(initialLang);
+    const [hideBalances, setHideBalances] = useState(false);
+    const [currency, setCurrency] = useState<Currency>(Currency.USD);
+    const [favorites, setFavorites] = useState<string[]>(['DASHBOARD', 'TRANSACTIONS', 'BUDGET']);
+
     const t = (key: any) => getTranslation(lang, key);
+
+    const toggleFavorite = (id: string) => {
+        if (favorites.includes(id)) {
+            if (favorites.length > 2) setFavorites(favorites.filter(f => f !== id));
+        } else {
+            if (favorites.length < 5) setFavorites([...favorites, id]);
+        }
+    };
+
+    const handleFinish = () => {
+        onStartFresh({
+            profile: { name: name.trim() || 'User', language: lang },
+            displayCurrency: currency,
+            isBalanceVisible: !hideBalances,
+            navbarFavorites: favorites,
+        });
+    };
 
     const slides = [
         {
+            id: 'profile',
             title: t('onboarding_title1'),
-            desc: t('onboarding_desc1'),
-            icon: <Target size={80} className="text-theme-brand" />,
-            color: 'from-theme-brand/20 to-purple-500/20'
+            desc: t('onboarding_name_desc'),
+            icon: <Target size={60} className="text-theme-brand" />,
+            color: 'from-theme-brand/20 to-purple-500/20',
+            content: (
+                <div className="w-full mt-6 animate-in fade-in slide-in-from-bottom-4">
+                    <Input 
+                        placeholder={t('onboarding_name_placeholder')}
+                        value={name} 
+                        onChange={e => setName(e.target.value)}
+                        className="text-center text-lg"
+                        autoFocus
+                    />
+                </div>
+            )
         },
         {
-            title: t('onboarding_title2'),
-            desc: t('onboarding_desc2'),
-            icon: <ShieldCheck size={80} className="text-emerald-400" />,
-            color: 'from-emerald-500/20 to-cyan-500/20'
+            id: 'language',
+            title: t('onboarding_language_title'),
+            desc: t('onboarding_language_desc'),
+            icon: <Globe size={60} className="text-emerald-400" />,
+            color: 'from-emerald-500/20 to-cyan-500/20',
+            content: (
+                <div className="w-full mt-6">
+                    <SegmentedControl 
+                        value={lang}
+                        onChange={setLang}
+                        options={[
+                            { label: 'Español', value: 'es' },
+                            { label: 'English', value: 'en' },
+                            { label: 'Português', value: 'pt' }
+                        ]}
+                    />
+                </div>
+            )
         },
         {
-            title: t('onboarding_title3'),
-            desc: t('onboarding_desc3'),
-            icon: <Wallet size={80} className="text-amber-400" />,
-            color: 'from-amber-500/20 to-orange-500/20'
+            id: 'privacy',
+            title: t('onboarding_privacy_title'),
+            desc: t('onboarding_privacy_desc'),
+            icon: <ShieldCheck size={60} className="text-amber-400" />,
+            color: 'from-amber-500/20 to-orange-500/20',
+            content: (
+                <div className="w-full mt-6 space-y-4">
+                    <Card variant="surface" className="p-4 flex items-center justify-between border-white/5 bg-white/5">
+                        <div className="flex items-center gap-3">
+                            {hideBalances ? <EyeOff size={18} className="text-theme-secondary" /> : <Eye size={18} className="text-theme-brand" />}
+                            <Typography variant="small" weight="bold">{t('onboarding_hide_balances')}</Typography>
+                        </div>
+                        <ToggleSwitch enabled={hideBalances} onChange={setHideBalances} />
+                    </Card>
+                    <SegmentedControl 
+                        value={currency}
+                        onChange={setCurrency}
+                        options={[
+                            { label: 'USD ($)', value: Currency.USD },
+                            { label: 'EUR (€)', value: Currency.EUR },
+                            { label: 'VES (Bs)', value: Currency.VES }
+                        ]}
+                    />
+                </div>
+            )
         },
         {
-            title: t('onboarding_title4'),
-            desc: t('onboarding_desc4'),
-            icon: <BarChart3 size={80} className="text-blue-400" />,
-            color: 'from-blue-500/20 to-indigo-500/20'
+            id: 'menu',
+            title: t('onboarding_menu_title'),
+            desc: t('onboarding_menu_desc'),
+            icon: <Layout size={60} className="text-blue-400" />,
+            color: 'from-blue-500/20 to-indigo-500/20',
+            content: (
+                <div className="grid grid-cols-2 gap-2 mt-4 max-h-[200px] overflow-y-auto no-scrollbar p-1">
+                    {[
+                        { id: 'DASHBOARD', label: t('dashboard'), icon: <BarChart3 size={14}/> },
+                        { id: 'TRANSACTIONS', label: t('transactions'), icon: <List size={14}/> },
+                        { id: 'BUDGET', label: t('budget'), icon: <Wallet size={14}/> },
+                        { id: 'SCHEDULED', label: t('scheduled'), icon: <Star size={14}/> },
+                        { id: 'ANALYSIS', label: t('analysis'), icon: <Layout size={14}/> },
+                        { id: 'SHOPPING', label: t('shoppingList'), icon: <ShoppingCart size={14}/> }
+                    ].map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => toggleFavorite(item.id)}
+                            className={`p-3 rounded-xl border text-[10px] font-black uppercase flex items-center justify-between transition-all ${
+                                favorites.includes(item.id) 
+                                ? 'bg-theme-brand border-theme-brand text-white shadow-lg' 
+                                : 'bg-white/5 border-white/10 text-theme-secondary'
+                            }`}
+                        >
+                            <span className="flex items-center gap-2">{item.icon} {item.label}</span>
+                            {favorites.includes(item.id) && <CheckCircle2 size={12} />}
+                        </button>
+                    ))}
+                </div>
+            )
         },
         {
-            title: t('onboarding_title5'),
-            desc: t('onboarding_desc5'),
-            icon: <Rocket size={80} className="text-theme-brand" />,
-            color: 'from-theme-brand/20 to-pink-500/20'
+            id: 'finish',
+            title: t('onboarding_finish_title'),
+            desc: t('onboarding_finish_desc'),
+            icon: <Rocket size={60} className="text-theme-brand" />,
+            color: 'from-theme-brand/20 to-pink-500/20',
+            content: (
+                <div className="w-full mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg">
+                        <CheckCircle2 size={20} />
+                    </div>
+                    <div className="text-left">
+                        <Typography variant="small" weight="black" className="text-emerald-400 uppercase">{t('onboarding_profile_ready')}</Typography>
+                        <Typography variant="tiny" color="secondary" className="opacity-70">{t('onboarding_profile_ready_desc')}</Typography>
+                    </div>
+                </div>
+            )
         }
     ];
 
@@ -55,41 +174,47 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
             {/* Background Glow */}
             <div className={`absolute inset-0 bg-gradient-to-b ${currentSlide.color} opacity-30 transition-all duration-1000`} />
             
-            {/* Skip Button */}
-            {step < slides.length - 1 && (
-                <button 
-                    onClick={() => setStep(slides.length - 1)}
-                    className="absolute top-12 right-8 z-[210] p-4 text-theme-secondary font-black text-xs uppercase tracking-widest hover:text-theme-primary transition-colors"
-                >
-                    {t('skip')}
-                </button>
-            )}
-            
             <div className="relative z-10 w-full max-w-sm flex flex-col items-center text-center">
                 {/* Icon Container */}
-                <div className="mb-12 transition-all duration-500 transform hover:scale-105">
-                    <div className="w-40 h-40 rounded-2xl bg-theme-surface border border-white/10 flex items-center justify-center shadow-2xl relative group overflow-hidden">
-                        <div className="absolute inset-0 bg-theme-brand/10 blur-3xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                        <div key={step} className="animate-in zoom-in-50 duration-500">
-                             {currentSlide.icon}
-                        </div>
+                <div className="mb-8">
+                    <div className="w-32 h-32 rounded-[2.5rem] bg-theme-surface border border-white/10 flex items-center justify-center shadow-2xl relative group overflow-hidden">
+                        <div className="absolute inset-0 bg-theme-brand/10 blur-3xl rounded-full opacity-50" />
+                        <AnimatePresence mode="wait">
+                            <motion.div 
+                                key={step}
+                                initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
+                                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                exit={{ scale: 0.5, opacity: 0, rotate: 10 }}
+                            >
+                                 {currentSlide.icon}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="h-[200px] flex flex-col items-center">
-                    <div key={`content-${step}`} className="animate-in slide-in-from-right duration-500 flex flex-col items-center">
-                        <h1 className="text-3xl font-black text-theme-primary mb-4 tracking-tight leading-tight">
-                            {currentSlide.title}
-                        </h1>
-                        <p className="text-theme-secondary text-lg mb-8 px-4 opacity-80 leading-relaxed font-medium">
-                            {currentSlide.desc}
-                        </p>
-                    </div>
+                <div className="min-h-[280px] w-full flex flex-col items-center">
+                    <AnimatePresence mode="wait">
+                        <motion.div 
+                            key={`content-${step}`}
+                            initial={{ x: 20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -20, opacity: 0 }}
+                            className="w-full flex flex-col items-center"
+                        >
+                            <Typography variant="h2" weight="black" className="mb-2 tracking-tight">
+                                {currentSlide.title}
+                            </Typography>
+                            <Typography variant="small" color="secondary" weight="medium" className="px-6 opacity-70 leading-relaxed mb-4">
+                                {currentSlide.desc}
+                            </Typography>
+                            {currentSlide.content}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
 
                 {/* Progress Indicators */}
-                <div className="flex gap-2 mb-12">
+                <div className="flex gap-2 mb-10 mt-4">
                     {slides.map((_, i) => (
                         <div 
                             key={i} 
@@ -98,40 +223,47 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onStartFresh, onSy
                     ))}
                 </div>
 
-                {/* Actions */}
-                <div className="w-full flex flex-col gap-4">
+                {/* Action Buttons */}
+                <div className="w-full flex flex-col gap-3">
                     {step < slides.length - 1 ? (
-                        <button 
+                        <Button 
+                            size="lg"
+                            className="w-full h-14 rounded-2xl font-black uppercase tracking-widest"
                             onClick={() => setStep(step + 1)}
-                            className="w-full bg-theme-primary text-theme-bg font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-black/20"
+                            disabled={step === 0 && !name.trim()}
                         >
-                            {t('viewMore')} <ArrowRight size={20} />
-                        </button>
+                            {t('next')} <ArrowRight size={18} className="ml-2" />
+                        </Button>
                     ) : (
                         <>
-                            <button 
-                                onClick={onStartFresh}
-                                className="w-full bg-theme-primary text-theme-bg font-black py-4 rounded-2xl hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-black/20 font-black"
+                            <Button
+                                size="lg"
+                                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest"
+                                onClick={handleFinish}
                             >
-                                {t('startFromScratch')}
-                            </button>
+                                {t('startFresh')}
+                            </Button>
+
                             {isDevMode && (
-                                <button 
+                                <Button
+                                    variant="secondary"
+                                    size="lg"
+                                    className="w-full h-14 rounded-2xl font-black uppercase tracking-widest"
                                     onClick={onSyncFromCloud}
-                                    disabled={isSyncing}
-                                    className={`w-full py-4 rounded-2xl font-black transition-all border-2 flex items-center justify-center gap-2 ${
-                                        isSyncing 
-                                        ? 'bg-theme-brand/10 border-theme-soft/50 text-theme-brand animate-pulse' 
-                                        : 'bg-white/5 border-white/10 text-theme-primary hover:bg-white/10 hover:border-white/20'
-                                    }`}
+                                    isLoading={isSyncing}
                                 >
-                                    <CloudDownload size={20} className="text-theme-brand" />
-                                    {isSyncing ? t('fetching') : t('restoreFromCloudLong')}
-                                </button>
+                                    <CloudDownload size={18} className="mr-2" /> {t('syncFromCloud')}
+                                </Button>
                             )}
                         </>
                     )}
                 </div>
+
+                {isDevMode && (
+                    <Typography variant="tiny" color="secondary" weight="black" className="mt-6 uppercase tracking-widest opacity-30">
+                        {t('devModeActive')}
+                    </Typography>
+                )}
             </div>
         </div>
     );

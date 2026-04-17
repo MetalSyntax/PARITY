@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon, Trophy, FileText, Cloud, CloudOff } from "lucide-react";
-import { motion, Reorder, useDragControls } from "framer-motion";
+import { motion } from "framer-motion";
+import { useDragAndDrop } from "@formkit/drag-and-drop/react";
+import { animations } from "@formkit/drag-and-drop";
 import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
 import { CATEGORIES } from "../constants";
 import { getTranslation } from "../i18n";
@@ -160,8 +162,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const [touchedWidget, setTouchedWidget] = useState<string | null>(null);
 
-  const leftControls = leftOrder.map(() => useDragControls());
-  const rightControls = rightOrder.map(() => useDragControls());
+  const getWidgetEnabled = (id: WidgetId) => {
+    switch (id) {
+       case 'balanceChart': return showBalanceChart;
+       case 'expenses': return showExpenseStructure;
+       case 'incomeVsExpense': return showIncomeVsExpense;
+       case 'dailySpending': return showDailySpending;
+       case 'categoryBreakdown': return showCategoryBreakdown;
+       case 'forecastCard': return showForecastCard;
+       case 'fiscalSummary': return showFiscalSummary;
+       case 'goals': return showGoals;
+       default: return true;
+    }
+  };
+
+  const enabledLeftWidgets = useMemo(() => leftOrder.filter(id => getWidgetEnabled(id as WidgetId) && WIDGET_REGISTRY[id as WidgetId]), [leftOrder]);
+  const enabledRightWidgets = useMemo(() => rightOrder.filter(id => getWidgetEnabled(id as WidgetId) && WIDGET_REGISTRY[id as WidgetId]), [rightOrder]);
+
+  const [leftParent, leftItems, setLeftItems] = useDragAndDrop<string>(enabledLeftWidgets, {
+    dragHandle: ".drag-handle",
+    plugins: [animations()],
+  });
+
+  const [rightParent, rightItems, setRightItems] = useDragAndDrop<string>(enabledRightWidgets, {
+    dragHandle: ".drag-handle",
+    plugins: [animations()],
+  });
+
+  useEffect(() => {
+    setLeftItems(enabledLeftWidgets);
+  }, [enabledLeftWidgets]);
+
+  useEffect(() => {
+    setRightItems(enabledRightWidgets);
+  }, [enabledRightWidgets]);
+
+  useEffect(() => {
+    if (JSON.stringify(leftItems) !== JSON.stringify(enabledLeftWidgets)) {
+      setLeftOrder(leftItems);
+    }
+  }, [leftItems]);
+
+  useEffect(() => {
+    if (JSON.stringify(rightItems) !== JSON.stringify(enabledRightWidgets)) {
+      setRightOrder(rightItems);
+    }
+  }, [rightItems]);
 
   useEffect(() => {
     localStorage.setItem("dash_left_order", JSON.stringify(leftOrder));
@@ -625,19 +671,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const getWidgetEnabled = (id: WidgetId) => {
-    switch (id) {
-       case 'balanceChart': return showBalanceChart;
-       case 'expenses': return showExpenseStructure;
-       case 'incomeVsExpense': return showIncomeVsExpense;
-       case 'dailySpending': return showDailySpending;
-       case 'categoryBreakdown': return showCategoryBreakdown;
-       case 'forecastCard': return showForecastCard;
-       case 'fiscalSummary': return showFiscalSummary;
-       case 'goals': return showGoals;
-       default: return true;
-    }
-  };
 
 
 
@@ -774,24 +807,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:mt-2">
-          <Reorder.Group
-            axis="y"
-            values={leftOrder}
-            onReorder={setLeftOrder}
+          <div
+            ref={leftParent}
             className="md:col-span-6 lg:col-span-5 flex flex-col gap-6"
           >
-            {leftOrder.map((id, index) => {
-              if (!getWidgetEnabled(id as WidgetId) || !WIDGET_REGISTRY[id as WidgetId]) return null;
+            {leftItems.map((id) => {
               return (
-                <Reorder.Item
+                <div
                   key={id}
-                  value={id}
-                  dragListener={false}
-                  dragControls={leftControls[index]}
+                  data-label={id}
+                  className="touch-pan-y"
                 >
                   <WidgetWrapper
                     id={id as WidgetId}
-                    onDragStart={(e) => leftControls[index].start(e)}
                     onSettingsClick={['balanceChart', 'expenses', 'incomeVsExpense', 'dailySpending', 'categoryBreakdown'].includes(id) ? () => setShowCustomizer(true) : undefined}
                     touched={touchedWidget === id}
                     onSelect={() => {
@@ -802,29 +830,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   >
                     {WIDGET_REGISTRY[id as WidgetId](getWidgetProps(id as WidgetId))}
                   </WidgetWrapper>
-                </Reorder.Item>
+                </div>
               );
             })}
-          </Reorder.Group>
+          </div>
 
-          <Reorder.Group
-            axis="y"
-            values={rightOrder}
-            onReorder={setRightOrder}
+          <div
+            ref={rightParent}
             className="md:col-span-6 lg:col-span-7 px-4 md:px-0 flex flex-col gap-6"
           >
-            {rightOrder.map((id, index) => {
-              if (!getWidgetEnabled(id as WidgetId) || !WIDGET_REGISTRY[id as WidgetId]) return null;
+            {rightItems.map((id) => {
               return (
-                <Reorder.Item
+                <div
                   key={id}
-                  value={id}
-                  dragListener={false}
-                  dragControls={rightControls[index]}
+                  data-label={id}
+                  className="touch-pan-y"
                 >
                   <WidgetWrapper
                     id={id as WidgetId}
-                    onDragStart={(e) => rightControls[index].start(e)}
                     onSettingsClick={['balanceChart', 'expenses', 'incomeVsExpense', 'dailySpending', 'categoryBreakdown'].includes(id) ? () => setShowCustomizer(true) : undefined}
                     touched={touchedWidget === id}
                     onSelect={() => {
@@ -835,10 +858,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   >
                     {WIDGET_REGISTRY[id as WidgetId](getWidgetProps(id as WidgetId))}
                   </WidgetWrapper>
-                </Reorder.Item>
+                </div>
               );
             })}
-          </Reorder.Group>
+          </div>
         </div>
       </div>
 

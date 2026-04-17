@@ -234,6 +234,25 @@ function AppContent() {
       setTimeout(() => setAlertConfig(null), 3000);
   };
 
+  const sendPushNotification = async (title: string, body: string, tag: string) => {
+      if (!('Notification' in window)) return;
+      let permission = Notification.permission;
+      if (permission === 'default') {
+          permission = await Notification.requestPermission();
+      }
+      if (permission !== 'granted') return;
+      try {
+          if ('serviceWorker' in navigator) {
+              const reg = await navigator.serviceWorker.ready;
+              await reg.showNotification(title, { body, tag, icon: '/pwa-192x192.png', badge: '/pwa-192x192.png', renotify: true });
+          } else {
+              new Notification(title, { body, tag, icon: '/pwa-192x192.png' });
+          }
+      } catch {
+          new Notification(title, { body, tag });
+      }
+  };
+
   const showConfirm = (config: ConfirmConfig) => {
       setConfirmConfig(config);
   };
@@ -444,20 +463,13 @@ function AppContent() {
             
             const alertKey = `parity_budget_alert_${categoryId}_${todayStr}`;
             if (!localStorage.getItem(alertKey)) {
-                // Fallback translations if i18n not yet updated
                 const msgTmp = t('budgetAlertBody') === 'budgetAlertBody' ? `You are on track to exceed your budget for ${categoryName}.` : t('budgetAlertBody');
                 const titleTmp = t('budgetAlertTitle') === 'budgetAlertTitle' ? 'Smart Alert: Budget Risk' : t('budgetAlertTitle');
                 const msg = msgTmp.replace('{category}', categoryName as string);
-                
+                const title = (titleTmp as string).replace('{category}', categoryName as string);
+
+                sendPushNotification(title, msg, `budget-${categoryId}-${todayStr}`);
                 showAlert(msg, 'error');
-                
-                if (Notification.permission === 'granted') {
-                    new Notification(titleTmp as string, {
-                        body: msg,
-                        icon: '/icon-192x192.png',
-                        badge: '/icon-192x192.png'
-                    });
-                }
                 localStorage.setItem(alertKey, 'true');
             }
         });
@@ -482,17 +494,10 @@ function AppContent() {
                     .replace('{name}', p.name)
                     .replace('{amount}', amountStr)
                     .replace('{date}', dueDate.toLocaleDateString());
-                
-                showAlert(msg, 'info');
+                const title = t('notificationTitle') || 'Scheduled Payment';
 
-                if (Notification.permission === 'granted') {
-                    new Notification(t('notificationTitle'), {
-                        body: msg,
-                        icon: '/icon-192x192.png',
-                        badge: '/icon-192x192.png'
-                    });
-                }
-                
+                sendPushNotification(title, msg, `payment-${p.id}-${todayStr}`);
+                showAlert(msg, 'info');
                 newPayments[idx] = { ...p, lastNotified: todayStr };
                 updated = true;
             }
@@ -778,7 +783,7 @@ function AppContent() {
 
   const handleUpdateRateType = (type: RateType) => {
     setUserProfile(prev => ({ ...prev, rateType: type }));
-    showAlert(type === 'OFFICIAL' ? 'Tasas Oficiales (BCV) activadas' : 'Tasas Paralelas (Binance) activadas', 'success');
+    showAlert(type === 'OFFICIAL' ? t('rateOfficialActivated') : t('rateParallelActivated'), 'success');
   };
 
   // Save logic
@@ -825,22 +830,14 @@ function AppContent() {
     localStorage.setItem("navbarFavorites", JSON.stringify(navbarFavorites));
   }, [navbarFavorites, isLoaded]);
 
-  // --- Notification Logic ---
-  const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) return false;
-    if (Notification.permission === 'granted') return true;
-    if (Notification.permission !== 'denied') {
-      const permission = await Notification.requestPermission();
-      return permission === 'granted';
-    }
-    return false;
-  };
-
   useEffect(() => {
-    if (isLoaded && userProfile.notificationsEnabled) {
-      requestNotificationPermission();
+    if (userProfile.name) {
+      // @ts-ignore
+      window.OneSignalDeferred?.push(async function(OneSignal) {
+        await OneSignal.login(userProfile.name);
+      });
     }
-  }, [isLoaded, userProfile.notificationsEnabled]);
+  }, [userProfile.name]);
 
 
   useEffect(() => {
@@ -1164,8 +1161,22 @@ function AppContent() {
     }
   };
 
-  const handleStartFresh = () => {
-    setUserProfile({ name: 'User', language: 'en' });
+  const handleStartFresh = (data: { profile: Partial<UserProfile>; displayCurrency: Currency; isBalanceVisible: boolean; navbarFavorites: string[] }) => {
+    setUserProfile(prev => ({ ...prev, ...data.profile }));
+    setDisplayCurrency(data.displayCurrency);
+    localStorage.setItem("displayCurrency", data.displayCurrency);
+    setIsBalanceVisible(data.isBalanceVisible);
+    localStorage.setItem("isBalanceVisible", JSON.stringify(data.isBalanceVisible));
+    setNavbarFavorites(data.navbarFavorites as ViewState[]);
+    localStorage.setItem("navbarFavorites", JSON.stringify(data.navbarFavorites));
+    const initialWallet: Account = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: data.profile.name || 'Wallet',
+      currency: data.displayCurrency === Currency.VES ? Currency.VES : data.displayCurrency === Currency.EUR ? Currency.EUR : Currency.USD,
+      balance: 0,
+      icon: 'wallet',
+    };
+    setAccounts([initialWallet]);
     setIsFirstTime(false);
   };
 
@@ -1302,7 +1313,7 @@ function AppContent() {
                 if ('serviceWorker' in navigator) {
                   navigator.serviceWorker.ready.then(registration => {
                     registration.update().then(() => {
-                      showAlert('Buscando actualizaciones...', 'info');
+                      showAlert(t('checkingUpdates'), 'info');
                     });
                   });
                 }
