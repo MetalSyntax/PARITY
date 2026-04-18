@@ -435,7 +435,7 @@ export const TransactionsWidget: React.FC<{
                         return date === todayStr ? t('today') : dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
                       })()}
                     </h3>
-                    <div className="flex flex-col gap-2 mt-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2 mt-1">
                       {itemsToRender.map(transaction => (
                         <TransactionItem
                           key={transaction.id}

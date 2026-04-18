@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronLeft, Plus, Trash2, CheckCircle2, Circle, ShoppingCart, Pencil, DollarSign, X, ArrowUpRight, ChevronDown, Search, List, PlusSquare, PackagePlus, GripVertical } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { ChevronLeft, Plus, Trash2, CheckCircle2, Circle, ShoppingCart, Pencil, DollarSign, X, ArrowUpRight, ChevronDown, Search, List, PlusSquare, PackagePlus, GripVertical, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDragAndDrop } from "@formkit/drag-and-drop/react";
 import { animations } from "@formkit/drag-and-drop";
@@ -51,11 +51,12 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
     const [newItemQty, setNewItemQty] = useState('');
     const [newItemPrice, setNewItemPrice] = useState('');
     const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORIES[1].id); 
-    const [showCategorySelector, setShowCategorySelector] = useState(false);
     const [categorySearch, setCategorySearch] = useState('');
     const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
     const [activeRowId, setActiveRowId] = useState<string | null>(null);
     const [listToEdit, setListToEdit] = useState<ShoppingList | null>(null);
+    const [showItemDetails, setShowItemDetails] = useState(false);
+    const nameInputRef = useRef<HTMLInputElement>(null);
 
     const onUpdateItems = (newItems: ShoppingItem[]) => {
         if (!currentList) return;
@@ -81,18 +82,20 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
 
     const addItem = () => {
         if (!newItemName.trim()) return;
-        
+
         if (editingItem) {
-            onUpdateItems(items.map(item => 
-                item.id === editingItem.id ? { 
-                    ...item, 
-                    name: newItemName, 
+            onUpdateItems(items.map(item =>
+                item.id === editingItem.id ? {
+                    ...item,
+                    name: newItemName,
                     quantity: newItemQty || '1',
                     price: newItemPrice ? parseFloat(newItemPrice) : undefined,
                     categoryId: selectedCategoryId
                 } : item
             ));
             setEditingItem(null);
+            setShowAddForm(false);
+            setShowItemDetails(false);
         } else {
             const newItem: ShoppingItem = {
                 id: Math.random().toString(36).substr(2, 9),
@@ -100,17 +103,17 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 quantity: newItemQty || '1',
                 completed: false,
                 price: newItemPrice ? parseFloat(newItemPrice) : undefined,
-                currency: displayCurrency,
+                currency: localCurrency,
                 categoryId: selectedCategoryId
             };
             onUpdateItems([newItem, ...items]);
+            setNewItemName('');
+            setNewItemQty('');
+            setNewItemPrice('');
+            setSelectedCategoryId(CATEGORIES[1].id);
+            setCategorySearch('');
+            setTimeout(() => nameInputRef.current?.focus(), 50);
         }
-
-        setNewItemName('');
-        setNewItemQty('');
-        setNewItemPrice('');
-        setSelectedCategoryId(CATEGORIES[1].id);
-        setShowAddForm(false);
     };
 
     const editItem = (item: ShoppingItem) => {
@@ -119,6 +122,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         setNewItemQty(item.quantity);
         setNewItemPrice(item.price?.toString() || '');
         setSelectedCategoryId(item.categoryId || CATEGORIES[1].id);
+        setShowItemDetails(true);
         setShowAddForm(true);
     };
 
@@ -500,144 +504,206 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                 )}
             </AnimatePresence>
 
-            {/* Add Modal/Form */}
+            {/* Add/Edit Item Bottom Sheet */}
             <AnimatePresence>
                 {showAddForm && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="w-full max-w-sm bg-theme-surface border border-theme-soft rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
+                    <div className="fixed inset-0 z-[100] bottom-[70px]">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            onClick={() => {
+                                if (!editingItem) {
+                                    setShowAddForm(false);
+                                    setNewItemName('');
+                                    setNewItemQty('');
+                                    setNewItemPrice('');
+                                    setSelectedCategoryId(CATEGORIES[1].id);
+                                    setShowItemDetails(false);
+                                    setCategorySearch('');
+                                }
+                            }}
+                        />
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+                            className="absolute bottom-0 left-0 right-0 bg-theme-surface rounded-t-3xl shadow-2xl border-t border-white/10 max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
-                             <div className="flex justify-between items-center mb-6">
-                                 <h3 className="text-lg font-black text-theme-primary">{editingItem ? t('editShoppingItem') : t('addShoppingItem')}</h3>
-                                 <button onClick={() => { setShowAddForm(false); setEditingItem(null); }} className="text-theme-secondary"><X size={20} /></button>
-                             </div>
+                            {/* Drag handle */}
+                            <div className="flex justify-center pt-3 pb-1">
+                                <div className="w-10 h-1 rounded-full bg-theme-soft" />
+                            </div>
 
-                            <div className="flex flex-col gap-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('name')}</label>
-                                    <input 
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-5 pt-2 pb-3">
+                                <h3 className="text-base font-black text-theme-primary">
+                                    {editingItem ? t('editShoppingItem') : t('addShoppingItem')}
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        setShowAddForm(false);
+                                        setEditingItem(null);
+                                        setNewItemName('');
+                                        setNewItemQty('');
+                                        setNewItemPrice('');
+                                        setSelectedCategoryId(CATEGORIES[1].id);
+                                        setShowItemDetails(false);
+                                        setCategorySearch('');
+                                    }}
+                                    className="p-2 rounded-xl bg-theme-soft text-theme-secondary hover:text-theme-primary transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {/* Main input row */}
+                            <div className="px-5 pb-3">
+                                <div className="flex gap-2.5 items-center">
+                                    {/* Category icon — tap to expand details */}
+                                    <motion.button
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => setShowItemDetails(v => !v)}
+                                        className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${showItemDetails ? 'border-theme-brand/50 bg-theme-brand/10' : 'border-theme-soft bg-theme-soft'}`}
+                                        title={t('category')}
+                                    >
+                                        <span className={`text-lg ${selectedCategory.color}`}>
+                                            {selectedCategory.icon}
+                                        </span>
+                                    </motion.button>
+
+                                    {/* Name input */}
+                                    <input
+                                        ref={nameInputRef}
                                         autoFocus
-                                        type="text" 
+                                        type="text"
                                         value={newItemName}
                                         onChange={(e) => setNewItemName(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' && newItemName.trim()) addItem(); }}
                                         placeholder={t('shoppingItemPlaceholder')}
-                                        className="w-full bg-theme-soft border border-theme-soft rounded-2xl px-4 py-3 text-sm focus:border-theme-brand outline-none transition-all"
+                                        className="flex-1 bg-theme-soft border border-theme-soft rounded-2xl px-4 py-3.5 text-sm focus:border-theme-brand outline-none transition-all"
                                     />
-                                </div>
 
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('category')}</label>
-                                    <button 
-                                        onClick={() => setShowCategorySelector(!showCategorySelector)}
-                                        className="w-full p-4 bg-theme-brand text-white rounded-2xl font-bold mb-4 flex items-center justify-center gap-2 shadow-lg shadow-brand/20 transition-all"
+                                    {/* Add / Save button */}
+                                    <motion.button
+                                        whileTap={{ scale: 0.88 }}
+                                        onClick={addItem}
+                                        disabled={!newItemName.trim()}
+                                        className="shrink-0 w-12 h-12 bg-theme-brand text-white rounded-2xl flex items-center justify-center disabled:grayscale disabled:opacity-40 shadow-lg shadow-theme-brand/30 transition-all"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <span className={`w-8 h-8 rounded-2xl flex items-center justify-center ${selectedCategory.color} bg-opacity-20`}>
-                                                {selectedCategory.icon}
-                                            </span>
-                                            <span className="text-sm font-bold text-theme-primary">{t(selectedCategory.name as any) || selectedCategory.name}</span>
-                                        </div>
-                                        <ChevronDown size={18} className={`text-theme-secondary transition-transform ${showCategorySelector ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    
-                                    <AnimatePresence>
-                                        {showCategorySelector && (
-                                            <motion.div 
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                className="overflow-hidden bg-theme-soft/50 rounded-2xl border border-theme-soft mt-2"
-                                            >
-                                                <div className="p-2 sticky top-0 bg-theme-soft border-b border-theme-soft z-10">
-                                                    <div className="relative">
-                                                        <input 
-                                                            type="text"
-                                                            value={categorySearch}
-                                                            onChange={(e) => setCategorySearch(e.target.value)}
-                                                            placeholder={t('searchCategories') || 'Search...'}
-                                                            className="w-full bg-theme-bg border border-theme-soft rounded-xl pl-8 pr-4 py-2 text-xs outline-none"
-                                                        />
-                                                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-theme-secondary" />
-                                                    </div>
+                                        {editingItem ? <Check size={20} /> : <Plus size={20} />}
+                                    </motion.button>
+                                </div>
+                            </div>
+
+                            {/* "More options" toggle hint */}
+                            {!showItemDetails && (
+                                <button
+                                    onClick={() => setShowItemDetails(true)}
+                                    className="w-full px-5 pb-3 flex items-center gap-1.5 text-theme-secondary text-[10px] font-bold uppercase tracking-wider"
+                                >
+                                    <ChevronDown size={12} />
+                                    {t('category')} · {t('quantity')} · {t('amount')}
+                                </button>
+                            )}
+
+                            {/* Expandable details */}
+                            <AnimatePresence>
+                                {showItemDetails && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="px-5 pb-2 pt-1 space-y-4">
+                                            {/* Category grid */}
+                                            <div className="space-y-2">
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={categorySearch}
+                                                        onChange={(e) => setCategorySearch(e.target.value)}
+                                                        placeholder={t('searchCategories') || 'Buscar categoría...'}
+                                                        className="w-full bg-theme-soft border border-theme-soft rounded-xl pl-8 pr-4 py-2 text-xs focus:border-theme-brand outline-none"
+                                                    />
+                                                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-theme-secondary" />
                                                 </div>
-                                                <div className="max-h-48 overflow-y-auto p-2 grid grid-cols-2 gap-2 no-scrollbar">
+                                                <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto no-scrollbar">
                                                     {filteredCategories.map(cat => (
                                                         <button
                                                             key={cat.id}
                                                             onClick={() => {
-                                                                 setSelectedCategoryId(cat.id);
-                                                                 setShowCategorySelector(false);
+                                                                setSelectedCategoryId(cat.id);
+                                                                setCategorySearch('');
                                                             }}
-                                                            className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${selectedCategoryId === cat.id ? 'bg-theme-brand/10 border-theme-brand/30' : 'bg-theme-bg border-transparent hover:border-theme-soft'}`}
+                                                            className={`flex flex-col items-center gap-1 p-2 rounded-xl border transition-all ${selectedCategoryId === cat.id ? 'bg-theme-brand/10 border-theme-brand/40' : 'bg-theme-soft border-transparent active:bg-theme-brand/5'}`}
                                                         >
-                                                            <span className={`p-1.5 rounded-lg text-[10px] ${cat.color} bg-opacity-10`}>
-                                                                {cat.icon}
-                                                            </span>
-                                                            <span className="text-[10px] font-bold text-theme-primary truncate">{t(cat.name as any)}</span>
+                                                            <span className={`text-base ${cat.color}`}>{cat.icon}</span>
+                                                            <span className="text-[9px] font-bold text-theme-secondary leading-none text-center truncate w-full">{t(cat.name as any)}</span>
                                                         </button>
                                                     ))}
                                                 </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
+                                            </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('quantity')}</label>
-                                        <input 
-                                            type="text" 
-                                            value={newItemQty}
-                                            onChange={(e) => setNewItemQty(e.target.value)}
-                                            placeholder="1, 2"
-                                            className="w-full bg-theme-soft border border-theme-soft rounded-2xl px-4 py-3 text-sm focus:border-theme-brand outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('amount')}</label>
-                                        <div className="relative">
-                                            <input 
-                                                type="number" 
-                                                value={newItemPrice}
-                                                onChange={(e) => setNewItemPrice(e.target.value)}
-                                                placeholder="0.00"
-                                                className="w-full bg-theme-soft border border-theme-soft rounded-2xl pl-8 pr-4 py-3 text-sm focus:border-theme-brand outline-none transition-all"
-                                            />
-                                            <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary" />
+                                            {/* Qty + Price */}
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('quantity')}</label>
+                                                    <input
+                                                        type="text"
+                                                        value={newItemQty}
+                                                        onChange={(e) => setNewItemQty(e.target.value)}
+                                                        placeholder="1"
+                                                        className="w-full bg-theme-soft border border-theme-soft rounded-2xl px-4 py-3 text-sm focus:border-theme-brand outline-none"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-theme-secondary px-1">{t('amount')}</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="number"
+                                                            value={newItemPrice}
+                                                            onChange={(e) => setNewItemPrice(e.target.value)}
+                                                            onKeyDown={(e) => { if (e.key === 'Enter' && newItemName.trim()) addItem(); }}
+                                                            placeholder="0.00"
+                                                            className="w-full bg-theme-soft border border-theme-soft rounded-2xl pl-8 pr-4 py-3 text-sm focus:border-theme-brand outline-none"
+                                                        />
+                                                        <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Delete (edit mode only) */}
+                                            {editingItem && (
+                                                <button
+                                                    onClick={() => {
+                                                        onShowConfirm({
+                                                            message: t('deleteItemConfirm'),
+                                                            onConfirm: () => {
+                                                                deleteItem(editingItem.id);
+                                                                setShowAddForm(false);
+                                                                setEditingItem(null);
+                                                                setShowItemDetails(false);
+                                                            }
+                                                        });
+                                                    }}
+                                                    className="w-full py-3 rounded-2xl bg-red-500/10 text-red-500 font-black hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 text-sm"
+                                                >
+                                                    <Trash2 size={15} />
+                                                    {t('delete')}
+                                                </button>
+                                            )}
                                         </div>
-                                    </div>
-                                </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
-                                 <div className="flex gap-2 mt-4">
-                                     {editingItem && (
-                                         <button 
-                                             onClick={() => {
-                                                 onShowConfirm({
-                                                     message: t('deleteItemConfirm'),
-                                                     onConfirm: () => {
-                                                         deleteItem(editingItem.id);
-                                                         setShowAddForm(false);
-                                                         setEditingItem(null);
-                                                     }
-                                                 });
-                                             }}
-                                             className="flex-1 py-4 rounded-2xl bg-red-500/10 text-red-500 font-black hover:bg-red-500/20 transition-all"
-                                         >
-                                             {t('delete')}
-                                         </button>
-                                     )}
-                                     <button 
-                                         onClick={addItem}
-                                         disabled={!newItemName.trim()}
-                                         className="flex-[2] py-4 rounded-2xl bg-theme-brand text-white font-black hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg shadow-theme-brand/30 transition-all"
-                                     >
-                                         {editingItem ? t('save') : t('addShoppingItem')}
-                                     </button>
-                                 </div>
-                            </div>
+                            <div className="pb-8" />
                         </motion.div>
                     </div>
                 )}

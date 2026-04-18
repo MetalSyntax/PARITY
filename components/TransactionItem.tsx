@@ -1,5 +1,5 @@
 import React from 'react';
-import { Receipt, Settings, X, ArrowRightLeft, RefreshCw } from 'lucide-react';
+import { Receipt, Settings, X, ArrowRightLeft, RefreshCw, Edit2, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Transaction, Currency, TransactionType, Account } from '../types';
 import { CATEGORIES } from '../constants';
@@ -48,12 +48,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         e.stopPropagation();
         onSelect(transaction);
       }}
-      className={`flex items-center justify-between p-3 rounded-xl hover:bg-theme-soft transition-colors group/tx relative ${compact ? 'pr-3' : 'pr-3'} bg-theme-surface border border-theme-soft mb-2 cursor-pointer`}
+      className={`flex items-center justify-between p-4 rounded-2xl hover:bg-theme-soft transition-colors group/tx relative bg-theme-surface border border-theme-soft mb-2 cursor-pointer`}
     >
       <div className="flex items-center gap-4">
-        <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border border-theme-soft ${isTransfer ? 'bg-indigo-500/10 text-indigo-400' : category.color
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-theme-soft ${isTransfer ? 'bg-indigo-500/10 text-indigo-400' : category.color
           } ${!isTransfer && !compact ? 'bg-opacity-20 shadow-inner' : ''}`}>
-          {isTransfer ? <ArrowRightLeft size={20} /> : category.icon}
+          {isTransfer ? <ArrowRightLeft size={22} /> : category.icon}
         </div>
         <div>
           <div className="flex items-center gap-2">
@@ -79,30 +79,48 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
           )}
         </div>
       </div>
-      <CurrencyAmount
-        amount={transaction.normalizedAmountUSD}
-        exchangeRate={transaction.exchangeRate}
-        euroRate={transaction.euroRate}
-        displayCurrency={displayCurrency}
-        isBalanceVisible={isBalanceVisible}
-        showSecondary={true}
-        type={transaction.type}
-        showPlusMinus={!isTransfer}
-        weight="black"
-      />
+      <div className="flex items-center gap-3">
+        <CurrencyAmount
+          amount={transaction.normalizedAmountUSD}
+          exchangeRate={transaction.exchangeRate}
+          euroRate={transaction.euroRate}
+          displayCurrency={displayCurrency}
+          isBalanceVisible={isBalanceVisible}
+          showSecondary={true}
+          type={transaction.type}
+          showPlusMinus={!isTransfer}
+          weight="black"
+        />
 
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover/tx:opacity-100 transition-opacity bg-theme-surface rounded-lg p-1 border border-theme-soft">
-        {transaction.receipt && (
-          <button onClick={(e) => { e.stopPropagation(); onSelect(transaction); }} className="p-2 text-theme-brand hover:bg-theme-brand/10 rounded-lg" title={t('viewReceipt')}>
-            <Receipt size={14} />
-          </button>
-        )}
-        <button onClick={(e) => { e.stopPropagation(); onEdit(transaction); }} className="p-2 text-theme-secondary hover:text-theme-brand rounded-lg">
-          {compact ? <Settings size={14} /> : <Settings size={14} />}
-        </button>
-        <button onClick={(e) => { e.stopPropagation(); onDelete(transaction.id); }} className="p-2 text-theme-secondary hover:text-red-500 rounded-lg">
-          <X size={14} />
-        </button>
+        <div className="flex flex-col gap-1 opacity-0 group-hover/tx:opacity-100 transition-opacity ml-1">
+          {transaction.receipt && (
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => { e.stopPropagation(); onSelect(transaction); }} 
+              className="p-1.5 bg-theme-bg border border-white/5 rounded-lg text-theme-brand hover:bg-theme-brand hover:text-white transition-colors" 
+              title={t('viewReceipt')}
+            >
+              <Receipt size={12} />
+            </motion.button>
+          )}
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => { e.stopPropagation(); onEdit(transaction); }} 
+            className="p-1.5 bg-theme-bg border border-white/5 rounded-lg text-theme-brand hover:bg-theme-brand hover:text-white transition-colors"
+          >
+            <Edit2 size={12} />
+          </motion.button>
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => { e.stopPropagation(); onDelete(transaction.id); }} 
+            className="p-1.5 bg-theme-bg border border-white/5 rounded-lg text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+          >
+            <Trash2 size={12} />
+          </motion.button>
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,41 @@
 import React from 'react';
-import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent, HandCoins, ArrowRightLeft } from 'lucide-react';
+import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent, HandCoins, ArrowRightLeft, UtensilsCrossed, Wifi, Signal, CreditCard, Droplets, Fuel, Building2, Phone } from 'lucide-react';
 import { Account, Currency, TransactionType } from './types';
 
 export const RECURRING_TEMPLATES = [
-  { id: 'tpl_salary', name: 'template_salary', type: TransactionType.INCOME, category: 'income', frequency: 'Monthly', icon: <DollarSign size={18} /> },
-  { id: 'tpl_rent', name: 'template_rent', type: TransactionType.EXPENSE, category: 'home', frequency: 'Monthly', icon: <Home size={18} /> },
-  { id: 'tpl_electric', name: 'template_electric', type: TransactionType.EXPENSE, category: 'bills', frequency: 'Monthly', icon: <Zap size={18} /> },
-  { id: 'tpl_water', name: 'template_water', type: TransactionType.EXPENSE, category: 'bills', frequency: 'Monthly', icon: <Zap size={18} /> },
-  { id: 'tpl_internet', name: 'template_internet', type: TransactionType.EXPENSE, category: 'internet', frequency: 'Monthly', icon: <Globe size={18} /> },
-  { id: 'tpl_netflix', name: 'template_netflix', type: TransactionType.EXPENSE, category: 'subscription', frequency: 'Monthly', icon: <Monitor size={18} /> },
+  // --- Básicos ---
+  { id: 'tpl_salary',         name: 'template_salary',         type: TransactionType.INCOME,  category: 'income',       frequency: 'Monthly', icon: <DollarSign size={18} /> },
+  { id: 'tpl_rent',           name: 'template_rent',           type: TransactionType.EXPENSE, category: 'home',         frequency: 'Monthly', icon: <Home size={18} /> },
+  { id: 'tpl_condominio',     name: 'template_condominio',     type: TransactionType.EXPENSE, category: 'home',         frequency: 'Monthly', icon: <Building2 size={18} /> },
+  // --- Servicios Venezuela ---
+  { id: 'tpl_corpoelec',      name: 'template_corpoelec',      type: TransactionType.EXPENSE, category: 'bills',        frequency: 'Monthly', icon: <Zap size={18} /> },
+  { id: 'tpl_electric',       name: 'template_electric',       type: TransactionType.EXPENSE, category: 'bills',        frequency: 'Monthly', icon: <Zap size={18} /> },
+  { id: 'tpl_hidrocapital',   name: 'template_hidrocapital',   type: TransactionType.EXPENSE, category: 'bills',        frequency: 'Monthly', icon: <Droplets size={18} /> },
+  { id: 'tpl_water',          name: 'template_water',          type: TransactionType.EXPENSE, category: 'bills',        frequency: 'Monthly', icon: <Droplets size={18} /> },
+  { id: 'tpl_cantv',          name: 'template_cantv',          type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Phone size={18} /> },
+  // --- Internet Fijo Venezuela ---
+  { id: 'tpl_inter',          name: 'template_inter',          type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Wifi size={18} /> },
+  { id: 'tpl_movistar_inet',  name: 'template_movistar_inet',  type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Wifi size={18} /> },
+  { id: 'tpl_fibex',          name: 'template_fibex',          type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Wifi size={18} /> },
+  { id: 'tpl_gigatel',        name: 'template_gigatel',        type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Wifi size={18} /> },
+  { id: 'tpl_wow',            name: 'template_wow',            type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Wifi size={18} /> },
+  { id: 'tpl_internet',       name: 'template_internet',       type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Globe size={18} /> },
+  // --- Datos / Telefonía Móvil ---
+  { id: 'tpl_mobile_data',    name: 'template_mobile_data',    type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Signal size={18} /> },
+  { id: 'tpl_digitel',        name: 'template_digitel',        type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Signal size={18} /> },
+  { id: 'tpl_movilnet',       name: 'template_movilnet',       type: TransactionType.EXPENSE, category: 'internet',     frequency: 'Monthly', icon: <Signal size={18} /> },
+  // --- Créditos / Fintech Venezuela ---
+  { id: 'tpl_cashea',         name: 'template_cashea',         type: TransactionType.EXPENSE, category: 'loans',        frequency: 'Monthly', icon: <CreditCard size={18} /> },
+  { id: 'tpl_weppa',          name: 'template_weppa',          type: TransactionType.EXPENSE, category: 'loans',        frequency: 'Monthly', icon: <CreditCard size={18} /> },
+  { id: 'tpl_krece',          name: 'template_krece',          type: TransactionType.EXPENSE, category: 'loans',        frequency: 'Monthly', icon: <CreditCard size={18} /> },
+  { id: 'tpl_creditotal',     name: 'template_creditotal',     type: TransactionType.EXPENSE, category: 'loans',        frequency: 'Monthly', icon: <CreditCard size={18} /> },
+  { id: 'tpl_efectivoya',     name: 'template_efectivoya',     type: TransactionType.EXPENSE, category: 'loans',        frequency: 'Monthly', icon: <CreditCard size={18} /> },
+  // --- Seguros / Transporte ---
+  { id: 'tpl_hcm',            name: 'template_hcm',            type: TransactionType.EXPENSE, category: 'insurance',    frequency: 'Monthly', icon: <Umbrella size={18} /> },
+  { id: 'tpl_gas',            name: 'template_gas',            type: TransactionType.EXPENSE, category: 'transport',    frequency: 'Weekly',  icon: <Fuel size={18} /> },
+  // --- Streaming / Suscripciones ---
+  { id: 'tpl_netflix',        name: 'template_netflix',        type: TransactionType.EXPENSE, category: 'subscription', frequency: 'Monthly', icon: <Monitor size={18} /> },
+  { id: 'tpl_streaming_plus', name: 'template_streaming_plus', type: TransactionType.EXPENSE, category: 'subscription', frequency: 'Monthly', icon: <Tv size={18} /> },
 ];
 
 export const INITIAL_RATE = 350.50;
@@ -22,7 +49,7 @@ export const CATEGORIES = [
   { id: 'transfer', name: 'cat_transfer', icon: <ArrowRightLeft size={20} />, color: 'bg-indigo-500/20 text-indigo-400' },
   { id: 'food', name: 'cat_food', icon: <ShoppingCart size={20} />, color: 'bg-orange-500/20 text-orange-400' },
   { id: 'transport', name: 'cat_transport', icon: <Car size={20} />, color: 'bg-blue-500/20 text-blue-400' },
-  { id: 'coffee', name: 'cat_coffee', icon: <Coffee size={20} />, color: 'bg-amber-700/20 text-amber-500' },
+  { id: 'coffee', name: 'cat_fastfood', icon: <UtensilsCrossed size={20} />, color: 'bg-red-400/20 text-red-300' },
   { id: 'home', name: 'cat_home', icon: <Home size={20} />, color: 'bg-indigo-500/20 text-indigo-400' },
   { id: 'bills', name: 'cat_bills', icon: <Zap size={20} />, color: 'bg-yellow-500/20 text-yellow-400' },
   { id: 'internet', name: 'cat_internet', icon: <Globe size={20} />, color: 'bg-sky-600/20 text-sky-400' },
@@ -168,10 +195,14 @@ export const SMART_CATEGORIES_EN: Record<string, string> = {
   'office-supply': 'work', 'corporate': 'work', 'work-expense': 'work', 'business-trip': 'business', 'startup': 'business',
   'freelance-project': 'freelance', 'client-pay': 'freelance', 'gig-work': 'freelance', 'advertising': 'business', 'marketing': 'business',
   'consulting': 'business', 'interest-gain': 'interest', 'savings-interest': 'interest', 'gift-receive': 'gift', 'birthday-gift': 'gift',
-  // COFFEE (15+)
+  // FAST FOOD & CAFÉS (30+)
   'coffee': 'coffee', 'cafe': 'coffee', 'espresso': 'coffee', 'latte': 'coffee', 'cappuccino': 'coffee',
   'macchiato': 'coffee', 'mocha': 'coffee', 'americano': 'coffee', 'flat-white': 'coffee', 'cold-brew': 'coffee',
   'frappuccino': 'coffee', 'brewed-coffee': 'coffee', 'roaster': 'coffee', 'barista': 'coffee', 'coffee-shop': 'coffee',
+  'fast-food': 'coffee', 'hotdog': 'coffee', 'hot-dog': 'coffee', 'shawarma': 'coffee', 'kebab': 'coffee',
+  'gyro': 'coffee', 'taco': 'coffee', 'burrito': 'coffee', 'sandwich-shop': 'coffee', 'sub': 'coffee',
+  'bakery-cafe': 'coffee', 'pastry': 'coffee', 'donut': 'coffee', 'crepe': 'coffee', 'waffle': 'coffee',
+  'mcdonald': 'coffee', 'burger-king': 'coffee', 'kfc': 'coffee', 'subway-food': 'coffee', 'pizza-place': 'coffee',
   // OTHER (15+)
   'misc': 'other', 'general': 'other', 'miscellaneous': 'other', 'unknown': 'other', 'uncategorized': 'other',
   'random': 'other', 'other-expense': 'other',  'atm-withdrawal': 'other', 'cash-out': 'other', 'transfer-out': 'transfer', 'transfer': 'transfer', 'wire': 'transfer',
@@ -279,10 +310,15 @@ export const SMART_CATEGORIES_ES: Record<string, string> = {
   'nomina': 'income', 'sueldo': 'income', 'salario': 'income', 'honorarios': 'income', 'pago-nomina': 'income',
   'bono-vacacional': 'income', 'utilidades-inc': 'income', 'aguinaldo': 'income', 'reembolso-inc': 'income', 'transferencia-recibida': 'income',
   'deposito-inc': 'income', 'cobro': 'income', 'venta-inc': 'income', 'remesa': 'income', 'pension': 'income',
-  // CAFE (15+)
+  // COMIDA RÁPIDA Y CAFÉ (35+)
   'cafeteria': 'coffee', 'cafe': 'coffee', 'espresso': 'coffee', 'marron': 'coffee', 'guayoyo': 'coffee',
   'con-leche': 'coffee', 'capuchino': 'coffee', 'te': 'coffee', 'teteria': 'coffee', 'infusion': 'coffee',
   'muffin': 'coffee', 'pasteleria': 'coffee', 'donas': 'coffee', 'panaderia-tip': 'coffee', 'barista-tip': 'coffee',
+  'cachapa': 'coffee', 'perro-caliente': 'coffee', 'perrocali': 'coffee', 'shawarma': 'coffee', 'kebab': 'coffee',
+  'empanada': 'coffee', 'pastelito': 'coffee', 'tequeño': 'coffee', 'arepa-rapida': 'coffee', 'crepa': 'coffee',
+  'waffle': 'coffee', 'hot-dog': 'coffee', 'hamburguesa-rp': 'coffee', 'pizza-local': 'coffee', 'sushi-local': 'coffee',
+  'chivuo': 'coffee', 'pepito': 'coffee', 'patakon': 'coffee', 'tizana': 'coffee', 'batido': 'coffee',
+  'fast-food': 'coffee', 'comida-rapida': 'coffee', 'panaderia-cafe': 'coffee', 'pasteleria-rp': 'coffee', 'cafesito': 'coffee',
   // OTROS (15+)
   'varios': 'other', 'misc': 'other', 'otros-gastos': 'other', 'efectivo': 'other', 'retiro-cajero': 'other',
   'desconocido': 'other', 'sin-categoria': 'other', 'pago-movil': 'transfer', 'transferencia-enviada': 'transfer', 'ajuste': 'other',
@@ -376,10 +412,13 @@ export const SMART_CATEGORIES_PT: Record<string, string> = {
   'salario-pt': 'income', 'pagamento-inc': 'income', 'recebimento': 'income', 'pro-labore': 'income', 'honorarios-pt': 'income',
   'bonus-pt': 'income', 'decimo-terceiro': 'income', 'ferias-inc': 'income', 'comissao-venda': 'income', 'venda-pt': 'income',
   'dividendo-inc': 'income', 'reembolso-pt': 'income', 'presente-dinheiro': 'income', 'pix-recebido': 'income', 'deposito-inc-pt': 'income',
-  // CAFE (15+)
+  // COMIDA RÁPIDA E CAFÉ (30+)
   'cafeteria-pt': 'coffee', 'cafe-pt': 'coffee', 'espresso-pt': 'coffee', 'pingado': 'coffee', 'cappuccino-pt': 'coffee',
   'cha': 'coffee', 'infusao': 'coffee', 'padoca': 'coffee', 'expresso': 'coffee', 'moído': 'coffee',
   'pao-de-queijo': 'coffee', 'confeiteira': 'coffee', 'donuts-pt': 'coffee', 'doceria': 'coffee', 'barista-tip-pt': 'coffee',
+  'lanchonete': 'coffee', 'fast-food-pt': 'coffee', 'hot-dog-pt': 'coffee', 'shawarma-pt': 'coffee', 'kebab-pt': 'coffee',
+  'coxinha': 'coffee', 'pastel-pt': 'coffee', 'esfiha': 'coffee', 'crepe-pt': 'coffee', 'waffle-pt': 'coffee',
+  'sanduicheria': 'coffee', 'pizza-express-pt': 'coffee', 'hamburgueria': 'coffee', 'comida-rapida-pt': 'coffee', 'salgado': 'coffee',
   // OUTROS (15+)
   'escritorio': 'work', 'negocio': 'business', 'empresa': 'business', 'freelance-pt': 'freelance', 'projeto-pt': 'freelance',
   'cliente-pt': 'freelance', 'venda-business': 'business', 'lucro': 'business', 'juros-ganhos': 'interest', 'presente-pt': 'gift',
