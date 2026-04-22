@@ -181,6 +181,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
     // Overspending (> 35% of total income)
     Object.entries(catTotals).forEach(([id, data]) => {
+        if (id === 'investment' || id === 'savings') return; // Savings/Investments are not leaks
         if (totalIncome > 0 && data.total > totalIncome * 0.35) {
             results.push({
                 type: 'overspend',
@@ -367,7 +368,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                     {isBalanceVisible && (
                         <span className="text-sm font-mono text-theme-secondary mt-1">
                             {displayCurrency === Currency.USD ? `≈ Bs ${(Math.abs(netCashFlow) * exchangeRate)?.toLocaleString()}` : 
-                             displayCurrency === Currency.EUR ? `≈ $${Math.abs(netCashFlow)?.toFixed(2)}` :
+                             displayCurrency === Currency.EUR ? `≈ €${Math.abs(netCashFlow)?.toFixed(2)}` :
                              `≈ $${Math.abs(netCashFlow)?.toFixed(2)}`}
                         </span>
                     )}
@@ -453,14 +454,14 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                               <div className="flex justify-between text-sm text-theme-secondary mb-2">
                                   <span>{t('totalIncomeLabel')}</span>
                                   <div className="text-right">
-                                      <span className="text-emerald-400 block">{isBalanceVisible ? `$${totalIncome?.toFixed(2)}` : '******'}</span>
+                                      <span className="text-emerald-400 block">{isBalanceVisible ? formatAmount(totalIncome, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate) : '******'}</span>
                                       {isBalanceVisible && <span className="text-emerald-600 text-xs">Bs {(totalIncome * exchangeRate).toLocaleString()}</span>}
                                   </div>
                               </div>
                               <div className="flex justify-between text-sm text-theme-secondary mb-2">
                                   <span>{t('totalExpensesLabel')}</span>
                                   <div className="text-right">
-                                      <span className="text-rose-400 block">{isBalanceVisible ? `-$${totalSpent?.toFixed(2)}` : '******'}</span>
+                                      <span className="text-rose-400 block">{isBalanceVisible ? formatAmount(totalSpent, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate) : '******'}</span>
                                       {isBalanceVisible && <span className="text-rose-600 text-xs">Bs {(totalSpent * exchangeRate).toLocaleString()}</span>}
                                   </div>
                               </div>

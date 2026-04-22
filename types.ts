@@ -45,6 +45,7 @@ export interface UserProfile {
   rateType?: RateType;
   notificationsEnabled?: boolean;
   notificationLeadTime?: number; // Days before due date
+  smartAlertsEnabled?: boolean;
   updatedAt?: string;
 }
 

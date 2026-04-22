@@ -282,6 +282,7 @@ export const misc = {
   summary: 'Summary',
   noReceipt: 'No receipt available',
   download: 'Download',
+
   rateTypeOfficial: 'Official Bank Rate',
   rateTypeParallel: 'Parallel/Binance Rate',
   scheduledNotifications: 'Payment Alerts',
@@ -417,4 +418,6 @@ export const misc = {
   profileDeleted: "Profile deleted",
   transactionsAutoPosted: "Scheduled transactions posted",
   checkingUpdates: "Checking for updates...",
+  savings: "Savings",
+  net: "Net",
 };

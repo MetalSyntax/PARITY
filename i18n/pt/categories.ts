@@ -16,6 +16,7 @@ export const categories = {
     cat_education: 'Educação',
     cat_gift: 'Presentes',
     cat_investment: 'Investimento',
+    cat_savings: 'Poupança',
     cat_interest: 'Juros',
     cat_loans: 'Empréstimos e Créditos',
     cat_pets: 'Animais de Estimação',

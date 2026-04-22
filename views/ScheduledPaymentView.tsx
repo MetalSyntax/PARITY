@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign, Euro, RefreshCw, Zap, GripVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDragAndDrop } from "@formkit/drag-and-drop/react";
-import { animations } from "@formkit/drag-and-drop";
 import { Language, Currency, ScheduledPayment, TransactionType, ConfirmConfig, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { CATEGORIES, RECURRING_TEMPLATES } from '../constants';
@@ -137,29 +136,37 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
       setEditingId(payment.id);
   };
 
-  const incomeSchedules = scheduledPayments.filter(p => p.type === TransactionType.INCOME);
-  const expenseSchedules = scheduledPayments.filter(p => p.type !== TransactionType.INCOME);
+  const incomeSchedules = useMemo(() => 
+    scheduledPayments.filter(p => p.type === TransactionType.INCOME),
+  [scheduledPayments]);
+
+  const expenseSchedules = useMemo(() => 
+    scheduledPayments.filter(p => p.type !== TransactionType.INCOME),
+  [scheduledPayments]);
 
   const [incomeParent, listIncomes, setListIncomes] = useDragAndDrop<ScheduledPayment>(incomeSchedules, {
     dragHandle: ".drag-handle",
-    plugins: [animations()],
   });
 
   const [expenseParent, listExpenses, setListExpenses] = useDragAndDrop<ScheduledPayment>(expenseSchedules, {
     dragHandle: ".drag-handle",
-    plugins: [animations()],
   });
 
   useEffect(() => {
-    setListIncomes(incomeSchedules);
-  }, [incomeSchedules]);
+    if (JSON.stringify(incomeSchedules) !== JSON.stringify(listIncomes)) {
+      setListIncomes(incomeSchedules);
+    }
+  }, [incomeSchedules, listIncomes, setListIncomes]);
 
   useEffect(() => {
-    setListExpenses(expenseSchedules);
-  }, [expenseSchedules]);
+    if (JSON.stringify(expenseSchedules) !== JSON.stringify(listExpenses)) {
+      setListExpenses(expenseSchedules);
+    }
+  }, [expenseSchedules, listExpenses, setListExpenses]);
 
   useEffect(() => {
     const combined = [...listIncomes, ...listExpenses];
+    // Check if the current order in state differs from the incoming prop
     if (JSON.stringify(combined) !== JSON.stringify(scheduledPayments)) {
       onUpdateScheduledPayments(combined);
     }
@@ -222,12 +229,12 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               {listIncomes.map(p => (
                 <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} accounts={accounts} />
               ))}
-              {incomeSchedules.length === 0 && (
-                <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
-                  {t('noIncomeScheduled')}
-                </div>
-              )}
             </div>
+            {incomeSchedules.length === 0 && (
+              <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
+                {t('noIncomeScheduled')}
+              </div>
+            )}
           </div>
 
           {/* Expense Section */}
@@ -240,12 +247,12 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
               {listExpenses.map(p => (
                 <ScheduledItem key={p.id} p={p} t={t} onEdit={handleEdit} onDelete={handleDelete} onConfirm={onConfirmPayment} exchangeRate={exchangeRate} euroRate={euroRate} displayCurrency={displayCurrency} isBalanceVisible={isBalanceVisible} accounts={accounts} />
               ))}
-              {expenseSchedules.length === 0 && (
-                <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
-                  {t('noExpensesScheduled')}
-                </div>
-              )}
             </div>
+            {expenseSchedules.length === 0 && (
+              <div className="p-6 border border-dashed border-white/5 rounded-2xl text-center text-xs text-theme-secondary">
+                {t('noExpensesScheduled')}
+              </div>
+            )}
           </div>
 
           {scheduledPayments.length === 0 && (
@@ -286,7 +293,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                        <div className="p-6 overflow-y-auto no-scrollbar space-y-6 flex-1">
                           {!editingId && (
                             <div className="mb-6">
-                               <label className="text-[10px] font-bold text-theme-secondary uppercase tracking-[0.2em] mb-4 block opacity-60 px-1">{t('templateLibrary') === 'templateLibrary' ? 'Quick Template Library' : t('templateLibrary')}</label>
+                               <label className="text-[10px] font-bold text-theme-secondary uppercase tracking-[0.2em] mb-4 block opacity-60 px-1">{t('templateLibrary')}</label>
                                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1">
                                   {RECURRING_TEMPLATES.map(tpl => (
                                      <button

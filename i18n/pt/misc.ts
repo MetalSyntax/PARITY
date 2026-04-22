@@ -412,4 +412,11 @@ export const misc = {
   profileDeleted: "Perfil excluído",
   transactionsAutoPosted: "Transações agendadas publicadas",
   checkingUpdates: "Verificando atualizações...",
+  amountToConvert: "Valor a converter",
+  convertedAmount: "Valor convertido",
+  rateTypeOfficial: "Taxa Oficial (BCV)",
+  rateTypeParallel: "Taxa Paralela (Binance)",
+  totalWithFees: "Total com Comissões",
+  savings: "Poupança",
+  net: "Líquido",
 };

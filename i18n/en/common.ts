@@ -50,6 +50,8 @@ export const common = {
     security: 'Security',
     privacy: 'Privacy',
     notifications: 'Notifications',
+    smartAlertsEnabled: 'Budget Risk Alerts (Smart)',
+    smartAlertsDesc: 'Receive alerts when you are on track to exceed an envelope.',
     autoLock: 'Lock with PIN on App Exit',
     biometrics: 'Biometric Login',
     exchangeRate: 'Exchange rate',

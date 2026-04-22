@@ -110,29 +110,40 @@
         100% { opacity: 0.8; transform: scale(1); }
       }
     </style>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "d0e12d89-6054-430e-aad1-9fa8220d61c4",
-          safari_web_id: "web.onesignal.auto.639febc2-a356-4a97-8e69-81281557724a",
-          notifyButton: { enable: false },
-          promptOptions: {
-            slidedown: {
-              prompts: [{
-                type: "push",
-                autoPrompt: false,
-                text: {
-                  actionMessage: "Enable push notifications to receive payment reminders.",
-                  acceptButton: "Allow",
-                  cancelButton: "No thanks"
+      if (window.location.protocol === 'https:' && window.location.hostname === 'parity-finance.vercel.app') {
+        // Load SDK dynamically only on production
+        const script = document.createElement('script');
+        script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+        script.defer = true;
+        document.head.appendChild(script);
+
+        OneSignalDeferred.push(async function(OneSignal) {
+          try {
+            await OneSignal.init({
+              appId: "d0e12d89-6054-430e-aad1-9fa8220d61c4",
+              safari_web_id: "web.onesignal.auto.639febc2-a356-4a97-8e69-81281557724a",
+              notifyButton: { enable: false },
+              promptOptions: {
+                slidedown: {
+                  prompts: [{
+                    type: "push",
+                    autoPrompt: false,
+                    text: {
+                      actionMessage: "Enable push notifications to receive payment reminders.",
+                      acceptButton: "Allow",
+                      cancelButton: "No thanks"
+                    }
+                  }]
                 }
-              }]
-            }
+              }
+            });
+          } catch (e) {
+            console.warn('OneSignal init error:', e);
           }
         });
-      });
+      }
     </script>
   </head>
   <body>

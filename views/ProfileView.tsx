@@ -62,6 +62,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [lang, setLang] = useState<Language>(profile.language);
   const [profileImage, setProfileImage] = useState(profile.profileImage || '');
   const [notificationsEnabled, setNotificationsEnabled] = useState(profile.notificationsEnabled || false);
+  const [smartAlertsEnabled, setSmartAlertsEnabled] = useState(profile.smartAlertsEnabled !== false); // Default to true
   const [notificationLeadTime, setNotificationLeadTime] = useState(profile.notificationLeadTime || 1);
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
@@ -93,6 +94,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       language: lang,
       profileImage,
       notificationsEnabled,
+      smartAlertsEnabled,
       notificationLeadTime
     });
     onBack();
@@ -459,6 +461,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden space-y-4"
                 >
+                  <div className="flex items-center justify-between pt-2 mt-2">
+                      <div className="flex flex-col">
+                          <span className="text-xs font-bold text-theme-primary">{t('smartAlertsEnabled')}</span>
+                          <span className="text-[10px] text-theme-secondary opacity-60 font-medium">{t('smartAlertsDesc')}</span>
+                      </div>
+                      <button
+                          onClick={() => setSmartAlertsEnabled(!smartAlertsEnabled)}
+                          className={`w-10 h-5 rounded-full transition-all relative ${smartAlertsEnabled ? "bg-theme-brand" : "bg-theme-soft"}`}
+                      >
+                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${smartAlertsEnabled ? "left-6" : "left-1"}`} />
+                      </button>
+                  </div>
                   <div className="flex items-center justify-between pt-2">
                     <span className="text-xs font-bold text-theme-secondary">{t('notificationLeadTime')}</span>
                     <div className="flex items-center gap-3">

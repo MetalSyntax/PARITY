@@ -50,6 +50,8 @@ export const common = {
   security: "Seguridad",
   privacy: "Privacidad",
   notifications: "Notificaciones",
+  smartAlertsEnabled: "Alertas de Presupuesto (Inteligentes)",
+  smartAlertsDesc: "Recibe alertas cuando estés por exceder un sobre según tu ritmo de gasto.",
   autoLock: "Bloquear con PIN al salir",
   biometrics: "Ingreso Biométrico",
   exchangeRate: "Tasa de cambio",

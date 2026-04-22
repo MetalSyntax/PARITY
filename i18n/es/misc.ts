@@ -417,4 +417,6 @@ export const misc = {
   profileDeleted: "Perfil eliminado",
   transactionsAutoPosted: "Transacciones programadas publicadas",
   checkingUpdates: "Buscando actualizaciones...",
+  savings: "Ahorro",
+  net: "Neto",
 };

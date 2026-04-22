@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent, HandCoins, ArrowRightLeft, UtensilsCrossed, Wifi, Signal, CreditCard, Droplets, Fuel, Building2, Phone } from 'lucide-react';
+import { ShoppingCart, Coffee, Car, Home, Zap, HeartPulse, Gamepad2, Plane, ShoppingBag, GraduationCap, Gift, TrendingUp, PawPrint, Baby, Umbrella, FileText, Palmtree, Smartphone, Globe, Briefcase, User, Search, Smile, Music, Film, Tv, Monitor, DollarSign, MoreHorizontal, Percent, HandCoins, ArrowRightLeft, UtensilsCrossed, Wifi, Signal, CreditCard, Droplets, Fuel, Building2, Phone, PiggyBank } from 'lucide-react';
 import { Account, Currency, TransactionType } from './types';
 
 export const RECURRING_TEMPLATES = [
@@ -60,6 +60,7 @@ export const CATEGORIES = [
   { id: 'education', name: 'cat_education', icon: <GraduationCap size={20} />, color: 'bg-emerald-500/20 text-emerald-400' },
   { id: 'gift', name: 'cat_gift', icon: <Gift size={20} />, color: 'bg-rose-500/20 text-rose-400' },
   { id: 'investment', name: 'cat_investment', icon: <TrendingUp size={20} />, color: 'bg-green-500/20 text-green-400' },
+  { id: 'savings', name: 'cat_savings', icon: <PiggyBank size={20} />, color: 'bg-emerald-500/20 text-emerald-400' },
   { id: 'pets', name: 'cat_pets', icon: <PawPrint size={20} />, color: 'bg-amber-500/20 text-amber-400' },
   { id: 'kids', name: 'cat_kids', icon: <Baby size={20} />, color: 'bg-blue-300/20 text-blue-300' },
   { id: 'insurance', name: 'cat_insurance', icon: <Umbrella size={20} />, color: 'bg-indigo-700/20 text-indigo-400' },

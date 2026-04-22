@@ -453,26 +453,28 @@ function AppContent() {
         const todayStr = now.toISOString().split('T')[0];
         
         // Smart Alerts: Check Budget Forecasts
-        const overBudgetCategories = checkBudgetForecasts(currentTransactions, currentBudgets, now);
-        
-        overBudgetCategories.forEach(categoryId => {
-            const budget = currentBudgets.find(b => b.categoryId === categoryId);
-            if (!budget) return;
-            const categoryObj = CATEGORIES.find(c => c.id === categoryId);
-            const categoryName = categoryObj ? t(categoryObj.name as any) : (budget.customName || categoryId);
+        if (currentProfile.smartAlertsEnabled !== false) {
+            const overBudgetCategories = checkBudgetForecasts(currentTransactions, currentBudgets, now);
             
-            const alertKey = `parity_budget_alert_${categoryId}_${todayStr}`;
-            if (!localStorage.getItem(alertKey)) {
-                const msgTmp = t('budgetAlertBody') === 'budgetAlertBody' ? `You are on track to exceed your budget for ${categoryName}.` : t('budgetAlertBody');
-                const titleTmp = t('budgetAlertTitle') === 'budgetAlertTitle' ? 'Smart Alert: Budget Risk' : t('budgetAlertTitle');
-                const msg = msgTmp.replace('{category}', categoryName as string);
-                const title = (titleTmp as string).replace('{category}', categoryName as string);
+            overBudgetCategories.forEach(categoryId => {
+                const budget = currentBudgets.find(b => b.categoryId === categoryId);
+                if (!budget) return;
+                const categoryObj = CATEGORIES.find(c => c.id === categoryId);
+                const categoryName = categoryObj ? t(categoryObj.name as any) : (budget.customName || categoryId);
+                
+                const alertKey = `parity_budget_alert_${categoryId}_${todayStr}`;
+                if (!localStorage.getItem(alertKey)) {
+                    const msgTmp = t('budgetAlertBody') === 'budgetAlertBody' ? `You are on track to exceed your budget for ${categoryName}.` : t('budgetAlertBody');
+                    const titleTmp = t('budgetAlertTitle') === 'budgetAlertTitle' ? 'Smart Alert: Budget Risk' : t('budgetAlertTitle');
+                    const msg = msgTmp.replace('{category}', categoryName as string);
+                    const title = (titleTmp as string).replace('{category}', categoryName as string);
 
-                sendPushNotification(title, msg, `budget-${categoryId}-${todayStr}`);
-                showAlert(msg, 'error');
-                localStorage.setItem(alertKey, 'true');
-            }
-        });
+                    sendPushNotification(title, msg, `budget-${categoryId}-${todayStr}`);
+                    showAlert(msg, 'error');
+                    localStorage.setItem(alertKey, 'true');
+                }
+            });
+        }
 
         if (!currentPayments.length) return;
         
@@ -831,10 +833,14 @@ function AppContent() {
   }, [navbarFavorites, isLoaded]);
 
   useEffect(() => {
-    if (userProfile.name) {
+    if (userProfile.name && window.location.protocol === 'https:' && window.location.hostname === 'parity-finance.vercel.app') {
       // @ts-ignore
       window.OneSignalDeferred?.push(async function(OneSignal) {
-        await OneSignal.login(userProfile.name);
+        try {
+          await OneSignal.login(userProfile.name);
+        } catch (e) {
+          console.warn('OneSignal login error:', e);
+        }
       });
     }
   }, [userProfile.name]);

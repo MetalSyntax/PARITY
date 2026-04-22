@@ -16,6 +16,7 @@ export const categories = {
     cat_education: 'Education',
     cat_gift: 'Gifts',
     cat_investment: 'Investment',
+    cat_savings: 'Savings',
     cat_interest: 'Interest',
     cat_loans: 'Loans and Credits',
     cat_pets: 'Pets',

@@ -596,18 +596,6 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   </div>
                   
                   <div ref={parent} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {listAccounts.length === 0 && (
-                        <div className="text-center py-16 px-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center gap-6 bg-theme-surface/20">
-                            <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-4xl shadow-xl border border-white/5 animate-bounce">
-                                <Wallet size={24} className="text-theme-secondary" />
-                            </div>
-                             <div>
-                                 <h3 className="text-theme-primary font-black text-xl mb-2">{t('noWallets')}</h3>
-                                 <p className="text-theme-secondary text-sm max-w-[240px] mx-auto leading-relaxed">{t('createFirstWallet')}</p>
-                             </div>
-                             <button onClick={() => startEdit()} className="px-8 py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-xl shadow-brand/20 hover:scale-105 transition-all mt-2">{t('createWallet')}</button>
-                        </div>
-                    )}
                     {listAccounts.map(acc => {
                       const stripClass = acc.color ? `bg-gradient-to-b ${acc.color}` : 'bg-theme-brand';
                       const amountUSD = acc.currency === Currency.USD || acc.currency === Currency.USDT ? acc.balance : (acc.currency === Currency.EUR ? (acc.balance * (euroRate || 0)) / exchangeRate : acc.balance / exchangeRate);
@@ -683,6 +671,18 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       </div>
                     )})}
                   </div>
+                  {listAccounts.length === 0 && (
+                      <div className="text-center py-16 px-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center gap-6 bg-theme-surface/20">
+                          <div className="w-20 h-20 rounded-full bg-theme-surface flex items-center justify-center text-4xl shadow-xl border border-white/5 animate-bounce">
+                              <Wallet size={24} className="text-theme-secondary" />
+                          </div>
+                           <div>
+                               <h3 className="text-theme-primary font-black text-xl mb-2">{t('noWallets')}</h3>
+                               <p className="text-theme-secondary text-sm max-w-[240px] mx-auto leading-relaxed">{t('createFirstWallet')}</p>
+                           </div>
+                           <button onClick={() => startEdit()} className="px-8 py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-xl shadow-brand/20 hover:scale-105 transition-all mt-2">{t('createWallet')}</button>
+                      </div>
+                  )}
               </div>
           )}
       </div>
