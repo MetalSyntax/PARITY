@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, Calendar, Plus, Trash2, Edit2, TrendingUp, TrendingDown, ChevronDown, X, Check, Coins, DollarSign, Euro, RefreshCw, Zap, GripVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDragAndDrop } from "@formkit/drag-and-drop/react";
@@ -152,25 +152,32 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
     dragHandle: ".drag-handle",
   });
 
+  // Refs to read current DnD state without adding them as effect dependencies
+  const listIncomesRef = useRef(listIncomes);
+  listIncomesRef.current = listIncomes;
+  const listExpensesRef = useRef(listExpenses);
+  listExpensesRef.current = listExpenses;
+
+  // Sync DnD state when items are added/deleted/edited from outside (not on drag)
   useEffect(() => {
-    if (JSON.stringify(incomeSchedules) !== JSON.stringify(listIncomes)) {
+    if (JSON.stringify(incomeSchedules) !== JSON.stringify(listIncomesRef.current)) {
       setListIncomes(incomeSchedules);
     }
-  }, [incomeSchedules, listIncomes, setListIncomes]);
+  }, [incomeSchedules]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (JSON.stringify(expenseSchedules) !== JSON.stringify(listExpenses)) {
+    if (JSON.stringify(expenseSchedules) !== JSON.stringify(listExpensesRef.current)) {
       setListExpenses(expenseSchedules);
     }
-  }, [expenseSchedules, listExpenses, setListExpenses]);
+  }, [expenseSchedules]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Propagate drag reorder to parent
   useEffect(() => {
     const combined = [...listIncomes, ...listExpenses];
-    // Check if the current order in state differs from the incoming prop
     if (JSON.stringify(combined) !== JSON.stringify(scheduledPayments)) {
       onUpdateScheduledPayments(combined);
     }
-  }, [listIncomes, listExpenses]);
+  }, [listIncomes, listExpenses]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="h-full flex flex-col p-6 pb-32 overflow-y-auto no-scrollbar animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto bg-theme-bg">

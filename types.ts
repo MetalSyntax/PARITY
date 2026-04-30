@@ -17,7 +17,7 @@ export type RateType = 'OFFICIAL' | 'PARALLEL';
 
 export type Language = 'en' | 'es' | 'pt';
 
-export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES' | 'GOALS' | 'INCOME' | 'FISCAL_REPORT';
+export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES' | 'GOALS' | 'INCOME' | 'FISCAL_REPORT' | 'CONTACTS' | 'DEBT_TRACKER' | 'EXPORT' | 'FIN_CALENDAR' | 'IMPORT' | 'PDF_REPORT' | 'SCENARIO_PLANNER';
 
 export type SyncStatus = 'pending' | 'synced' | 'conflict';
 

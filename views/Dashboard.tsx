@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon, Trophy, FileText, Cloud, CloudOff } from "lucide-react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon, Trophy, FileText, Cloud, CloudOff, Users, Split, Download, CalendarDays, Upload, FileBarChart, LineChart, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useDragAndDrop } from "@formkit/drag-and-drop/react";
 import { animations } from "@formkit/drag-and-drop";
@@ -279,6 +279,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Get PIN from storage or default
+  const quickActionsRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateArrows = useCallback(() => {
+    const el = quickActionsRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = quickActionsRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    updateArrows();
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("scroll", updateArrows);
+    };
+  }, [updateArrows]);
+
+  const scrollQuick = (dir: "left" | "right") => {
+    const el = quickActionsRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -300 : 300, behavior: "smooth" });
+  };
+
   const getStoredPin = () => localStorage.getItem("parity_pin") || "0000";
 
   const t = (key: any) => getTranslation(userProfile.language, key);
@@ -774,35 +808,70 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] opacity-50">{t("quickActions")}</h3>
             <span className="text-[10px] text-theme-brand font-black uppercase tracking-tighter opacity-40">{t("slide_hint")}</span>
           </div>
-          <div className="flex gap-1 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0 snap-x">
-            {[
-              { id: "TRANSACTIONS", label: t("transactions"), icon: <Receipt size={28} />, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-              { id: "BUDGET", label: t("budget"), icon: <PieChart size={28} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-              { id: "SCHEDULED", label: t("scheduled"), icon: <Calendar1 size={28} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
-              { id: "FISCAL_REPORT", label: t("fiscalReport"), icon: <FileText size={28} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
-              { id: "ANALYSIS", label: t("analysis"), icon: <ChartArea size={28} />, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
-              { id: "WALLET", label: t("wallet"), icon: <Wallet size={28} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
-              { id: "GOALS", label: t("goals"), icon: <Trophy size={28} />, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
-              { id: "INCOME", label: t("incomeView"), icon: <TrendingUp size={28} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-              { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={28} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
-              { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={28} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
-              { id: "SHOPPING_LIST", label: t("shoppingList"), icon: <ShoppingCart size={28} />, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-              { id: "INVOICES", label: t("invoices"), icon: <ImageIcon size={28} />, color: "bg-pink-500/10 text-pink-400 border-pink-500/20" },
-              { id: "PROFILE", label: t("profile"), icon: <User size={28} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
-            ].map((action, i) => (
-              <button 
-                key={i} 
-                onClick={() => onNavigate(action.id as any)} 
-                className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start shadow-xl group"
-              >
-                <div className={`w-16 h-16 rounded-2xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  {action.icon}
-                </div>
-                <span className="text-[9px] text-theme-secondary font-black uppercase tracking-tight text-center whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">
-                  {action.label}
-                </span>
-              </button>
-            ))}
+          <div className="relative">
+            {/* Left arrow — desktop only */}
+            <button
+              onClick={() => scrollQuick("left")}
+              className={`hidden md:flex absolute left-0 top-0 bottom-4 z-10 items-center justify-center w-10 transition-opacity duration-200 ${canScrollLeft ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+            >
+              <span className="w-8 h-8 rounded-full bg-theme-surface border border-white/10 shadow-lg flex items-center justify-center text-theme-secondary hover:text-theme-primary hover:border-white/20 transition-all">
+                <ChevronLeft size={15} />
+              </span>
+            </button>
+
+            {/* Left fade edge — desktop only */}
+            <div className={`hidden md:block absolute left-0 top-0 bottom-4 w-14 bg-gradient-to-r from-theme-bg to-transparent pointer-events-none z-[5] transition-opacity duration-200 ${canScrollLeft ? "opacity-100" : "opacity-0"}`} />
+
+            <div ref={quickActionsRef} className="flex gap-1 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0 snap-x cursor-grab active:cursor-grabbing select-none">
+              {[
+                { id: "TRANSACTIONS", label: t("transactions"), icon: <Receipt size={28} />, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+                { id: "BUDGET", label: t("budget"), icon: <PieChart size={28} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+                { id: "SCHEDULED", label: t("scheduled"), icon: <Calendar1 size={28} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+                { id: "FISCAL_REPORT", label: t("fiscalReport"), icon: <FileText size={28} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+                { id: "ANALYSIS", label: t("analysis"), icon: <ChartArea size={28} />, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+                { id: "WALLET", label: t("wallet"), icon: <Wallet size={28} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+                { id: "GOALS", label: t("goals"), icon: <Trophy size={28} />, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
+                { id: "INCOME", label: t("incomeView"), icon: <TrendingUp size={28} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+                { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={28} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
+                { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={28} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
+                { id: "SHOPPING_LIST", label: t("shoppingList"), icon: <ShoppingCart size={28} />, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+                { id: "INVOICES", label: t("invoices"), icon: <ImageIcon size={28} />, color: "bg-pink-500/10 text-pink-400 border-pink-500/20" },
+                { id: "PROFILE", label: t("profile"), icon: <User size={28} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
+                { id: "CONTACTS", label: "Contacts", icon: <Users size={28} />, color: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
+                { id: "DEBT_TRACKER", label: "Debt Tracker", icon: <Split size={28} />, color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
+                { id: "EXPORT", label: "Export", icon: <Download size={28} />, color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
+                { id: "FIN_CALENDAR", label: "Fin. Calendar", icon: <CalendarDays size={28} />, color: "bg-violet-500/10 text-violet-400 border-violet-500/20" },
+                { id: "IMPORT", label: "Import", icon: <Upload size={28} />, color: "bg-lime-500/10 text-lime-400 border-lime-500/20" },
+                { id: "PDF_REPORT", label: "PDF Report", icon: <FileBarChart size={28} />, color: "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20" },
+                { id: "SCENARIO_PLANNER", label: "Scenarios", icon: <LineChart size={28} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+              ].map((action, i) => (
+                <button
+                  key={i}
+                  onClick={() => onNavigate(action.id as any)}
+                  className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start shadow-xl group"
+                >
+                  <div className={`w-16 h-16 rounded-2xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    {action.icon}
+                  </div>
+                  <span className="text-[9px] text-theme-secondary font-black uppercase tracking-tight text-center whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">
+                    {action.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Right fade edge — desktop only */}
+            <div className={`hidden md:block absolute right-0 top-0 bottom-4 w-14 bg-gradient-to-l from-theme-bg to-transparent pointer-events-none z-[5] transition-opacity duration-200 ${canScrollRight ? "opacity-100" : "opacity-0"}`} />
+
+            {/* Right arrow — desktop only */}
+            <button
+              onClick={() => scrollQuick("right")}
+              className={`hidden md:flex absolute right-0 top-0 bottom-4 z-10 items-center justify-center w-10 transition-opacity duration-200 ${canScrollRight ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+            >
+              <span className="w-8 h-8 rounded-full bg-theme-surface border border-white/10 shadow-lg flex items-center justify-center text-theme-secondary hover:text-theme-primary hover:border-white/20 transition-all">
+                <ChevronRight size={15} />
+              </span>
+            </button>
           </div>
         </div>
 

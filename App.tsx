@@ -16,6 +16,11 @@ import { CalendarHeatmapView } from './views/CalendarHeatmapView';
 import { CurrencyPerformanceView } from './views/CurrencyPerformanceView';
 import { ScheduledNotificationsView } from './views/ScheduledNotificationsView';
 import { ShoppingListView } from './views/ShoppingListView';
+import { ContactDirectoryView } from './views/ContactDirectoryView';
+import { DebtSplitTrackerView } from './views/DebtSplitTrackerView';
+import { DataPortabilityView } from './views/DataPortabilityView';
+import { FinancialCalendarView } from './views/FinancialCalendarView';
+import { ScenarioPlannerView } from './views/ScenarioPlannerView';
 import { LegalBanner } from './components/LegalBanner';
 import { PinModal } from './components/PinModal';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -1600,10 +1605,67 @@ function AppContent() {
               onShowConfirm={showConfirm}
             />
           )}
+          {currentView === 'CONTACTS' && (
+            <ContactDirectoryView
+              onBack={() => setCurrentView('DASHBOARD')}
+              lang={userProfile.language}
+            />
+          )}
+          {currentView === 'DEBT_TRACKER' && (
+            <DebtSplitTrackerView
+              onBack={() => setCurrentView('DASHBOARD')}
+              lang={userProfile.language}
+            />
+          )}
+          {(currentView === 'EXPORT' || currentView === 'IMPORT' || currentView === 'PDF_REPORT') && (
+            <DataPortabilityView
+              key={currentView}
+              initialTab={currentView === 'IMPORT' ? 'IMPORT' : currentView === 'PDF_REPORT' ? 'REPORT' : 'EXPORT'}
+              transactions={filteredTransactions}
+              accounts={filteredAccounts}
+              lang={userProfile.language}
+              exchangeRate={exchangeRate}
+              euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
+              displayCurrency={displayCurrency}
+              isBalanceVisible={isBalanceVisible}
+              profile={userProfile}
+              onImportData={handleImportData}
+              onImportTransactions={(txs) => {
+                setTransactions(prev => [...(txs as Transaction[]), ...prev]);
+              }}
+              onBack={() => setCurrentView('DASHBOARD')}
+            />
+          )}
+          {currentView === 'FIN_CALENDAR' && (
+            <FinancialCalendarView
+              onBack={() => setCurrentView('DASHBOARD')}
+              transactions={filteredTransactions}
+              scheduledPayments={filteredScheduledPayments}
+              lang={userProfile.language}
+              exchangeRate={exchangeRate}
+              displayCurrency={displayCurrency}
+              isBalanceVisible={isBalanceVisible}
+            />
+          )}
+          {currentView === 'SCENARIO_PLANNER' && (
+            <ScenarioPlannerView
+              onBack={() => setCurrentView('DASHBOARD')}
+              lang={userProfile.language}
+              exchangeRate={exchangeRate}
+              displayCurrency={displayCurrency}
+              isBalanceVisible={isBalanceVisible}
+              totalBalanceUSD={filteredAccounts.reduce((acc, a) => {
+                let v = a.balance;
+                if (a.currency === Currency.VES) v = a.balance / exchangeRate;
+                else if (a.currency === Currency.EUR) v = (a.balance * (euroRate || exchangeRate)) / exchangeRate;
+                return acc + v;
+              }, 0)}
+            />
+          )}
         </motion.div>
 
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
-        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF', 'SHOPPING_LIST'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
+        {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF', 'SHOPPING_LIST', 'CONTACTS', 'DEBT_TRACKER', 'EXPORT', 'FIN_CALENDAR', 'IMPORT', 'PDF_REPORT', 'SCENARIO_PLANNER'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
           <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-4 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
             <button
               onClick={() => setCurrentView('DASHBOARD')}

@@ -7,7 +7,7 @@ export const misc = {
   showBalanceChart: "Ver Gráfico de Balance",
   showExpenseStructure: "Ver Estructura de Gastos",
   transferNow: "Transferir Ahora",
-  exportCsv: "Exportar Datos (CSV)",
+  exportCsv: "Exportar (CSV)",
   viewMore: "Ver Más",
   viewLess: "Ver Menos",
   trend: "Tendencia de Balance",

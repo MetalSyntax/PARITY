@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Globe, FileSpreadsheet, Download, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, Database, HardDrive, Info, Settings2, Bell, Trash2, Plus, Users } from 'lucide-react';
+import { ArrowLeft, User, Globe, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, HardDrive, Info, Settings2, Bell, Trash2, Plus, Users } from 'lucide-react';
 import { UserProfile, Language, Transaction, Account } from '../types';
 import { getTranslation } from '../i18n';
 import { StorageType } from '../services/db';
@@ -113,63 +113,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const downloadFile = (content: string, fileName: string, contentType: string) => {
-    const link = document.createElement("a");
-    link.setAttribute("href", content);
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleExportCSV = () => {
-    const headers = [t('csv_id'), t('csv_date'), t('csv_type'), t('csv_amount'), t('csv_currency'), t('csv_category'), t('csv_account'), t('csv_note'), t('csv_exchangeRate'), t('csv_usdEquivalent')];
-    const rows = transactions.map(tx => {
-      const accName = accounts.find(a => a.id === tx.accountId)?.name || t('unknown');
-      return [
-        tx.id,
-        new Date(tx.date).toLocaleDateString(),
-        tx.type,
-        tx.amount,
-        tx.originalCurrency,
-        tx.category,
-        accName,
-        `"${tx.note.replace(/"/g, '""')}"`,
-        tx.exchangeRate,
-        tx.normalizedAmountUSD.toFixed(2)
-      ].join(',');
-    });
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + "\n" + rows.join('\n');
-    downloadFile(csvContent, `parity_transactions_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
-  };
-
-  const handleBackupJSON = () => {
-    const backup = {
-      version: 3,
-      date: new Date().toISOString(),
-      userProfile: profile,
-      accounts,
-      transactions,
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
-    downloadFile(dataStr, `parity_backup_${new Date().toISOString().split('T')[0]}.json`, 'text/json');
-  };
-
-  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string);
-        onImportData(data);
-      } catch (error) {
-        showAlert('alert_importError', 'error');
-      }
-    };
-    reader.readAsText(file);
   };
 
   return (
@@ -383,47 +326,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <p className="text-[10px] text-theme-secondary mt-4 opacity-50 flex items-center gap-1">
             <Info size={10} /> {t('navbarFavoritesDesc')}
           </p>
-        </motion.div>
-
-        {/* Data & Backup Card */}
-        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-2xl p-6 space-y-6 shadow-sm">
-          <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest block flex items-center gap-2 opacity-60">
-            <Database size={12} className="text-theme-brand" /> {t('dataManagement')}
-          </label>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleExportCSV}
-              className="p-4 bg-theme-bg border border-theme-soft hover:border-emerald-500/30 rounded-2xl flex flex-col items-center gap-2 transition-all group shadow-sm"
-            >
-              <FileSpreadsheet size={24} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-black text-theme-primary uppercase">{t('exportCSV')}</span>
-            </motion.button>
-            
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleBackupJSON}
-              className="p-4 bg-theme-bg border border-theme-soft hover:border-blue-500/30 rounded-2xl flex flex-col items-center gap-2 transition-all group shadow-sm"
-            >
-              <Download size={24} className="text-blue-400 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-black text-theme-primary uppercase">{t('backup')}</span>
-            </motion.button>
-          </div>
-
-          <div className="relative">
-            <input type="file" id="import-data" className="hidden" accept=".json" onChange={handleImportFile} />
-            <motion.label 
-              whileHover={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--primary)' }}
-              htmlFor="import-data"
-              className="w-full p-4 border-2 border-dashed border-theme-soft rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all bg-theme-bg/50 group"
-            >
-              <Upload size={20} className="text-theme-secondary group-hover:text-theme-brand transition-colors" />
-              <span className="text-xs font-bold text-theme-secondary group-hover:text-theme-brand transition-colors">{t('restoreData')}</span>
-            </motion.label>
-          </div>
         </motion.div>
 
         {/* Notifications Card */}
