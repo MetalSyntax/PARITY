@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, Plus, Check, Wallet, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TrendingUp, TrendingDown, Plus, Check, Wallet, ArrowLeft, X } from 'lucide-react';
 import { Language, Currency } from '../types';
 import { getTranslation } from '../i18n';
 
@@ -22,6 +22,15 @@ interface ScenarioPlannerViewProps {
   totalBalanceUSD: number;
 }
 
+interface AddEventForm {
+  name: string;
+  amount: string;
+  isIncome: boolean;
+  color: 'green' | 'red' | 'orange';
+}
+
+const EMPTY_FORM: AddEventForm = { name: '', amount: '', isIncome: true, color: 'green' };
+
 const RATE_BASELINE = 34.0;
 const RATE_MAX = 45.0;
 
@@ -36,8 +45,31 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
   const t = (key: any) => getTranslation(lang, key);
   const [rateSlider, setRateSlider] = useState(exchangeRate || RATE_BASELINE);
   const [events, setEvents] = useState<ScenarioEvent[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState<AddEventForm>(EMPTY_FORM);
+  const [formError, setFormError] = useState('');
 
   const toggleEvent = (id: string) => setEvents(evs => evs.map(e => e.id === id ? { ...e, enabled: !e.enabled } : e));
+
+  const openAdd = () => { setForm(EMPTY_FORM); setFormError(''); setShowAdd(true); };
+  const closeAdd = () => setShowAdd(false);
+
+  const saveEvent = () => {
+    if (!form.name.trim()) { setFormError(t('name') + ' is required'); return; }
+    const amount = parseFloat(form.amount) || 0;
+    if (amount <= 0) { setFormError(t('amount') + ' must be greater than 0'); return; }
+    const finalAmount = form.isIncome ? amount : -amount;
+    const color = form.isIncome ? 'green' : form.color === 'orange' ? 'orange' : 'red';
+    setEvents(prev => [...prev, {
+      id: Date.now().toString(),
+      name: form.name.trim(),
+      amount: finalAmount,
+      icon: finalAmount >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />,
+      enabled: true,
+      color,
+    }]);
+    closeAdd();
+  };
 
   const scenarioImpact = useMemo(() => {
     return events.filter(e => e.enabled).reduce((sum, e) => sum + e.amount, 0);
@@ -86,7 +118,12 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
         </div>
         <div className="flex items-center gap-2 mt-1">
           <Wallet size={16} className="text-theme-brand" />
-          <button className="text-theme-brand font-black text-sm px-3 py-1.5 rounded-full hover:bg-white/5 transition-colors">New</button>
+          <button
+            onClick={openAdd}
+            className="text-theme-brand font-black text-sm px-3 py-1.5 rounded-full hover:bg-theme-brand/10 transition-colors"
+          >
+            {t('add') || 'New'}
+          </button>
         </div>
       </div>
 
@@ -187,15 +224,17 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
             <h2 className="text-base font-black text-theme-primary">{t('scenarioBuilder')}</h2>
             <p className="text-[11px] text-theme-secondary">{t('hypotheticalEvents')}</p>
           </div>
-          {events.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-              <div className="w-14 h-14 rounded-full bg-theme-surface border border-white/10 flex items-center justify-center">
-                <TrendingUp size={24} className="text-theme-secondary opacity-40" />
-              </div>
-              <p className="text-xs text-theme-secondary opacity-60">{t('noScenarioEvents') || 'No events yet — tap + to add one'}</p>
-            </div>
-          )}
+
           <div className="relative pl-5 space-y-3 before:absolute before:inset-y-0 before:left-2 before:w-px before:bg-white/10">
+            {events.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                <div className="w-14 h-14 rounded-full bg-theme-surface border border-white/10 flex items-center justify-center">
+                  <TrendingUp size={24} className="text-theme-secondary opacity-40" />
+                </div>
+                <p className="text-xs text-theme-secondary opacity-60">{t('noScenarioEvents') || 'No events yet — tap + to add one'}</p>
+              </div>
+            )}
+
             {events.map((event) => {
               const colors = colorMap[event.color];
               return (
@@ -213,13 +252,21 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
                         </p>
                       </div>
                     </div>
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => toggleEvent(event.id)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${event.enabled ? 'bg-theme-brand/20 border-theme-brand/30 text-theme-brand shadow-[0_0_10px_rgba(43,108,238,0.3)]' : 'bg-theme-surface border-white/10 text-theme-secondary hover:text-theme-primary'}`}
-                    >
-                      <Check size={14} />
-                    </motion.button>
+                    <div className="flex items-center gap-2">
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => toggleEvent(event.id)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${event.enabled ? 'bg-theme-brand/20 border-theme-brand/30 text-theme-brand shadow-[0_0_10px_rgba(43,108,238,0.3)]' : 'bg-theme-surface border-white/10 text-theme-secondary hover:text-theme-primary'}`}
+                      >
+                        <Check size={14} />
+                      </motion.button>
+                      <button
+                        onClick={() => setEvents(prev => prev.filter(e => e.id !== event.id))}
+                        className="w-8 h-8 rounded-full flex items-center justify-center border border-white/5 text-theme-secondary hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/10 transition-all"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -228,13 +275,118 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
             {/* Add Event */}
             <div className="relative">
               <div className="absolute -left-[5px] top-4 w-3 h-3 rounded-full bg-theme-surface border border-white/20 z-10" />
-              <button className="w-full bg-theme-surface/30 border border-dashed border-white/10 rounded-xl p-4 flex items-center justify-center gap-2 text-theme-secondary hover:text-theme-primary hover:border-white/20 transition-all text-sm font-bold">
+              <button
+                onClick={openAdd}
+                className="w-full bg-theme-surface/30 border border-dashed border-white/10 rounded-xl p-4 flex items-center justify-center gap-2 text-theme-secondary hover:text-theme-primary hover:border-white/20 transition-all text-sm font-bold"
+              >
                 <Plus size={14} /> {t('addScenarioEvent')}
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add Scenario Event Modal */}
+      <AnimatePresence>
+        {showAdd && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[70] flex items-end sm:items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-3xl p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-base font-black text-theme-primary">{t('addScenarioEvent')}</h3>
+                <button onClick={closeAdd} className="w-8 h-8 rounded-full bg-theme-bg border border-white/5 flex items-center justify-center text-theme-secondary hover:text-theme-primary">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('name')}</label>
+                  <input
+                    autoFocus
+                    value={form.name}
+                    onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setFormError(''); }}
+                    placeholder="Bonus, New car, Rent hike…"
+                    className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('amount')} (USD)</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={e => { setForm(f => ({ ...f, amount: e.target.value })); setFormError(''); }}
+                    placeholder="0.00"
+                    className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">Impact</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setForm(f => ({ ...f, isIncome: true, color: 'green' }))}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${form.isIncome ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
+                    >
+                      <TrendingUp size={14} /> {t('income') || 'Income'}
+                    </button>
+                    <button
+                      onClick={() => setForm(f => ({ ...f, isIncome: false, color: 'red' }))}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${!form.isIncome ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
+                    >
+                      <TrendingDown size={14} /> {t('expense') || 'Expense'}
+                    </button>
+                  </div>
+                </div>
+
+                {!form.isIncome && (
+                  <div>
+                    <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">Urgency</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setForm(f => ({ ...f, color: 'red' }))}
+                        className={`py-2 rounded-2xl border text-xs font-black transition-all ${form.color === 'red' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
+                      >
+                        Critical
+                      </button>
+                      <button
+                        onClick={() => setForm(f => ({ ...f, color: 'orange' }))}
+                        className={`py-2 rounded-2xl border text-xs font-black transition-all ${form.color === 'orange' ? 'bg-orange-500/10 border-orange-500/40 text-orange-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
+                      >
+                        Moderate
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {formError && <p className="text-xs text-red-400 font-bold">{formError}</p>}
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button onClick={closeAdd} className="flex-1 py-3 rounded-2xl border border-white/10 text-sm font-black text-theme-secondary hover:bg-white/5 transition-colors">
+                  {t('cancel')}
+                </button>
+                <button onClick={saveEvent} className="flex-1 py-3 rounded-2xl bg-theme-brand text-white font-black text-sm hover:brightness-110 active:scale-[0.98] transition-all">
+                  {t('save')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

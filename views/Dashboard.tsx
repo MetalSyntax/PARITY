@@ -10,7 +10,7 @@ import { TransactionDetailModal } from "../components/TransactionDetailModal";
 import { PinModal } from "../components/PinModal";
 import { TransactionItem } from "../components/TransactionItem";
 import { CurrencyConverter } from "../components/CurrencyConverter";
-import { DashboardCustomizer } from "../components/DashboardCustomizer";
+import { DashboardCustomizer, QuickActionDef } from "../components/DashboardCustomizer";
 import { CurrencyAmount } from "../components/CurrencyAmount";
 import { formatSecondaryAmount } from "../utils/formatUtils";
 import { IncomeVsExpenseChart, ExpenseStructureChart, DailySpendingChart, BalanceHistoryChart } from "../components/Charts";
@@ -32,6 +32,28 @@ import {
 import { WIDGET_REGISTRY, DEFAULT_LEFT_COLUMN, DEFAULT_RIGHT_COLUMN } from "../utils/widgetRegistry";
 import { WidgetId } from "../types";
 
+const ALL_QUICK_ACTIONS: QuickActionDef[] = [
+  { id: "TRANSACTIONS", labelKey: "transactions", Icon: Receipt, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  { id: "BUDGET", labelKey: "budget", Icon: PieChart, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+  { id: "SCHEDULED", labelKey: "scheduled", Icon: Calendar1, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+  { id: "FISCAL_REPORT", labelKey: "fiscalReport", Icon: FileText, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+  { id: "ANALYSIS", labelKey: "analysis", Icon: ChartArea, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+  { id: "WALLET", labelKey: "wallet", Icon: Wallet, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+  { id: "GOALS", labelKey: "goals", Icon: Trophy, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
+  { id: "INCOME", labelKey: "incomeView", Icon: TrendingUp, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+  { id: "CURRENCY_PERF", labelKey: "currency_perf", Icon: ChartCandlestick, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
+  { id: "HEATMAP", labelKey: "heatmap", Icon: CalendarRange, color: "bg-red-500/10 text-red-400 border-red-500/20" },
+  { id: "SHOPPING_LIST", labelKey: "shoppingList", Icon: ShoppingCart, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+  { id: "INVOICES", labelKey: "invoices", Icon: ImageIcon, color: "bg-pink-500/10 text-pink-400 border-pink-500/20" },
+  { id: "PROFILE", labelKey: "profile", Icon: User, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
+  { id: "CONTACTS", labelKey: "contacts", Icon: Users, color: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
+  { id: "DEBT_TRACKER", labelKey: "debtTracker", Icon: Split, color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
+  { id: "EXPORT", labelKey: "exportCenter", Icon: Download, color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
+  { id: "FIN_CALENDAR", labelKey: "financialCalendar", Icon: CalendarDays, color: "bg-violet-500/10 text-violet-400 border-violet-500/20" },
+  { id: "IMPORT", labelKey: "importMigration", Icon: Upload, color: "bg-lime-500/10 text-lime-400 border-lime-500/20" },
+  { id: "PDF_REPORT", labelKey: "pdfReport", Icon: FileBarChart, color: "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20" },
+  { id: "SCENARIO_PLANNER", labelKey: "scenarioPlanner", Icon: LineChart, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+];
 
 interface DashboardProps {
   accounts: Account[];
@@ -144,6 +166,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const saved = localStorage.getItem("dash_show_goals");
     return saved !== null ? JSON.parse(saved) : true;
   });
+
+  const [enabledQuickActionIds, setEnabledQuickActionIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem("dash_quick_actions");
+    return saved !== null ? JSON.parse(saved) : ALL_QUICK_ACTIONS.map(a => a.id);
+  });
+
+  const toggleQuickAction = (id: string) => {
+    setEnabledQuickActionIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      localStorage.setItem("dash_quick_actions", JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Widget Order persistence
   const [leftOrder, setLeftOrder] = useState<string[]>(() => {
@@ -823,38 +858,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className={`hidden md:block absolute left-0 top-0 bottom-4 w-14 bg-gradient-to-r from-theme-bg to-transparent pointer-events-none z-[5] transition-opacity duration-200 ${canScrollLeft ? "opacity-100" : "opacity-0"}`} />
 
             <div ref={quickActionsRef} className="flex gap-1 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0 snap-x cursor-grab active:cursor-grabbing select-none">
-              {[
-                { id: "TRANSACTIONS", label: t("transactions"), icon: <Receipt size={28} />, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-                { id: "BUDGET", label: t("budget"), icon: <PieChart size={28} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-                { id: "SCHEDULED", label: t("scheduled"), icon: <Calendar1 size={28} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
-                { id: "FISCAL_REPORT", label: t("fiscalReport"), icon: <FileText size={28} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
-                { id: "ANALYSIS", label: t("analysis"), icon: <ChartArea size={28} />, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
-                { id: "WALLET", label: t("wallet"), icon: <Wallet size={28} />, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
-                { id: "GOALS", label: t("goals"), icon: <Trophy size={28} />, color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
-                { id: "INCOME", label: t("incomeView"), icon: <TrendingUp size={28} />, color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-                { id: "CURRENCY_PERF", label: t("currency_perf"), icon: <ChartCandlestick size={28} />, color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
-                { id: "HEATMAP", label: t("heatmap"), icon: <CalendarRange size={28} />, color: "bg-red-500/10 text-red-400 border-red-500/20" },
-                { id: "SHOPPING_LIST", label: t("shoppingList"), icon: <ShoppingCart size={28} />, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-                { id: "INVOICES", label: t("invoices"), icon: <ImageIcon size={28} />, color: "bg-pink-500/10 text-pink-400 border-pink-500/20" },
-                { id: "PROFILE", label: t("profile"), icon: <User size={28} />, color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
-                { id: "CONTACTS", label: "Contacts", icon: <Users size={28} />, color: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
-                { id: "DEBT_TRACKER", label: "Debt Tracker", icon: <Split size={28} />, color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
-                { id: "EXPORT", label: "Export", icon: <Download size={28} />, color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
-                { id: "FIN_CALENDAR", label: "Fin. Calendar", icon: <CalendarDays size={28} />, color: "bg-violet-500/10 text-violet-400 border-violet-500/20" },
-                { id: "IMPORT", label: "Import", icon: <Upload size={28} />, color: "bg-lime-500/10 text-lime-400 border-lime-500/20" },
-                { id: "PDF_REPORT", label: "PDF Report", icon: <FileBarChart size={28} />, color: "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20" },
-                { id: "SCENARIO_PLANNER", label: "Scenarios", icon: <LineChart size={28} />, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
-              ].map((action, i) => (
+              {ALL_QUICK_ACTIONS.filter(action => enabledQuickActionIds.includes(action.id)).map((action) => (
                 <button
-                  key={i}
+                  key={action.id}
                   onClick={() => onNavigate(action.id as any)}
                   className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start shadow-xl group"
                 >
                   <div className={`w-16 h-16 rounded-2xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    {action.icon}
+                    <action.Icon size={28} />
                   </div>
                   <span className="text-[9px] text-theme-secondary font-black uppercase tracking-tight text-center whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">
-                    {action.label}
+                    {t(action.labelKey)}
                   </span>
                 </button>
               ))}
@@ -950,6 +964,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           userProfile={userProfile}
           onUpdateProfile={onUpdateProfile}
           isDevMode={isDevMode}
+          allQuickActions={ALL_QUICK_ACTIONS}
+          enabledQuickActionIds={enabledQuickActionIds}
+          onToggleQuickAction={toggleQuickAction}
         />
       )}
 

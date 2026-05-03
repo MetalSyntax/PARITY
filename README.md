@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.1.0`
+# PARITY 💸 `v1.2.0`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,22 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.2.0
+
+- **Income & Wallet Redesign:**
+  - `feat`: complete redesign of the **Wallet View** with a new tabbed interface (Income / Wallets)
+  - `feat`: implement **Active Sources** dashboard with percentage breakdown for income
+  - `feat`: add **Realized Income History** with date grouping and improved transaction display
+  - `feat`: introduce **Net Monthly Flow** metrics and scheduled income tracking
+- **New Functional Modules:**
+  - `feat`: implement **Contact Directory**, **Debt Split Tracker**, **Scenario Planner**, and **Financial Calendar**
+  - `feat`: unify data portability into a single **Export/Import Center**
+- **Atomic Design System:**
+  - `feat`: introduce comprehensive **UI library** (atoms & molecules) for consistent aesthetics
+  - `refactor`: transition core components to the new atomic design architecture
+- **I18n & Localization:**
+  - `feat`: complete i18n coverage for all new views in English, Spanish, and Portuguese
 
 ### v1.1.0
 

@@ -46,6 +46,7 @@ export interface UserProfile {
   notificationsEnabled?: boolean;
   notificationLeadTime?: number; // Days before due date
   smartAlertsEnabled?: boolean;
+  dashboardLayout?: DashboardLayout;
   updatedAt?: string;
 }
 

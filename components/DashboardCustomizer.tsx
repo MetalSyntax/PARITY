@@ -3,6 +3,13 @@ import { X, Activity, PieChart, BarChart, TrendingUp, Trophy } from "lucide-reac
 import { Language, UserProfile } from "../types";
 import { getTranslation } from "../i18n";
 
+export interface QuickActionDef {
+  id: string;
+  labelKey: string;
+  Icon: React.ElementType;
+  color: string;
+}
+
 interface DashboardCustomizerProps {
   lang: Language;
   showBalanceChart: boolean;
@@ -18,6 +25,9 @@ interface DashboardCustomizerProps {
   userProfile: UserProfile;
   onUpdateProfile: (p: UserProfile) => void;
   isDevMode: boolean;
+  allQuickActions: QuickActionDef[];
+  enabledQuickActionIds: string[];
+  onToggleQuickAction: (id: string) => void;
 }
 
 export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
@@ -34,7 +44,10 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
   onClose,
   userProfile,
   onUpdateProfile,
-  isDevMode
+  isDevMode,
+  allQuickActions,
+  enabledQuickActionIds,
+  onToggleQuickAction,
 }) => {
   const t = (key: any) => getTranslation(lang, key);
 
@@ -91,11 +104,46 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
           </section>
 
           <section>
+            <h4 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.3em] mb-4 opacity-50 px-2">{t('quickActions')}</h4>
+            <p className="text-[10px] text-theme-secondary opacity-40 font-bold mb-4 px-2 uppercase tracking-wider">
+              {enabledQuickActionIds.length}/{allQuickActions.length}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {allQuickActions.map((action) => {
+                const isActive = enabledQuickActionIds.includes(action.id);
+                return (
+                  <div
+                    key={action.id}
+                    className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm hover:border-theme-brand/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-xl ${action.color} border flex items-center justify-center shrink-0`}>
+                        <action.Icon size={16} />
+                      </div>
+                      <span className="text-sm font-bold text-theme-primary truncate">
+                        {t(action.labelKey)}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => onToggleQuickAction(action.id)}
+                      className={`w-12 h-6 rounded-full transition-all relative shrink-0 ml-2 ${isActive ? "bg-theme-brand" : "bg-white/10"}`}
+                    >
+                      <div
+                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isActive ? "left-7" : "left-1"}`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section>
             <h4 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.3em] mb-4 opacity-50 px-2">{t('privacy')}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                 <span className="text-sm font-bold text-theme-primary">{t('hideWelcome')}</span>
-                <button 
+                <button
                     onClick={() => onUpdateProfile({...userProfile, hideWelcome: !userProfile.hideWelcome})}
                     className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${userProfile.hideWelcome ? "bg-theme-brand" : "bg-white/10"}`}
                 >
@@ -106,7 +154,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
               {isDevMode && (
                 <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                   <span className="text-sm font-bold text-theme-primary">{t('hideDevMode')}</span>
-                  <button 
+                  <button
                       onClick={() => onUpdateProfile({...userProfile, hideDevMode: !userProfile.hideDevMode})}
                       className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${userProfile.hideDevMode ? "bg-theme-brand" : "bg-white/10"}`}
                   >
@@ -117,7 +165,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
 
               <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                 <span className="text-sm font-bold text-theme-primary">{t('hideName')}</span>
-                <button 
+                <button
                     onClick={() => onUpdateProfile({...userProfile, hideName: !userProfile.hideName})}
                     className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${userProfile.hideName ? "bg-theme-brand" : "bg-white/10"}`}
                 >
@@ -127,9 +175,9 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
 
               <div className="flex items-center justify-between p-4 bg-theme-bg/50 rounded-2xl border border-theme-soft shadow-sm">
                   <span className="text-sm font-bold text-theme-primary">{t('dashboardTxLimit')}</span>
-                  <input 
-                      type="number" 
-                      value={userProfile.dashboardTxLimit} 
+                  <input
+                      type="number"
+                      value={userProfile.dashboardTxLimit}
                       onChange={(e) => onUpdateProfile({...userProfile, dashboardTxLimit: parseInt(e.target.value) || 0})}
                       className="w-16 bg-theme-bg border border-theme-soft rounded-2xl px-2 py-1 text-sm font-black text-theme-brand outline-none text-center"
                       min="1"

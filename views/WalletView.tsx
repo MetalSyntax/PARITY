@@ -443,7 +443,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                               </div>
                               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-2">
                                 {scheduledIncomes.map(income => (
-                                    <div key={income.id} className="min-w-[140px] bg-theme-surface/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 border-l-4 border-l-emerald-500 shadow-xl shadow-black/20 relative group">
+                                    <div key={income.id} className="min-w-[140px] bg-theme-surface/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 border-l-4 shadow-xl shadow-black/20 relative group">
                                         <div className="flex justify-between items-start">
                                             <span className="text-xs font-bold text-theme-primary truncate max-w-[100px]">{income.name}</span>
                                             <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
