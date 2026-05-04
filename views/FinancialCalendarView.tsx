@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, TrendingUp, Car, Wifi, Calendar, Plus, ArrowLeft, X, TrendingDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Car, Wifi, Calendar, Plus, ArrowLeft, X } from 'lucide-react';
 import { Transaction, ScheduledPayment, Language, Currency } from '../types';
 import { getTranslation } from '../i18n';
 
@@ -50,8 +50,6 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
   onBack,
   scheduledPayments,
   lang,
-  exchangeRate,
-  displayCurrency,
   isBalanceVisible,
 }) => {
   const t = (key: any) => getTranslation(lang, key);
@@ -64,7 +62,7 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
   const [form, setForm] = useState<AddProjectionForm>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
 
-  const monthName = new Date(viewYear, viewMonth).toLocaleString(lang === 'es' ? 'es' : 'en', { month: 'long' });
+  const monthName = new Date(viewYear, viewMonth).toLocaleString(lang === 'es' ? 'es' : lang === 'pt' ? 'pt' : 'en', { month: 'long' });
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
@@ -83,11 +81,11 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
   const closeAdd = () => setShowAdd(false);
 
   const saveProjection = () => {
-    if (!form.name.trim()) { setFormError(t('name') + ' is required'); return; }
+    if (!form.name.trim()) { setFormError(`${t('name')} ${t('fieldRequired')}`); return; }
     const amount = parseFloat(form.amount) || 0;
-    if (amount <= 0) { setFormError(t('amount') + ' must be greater than 0'); return; }
+    if (amount <= 0) { setFormError(`${t('amount')} ${t('mustBePositive')}`); return; }
     const day = parseInt(form.day) || selectedDay;
-    setLocalProjections(prev => [...prev, {
+    setLocalProjections((prev: LocalProjection[]) => [...prev, {
       id: Date.now().toString(),
       name: form.name.trim(),
       amount: form.isExpense ? -amount : amount,
@@ -108,32 +106,26 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(viewYear, viewMonth, d);
       const isToday = date.toDateString() === today.toDateString();
-      const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
       const scheduled = scheduledPayments.filter(sp => {
         if (!(sp as any).nextDueDate) return false;
-        return (sp as any).nextDueDate.startsWith(dateStr.slice(0, 7)) && new Date((sp as any).nextDueDate).getDate() === d;
+        return (sp as any).nextDueDate.startsWith(`${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`) && new Date((sp as any).nextDueDate).getDate() === d;
       });
 
-      const projections = localProjections.filter(
-        p => p.year === viewYear && p.month === viewMonth && p.day === d
-      );
+      const projections = localProjections.filter(p => p.year === viewYear && p.month === viewMonth && p.day === d);
 
       let type: DayType = isToday ? 'TODAY' : 'NORMAL';
       let label: string | undefined;
 
       if (scheduled.length > 0) {
-        const hasExpense = scheduled.some(sp => (sp.amount || 0) < 0);
-        type = hasExpense ? 'OUTFLOW' : 'INCOME';
+        type = scheduled.some(sp => (sp.amount || 0) < 0) ? 'OUTFLOW' : 'INCOME';
         label = scheduled[0].name;
       } else if (projections.length > 0) {
-        const hasExpense = projections.some(p => p.amount < 0);
-        type = hasExpense ? 'OUTFLOW' : 'INCOME';
+        type = projections.some(p => p.amount < 0) ? 'OUTFLOW' : 'INCOME';
         label = projections[0].name;
       }
 
       if (isToday && type === 'TODAY') label = undefined;
-
       days.push({ day: d, type, label });
     }
 
@@ -141,17 +133,14 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
   }, [viewYear, viewMonth, scheduledPayments, localProjections]);
 
   const selectedDayPayments = useMemo(() => {
-    const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
     return scheduledPayments.filter(sp => {
       if (!(sp as any).nextDueDate) return false;
-      return (sp as any).nextDueDate.startsWith(dateStr.slice(0, 7)) && new Date((sp as any).nextDueDate).getDate() === selectedDay;
+      return (sp as any).nextDueDate.startsWith(`${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`) && new Date((sp as any).nextDueDate).getDate() === selectedDay;
     });
   }, [selectedDay, viewYear, viewMonth, scheduledPayments]);
 
   const selectedDayProjections = useMemo(() => {
-    return localProjections.filter(
-      p => p.year === viewYear && p.month === viewMonth && p.day === selectedDay
-    );
+    return localProjections.filter(p => p.year === viewYear && p.month === viewMonth && p.day === selectedDay);
   }, [selectedDay, viewYear, viewMonth, localProjections]);
 
   const projectedNetFlow = useMemo(() => {
@@ -162,18 +151,13 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
         return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
       })
       .reduce((sum, sp) => sum + (sp.amount || 0), 0);
-
     const fromProjections = localProjections
       .filter(p => p.year === viewYear && p.month === viewMonth)
       .reduce((sum, p) => sum + p.amount, 0);
-
     return fromScheduled + fromProjections;
   }, [scheduledPayments, localProjections, viewYear, viewMonth]);
 
-  const formatAmt = (n: number) => {
-    const prefix = n >= 0 ? '+' : '-';
-    return `${prefix}$${Math.abs(n).toFixed(2)}`;
-  };
+  const formatAmt = (n: number) => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
 
   const dayClasses: Record<DayType, string> = {
     OUTFLOW: 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20',
@@ -196,27 +180,26 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
     <div className="h-full flex flex-col bg-theme-bg overflow-y-auto no-scrollbar px-6 py-6 pb-24 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
 
       {/* Header */}
-      <div className="mb-5 flex items-start justify-between">
-        <div className="flex items-center gap-4">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onBack}
-            className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
-          >
-            <ArrowLeft size={20} />
-          </motion.button>
-          <div>
-            <h1 className="text-xl font-bold text-theme-primary">{t('financialCalendar')}</h1>
-            <p className="text-sm text-theme-secondary opacity-60 capitalize">{monthName} {viewYear} — {t('projectionMode')}</p>
-          </div>
+      <div className="flex items-center gap-4 mb-5">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onBack}
+          className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </motion.button>
+        <div className="flex-1">
+          <h1 className="text-xl font-bold text-theme-primary">{t('financialCalendar')}</h1>
+          <p className="text-sm text-theme-secondary opacity-60 capitalize">{monthName} {viewYear} — {t('projectionMode')}</p>
         </div>
         <motion.button
+          whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={openAdd}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-theme-brand to-blue-400 text-white text-[11px] font-black shadow-lg"
+          className="w-12 h-12 bg-theme-brand rounded-2xl text-white shadow-lg shadow-brand/20 flex items-center justify-center"
         >
-          <Plus size={12} /> {t('newProjection')}
+          <Plus size={22} />
         </motion.button>
       </div>
 
@@ -244,8 +227,8 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
 
           {/* Days of week */}
           <div className="grid grid-cols-7 gap-1 mb-1">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-              <div key={d} className="text-center text-[10px] text-theme-secondary font-black py-1">{d}</div>
+            {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((d, i) => (
+              <div key={i} className="text-center text-[10px] text-theme-secondary font-black py-1">{d}</div>
             ))}
           </div>
 
@@ -295,7 +278,7 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
         {/* Selected Day Detail */}
         <div className="bg-theme-surface/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl">
           <h3 className="text-base font-black text-theme-primary mb-0.5">
-            {new Date(viewYear, viewMonth, selectedDay).toLocaleDateString(lang === 'es' ? 'es' : 'en', { month: 'long', day: 'numeric' })}
+            {new Date(viewYear, viewMonth, selectedDay).toLocaleDateString(lang === 'es' ? 'es' : lang === 'pt' ? 'pt' : 'en', { month: 'long', day: 'numeric' })}
           </h3>
           <p className="text-[11px] text-theme-secondary mb-4">{totalEvents} {t('scheduledEventsLabel')}</p>
 
@@ -304,7 +287,7 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
           ) : (
             <div className="space-y-2">
               {selectedDayPayments.map((sp, i) => (
-                <div key={`sp-${i}`} className="bg-theme-surface/50 border border-white/5 rounded-xl p-3 flex items-center justify-between hover:bg-theme-surface transition-colors cursor-pointer active:scale-[0.98]">
+                <div key={`sp-${i}`} className="bg-theme-surface/50 border border-white/5 rounded-xl p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${(sp.amount || 0) < 0 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-theme-surface text-theme-secondary border-white/10'}`}>
                       {ICON_MAP.default}
@@ -320,7 +303,7 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
                 </div>
               ))}
               {selectedDayProjections.map((proj) => (
-                <div key={proj.id} className="bg-theme-surface/50 border border-white/5 rounded-xl p-3 flex items-center justify-between hover:bg-theme-surface transition-colors cursor-pointer active:scale-[0.98]">
+                <div key={proj.id} className="bg-theme-surface/50 border border-white/5 rounded-xl p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${proj.amount < 0 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
                       {proj.amount < 0 ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
@@ -335,7 +318,7 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
                       {isBalanceVisible ? formatAmt(proj.amount) : '••••'}
                     </span>
                     <button
-                      onClick={() => setLocalProjections(prev => prev.filter(p => p.id !== proj.id))}
+                      onClick={() => setLocalProjections((prev: LocalProjection[]) => prev.filter(p => p.id !== proj.id))}
                       className="w-6 h-6 rounded-full flex items-center justify-center text-theme-secondary hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     >
                       <X size={12} />
@@ -362,7 +345,7 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[70] flex items-end sm:items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[70] flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ y: 60, opacity: 0 }}
@@ -384,8 +367,8 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
                   <input
                     autoFocus
                     value={form.name}
-                    onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setFormError(''); }}
-                    placeholder="Salary, Rent, Insurance…"
+                    onChange={e => { setForm((f: AddProjectionForm) => ({ ...f, name: e.target.value })); setFormError(''); }}
+                    placeholder={`${t('income')}, ${t('expense')}…`}
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
@@ -397,39 +380,39 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
                     min="0.01"
                     step="0.01"
                     value={form.amount}
-                    onChange={e => { setForm(f => ({ ...f, amount: e.target.value })); setFormError(''); }}
+                    onChange={e => { setForm((f: AddProjectionForm) => ({ ...f, amount: e.target.value })); setFormError(''); }}
                     placeholder="0.00"
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">Day of Month</label>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('dayOfMonth')}</label>
                   <input
                     type="number"
                     min="1"
                     max="31"
                     value={form.day}
-                    onChange={e => setForm(f => ({ ...f, day: e.target.value }))}
+                    onChange={e => setForm((f: AddProjectionForm) => ({ ...f, day: e.target.value }))}
                     placeholder={String(selectedDay)}
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">Type</label>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('type')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => setForm(f => ({ ...f, isExpense: true }))}
+                      onClick={() => setForm((f: AddProjectionForm) => ({ ...f, isExpense: true }))}
                       className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${form.isExpense ? 'bg-orange-500/10 border-orange-500/40 text-orange-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
                     >
-                      <TrendingDown size={14} /> {t('expense') || 'Expense'}
+                      <TrendingDown size={14} /> {t('expense')}
                     </button>
                     <button
-                      onClick={() => setForm(f => ({ ...f, isExpense: false }))}
+                      onClick={() => setForm((f: AddProjectionForm) => ({ ...f, isExpense: false }))}
                       className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${!form.isExpense ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
                     >
-                      <TrendingUp size={14} /> {t('income') || 'Income'}
+                      <TrendingUp size={14} /> {t('income')}
                     </button>
                   </div>
                 </div>

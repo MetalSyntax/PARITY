@@ -867,7 +867,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className={`w-16 h-16 rounded-2xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <action.Icon size={28} />
                   </div>
-                  <span className="text-[9px] text-theme-secondary font-black uppercase tracking-tight text-center whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[9px] text-theme-secondary font-black uppercase tracking-tight text-center whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity w-[64px] text-wrap">
                     {t(action.labelKey)}
                   </span>
                 </button>

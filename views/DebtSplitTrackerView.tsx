@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Filter, Plus, ArrowLeft, Receipt, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Plus, ArrowLeft, Receipt, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Language } from '../types';
 import { getTranslation } from '../i18n';
 
@@ -46,13 +46,13 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
   const closeAdd = () => setShowAdd(false);
 
   const saveSplit = () => {
-    if (!form.name.trim()) { setFormError(t('name') + ' is required'); return; }
+    if (!form.name.trim()) { setFormError(`${t('description')} ${t('fieldRequired')}`); return; }
     const amount = parseFloat(form.amount) || 0;
-    if (amount <= 0) { setFormError(t('amount') + ' must be greater than 0'); return; }
-    setSplits(prev => [...prev, {
+    if (amount <= 0) { setFormError(`${t('amount')} ${t('mustBePositive')}`); return; }
+    setSplits((prev: Split[]) => [...prev, {
       id: Date.now().toString(),
       name: form.name.trim(),
-      category: form.category.trim() || 'General',
+      category: form.category.trim() || t('general'),
       icon: <Receipt size={16} />,
       amount,
       remaining: amount,
@@ -75,10 +75,18 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
         >
           <ArrowLeft size={20} />
         </motion.button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-bold text-theme-primary">{t('debtTracker')}</h1>
           <p className="text-sm text-theme-secondary opacity-60">{t('debtTrackerSubtitle')}</p>
         </div>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={openAdd}
+          className="w-12 h-12 bg-theme-brand rounded-2xl text-white shadow-lg shadow-brand/20 flex items-center justify-center"
+        >
+          <Plus size={22} />
+        </motion.button>
       </div>
 
       <div className="space-y-5">
@@ -139,8 +147,8 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
                 <Receipt size={28} className="text-theme-secondary opacity-40" />
               </div>
               <div>
-                <p className="text-sm font-bold text-theme-primary mb-1">{t('noActiveSplits') || 'No active splits'}</p>
-                <p className="text-xs text-theme-secondary opacity-60">{t('addSplitHint') || 'Tap + to track a new expense split'}</p>
+                <p className="text-sm font-bold text-theme-primary mb-1">{t('noActiveSplits')}</p>
+                <p className="text-xs text-theme-secondary opacity-60">{t('addSplitHint')}</p>
               </div>
             </div>
           ) : (
@@ -182,7 +190,7 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
                         <div className="px-4 pb-4 pt-0 border-t border-white/5">
                           <div className="flex gap-2 mt-3">
                             <div className="flex-1 bg-theme-bg/50 rounded-xl p-3 text-center">
-                              <p className="text-[10px] text-theme-secondary font-black uppercase tracking-widest mb-1">Total</p>
+                              <p className="text-[10px] text-theme-secondary font-black uppercase tracking-widest mb-1">{t('total')}</p>
                               <p className="text-sm font-black text-theme-primary">${split.amount.toFixed(2)}</p>
                             </div>
                             <div className="flex-1 bg-theme-bg/50 rounded-xl p-3 text-center">
@@ -190,16 +198,16 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
                               <p className={`text-sm font-black ${split.direction === 'OWED_TO_YOU' ? 'text-emerald-400' : 'text-red-400'}`}>${split.remaining.toFixed(2)}</p>
                             </div>
                             <div className="flex-1 bg-theme-bg/50 rounded-xl p-3 text-center">
-                              <p className="text-[10px] text-theme-secondary font-black uppercase tracking-widest mb-1">Paid</p>
+                              <p className="text-[10px] text-theme-secondary font-black uppercase tracking-widest mb-1">{t('paid')}</p>
                               <p className="text-sm font-black text-theme-primary">${(split.amount - split.remaining).toFixed(2)}</p>
                             </div>
                           </div>
                           <button
-                            onClick={() => setSplits(prev => prev.map(s => s.id === split.id ? { ...s, remaining: 0 } : s))}
+                            onClick={() => setSplits((prev: Split[]) => prev.map(s => s.id === split.id ? { ...s, remaining: 0 } : s))}
                             disabled={split.remaining === 0}
                             className="w-full mt-3 py-2 rounded-xl border border-emerald-500/30 text-emerald-400 text-xs font-black hover:bg-emerald-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                           >
-                            {split.remaining === 0 ? t('settled') : `Mark as ${t('settled')}`}
+                            {split.remaining === 0 ? t('settled') : t('markAsSettled')}
                           </button>
                         </div>
                       </motion.div>
@@ -212,16 +220,6 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
         </div>
       </div>
 
-      {/* FAB */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={openAdd}
-        className="fixed bottom-28 right-6 w-14 h-14 rounded-full bg-theme-brand flex items-center justify-center shadow-[0_0_20px_rgba(43,108,238,0.4)] z-40"
-      >
-        <Plus size={24} className="text-white" />
-      </motion.button>
-
       {/* Add Split Modal */}
       <AnimatePresence>
         {showAdd && (
@@ -229,7 +227,7 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[70] flex items-end sm:items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[70] flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ y: 60, opacity: 0 }}
@@ -239,7 +237,7 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
               className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-3xl p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-black text-theme-primary">{t('add')} Split</h3>
+                <h3 className="text-base font-black text-theme-primary">{t('newSplit')}</h3>
                 <button onClick={closeAdd} className="w-8 h-8 rounded-full bg-theme-bg border border-white/5 flex items-center justify-center text-theme-secondary hover:text-theme-primary">
                   <X size={16} />
                 </button>
@@ -251,18 +249,18 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
                   <input
                     autoFocus
                     value={form.name}
-                    onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setFormError(''); }}
-                    placeholder="Dinner, Trip, etc."
+                    onChange={e => { setForm((f: AddSplitForm) => ({ ...f, name: e.target.value })); setFormError(''); }}
+                    placeholder="Cena, Viaje, Servicio…"
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">Category</label>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('category')}</label>
                   <input
                     value={form.category}
-                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                    placeholder="Food, Travel, Bills…"
+                    onChange={e => setForm((f: AddSplitForm) => ({ ...f, category: e.target.value }))}
+                    placeholder={`${t('food')}, ${t('general')}…`}
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
@@ -274,23 +272,23 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
                     min="0.01"
                     step="0.01"
                     value={form.amount}
-                    onChange={e => { setForm(f => ({ ...f, amount: e.target.value })); setFormError(''); }}
+                    onChange={e => { setForm((f: AddSplitForm) => ({ ...f, amount: e.target.value })); setFormError(''); }}
                     placeholder="0.00"
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('direction') || 'Direction'}</label>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('direction')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => setForm(f => ({ ...f, direction: 'OWED_TO_YOU' }))}
+                      onClick={() => setForm((f: AddSplitForm) => ({ ...f, direction: 'OWED_TO_YOU' }))}
                       className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${form.direction === 'OWED_TO_YOU' ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
                     >
                       <ArrowDownLeft size={14} /> {t('owedToYou')}
                     </button>
                     <button
-                      onClick={() => setForm(f => ({ ...f, direction: 'YOU_OWE' }))}
+                      onClick={() => setForm((f: AddSplitForm) => ({ ...f, direction: 'YOU_OWE' }))}
                       className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${form.direction === 'YOU_OWE' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
                     >
                       <ArrowUpRight size={14} /> {t('youOwe')}

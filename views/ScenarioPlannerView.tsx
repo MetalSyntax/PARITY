@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Plus, Check, Wallet, ArrowLeft, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Check, ArrowLeft, X } from 'lucide-react';
 import { Language, Currency } from '../types';
 import { getTranslation } from '../i18n';
 
@@ -38,7 +38,6 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
   onBack,
   lang,
   exchangeRate,
-  displayCurrency,
   isBalanceVisible,
   totalBalanceUSD,
 }) => {
@@ -55,12 +54,12 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
   const closeAdd = () => setShowAdd(false);
 
   const saveEvent = () => {
-    if (!form.name.trim()) { setFormError(t('name') + ' is required'); return; }
+    if (!form.name.trim()) { setFormError(`${t('name')} ${t('fieldRequired')}`); return; }
     const amount = parseFloat(form.amount) || 0;
-    if (amount <= 0) { setFormError(t('amount') + ' must be greater than 0'); return; }
+    if (amount <= 0) { setFormError(`${t('amount')} ${t('mustBePositive')}`); return; }
     const finalAmount = form.isIncome ? amount : -amount;
-    const color = form.isIncome ? 'green' : form.color === 'orange' ? 'orange' : 'red';
-    setEvents(prev => [...prev, {
+    const color: 'green' | 'red' | 'orange' = form.isIncome ? 'green' : form.color === 'orange' ? 'orange' : 'red';
+    setEvents((prev: ScenarioEvent[]) => [...prev, {
       id: Date.now().toString(),
       name: form.name.trim(),
       amount: finalAmount,
@@ -71,21 +70,14 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
     closeAdd();
   };
 
-  const scenarioImpact = useMemo(() => {
-    return events.filter(e => e.enabled).reduce((sum, e) => sum + e.amount, 0);
-  }, [events]);
-
+  const scenarioImpact = useMemo(() => events.filter(e => e.enabled).reduce((sum, e) => sum + e.amount, 0), [events]);
   const projectedBalance = totalBalanceUSD + scenarioImpact;
   const projectedPct = totalBalanceUSD > 0 ? ((projectedBalance - totalBalanceUSD) / totalBalanceUSD) * 100 : 0;
-
   const rateImpactUSD = (rateSlider - (exchangeRate || RATE_BASELINE)) * (totalBalanceUSD / (rateSlider || 1)) * -1;
   const rateImpactVES = rateImpactUSD * rateSlider * -1;
 
   const fmt = (n: number) => isBalanceVisible ? `$${Math.abs(n).toFixed(2)}` : '••••••';
-  const fmtSigned = (n: number) => {
-    if (!isBalanceVisible) return '••••';
-    return `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
-  };
+  const fmtSigned = (n: number) => isBalanceVisible ? `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}` : '••••';
 
   const sliderPct = Math.min(100, Math.max(0, ((rateSlider - RATE_BASELINE) / (RATE_MAX - RATE_BASELINE)) * 100));
 
@@ -101,30 +93,27 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
     <div className="h-full flex flex-col bg-theme-bg overflow-y-auto no-scrollbar px-6 py-6 pb-24 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
 
       {/* Header */}
-      <div className="mb-5 flex items-start justify-between">
-        <div className="flex items-center gap-4">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onBack}
-            className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
-          >
-            <ArrowLeft size={20} />
-          </motion.button>
-          <div>
-            <h1 className="text-xl font-bold text-theme-primary">{t('scenarioPlanner')}</h1>
-            <p className="text-sm text-theme-secondary opacity-60">{t('scenarioPlannerSubtitle')}</p>
-          </div>
+      <div className="flex items-center gap-4 mb-5">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onBack}
+          className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </motion.button>
+        <div className="flex-1">
+          <h1 className="text-xl font-bold text-theme-primary">{t('scenarioPlanner')}</h1>
+          <p className="text-sm text-theme-secondary opacity-60">{t('scenarioPlannerSubtitle')}</p>
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <Wallet size={16} className="text-theme-brand" />
-          <button
-            onClick={openAdd}
-            className="text-theme-brand font-black text-sm px-3 py-1.5 rounded-full hover:bg-theme-brand/10 transition-colors"
-          >
-            {t('add') || 'New'}
-          </button>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={openAdd}
+          className="w-12 h-12 bg-theme-brand rounded-2xl text-white shadow-lg shadow-brand/20 flex items-center justify-center"
+        >
+          <Plus size={22} />
+        </motion.button>
       </div>
 
       <div className="space-y-5">
@@ -146,9 +135,7 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
           {/* SVG Chart */}
           <div className="w-full h-40 relative bg-theme-surface rounded-xl border border-white/5 overflow-hidden flex items-end px-3 pb-3">
             <svg className="absolute inset-0" width="100%" height="100%" viewBox="0 0 1000 200" preserveAspectRatio="none">
-              {/* Base trajectory */}
               <path d="M 0 170 Q 200 165 400 140 T 800 100 T 1000 80" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
-              {/* Scenario trajectory */}
               <path d="M 0 170 Q 200 155 400 110 T 800 55 T 1000 30" fill="none" stroke="#2b6cee" strokeDasharray="10 5" strokeWidth="3" />
               <path d="M 0 170 Q 200 155 400 110 T 800 55 T 1000 30 L 1000 200 L 0 200 Z" fill="url(#scenGrad)" opacity="0.15" />
               <defs>
@@ -158,11 +145,8 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
                 </linearGradient>
               </defs>
             </svg>
-            {/* X labels */}
             <div className="absolute bottom-2 left-0 w-full flex justify-between px-3">
-              {months.map(m => (
-                <span key={m} className="text-[9px] text-theme-secondary font-bold">{m}</span>
-              ))}
+              {months.map(m => <span key={m} className="text-[9px] text-theme-secondary font-bold">{m}</span>)}
             </div>
           </div>
         </div>
@@ -173,13 +157,11 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
             <h2 className="text-base font-black text-theme-primary">{t('rateShockSimulator')}</h2>
             <p className="text-[11px] text-theme-secondary">{t('rateShockDesc')}</p>
           </div>
-
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm font-bold text-theme-primary">{t('exchangeRateVES')}</span>
               <span className="text-sm font-black text-orange-400">{rateSlider.toFixed(2)}</span>
             </div>
-            {/* Slider */}
             <div className="relative w-full h-2 bg-theme-surface rounded-full overflow-visible flex items-center">
               <div className="absolute h-full bg-orange-400 rounded-full" style={{ width: `${sliderPct}%` }} />
               <div
@@ -187,11 +169,7 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
                 style={{ left: `calc(${sliderPct}% - 12px)` }}
               />
               <input
-                type="range"
-                min={RATE_BASELINE}
-                max={RATE_MAX}
-                step={0.1}
-                value={rateSlider}
+                type="range" min={RATE_BASELINE} max={RATE_MAX} step={0.1} value={rateSlider}
                 onChange={e => setRateSlider(parseFloat(e.target.value))}
                 className="absolute inset-0 w-full opacity-0 cursor-pointer"
               />
@@ -201,7 +179,6 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
               <span>{t('shock')} ({RATE_MAX.toFixed(2)})</span>
             </div>
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-theme-surface/50 border border-white/5 p-4 rounded-xl">
               <span className="text-[11px] text-theme-secondary font-semibold mb-1 block">{t('impactNetWorthUSD')}</span>
@@ -231,7 +208,7 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
                 <div className="w-14 h-14 rounded-full bg-theme-surface border border-white/10 flex items-center justify-center">
                   <TrendingUp size={24} className="text-theme-secondary opacity-40" />
                 </div>
-                <p className="text-xs text-theme-secondary opacity-60">{t('noScenarioEvents') || 'No events yet — tap + to add one'}</p>
+                <p className="text-xs text-theme-secondary opacity-60">{t('noScenarioEvents')}</p>
               </div>
             )}
 
@@ -261,7 +238,7 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
                         <Check size={14} />
                       </motion.button>
                       <button
-                        onClick={() => setEvents(prev => prev.filter(e => e.id !== event.id))}
+                        onClick={() => setEvents((prev: ScenarioEvent[]) => prev.filter(e => e.id !== event.id))}
                         className="w-8 h-8 rounded-full flex items-center justify-center border border-white/5 text-theme-secondary hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/10 transition-all"
                       >
                         <X size={14} />
@@ -272,7 +249,7 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
               );
             })}
 
-            {/* Add Event */}
+            {/* Add Event inline button */}
             <div className="relative">
               <div className="absolute -left-[5px] top-4 w-3 h-3 rounded-full bg-theme-surface border border-white/20 z-10" />
               <button
@@ -293,7 +270,7 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[70] flex items-end sm:items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[70] flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ y: 60, opacity: 0 }}
@@ -315,8 +292,8 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
                   <input
                     autoFocus
                     value={form.name}
-                    onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setFormError(''); }}
-                    placeholder="Bonus, New car, Rent hike…"
+                    onChange={e => { setForm((f: AddEventForm) => ({ ...f, name: e.target.value })); setFormError(''); }}
+                    placeholder={`${t('income')}, ${t('expense')}…`}
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
@@ -328,45 +305,45 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
                     min="0.01"
                     step="0.01"
                     value={form.amount}
-                    onChange={e => { setForm(f => ({ ...f, amount: e.target.value })); setFormError(''); }}
+                    onChange={e => { setForm((f: AddEventForm) => ({ ...f, amount: e.target.value })); setFormError(''); }}
                     placeholder="0.00"
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">Impact</label>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('impact')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => setForm(f => ({ ...f, isIncome: true, color: 'green' }))}
+                      onClick={() => setForm((f: AddEventForm) => ({ ...f, isIncome: true, color: 'green' }))}
                       className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${form.isIncome ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
                     >
-                      <TrendingUp size={14} /> {t('income') || 'Income'}
+                      <TrendingUp size={14} /> {t('income')}
                     </button>
                     <button
-                      onClick={() => setForm(f => ({ ...f, isIncome: false, color: 'red' }))}
+                      onClick={() => setForm((f: AddEventForm) => ({ ...f, isIncome: false, color: 'red' }))}
                       className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${!form.isIncome ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
                     >
-                      <TrendingDown size={14} /> {t('expense') || 'Expense'}
+                      <TrendingDown size={14} /> {t('expense')}
                     </button>
                   </div>
                 </div>
 
                 {!form.isIncome && (
                   <div>
-                    <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">Urgency</label>
+                    <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('urgency')}</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => setForm(f => ({ ...f, color: 'red' }))}
+                        onClick={() => setForm((f: AddEventForm) => ({ ...f, color: 'red' }))}
                         className={`py-2 rounded-2xl border text-xs font-black transition-all ${form.color === 'red' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
                       >
-                        Critical
+                        {t('critical')}
                       </button>
                       <button
-                        onClick={() => setForm(f => ({ ...f, color: 'orange' }))}
+                        onClick={() => setForm((f: AddEventForm) => ({ ...f, color: 'orange' }))}
                         className={`py-2 rounded-2xl border text-xs font-black transition-all ${form.color === 'orange' ? 'bg-orange-500/10 border-orange-500/40 text-orange-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
                       >
-                        Moderate
+                        {t('moderate')}
                       </button>
                     </div>
                   </div>
