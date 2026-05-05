@@ -1,16 +1,36 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Users, ArrowUpRight, ArrowDownLeft, Plus, Check, ArrowLeft, X } from 'lucide-react';
-import { Language } from '../types';
+import { Search, Users, ArrowUpRight, ArrowDownLeft, Plus, Check, ArrowLeft, X, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Language, Currency } from '../types';
 import { getTranslation } from '../i18n';
+
+const AVATAR_COLORS = [
+  'bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-orange-500',
+  'bg-pink-500', 'bg-red-500', 'bg-yellow-500', 'bg-cyan-500',
+];
+
+const CURRENCIES: Currency[] = [Currency.USD, Currency.VES, Currency.EUR, Currency.USDT];
+
+const HANDLE_TYPES = ['zelle', 'binance_pay', 'pago_movil', 'bank', 'cash', 'other'] as const;
+type HandleType = typeof HANDLE_TYPES[number];
+
+interface PaymentHandle {
+  type: HandleType;
+  value: string;
+}
 
 interface Contact {
   id: string;
   name: string;
   email: string;
   initials?: string;
+  avatarColor: string;
+  defaultCurrency: Currency;
+  paymentHandles: PaymentHandle[];
+  notes?: string;
   balance: number;
   direction: 'OWED_TO_YOU' | 'YOU_OWE' | 'SETTLED';
+  createdAt: string;
 }
 
 interface ContactDirectoryViewProps {
@@ -25,9 +45,22 @@ interface AddContactForm {
   email: string;
   amount: string;
   direction: 'OWED_TO_YOU' | 'YOU_OWE';
+  avatarColor: string;
+  defaultCurrency: Currency;
+  notes: string;
+  paymentHandles: PaymentHandle[];
 }
 
-const EMPTY_FORM: AddContactForm = { name: '', email: '', amount: '', direction: 'OWED_TO_YOU' };
+const EMPTY_FORM: AddContactForm = {
+  name: '',
+  email: '',
+  amount: '',
+  direction: 'OWED_TO_YOU',
+  avatarColor: AVATAR_COLORS[0],
+  defaultCurrency: Currency.USD,
+  notes: '',
+  paymentHandles: [],
+};
 
 export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang, onBack }) => {
   const t = (key: any) => getTranslation(lang, key);
@@ -38,6 +71,9 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<AddContactForm>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [newHandleType, setNewHandleType] = useState<HandleType>('zelle');
+  const [newHandleValue, setNewHandleValue] = useState('');
 
   const totalOwedToYou = contacts.filter(c => c.direction === 'OWED_TO_YOU').reduce((s, c) => s + c.balance, 0);
   const totalYouOwe = contacts.filter(c => c.direction === 'YOU_OWE').reduce((s, c) => s + c.balance, 0);
@@ -48,8 +84,18 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
     return matchFilter && matchSearch;
   });
 
-  const openAdd = () => { setForm(EMPTY_FORM); setFormError(''); setShowAdd(true); };
+  const openAdd = () => { setForm(EMPTY_FORM); setFormError(''); setNewHandleValue(''); setShowAdd(true); };
   const closeAdd = () => setShowAdd(false);
+
+  const addHandle = () => {
+    if (!newHandleValue.trim()) return;
+    setForm(f => ({ ...f, paymentHandles: [...f.paymentHandles, { type: newHandleType, value: newHandleValue.trim() }] }));
+    setNewHandleValue('');
+  };
+
+  const removeHandle = (idx: number) => {
+    setForm(f => ({ ...f, paymentHandles: f.paymentHandles.filter((_, i) => i !== idx) }));
+  };
 
   const saveContact = () => {
     if (!form.name.trim()) { setFormError(`${t('name')} ${t('fieldRequired')}`); return; }
@@ -60,10 +106,24 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
       name: form.name.trim(),
       email: form.email.trim(),
       initials,
+      avatarColor: form.avatarColor,
+      defaultCurrency: form.defaultCurrency,
+      paymentHandles: form.paymentHandles,
+      notes: form.notes.trim() || undefined,
       balance: amount,
       direction: amount === 0 ? 'SETTLED' : form.direction,
+      createdAt: new Date().toISOString(),
     }]);
     closeAdd();
+  };
+
+  const deleteContact = (id: string) => {
+    setContacts(prev => prev.filter(c => c.id !== id));
+    setSelectedId(null);
+  };
+
+  const markSettled = (id: string) => {
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, balance: 0, direction: 'SETTLED' } : c));
   };
 
   return (
@@ -164,49 +224,110 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
       ) : (
         <div className="flex flex-col gap-2.5">
           {filtered.map((contact: Contact, i: number) => (
-            <motion.div
-              key={contact.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="bg-theme-surface/50 border border-white/5 rounded-2xl p-4 flex items-center justify-between hover:bg-theme-surface active:scale-[0.98] transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="relative w-12 h-12">
-                  <div className="w-12 h-12 rounded-full bg-theme-surface border border-white/10 flex items-center justify-center text-theme-secondary font-black text-base">
-                    {(contact.initials || contact.name.slice(0, 2)).toUpperCase()}
-                  </div>
-                  {contact.direction === 'SETTLED' ? (
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-theme-bg bg-emerald-500 flex items-center justify-center">
-                      <Check size={7} className="text-white" strokeWidth={3} />
+            <div key={contact.id}>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className={`bg-theme-surface/50 border border-white/5 cursor-pointer group active:scale-[0.98] transition-all hover:bg-theme-surface ${selectedId === contact.id ? 'rounded-t-2xl border-b-0' : 'rounded-2xl'}`}
+                onClick={() => setSelectedId(selectedId === contact.id ? null : contact.id)}
+              >
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-12 h-12">
+                      <div className={`w-12 h-12 rounded-full ${contact.avatarColor} flex items-center justify-center font-black text-base text-white`}>
+                        {(contact.initials || contact.name.slice(0, 2)).toUpperCase()}
+                      </div>
+                      {contact.direction === 'SETTLED' ? (
+                        <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-theme-bg bg-emerald-500 flex items-center justify-center">
+                          <Check size={7} className="text-white" strokeWidth={3} />
+                        </div>
+                      ) : (
+                        <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-theme-bg ${contact.direction === 'OWED_TO_YOU' ? 'bg-emerald-500' : 'bg-gray-500'}`} />
+                      )}
                     </div>
-                  ) : (
-                    <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-theme-bg ${contact.direction === 'OWED_TO_YOU' ? 'bg-emerald-500' : 'bg-gray-500'}`} />
-                  )}
+                    <div>
+                      <p className="text-sm font-black text-theme-primary group-hover:text-theme-brand transition-colors">{contact.name}</p>
+                      <p className="text-[11px] text-theme-secondary">{contact.email || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      {contact.direction === 'SETTLED' ? (
+                        <>
+                          <p className="text-sm font-bold text-theme-secondary">{t('settled')}</p>
+                          <p className="text-[11px] text-theme-secondary">{t('noBalance')}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className={`text-sm font-black ${contact.direction === 'OWED_TO_YOU' ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {contact.direction === 'OWED_TO_YOU' ? '+' : '-'}${contact.balance.toFixed(2)}
+                          </p>
+                          <p className="text-[11px] text-theme-secondary">
+                            {contact.direction === 'OWED_TO_YOU' ? `${contact.name.split(' ')[0]} ${t('owesYou')}` : t('youOweLabel')}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    {selectedId === contact.id ? <ChevronUp size={14} className="text-theme-secondary" /> : <ChevronDown size={14} className="text-theme-secondary" />}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-black text-theme-primary group-hover:text-theme-brand transition-colors">{contact.name}</p>
-                  <p className="text-[11px] text-theme-secondary">{contact.email || '—'}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                {contact.direction === 'SETTLED' ? (
-                  <>
-                    <p className="text-sm font-bold text-theme-secondary">{t('settled')}</p>
-                    <p className="text-[11px] text-theme-secondary">{t('noBalance')}</p>
-                  </>
-                ) : (
-                  <>
-                    <p className={`text-sm font-black ${contact.direction === 'OWED_TO_YOU' ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {contact.direction === 'OWED_TO_YOU' ? '+' : '-'}${contact.balance.toFixed(2)}
-                    </p>
-                    <p className="text-[11px] text-theme-secondary">
-                      {contact.direction === 'OWED_TO_YOU' ? `${contact.name.split(' ')[0]} ${t('owesYou')}` : t('youOweLabel')}
-                    </p>
-                  </>
+              </motion.div>
+
+              {/* Detail Panel */}
+              <AnimatePresence>
+                {selectedId === contact.id && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="bg-theme-surface/30 border border-white/5 border-t-0 rounded-b-2xl px-4 pb-4 pt-3 space-y-3">
+                      {/* Currency badge + payment handles */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-1 rounded-full bg-theme-brand/10 border border-theme-brand/20 text-[10px] text-theme-brand font-black">{contact.defaultCurrency}</span>
+                        {contact.paymentHandles.map((h, idx) => (
+                          <span key={idx} className="px-2 py-1 rounded-full bg-theme-surface border border-white/10 text-[10px] text-theme-secondary font-bold">
+                            <span className="text-theme-primary">{h.type}</span>: {h.value}
+                          </span>
+                        ))}
+                        {contact.paymentHandles.length === 0 && (
+                          <span className="text-[10px] text-theme-secondary opacity-50">{t('paymentHandles')}: —</span>
+                        )}
+                      </div>
+
+                      {/* Notes */}
+                      {contact.notes && (
+                        <p className="text-[11px] text-theme-secondary italic">"{contact.notes}"</p>
+                      )}
+
+                      {/* Added date */}
+                      <p className="text-[10px] text-theme-secondary opacity-40">{t('createdAt')}: {new Date(contact.createdAt).toLocaleDateString()}</p>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-1">
+                        {contact.direction !== 'SETTLED' && (
+                          <button
+                            onClick={() => markSettled(contact.id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-emerald-500/30 text-emerald-400 text-xs font-black hover:bg-emerald-500/10 transition-colors"
+                          >
+                            <Check size={12} /> {t('markAsSettled')}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteContact(contact.id)}
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-500/20 text-red-400 text-xs font-black hover:bg-red-500/10 transition-colors"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
-              </div>
-            </motion.div>
+              </AnimatePresence>
+            </div>
           ))}
         </div>
       )}
@@ -225,7 +346,7 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 60, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-              className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-3xl p-6 shadow-2xl"
+              className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-3xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-base font-black text-theme-primary">{t('newContact')}</h3>
@@ -235,6 +356,20 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
               </div>
 
               <div className="space-y-3">
+                {/* Avatar Color */}
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-2 block">{t('avatarColor')}</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {AVATAR_COLORS.map(color => (
+                      <button
+                        key={color}
+                        onClick={() => setForm(f => ({ ...f, avatarColor: color }))}
+                        className={`w-8 h-8 rounded-full ${color} transition-all ${form.avatarColor === color ? 'ring-2 ring-white ring-offset-2 ring-offset-theme-surface scale-110' : 'opacity-60 hover:opacity-100'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('name')}</label>
                   <input
@@ -270,6 +405,21 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
                 </div>
 
                 <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('currency')}</label>
+                  <div className="flex gap-2">
+                    {CURRENCIES.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setForm(f => ({ ...f, defaultCurrency: c }))}
+                        className={`flex-1 py-2 rounded-xl border text-xs font-black transition-all ${form.defaultCurrency === c ? 'bg-theme-brand border-theme-brand text-white' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('direction')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -285,6 +435,55 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
                       <ArrowUpRight size={14} /> {t('youOwe')}
                     </button>
                   </div>
+                </div>
+
+                {/* Payment Handles */}
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('paymentHandles')}</label>
+                  {form.paymentHandles.map((h, idx) => (
+                    <div key={idx} className="flex items-center gap-2 mb-1.5">
+                      <span className="flex-1 bg-theme-bg border border-white/10 rounded-xl px-3 py-2 text-xs text-theme-secondary">
+                        <span className="text-theme-brand font-bold">{h.type}</span>: {h.value}
+                      </span>
+                      <button onClick={() => removeHandle(idx)} className="text-theme-secondary hover:text-red-400 transition-colors p-1">
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex gap-2 mt-1">
+                    <select
+                      value={newHandleType}
+                      onChange={e => setNewHandleType(e.target.value as HandleType)}
+                      className="bg-theme-bg border border-white/10 rounded-xl px-2 py-2 text-xs text-theme-secondary outline-none"
+                    >
+                      {HANDLE_TYPES.map(ht => <option key={ht} value={ht}>{ht}</option>)}
+                    </select>
+                    <input
+                      value={newHandleValue}
+                      onChange={e => setNewHandleValue(e.target.value)}
+                      placeholder="handle / account..."
+                      onKeyDown={e => e.key === 'Enter' && addHandle()}
+                      className="flex-1 bg-theme-bg border border-white/10 rounded-xl px-3 py-2 text-xs text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
+                    />
+                    <button
+                      onClick={addHandle}
+                      className="px-3 py-2 rounded-xl bg-theme-brand/10 border border-theme-brand/20 text-theme-brand text-xs font-black hover:bg-theme-brand/20 transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('note')} {t('optional')}</label>
+                  <textarea
+                    value={form.notes}
+                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder={t('notePlaceholder')}
+                    rows={2}
+                    className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50 resize-none"
+                  />
                 </div>
 
                 {formError && <p className="text-xs text-red-400 font-bold">{formError}</p>}

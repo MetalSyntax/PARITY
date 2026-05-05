@@ -207,29 +207,50 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
     const amountIdx = mappings.findIndex(m => m.targetField === 'amount');
     const categoryIdx = mappings.findIndex(m => m.targetField === 'category');
     const noteIdx = mappings.findIndex(m => m.targetField === 'note');
-    const txs: Partial<Transaction>[] = rawData
+
+    const existingHashes = new Set(
+      transactions.map(tx =>
+        `${(tx.date || '').split('T')[0]}_${tx.normalizedAmountUSD.toFixed(2)}_${(tx.note || '').toLowerCase().trim()}`
+      )
+    );
+
+    let skipped = 0;
+    const allParsed: Partial<Transaction>[] = rawData
       .filter(row => row.length > 0)
       .map(row => {
         const amount = parseFloat((row[amountIdx] || '0').replace(/[^0-9.-]/g, '')) || 0;
+        const dateStr = row[dateIdx] ? new Date(row[dateIdx]).toISOString() : new Date().toISOString();
+        const note = row[noteIdx] || '';
         return {
           id: `imp_${Date.now()}${Math.random()}`,
-          date: row[dateIdx] ? new Date(row[dateIdx]).toISOString() : new Date().toISOString(),
+          date: dateStr,
           normalizedAmountUSD: Math.abs(amount),
           type: amount < 0 ? TransactionType.EXPENSE : TransactionType.INCOME,
           category: row[categoryIdx] || 'misc',
-          note: row[noteIdx] || '',
+          note,
           currency: 'USD' as any,
           amount: Math.abs(amount),
           exchangeRateAtTime: 1,
           amountInOriginalCurrency: Math.abs(amount),
+          _hash: `${dateStr.split('T')[0]}_${Math.abs(amount).toFixed(2)}_${note.toLowerCase().trim()}`,
         };
       });
-    onImportTransactions(txs);
+
+    const txs = deduplication
+      ? allParsed.filter(tx => {
+          const hash = (tx as any)._hash as string;
+          if (existingHashes.has(hash)) { skipped++; return false; }
+          return true;
+        })
+      : allParsed;
+
+    const clean = txs.map(({ _hash, ...tx }: any) => tx);
+    onImportTransactions(clean);
     setIsImporting(false);
     setCsvFileName(null);
     setRawData([]);
     setMappings([]);
-    setImportSuccess(`${txs.length} transactions`);
+    setImportSuccess(`${clean.length} transactions${skipped > 0 ? ` · ${skipped} ${t('duplicatesSkipped')}` : ''}`);
   };
 
   const mappedCount = mappings.filter(m => m.targetField !== 'skip').length;
@@ -292,6 +313,20 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
       const grey: [number, number, number] = [100, 100, 100];
       const lightGrey: [number, number, number] = [150, 150, 150];
 
+      // Use filtered transactions for the report (respects date/wallet filters)
+      const filteredTxs = getFilteredTransactions();
+      const pdfIncome = filteredTxs
+        .filter(tx => tx.type === TransactionType.INCOME)
+        .reduce((s, tx) => s + tx.normalizedAmountUSD, 0);
+      const pdfExpense = filteredTxs
+        .filter(tx => tx.type === TransactionType.EXPENSE)
+        .reduce((s, tx) => s + tx.normalizedAmountUSD, 0);
+      const pdfNetFlow = pdfIncome - pdfExpense;
+
+      const rangeLabel = dateFrom || dateTo
+        ? `${dateFrom || '…'} → ${dateTo || '…'}`
+        : `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+
       // ── Header ──────────────────────────────────────────────────────────────
       doc.setFontSize(22);
       doc.setTextColor(...blue);
@@ -301,7 +336,7 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
       doc.setFontSize(13);
       doc.setTextColor(...grey);
       doc.setFont(undefined, 'normal');
-      doc.text(`${t('financialSummaryReport')} — ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`, 14, 30);
+      doc.text(`${t('financialSummaryReport')} — ${rangeLabel}`, 14, 30);
 
       if (profile?.name) {
         doc.setFontSize(9);
@@ -321,25 +356,30 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
       doc.setFont(undefined, 'bold');
       doc.text(t('netFlow').toUpperCase(), 20, 58);
 
-      const netColor: [number, number, number] = report.netFlow >= 0 ? [16, 185, 129] : [239, 68, 68];
+      const netColor: [number, number, number] = pdfNetFlow >= 0 ? [16, 185, 129] : [239, 68, 68];
       doc.setFontSize(16);
       doc.setTextColor(...netColor);
-      doc.text(`${report.netFlow >= 0 ? '+' : ''}$ ${report.netFlow.toFixed(2)}`, 20, 68);
+      doc.text(`${pdfNetFlow >= 0 ? '+' : ''}$ ${pdfNetFlow.toFixed(2)}`, 20, 68);
 
       doc.setFontSize(9);
       doc.setTextColor(...lightGrey);
-      doc.text(`≈ Bs. ${(Math.abs(report.netFlow) * exchangeRate).toFixed(0)}`, 20, 76);
+      doc.text(`≈ Bs. ${(Math.abs(pdfNetFlow) * exchangeRate).toFixed(0)}`, 20, 76);
 
       doc.setFontSize(8);
       doc.setTextColor(...grey);
       doc.setFont(undefined, 'normal');
-      doc.text(`${t('totalIncomeLabel')}: $ ${report.totalIncome.toFixed(2)}`, 110, 58);
-      doc.text(`${t('totalExpenses')}: $ ${report.totalExpense.toFixed(2)}`, 110, 68);
+      doc.text(`${t('totalIncomeLabel')}: $ ${pdfIncome.toFixed(2)}`, 110, 58);
+      doc.text(`${t('totalExpenses')}: $ ${pdfExpense.toFixed(2)}`, 110, 68);
       doc.setTextColor(...lightGrey);
       doc.text(t('compiledByParity'), 110, 76);
 
       // ── Top categories ───────────────────────────────────────────────────────
-      if (report.topCategories.length > 0) {
+      const byCategory = filteredTxs
+        .filter(tx => tx.type === TransactionType.EXPENSE)
+        .reduce((acc, tx) => { acc[tx.category] = (acc[tx.category] || 0) + tx.normalizedAmountUSD; return acc; }, {} as Record<string, number>);
+      const topCats = Object.entries(byCategory).sort(([, a], [, b]) => b - a).slice(0, 5);
+
+      if (topCats.length > 0) {
         doc.setFontSize(11);
         doc.setTextColor(40, 40, 40);
         doc.setFont(undefined, 'bold');
@@ -348,11 +388,14 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
         (doc as any).autoTable({
           startY: 104,
           head: [[t('category'), 'USD', '%']],
-          body: report.topCategories.map(cat => [
-            cat.name,
-            `$ ${cat.amount.toFixed(2)}`,
-            report.totalExpense > 0 ? `${((cat.amount / report.totalExpense) * 100).toFixed(1)}%` : '0%',
-          ]),
+          body: topCats.map(([catId, amount]) => {
+            const cat = CATEGORIES.find(c => c.id === catId);
+            return [
+              cat ? t(cat.name) : catId,
+              `$ ${amount.toFixed(2)}`,
+              pdfExpense > 0 ? `${((amount / pdfExpense) * 100).toFixed(1)}%` : '0%',
+            ];
+          }),
           theme: 'striped',
           headStyles: { fillColor: blue, textColor: 255, fontStyle: 'bold' },
           alternateRowStyles: { fillColor: [248, 250, 255] },
@@ -371,10 +414,12 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
       doc.setFont(undefined, 'bold');
       doc.text(t('recentTransactions'), 14, tableY);
 
+      const sortedTxs = [...filteredTxs].sort((a, b) => b.date.localeCompare(a.date));
+
       (doc as any).autoTable({
         startY: tableY + 4,
         head: [[t('date'), t('description'), t('type'), 'USD']],
-        body: report.allMonthly.map(tx => {
+        body: sortedTxs.map(tx => {
           const cat = CATEGORIES.find(c => c.id === tx.category);
           return [
             new Date(tx.date).toLocaleDateString(),
@@ -390,7 +435,37 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
         columnStyles: { 3: { halign: 'right' } },
       });
 
-      // ── Footer ───────────────────────────────────────────────────────────────
+      // ── Exchange Rates Appendix ──────────────────────────────────────────────
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.setTextColor(...blue);
+      doc.setFont(undefined, 'bold');
+      doc.text(t('exchangeRatesAppendix'), 14, 20);
+
+      doc.setDrawColor(220, 220, 220);
+      doc.line(14, 25, 196, 25);
+
+      (doc as any).autoTable({
+        startY: 30,
+        head: [['Par', t('rate'), t('type')]],
+        body: [
+          ['USD/VES', exchangeRate.toFixed(2), t('officialRate')],
+          ...(typeof (window as any).__parity_parallelRate !== 'undefined'
+            ? [['USD/VES', (window as any).__parity_parallelRate?.toFixed(2) || '—', t('parallelRate')]]
+            : []),
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: blue, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: { 1: { halign: 'right' } },
+      });
+
+      doc.setFontSize(8);
+      doc.setTextColor(...lightGrey);
+      doc.setFont(undefined, 'normal');
+      doc.text(`${t('generated_by')} Parity App — ${new Date().toLocaleString()}`, 14, 60);
+
+      // ── Footer on all pages ───────────────────────────────────────────────────
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -401,7 +476,7 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
         doc.text(`${t('page')} ${i} ${t('of')} ${pageCount}`, 180, 285);
       }
 
-      doc.save(`Parity_Report_${monthName}_${year}.pdf`);
+      doc.save(`Parity_Report_${rangeLabel.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
     } catch (error) {
       console.error('PDF generation failed', error);
     }
