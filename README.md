@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.2.0`
+# PARITY 💸 `v1.3.0`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,21 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.3.0
+
+- **Contact Directory — Smart Popup:**
+  - `feat`: integrate user wallet accounts as quick-fill chips in the "Payment Handles" section — clicking a wallet auto-selects the matching handle type (Zelle, Binance Pay, Pago Móvil, etc.) and pre-fills the value field
+  - `feat`: localize all payment handle type labels in the selector and detail badges (EN/ES/PT)
+  - `feat`: replace every hardcoded placeholder string with i18n keys (`namePlaceholder`, `emailPlaceholder`, `handlePlaceholder`, `contactEmail`)
+- **Phase 2 Module Completion:**
+  - `feat`: persist **Contact Directory** and **Debt Split Tracker** state through App.tsx and encrypted IndexedDB
+  - `feat`: **Scenario Planner** — "Apply to Reality" button wires hypothetical events directly into the AddTransaction flow
+  - `feat`: **Financial Calendar** — days now show real transaction counts and amounts from live data; day names are locale-aware
+  - `feat`: **USDT P2P Spread** setting added to ProfileView for accurate parallel-rate calculations
+  - `feat`: overdue debt push notifications via `checkScheduledNotifications`
+- **i18n:**
+  - `feat`: 50+ new keys across EN/ES/PT — handle types, contact form labels, scenario planner, debt tracker, USDT spread
 
 ### v1.2.0
 

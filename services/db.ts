@@ -1,4 +1,4 @@
-import { Account, Transaction, ScheduledPayment, UserProfile, Budget, Goal, SyncAction, RateHistoryItem, ShoppingItem, ShoppingList } from '../types';
+import { Account, Transaction, ScheduledPayment, UserProfile, Budget, Goal, SyncAction, RateHistoryItem, ShoppingItem, ShoppingList, Contact, Debt } from '../types';
 import { encryptData, decryptData } from './crypto';
 
 export const DB_NAME = 'parity_db';
@@ -19,7 +19,9 @@ export const KEYS = {
     SHOPPING_LISTS: 'shopping_lists',
     SYNC_QUEUE: 'sync_queue',
     PROFILES: 'profiles',
-    ACTIVE_PROFILE_ID: 'active_profile_id'
+    ACTIVE_PROFILE_ID: 'active_profile_id',
+    CONTACTS: 'contacts',
+    DEBTS: 'debts'
 };
 
 export type StorageType = 'LOCAL_STORAGE' | 'INDEXED_DB';
@@ -41,6 +43,8 @@ export interface AppData {
     syncQueue?: SyncAction[];
     profiles?: UserProfile[];
     activeProfileId?: string;
+    contacts?: Contact[];
+    debts?: Debt[];
 }
 
 export class IndexedDBService {
@@ -77,7 +81,7 @@ export class IndexedDBService {
         await this.ensureOpen();
         
         // Encrypt everything before opening transaction
-        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping, encShoppingLists, encQueue, encProfiles, encActiveProfileId] = await Promise.all([
+        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping, encShoppingLists, encQueue, encProfiles, encActiveProfileId, encContacts, encDebts] = await Promise.all([
             encryptData(data.accounts),
             encryptData(data.transactions),
             encryptData(data.scheduledPayments),
@@ -90,7 +94,9 @@ export class IndexedDBService {
             encryptData(data.shoppingLists || []),
             encryptData(data.syncQueue || []),
             encryptData(data.profiles || []),
-            encryptData(data.activeProfileId || '')
+            encryptData(data.activeProfileId || ''),
+            encryptData(data.contacts || []),
+            encryptData(data.debts || [])
         ]);
 
         return new Promise((resolve, reject) => {
@@ -111,7 +117,9 @@ export class IndexedDBService {
             store.put(encQueue, KEYS.SYNC_QUEUE);
             store.put(encProfiles, KEYS.PROFILES);
             store.put(encActiveProfileId, KEYS.ACTIVE_PROFILE_ID);
-            
+            store.put(encContacts, KEYS.CONTACTS);
+            store.put(encDebts, KEYS.DEBTS);
+
             // CLEANUP: Remove legacy root key if it exists to prevent read conflicts
             store.delete(KEYS.ROOT);
 
@@ -129,11 +137,12 @@ export class IndexedDBService {
             
             const rawResults: any = {};
             const keysToFetch = [
-                KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED, 
-                KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS, 
-                KEYS.GOALS, KEYS.HISTORY, KEYS.SHOPPING, 
+                KEYS.ACCOUNTS, KEYS.TRANSACTIONS, KEYS.SCHEDULED,
+                KEYS.PROFILE, KEYS.METADATA, KEYS.BUDGETS,
+                KEYS.GOALS, KEYS.HISTORY, KEYS.SHOPPING,
                 KEYS.SHOPPING_LISTS, KEYS.SYNC_QUEUE,
-                KEYS.PROFILES, KEYS.ACTIVE_PROFILE_ID
+                KEYS.PROFILES, KEYS.ACTIVE_PROFILE_ID,
+                KEYS.CONTACTS, KEYS.DEBTS
             ];
             const allKeysToFetch = [...keysToFetch, KEYS.ROOT];
             let fetchCompleted = 0;
@@ -165,7 +174,9 @@ export class IndexedDBService {
                         shoppingLists: results[KEYS.SHOPPING_LISTS] || [],
                         syncQueue: results[KEYS.SYNC_QUEUE] || [],
                         profiles: results[KEYS.PROFILES] || [],
-                        activeProfileId: results[KEYS.ACTIVE_PROFILE_ID] || ''
+                        activeProfileId: results[KEYS.ACTIVE_PROFILE_ID] || '',
+                        contacts: results[KEYS.CONTACTS] || [],
+                        debts: results[KEYS.DEBTS] || []
                     };
                     resolve(appData);
                     return;
@@ -250,6 +261,8 @@ export class IndexedDBService {
             store.delete(KEYS.METADATA);
             store.delete(KEYS.PROFILES);
             store.delete(KEYS.ACTIVE_PROFILE_ID);
+            store.delete(KEYS.CONTACTS);
+            store.delete(KEYS.DEBTS);
 
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);

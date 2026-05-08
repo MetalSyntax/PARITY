@@ -33,7 +33,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { INITIAL_RATE, INITIAL_USD_RATE_PARALLEL, INITIAL_EURO_RATE, INITIAL_EURO_RATE_PARALLEL, MOCK_ACCOUNTS, CATEGORIES } from './constants';
 import { formatAmount } from './utils/formatUtils';
 import { projectMonthEndSpending, calculateRunway, checkBudgetForecasts } from './utils/forecast';
-import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList, EntityType } from './types';
+import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList, EntityType, Contact, Debt } from './types';
 import { idbService, StorageType, AppData } from './services/db';
 import { encryptData, decryptData } from './services/crypto';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
@@ -129,6 +129,8 @@ function AppContent() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [activeListId, setActiveListId] = useState<string | null>(null);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(() => {
     const saved = localStorage.getItem("displayCurrency");
     return saved ? (saved as Currency) : Currency.USD;
@@ -366,6 +368,8 @@ function AppContent() {
                 setActiveListId(defaultList.id);
             }
             setShoppingItems(loadedData.shoppingItems || []);
+            setContacts(loadedData.contacts || []);
+            setDebts(loadedData.debts || []);
             setIsFirstTime(false);
         } else {
             setIsFirstTime(true);
@@ -379,7 +383,7 @@ function AppContent() {
          try {
              const [usdRes, eurRes] = await Promise.all([
                 fetch('https://ve.dolarapi.com/v1/dolares'),
-                fetch('https://ve.dolarapi.com/v1/euros')
+                fetch('https://ve.dolarapi.com/v1/euros'),
              ]);
 
              if (usdRes.ok) {
@@ -513,6 +517,22 @@ function AppContent() {
         if (updated) {
             setScheduledPayments(newPayments);
         }
+
+        // Debt overdue alerts
+        const currentDebts = debtsRef.current;
+        currentDebts.forEach(debt => {
+            if (debt.status === 'settled' || !debt.dueDate) return;
+            const dueDate = new Date(debt.dueDate);
+            if (dueDate < now) {
+                const alertKey = `parity_debt_overdue_${debt.id}_${todayStr}`;
+                if (!localStorage.getItem(alertKey)) {
+                    const title = t('debtOverdueTitle') === 'debtOverdueTitle' ? 'Overdue Debt' : t('debtOverdueTitle');
+                    const body = `${debt.counterpartyName} — $${debt.amount.toFixed(2)} ${debt.currency}`;
+                    sendPushNotification(title as string, body, `debt-overdue-${debt.id}-${todayStr}`);
+                    localStorage.setItem(alertKey, 'true');
+                }
+            }
+        });
     };
 
     const scheduledPaymentsRef = useRef(scheduledPayments);
@@ -525,6 +545,7 @@ function AppContent() {
     const usdRateParallelRef = useRef(usdRateParallel);
     const euroRateParallelRef = useRef(euroRateParallel);
     const activeProfileIdRef = useRef(activeProfileId);
+    const debtsRef = useRef(debts);
 
     useEffect(() => {
         scheduledPaymentsRef.current = scheduledPayments;
@@ -537,7 +558,8 @@ function AppContent() {
         usdRateParallelRef.current = usdRateParallel;
         euroRateParallelRef.current = euroRateParallel;
         activeProfileIdRef.current = activeProfileId;
-    }, [scheduledPayments, userProfile, exchangeRate, euroRate, budgets, transactions, accounts, usdRateParallel, euroRateParallel, activeProfileId]);
+        debtsRef.current = debts;
+    }, [scheduledPayments, userProfile, exchangeRate, euroRate, budgets, transactions, accounts, usdRateParallel, euroRateParallel, activeProfileId, debts]);
 
     useEffect(() => {
         if (!isLoaded) return;
@@ -813,6 +835,8 @@ function AppContent() {
       shoppingLists,
       profiles,
       activeProfileId,
+      contacts,
+      debts,
       syncQueue: [] // syncQueue is managed separately by syncService
     };
 
@@ -830,7 +854,7 @@ function AppContent() {
     };
     
     save();
-  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, shoppingItems, shoppingLists, isLoaded, storageType, profiles, activeProfileId]);
+  }, [exchangeRate, usdRateParallel, euroRate, euroRateParallel, accounts, transactions, scheduledPayments, userProfile, budgets, goals, rateHistory, shoppingItems, shoppingLists, isLoaded, storageType, profiles, activeProfileId, contacts, debts]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -1077,6 +1101,8 @@ function AppContent() {
       shoppingLists,
       profiles,
       activeProfileId,
+      contacts,
+      debts,
       syncQueue: []
     }).catch(e => console.error('[PARITY] Immediate save failed:', e));
 
@@ -1609,12 +1635,27 @@ function AppContent() {
             <ContactDirectoryView
               onBack={() => setCurrentView('DASHBOARD')}
               lang={userProfile.language}
+              contacts={contacts.filter(c => c.profileId === activeProfileId || (!c.profileId && activeProfileId === 'default'))}
+              onUpdateContacts={(updated) => setContacts(prev => [
+                ...prev.filter(c => c.profileId !== activeProfileId && (c.profileId || activeProfileId !== 'default')),
+                ...updated.map(c => ({ ...c, profileId: c.profileId || activeProfileId }))
+              ])}
+              transactions={filteredTransactions}
+              exchangeRate={exchangeRate}
+              onQuickTransfer={() => setCurrentView('TRANSFER')}
+              accounts={accounts.filter(a => a.profileId === activeProfileId || (!a.profileId && activeProfileId === 'default'))}
             />
           )}
           {currentView === 'DEBT_TRACKER' && (
             <DebtSplitTrackerView
               onBack={() => setCurrentView('DASHBOARD')}
               lang={userProfile.language}
+              exchangeRate={exchangeRate}
+              debts={debts.filter(d => d.profileId === activeProfileId || (!d.profileId && activeProfileId === 'default'))}
+              onUpdateDebts={(updated) => setDebts(prev => [
+                ...prev.filter(d => d.profileId !== activeProfileId && (d.profileId || activeProfileId !== 'default')),
+                ...updated.map(d => ({ ...d, profileId: d.profileId || activeProfileId }))
+              ])}
             />
           )}
           {(currentView === 'EXPORT' || currentView === 'IMPORT' || currentView === 'PDF_REPORT') && (
@@ -1660,6 +1701,22 @@ function AppContent() {
                 else if (a.currency === Currency.EUR) v = (a.balance * (euroRate || exchangeRate)) / exchangeRate;
                 return acc + v;
               }, 0)}
+              onApplyToReality={(event) => {
+                const prefilled: Partial<Transaction> = {
+                  amount: Math.abs(event.amount),
+                  originalCurrency: Currency.USD,
+                  exchangeRate,
+                  normalizedAmountUSD: Math.abs(event.amount),
+                  type: event.amount >= 0 ? TransactionType.INCOME : TransactionType.EXPENSE,
+                  note: event.name,
+                  date: new Date().toISOString(),
+                  category: event.amount >= 0 ? 'income' : 'OTHER',
+                  accountId: filteredAccounts[0]?.id || '',
+                };
+                setEditingTransaction(prefilled as Transaction);
+                setShowAdd(true);
+                setCurrentView('DASHBOARD');
+              }}
             />
           )}
         </motion.div>
@@ -1760,6 +1817,7 @@ function AppContent() {
                 date: new Date().toISOString()
             } as Transaction : null)}
             showAlert={showAlert}
+            contacts={contacts}
           />
         )}
 

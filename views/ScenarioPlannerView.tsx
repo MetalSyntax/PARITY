@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Plus, Check, ArrowLeft, X, BarChart2, Zap } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Check, ArrowLeft, X, BarChart2, Zap, ArrowRightLeft } from 'lucide-react';
 import { Language, Currency } from '../types';
 import { getTranslation } from '../i18n';
 
@@ -30,6 +30,7 @@ interface ScenarioPlannerViewProps {
   displayCurrency: Currency;
   isBalanceVisible: boolean;
   totalBalanceUSD: number;
+  onApplyToReality?: (event: ScenarioEvent) => void;
 }
 
 interface AddEventForm {
@@ -51,7 +52,7 @@ function loadScenarios(): NamedScenario[] {
 }
 
 export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
-  onBack, lang, exchangeRate, isBalanceVisible, totalBalanceUSD,
+  onBack, lang, exchangeRate, isBalanceVisible, totalBalanceUSD, onApplyToReality,
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [scenarios, setScenarios] = useState<NamedScenario[]>(loadScenarios);
@@ -421,6 +422,15 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
                         >
                           <Check size={14} />
                         </motion.button>
+                        {onApplyToReality && event.type !== 'rate_shift' && (
+                          <button
+                            onClick={() => onApplyToReality(event)}
+                            title={t('applyToReality')}
+                            className="w-8 h-8 rounded-full flex items-center justify-center border border-white/5 text-theme-secondary hover:text-emerald-400 hover:border-emerald-500/20 hover:bg-emerald-500/10 transition-all"
+                          >
+                            <ArrowRightLeft size={13} />
+                          </button>
+                        )}
                         <button
                           onClick={() => deleteEvent(event.id)}
                           className="w-8 h-8 rounded-full flex items-center justify-center border border-white/5 text-theme-secondary hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/10 transition-all"

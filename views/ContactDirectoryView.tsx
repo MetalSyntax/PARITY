@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Users, ArrowUpRight, ArrowDownLeft, Plus, Check, ArrowLeft, X, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
-import { Language, Currency } from '../types';
+import { Search, Users, ArrowUpRight, ArrowDownLeft, Plus, Check, ArrowLeft, X, ChevronDown, ChevronUp, Trash2, ArrowRightLeft, Wallet } from 'lucide-react';
+import { Language, Currency, Transaction, TransactionType, Account } from '../types';
 import { getTranslation } from '../i18n';
 
 const AVATAR_COLORS = [
@@ -36,6 +36,12 @@ interface Contact {
 interface ContactDirectoryViewProps {
   onBack: () => void;
   lang: Language;
+  contacts: Contact[];
+  onUpdateContacts: (contacts: Contact[]) => void;
+  transactions: Transaction[];
+  exchangeRate: number;
+  onQuickTransfer?: () => void;
+  accounts?: Account[];
 }
 
 type FilterType = 'ALL' | 'YOU_OWE' | 'OWED_TO_YOU';
@@ -62,12 +68,31 @@ const EMPTY_FORM: AddContactForm = {
   paymentHandles: [],
 };
 
-export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang, onBack }) => {
+const HANDLE_TYPE_KEY: Record<HandleType, string> = {
+  zelle: 'handleZelle',
+  binance_pay: 'handleBinancePay',
+  pago_movil: 'handlePagoMovil',
+  bank: 'handleBank',
+  cash: 'handleCash',
+  other: 'handleOther',
+};
+
+function guessHandleType(account: Account): HandleType {
+  const name = account.name.toLowerCase();
+  if (name.includes('zelle')) return 'zelle';
+  if (name.includes('binance') || account.currency === Currency.USDT) return 'binance_pay';
+  if (name.includes('pago') || name.includes('movil') || name.includes('mobile')) return 'pago_movil';
+  if (account.currency === Currency.VES) return 'pago_movil';
+  if (name.includes('bank') || name.includes('banco') || name.includes('transfer')) return 'bank';
+  if (name.includes('cash') || name.includes('efectivo') || name.includes('dinheiro')) return 'cash';
+  return 'other';
+}
+
+export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang, onBack, contacts, onUpdateContacts, transactions, exchangeRate, onQuickTransfer, accounts = [] }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const [contacts, setContacts] = useState<Contact[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<AddContactForm>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
@@ -75,12 +100,21 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
   const [newHandleType, setNewHandleType] = useState<HandleType>('zelle');
   const [newHandleValue, setNewHandleValue] = useState('');
 
+  // Compute transaction flow per contact
+  const contactsWithFlow = contacts.map(c => {
+    const linked = transactions.filter(tx => (tx as any).contactId === c.id);
+    const income = linked.filter(tx => tx.type === TransactionType.INCOME).reduce((s, tx) => s + tx.normalizedAmountUSD, 0);
+    const expense = linked.filter(tx => tx.type === TransactionType.EXPENSE).reduce((s, tx) => s + tx.normalizedAmountUSD, 0);
+    const netFlow = income - expense;
+    return { ...c, _netFlow: netFlow, _linkedCount: linked.length };
+  });
+
   const totalOwedToYou = contacts.filter(c => c.direction === 'OWED_TO_YOU').reduce((s, c) => s + c.balance, 0);
   const totalYouOwe = contacts.filter(c => c.direction === 'YOU_OWE').reduce((s, c) => s + c.balance, 0);
 
-  const filtered = contacts.filter(c => {
+  const filtered = contactsWithFlow.filter(c => {
     const matchFilter = filter === 'ALL' || c.direction === filter;
-    const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.email || '').toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
@@ -101,7 +135,7 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
     if (!form.name.trim()) { setFormError(`${t('name')} ${t('fieldRequired')}`); return; }
     const amount = parseFloat(form.amount) || 0;
     const initials = form.name.trim().split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
-    setContacts((prev: Contact[]) => [...prev, {
+    const newContact: Contact = {
       id: Date.now().toString(),
       name: form.name.trim(),
       email: form.email.trim(),
@@ -113,17 +147,18 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
       balance: amount,
       direction: amount === 0 ? 'SETTLED' : form.direction,
       createdAt: new Date().toISOString(),
-    }]);
+    } as any;
+    onUpdateContacts([...contacts, newContact]);
     closeAdd();
   };
 
   const deleteContact = (id: string) => {
-    setContacts(prev => prev.filter(c => c.id !== id));
+    onUpdateContacts(contacts.filter(c => c.id !== id));
     setSelectedId(null);
   };
 
   const markSettled = (id: string) => {
-    setContacts(prev => prev.map(c => c.id === id ? { ...c, balance: 0, direction: 'SETTLED' } : c));
+    onUpdateContacts(contacts.map(c => c.id === id ? { ...c, balance: 0, direction: 'SETTLED' } : c));
   };
 
   return (
@@ -290,7 +325,7 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
                         <span className="px-2 py-1 rounded-full bg-theme-brand/10 border border-theme-brand/20 text-[10px] text-theme-brand font-black">{contact.defaultCurrency}</span>
                         {contact.paymentHandles.map((h, idx) => (
                           <span key={idx} className="px-2 py-1 rounded-full bg-theme-surface border border-white/10 text-[10px] text-theme-secondary font-bold">
-                            <span className="text-theme-primary">{h.type}</span>: {h.value}
+                            <span className="text-theme-primary">{t(HANDLE_TYPE_KEY[h.type as HandleType] || h.type)}</span>: {h.value}
                           </span>
                         ))}
                         {contact.paymentHandles.length === 0 && (
@@ -306,6 +341,17 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
                       {/* Added date */}
                       <p className="text-[10px] text-theme-secondary opacity-40">{t('createdAt')}: {new Date(contact.createdAt).toLocaleDateString()}</p>
 
+                      {/* Transaction net flow */}
+                      {(contact as any)._linkedCount > 0 && (
+                        <div className="flex items-center gap-2 text-[10px] text-theme-secondary bg-theme-surface/50 rounded-lg px-3 py-2">
+                          <span>{(contact as any)._linkedCount} tx →</span>
+                          <span className={(contact as any)._netFlow >= 0 ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
+                            {(contact as any)._netFlow >= 0 ? '+' : ''}${(contact as any)._netFlow.toFixed(2)}
+                          </span>
+                          <span>{t('contactNetFlow')}</span>
+                        </div>
+                      )}
+
                       {/* Actions */}
                       <div className="flex gap-2 pt-1">
                         {contact.direction !== 'SETTLED' && (
@@ -314,6 +360,14 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
                             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-emerald-500/30 text-emerald-400 text-xs font-black hover:bg-emerald-500/10 transition-colors"
                           >
                             <Check size={12} /> {t('markAsSettled')}
+                          </button>
+                        )}
+                        {onQuickTransfer && (
+                          <button
+                            onClick={onQuickTransfer}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-theme-brand/30 text-theme-brand text-xs font-black hover:bg-theme-brand/10 transition-colors"
+                          >
+                            <ArrowRightLeft size={12} />
                           </button>
                         )}
                         <button
@@ -376,17 +430,17 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
                     autoFocus
                     value={form.name}
                     onChange={e => { setForm((f: AddContactForm) => ({ ...f, name: e.target.value })); setFormError(''); }}
-                    placeholder="John Doe"
+                    placeholder={t('namePlaceholder')}
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('note')} / Email</label>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('contactEmail')}</label>
                   <input
                     value={form.email}
                     onChange={e => setForm((f: AddContactForm) => ({ ...f, email: e.target.value }))}
-                    placeholder="john@example.com"
+                    placeholder={t('emailPlaceholder')}
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
@@ -440,10 +494,37 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
                 {/* Payment Handles */}
                 <div>
                   <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('paymentHandles')}</label>
+
+                  {/* Quick-add from wallets */}
+                  {accounts.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-[9px] text-theme-secondary/50 uppercase tracking-widest font-bold mb-1.5 flex items-center gap-1">
+                        <Wallet size={9} />{t('fromYourWallets')}
+                      </p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {accounts.map(acc => (
+                          <button
+                            key={acc.id}
+                            type="button"
+                            onClick={() => {
+                              setNewHandleType(guessHandleType(acc));
+                              setNewHandleValue(acc.name);
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-theme-bg border border-white/10 text-[10px] text-theme-secondary hover:border-theme-brand/40 hover:text-theme-brand transition-all"
+                          >
+                            <span>{acc.icon}</span>
+                            <span className="font-bold">{acc.name}</span>
+                            <span className="text-theme-secondary/40">{acc.currency}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {form.paymentHandles.map((h, idx) => (
                     <div key={idx} className="flex items-center gap-2 mb-1.5">
                       <span className="flex-1 bg-theme-bg border border-white/10 rounded-xl px-3 py-2 text-xs text-theme-secondary">
-                        <span className="text-theme-brand font-bold">{h.type}</span>: {h.value}
+                        <span className="text-theme-brand font-bold">{t(HANDLE_TYPE_KEY[h.type])}</span>: {h.value}
                       </span>
                       <button onClick={() => removeHandle(idx)} className="text-theme-secondary hover:text-red-400 transition-colors p-1">
                         <X size={13} />
@@ -456,12 +537,12 @@ export const ContactDirectoryView: React.FC<ContactDirectoryViewProps> = ({ lang
                       onChange={e => setNewHandleType(e.target.value as HandleType)}
                       className="bg-theme-bg border border-white/10 rounded-xl px-2 py-2 text-xs text-theme-secondary outline-none"
                     >
-                      {HANDLE_TYPES.map(ht => <option key={ht} value={ht}>{ht}</option>)}
+                      {HANDLE_TYPES.map(ht => <option key={ht} value={ht}>{t(HANDLE_TYPE_KEY[ht])}</option>)}
                     </select>
                     <input
                       value={newHandleValue}
                       onChange={e => setNewHandleValue(e.target.value)}
-                      placeholder="handle / account..."
+                      placeholder={t('handlePlaceholder')}
                       onKeyDown={e => e.key === 'Enter' && addHandle()}
                       className="flex-1 bg-theme-bg border border-white/10 rounded-xl px-3 py-2 text-xs text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                     />

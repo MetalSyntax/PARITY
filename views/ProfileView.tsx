@@ -64,6 +64,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [notificationsEnabled, setNotificationsEnabled] = useState(profile.notificationsEnabled || false);
   const [smartAlertsEnabled, setSmartAlertsEnabled] = useState(profile.smartAlertsEnabled !== false); // Default to true
   const [notificationLeadTime, setNotificationLeadTime] = useState(profile.notificationLeadTime || 1);
+  const [usdtSpread, setUsdtSpread] = useState(profile.usdtSpread ?? 0);
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -88,14 +89,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   const handleSave = () => {
-    onUpdateProfile({ 
+    onUpdateProfile({
       ...profile,
-      name, 
+      name,
       language: lang,
       profileImage,
       notificationsEnabled,
       smartAlertsEnabled,
-      notificationLeadTime
+      notificationLeadTime,
+      usdtSpread
     });
     onBack();
   };
@@ -403,6 +405,35 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         </motion.div>
 
+        {/* USDT P2P Spread Card */}
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-2xl p-5 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+              <span className="text-yellow-400 font-black text-sm">₮</span>
+            </div>
+            <div>
+              <h3 className="text-base font-black text-theme-primary">{t('usdtSpread')}</h3>
+              <p className="text-[11px] text-theme-secondary opacity-60">{t('usdtSpreadDesc')}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-theme-secondary">{t('p2pSpreadPercent')}</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="-10"
+                max="20"
+                step="0.1"
+                value={usdtSpread}
+                onChange={e => setUsdtSpread(parseFloat(e.target.value) || 0)}
+                className="w-20 bg-theme-bg border border-theme-soft rounded-2xl px-3 py-1.5 text-sm font-black text-yellow-400 text-center outline-none focus:border-yellow-500/50"
+              />
+              <span className="text-sm font-black text-theme-secondary">%</span>
+            </div>
+          </div>
+          <p className="text-[10px] text-theme-secondary mt-2 opacity-50">{t('usdtSpreadHint')}</p>
+        </motion.div>
+
         {/* Sync Card */}
         <AnimatePresence>
           {isDevMode && (
@@ -478,7 +509,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             onClick={onDevModeTrigger}
             className="text-[10px] font-mono cursor-pointer hover:text-theme-brand transition-colors select-none"
           >
-            v1.1.0 {isDevMode && !profile.hideDevMode && t('dev_mode_label')}
+            v1.3.0 {isDevMode && !profile.hideDevMode && t('dev_mode_label')}
           </p>
         </motion.div>
       </div>

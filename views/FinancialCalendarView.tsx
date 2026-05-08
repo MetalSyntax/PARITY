@@ -48,8 +48,10 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 
 export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
   onBack,
+  transactions,
   scheduledPayments,
   lang,
+  exchangeRate,
   isBalanceVisible,
 }) => {
   const t = (key: any) => getTranslation(lang, key);
@@ -100,37 +102,48 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
     const firstDay = new Date(viewYear, viewMonth, 1).getDay();
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     const days: CalendarDay[] = [];
+    const monthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
 
     for (let i = 0; i < firstDay; i++) days.push({ day: null, type: 'EMPTY' });
 
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(viewYear, viewMonth, d);
       const isToday = date.toDateString() === today.toDateString();
+      const dayStr = `${monthStr}-${String(d).padStart(2, '0')}`;
+
+      // Real transactions for this day
+      const dayTxs = transactions.filter(tx => tx.date.startsWith(dayStr));
+      const dayIncome = dayTxs.filter(tx => tx.type === 'INCOME').reduce((s, tx) => s + tx.normalizedAmountUSD, 0);
+      const dayExpense = dayTxs.filter(tx => tx.type === 'EXPENSE').reduce((s, tx) => s + tx.normalizedAmountUSD, 0);
+      const dayNet = dayIncome - dayExpense;
 
       const scheduled = scheduledPayments.filter(sp => {
         if (!(sp as any).nextDueDate) return false;
-        return (sp as any).nextDueDate.startsWith(`${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`) && new Date((sp as any).nextDueDate).getDate() === d;
+        return (sp as any).nextDueDate.startsWith(monthStr) && new Date((sp as any).nextDueDate).getDate() === d;
       });
-
       const projections = localProjections.filter(p => p.year === viewYear && p.month === viewMonth && p.day === d);
 
       let type: DayType = isToday ? 'TODAY' : 'NORMAL';
       let label: string | undefined;
 
-      if (scheduled.length > 0) {
-        type = scheduled.some(sp => (sp.amount || 0) < 0) ? 'OUTFLOW' : 'INCOME';
+      // Priority: real transactions → scheduled → projections
+      if (dayTxs.length > 0) {
+        type = dayNet < 0 ? 'OUTFLOW' : 'INCOME';
+        label = dayTxs[0].note || undefined;
+      } else if (scheduled.length > 0) {
+        type = 'OUTFLOW';
         label = scheduled[0].name;
       } else if (projections.length > 0) {
         type = projections.some(p => p.amount < 0) ? 'OUTFLOW' : 'INCOME';
         label = projections[0].name;
       }
 
-      if (isToday && type === 'TODAY') label = undefined;
+      if (isToday && dayTxs.length === 0 && scheduled.length === 0) type = 'TODAY';
       days.push({ day: d, type, label });
     }
 
     return days;
-  }, [viewYear, viewMonth, scheduledPayments, localProjections]);
+  }, [viewYear, viewMonth, scheduledPayments, localProjections, transactions]);
 
   const selectedDayPayments = useMemo(() => {
     return scheduledPayments.filter(sp => {
@@ -138,6 +151,11 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
       return (sp as any).nextDueDate.startsWith(`${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`) && new Date((sp as any).nextDueDate).getDate() === selectedDay;
     });
   }, [selectedDay, viewYear, viewMonth, scheduledPayments]);
+
+  const selectedDayTransactions = useMemo(() => {
+    const dayStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+    return transactions.filter(tx => tx.date.startsWith(dayStr));
+  }, [selectedDay, viewYear, viewMonth, transactions]);
 
   const selectedDayProjections = useMemo(() => {
     return localProjections.filter(p => p.year === viewYear && p.month === viewMonth && p.day === selectedDay);
@@ -227,7 +245,10 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
 
           {/* Days of week */}
           <div className="grid grid-cols-7 gap-1 mb-1">
-            {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((d, i) => (
+            {Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(2024, 0, i); // Jan 2024: starts on Mon, index 0=Sun
+              return d.toLocaleString(lang === 'es' ? 'es' : lang === 'pt' ? 'pt' : 'en', { weekday: 'short' }).slice(0, 3);
+            }).map((d, i) => (
               <div key={i} className="text-center text-[10px] text-theme-secondary font-black py-1">{d}</div>
             ))}
           </div>
@@ -280,12 +301,29 @@ export const FinancialCalendarView: React.FC<FinancialCalendarViewProps> = ({
           <h3 className="text-base font-black text-theme-primary mb-0.5">
             {new Date(viewYear, viewMonth, selectedDay).toLocaleDateString(lang === 'es' ? 'es' : lang === 'pt' ? 'pt' : 'en', { month: 'long', day: 'numeric' })}
           </h3>
-          <p className="text-[11px] text-theme-secondary mb-4">{totalEvents} {t('scheduledEventsLabel')}</p>
+          <p className="text-[11px] text-theme-secondary mb-4">{totalEvents + selectedDayTransactions.length} {t('scheduledEventsLabel')}</p>
 
-          {totalEvents === 0 ? (
+          {totalEvents === 0 && selectedDayTransactions.length === 0 ? (
             <div className="text-center py-8 text-theme-secondary text-sm">{t('noScheduledPayments')}</div>
           ) : (
             <div className="space-y-2">
+              {/* Real transactions for this day */}
+              {selectedDayTransactions.map((tx, i) => (
+                <div key={`tx-${i}`} className="bg-theme-surface/50 border border-white/5 rounded-xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${tx.type === 'EXPENSE' ? 'bg-red-500/10 text-red-400 border-red-500/20' : tx.type === 'INCOME' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-theme-surface text-theme-secondary border-white/10'}`}>
+                      {tx.type === 'INCOME' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-theme-primary">{tx.note || tx.category}</p>
+                      <p className="text-[11px] text-theme-secondary">{tx.category}</p>
+                    </div>
+                  </div>
+                  <span className={`font-black text-sm font-mono ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {isBalanceVisible ? `${tx.type === 'INCOME' ? '+' : '-'}$${tx.normalizedAmountUSD.toFixed(2)}` : '••••'}
+                  </span>
+                </div>
+              ))}
               {selectedDayPayments.map((sp, i) => (
                 <div key={`sp-${i}`} className="bg-theme-surface/50 border border-white/5 rounded-xl p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">

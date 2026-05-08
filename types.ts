@@ -47,6 +47,7 @@ export interface UserProfile {
   notificationLeadTime?: number; // Days before due date
   smartAlertsEnabled?: boolean;
   dashboardLayout?: DashboardLayout;
+  usdtSpread?: number; // P2P spread % over spot (e.g. 1.5 = +1.5%)
   updatedAt?: string;
 }
 
@@ -83,6 +84,54 @@ export interface Transaction {
   budgetMonth?: string; // YYYY-MM
   skipBalanceUpdate?: boolean;
   fiscalTag?: FiscalTag;
+  profileId?: string;
+  contactId?: string; // Link to Contact in directory
+}
+
+// ─── Contact & Counterparty Directory ───────────────────────────────────────
+
+export type PaymentHandleType = 'zelle' | 'binance_pay' | 'pago_movil' | 'bank' | 'cash' | 'other';
+
+export interface PaymentHandle {
+  type: PaymentHandleType;
+  value: string;
+  label?: string;
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  avatarColor: string;
+  defaultCurrency: Currency;
+  paymentHandles: PaymentHandle[];
+  notes?: string;
+  createdAt: string;
+  profileId?: string;
+}
+
+// ─── Debt & Split Tracker ────────────────────────────────────────────────────
+
+export interface DebtPayment {
+  id: string;
+  amount: number;
+  date: string;
+  note?: string;
+}
+
+export interface Debt {
+  id: string;
+  type: 'i_owe' | 'they_owe';
+  contactId?: string;
+  counterpartyName: string;
+  amount: number;
+  currency: Currency;
+  amountAtRateUSD: number; // USD equivalent at creation — preserves real value
+  description: string;
+  dueDate?: string;
+  status: 'active' | 'partial' | 'settled';
+  payments: DebtPayment[];
+  createdAt: string;
+  linkedTransactionId?: string;
   profileId?: string;
 }
 
@@ -207,6 +256,8 @@ export interface AppData {
     syncQueue?: SyncAction[];
     profiles?: UserProfile[];
     activeProfileId?: string;
+    contacts?: Contact[];
+    debts?: Debt[];
 }
 
 export interface ConfirmConfig {

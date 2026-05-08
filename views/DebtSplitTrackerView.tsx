@@ -29,6 +29,8 @@ interface DebtSplitTrackerViewProps {
   onBack: () => void;
   lang: Language;
   exchangeRate?: number;
+  debts?: Split[];
+  onUpdateDebts?: (debts: Split[]) => void;
 }
 
 interface AddSplitForm {
@@ -49,9 +51,15 @@ type SectionTab = 'OWED_TO_YOU' | 'YOU_OWE';
 const EMPTY_FORM: AddSplitForm = { name: '', category: '', amount: '', direction: 'OWED_TO_YOU', dueDate: '' };
 const EMPTY_PAYMENT: AddPaymentForm = { amount: '', note: '' };
 
-export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang, onBack, exchangeRate = 1 }) => {
+export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang, onBack, exchangeRate = 1, debts: externalDebts, onUpdateDebts }) => {
   const t = (key: any) => getTranslation(lang, key);
-  const [splits, setSplits] = useState<Split[]>([]);
+  const [localSplits, setLocalSplits] = useState<Split[]>([]);
+  const splits = externalDebts ?? localSplits;
+  const setSplits = (updater: Split[] | ((prev: Split[]) => Split[])) => {
+    const next = typeof updater === 'function' ? updater(splits) : updater;
+    if (onUpdateDebts) onUpdateDebts(next);
+    else setLocalSplits(next);
+  };
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<AddSplitForm>(EMPTY_FORM);
@@ -93,7 +101,7 @@ export const DebtSplitTrackerView: React.FC<DebtSplitTrackerViewProps> = ({ lang
       category: form.category.trim() || t('general'),
       amount,
       remaining: amount,
-      amountAtRateUSD: amount,
+      amountAtRateUSD: amount, // USD at creation rate
       direction: form.direction,
       status: 'active',
       dueDate: form.dueDate || undefined,

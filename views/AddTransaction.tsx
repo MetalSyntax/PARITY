@@ -8,7 +8,7 @@ declare global {
 }
 const Tesseract = window.Tesseract;
 import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
-import { TransactionType, Currency, Account, Language, Transaction, Budget } from '../types';
+import { TransactionType, Currency, Account, Language, Transaction, Budget, Contact } from '../types';
 import { CATEGORIES, getSmartCategories } from '../constants';
 import { getTranslation } from '../i18n';
 import { formatMonth } from '../utils/formatUtils';
@@ -46,13 +46,15 @@ interface AddTransactionProps {
   euroRate?: number;
   transactions: Transaction[];
   budgets: Budget[];
+  contacts?: Contact[];
 }
 
-export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, euroRate, accounts, lang, initialData, showAlert, transactions, budgets }) => {
+export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, euroRate, accounts, lang, initialData, showAlert, transactions, budgets, contacts = [] }) => {
   const [amountStr, setAmountStr] = useState(initialData ? initialData.amount.toString() : '0');
   const [currency, setCurrency] = useState<Currency>(initialData ? initialData.originalCurrency : Currency.USD);
   const [type, setType] = useState<TransactionType>(initialData ? initialData.type : TransactionType.EXPENSE);
   const [note, setNote] = useState(initialData ? initialData.note : '');
+  const [selectedContactId, setSelectedContactId] = useState<string | undefined>(initialData?.contactId);
   
   const [fromAccountId, setFromAccountId] = useState<string>(
     initialData ? initialData.accountId : (accounts.length > 0 ? accounts[0].id : '')
@@ -583,7 +585,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       fiscalTag: type !== TransactionType.TRANSFER ? fiscalTag : 'NEUTRAL',
       fee: finalFee,
       scheduledId: initialData?.scheduledId,
-      receipt: receiptImage
+      receipt: receiptImage,
+      contactId: selectedContactId
     });
   };
 
@@ -903,11 +906,34 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
         {/* Note / Search Bar — moved below amount */}
         <div className="px-1 mb-2">
+            {/* Contact autosuggest */}
+            {note.length >= 2 && contacts.filter(c => c.name.toLowerCase().includes(note.toLowerCase())).length > 0 && !selectedContactId && (
+              <div className="mb-1 bg-theme-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                {contacts.filter(c => c.name.toLowerCase().includes(note.toLowerCase())).slice(0, 4).map((c: any) => (
+                  <button
+                    key={c.id}
+                    onClick={() => { setNote(c.name); setSelectedContactId(c.id); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left"
+                  >
+                    <div className={`w-7 h-7 rounded-full ${c.avatarColor || 'bg-blue-500'} flex items-center justify-center text-[10px] font-black text-white`}>
+                      {c.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-sm text-theme-primary font-bold">{c.name}</span>
+                    {c.defaultCurrency && <span className="ml-auto text-[10px] text-theme-secondary">{c.defaultCurrency}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="bg-theme-surface rounded-2xl p-1 flex items-center shadow-sm">
-                <input 
-                    type="text" 
+                {selectedContactId && (
+                  <div className="ml-2 px-2 py-0.5 rounded-full bg-theme-brand/20 border border-theme-brand/30 text-theme-brand text-[10px] font-black flex items-center gap-1 whitespace-nowrap">
+                    @ <button onClick={() => { setSelectedContactId(undefined); }} className="ml-1 opacity-60 hover:opacity-100">×</button>
+                  </div>
+                )}
+                <input
+                    type="text"
                     value={note}
-                    onChange={(e) => setNote(e.target.value)}
+                    onChange={(e) => { setNote(e.target.value); if (selectedContactId) setSelectedContactId(undefined); }}
                     placeholder={t('notePlaceholder')}
                     className="bg-transparent flex-1 px-4 py-2 text-sm font-medium text-theme-primary placeholder:text-theme-secondary outline-none w-full"
                 />
