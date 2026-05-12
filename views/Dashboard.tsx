@@ -31,7 +31,6 @@ import {
 } from "../components/DashboardWidgets";
 import { WIDGET_REGISTRY, DEFAULT_LEFT_COLUMN, DEFAULT_RIGHT_COLUMN } from "../utils/widgetRegistry";
 import { WidgetId } from "../types";
-import { TutorialSystem } from "../components/TutorialSystem";
 
 const ALL_QUICK_ACTIONS: QuickActionDef[] = [
   { id: "TRANSACTIONS", labelKey: "transactions", Icon: Receipt, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
@@ -87,6 +86,7 @@ interface DashboardProps {
   isSyncing?: boolean;
   onSync?: () => void;
   goals: any[];
+  onOpenTutorials?: () => void;
 }
 
 
@@ -120,7 +120,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   syncPendingCount,
   isSyncing,
   onSync,
-  goals
+  goals,
+  onOpenTutorials,
 }) => {
 
   const [showPinModal, setShowPinModal] = useState(false);
@@ -128,7 +129,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   const [showCustomizer, setShowCustomizer] = useState(false);
-  const [showTutorials, setShowTutorials] = useState(false);
   const [showParallelRates, setShowParallelRates] = useState(false);
   const [balanceChartType, setBalanceChartType] = useState<'LINE' | 'BAR'>('LINE');
   const [expenseChartType, setExpenseChartType] = useState<'DOUGHNUT' | 'BAR'>('DOUGHNUT');
@@ -396,8 +396,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
 
   useEffect(() => {
-    onToggleBottomNav(!(showPinModal || showCustomizer || showTutorials));
-  }, [showPinModal, showCustomizer, showTutorials, onToggleBottomNav]);
+    onToggleBottomNav(!(showPinModal || showCustomizer));
+  }, [showPinModal, showCustomizer, onToggleBottomNav]);
 
 
   const handlePrivacyToggle = async (e: React.MouseEvent) => {
@@ -901,7 +901,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setShowTutorials(true)}
+              onClick={() => onOpenTutorials?.()}
               className="flex flex-col items-center gap-0.5 px-2 py-1.5 bg-theme-surface border border-white/5 rounded-2xl text-theme-secondary hover:text-theme-primary hover:border-white/10 transition-all shadow-lg"
               aria-label="Ver tutoriales"
             >
@@ -912,7 +912,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         </div>
         {/* Quick Actions Horizontal List */}
-        <div className="px-6 md:px-0 mb-6 animate-in slide-in-from-top-4 duration-700">
+        <div className="px-6 md:px-0 animate-in slide-in-from-top-4 duration-700">
           <div className="flex items-center justify-between mb-3 px-2">
             <h3 className="text-[10px] font-black text-theme-secondary uppercase tracking-[0.2em] opacity-50">{t("quickActions")}</h3>
             <span className="text-[10px] text-theme-brand font-black uppercase tracking-tighter opacity-40">{t("slide_hint")}</span>
@@ -1069,9 +1069,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         displayCurrency={displayCurrency}
       />
 
-      {showTutorials && (
-        <TutorialSystem onClose={() => setShowTutorials(false)} />
-      )}
     </div>
   );
 };

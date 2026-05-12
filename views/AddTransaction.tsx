@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCw, Image as ImageIcon, Calendar, Edit2, Trash2, ArrowLeft, MoreVertical } from 'lucide-react';
+import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCw, RefreshCcw, Image as ImageIcon, Calendar, Edit2, Trash2, ArrowLeft, MoreVertical } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -732,6 +732,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
           {[TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.TRANSFER].map((tType) => (
             <button
               key={tType}
+              data-tutorial={`tx-type-${tType.toLowerCase()}`}
               onClick={() => setType(tType)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-2xl text-[11px] font-bold transition-all duration-200 ${
                 type === tType
@@ -779,7 +780,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             </div>
         )}
         {/* Amount Section */}
-        <div className="flex flex-col items-center justify-center mb-2 mt-1 relative">
+        <div data-tutorial="tx-amount-input" className="flex flex-col items-center justify-center mb-2 mt-1 relative">
             <div className="flex items-center gap-4">
                 <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl text-theme-secondary font-light">{(currency === Currency.USD || currency === Currency.USDT) ? '$' : currency === Currency.EUR ? '€' : 'Bs'}</span>
@@ -874,11 +875,16 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                             <div className="grid grid-cols-2 gap-x-4">
                              <div className="flex flex-col">
                                 <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">{t('fixed')}</span>
-                                <input ref={commFixedRef} type="text" inputMode="none" value={commissionFixed}
-                                    onChange={(e) => { const v = e.target.value.replace(',', '.'); setCommissionFixed(v.replace(/[^0-9\.]/g, '')); }}
-                                    onFocus={() => setFocusedField('commissionFixed')}
-                                    className="bg-transparent text-[11px] font-bold text-theme-primary outline-none focus:text-theme-brand w-12"
-                                />
+                                <div className="flex items-baseline gap-1">
+                                  <input ref={commFixedRef} type="text" inputMode="none" value={commissionFixed}
+                                      onChange={(e) => { const v = e.target.value.replace(',', '.'); setCommissionFixed(v.replace(/[^0-9\.]/g, '')); }}
+                                      onFocus={() => setFocusedField('commissionFixed')}
+                                      className="bg-transparent text-[11px] font-bold text-theme-primary outline-none focus:text-theme-brand w-10"
+                                  />
+                                  <span className="text-[7px] font-black text-theme-secondary opacity-40">
+                                    {currency === Currency.VES ? 'VES' : currency === Currency.EUR ? 'EUR' : 'USD'}
+                                  </span>
+                                </div>
                              </div>
                              <div className="flex flex-col">
                                 <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">%</span>
@@ -910,7 +916,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         </div>
 
         {/* Note / Search Bar — moved below amount */}
-        <div className="px-1 mb-2">
+        <div className="px-1 mb-1">
             {/* Contact autosuggest */}
             {note.length >= 2 && contacts.filter(c => c.name.toLowerCase().includes(note.toLowerCase())).length > 0 && !selectedContactId && (
               <div className="mb-1 bg-theme-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
@@ -970,7 +976,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             )}
 
         {/* Metadata Slider (Horizontal) */}
-        <div className="flex overflow-x-auto no-scrollbar gap-3 mb-2 px-2 py-1 scroll-smooth">
+        <div className="flex overflow-x-auto no-scrollbar gap-3 mb-1 px-2 py-1 scroll-smooth">
 
             {/* Wallet Selection */}
             {(() => {
@@ -1227,7 +1233,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                   <Calculator size={22} />
                 </button>
                 
-                <button 
+                <button
+                  data-tutorial="tx-save-btn"
                   onClick={isCalculatorMode ? handleCalculate : handleSave}
                   className="flex-1 bg-theme-brand hover:brightness-110 active:scale-[0.98] text-white font-bold h-14 rounded-3xl shadow-xl shadow-brand/20 flex items-center justify-center gap-3 transition-all text-sm"
                 >

@@ -23,6 +23,7 @@ import { FinancialCalendarView } from './views/FinancialCalendarView';
 import { ScenarioPlannerView } from './views/ScenarioPlannerView';
 import { LegalBanner } from './components/LegalBanner';
 import { PinModal } from './components/PinModal';
+import { TutorialSystem } from './components/TutorialSystem';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { getTranslation } from './i18n';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,6 +68,7 @@ function AppContent() {
   const [showSettings, setShowSettings] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [syncPendingCount, setSyncPendingCount] = useState(0);
+  const [showTutorials, setShowTutorials] = useState(false);
 
   useEffect(() => {
     const handleSyncReset = async () => {
@@ -1368,6 +1370,7 @@ function AppContent() {
               isSyncing={isSyncing}
               onSync={exportToCloud}
               goals={goals}
+              onOpenTutorials={() => setShowTutorials(true)}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -1945,6 +1948,15 @@ function AppContent() {
         )}
 
         <LegalBanner lang={userProfile.language} />
+
+        {/* Tutorial System — mounted at app level so it persists across view changes */}
+        {showTutorials && (
+          <TutorialSystem
+            onClose={() => setShowTutorials(false)}
+            onNavigate={(view) => setCurrentView(view as ViewState)}
+            lang={userProfile.language}
+          />
+        )}
       </div>
     </div>
   );

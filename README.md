@@ -1,4 +1,4 @@
-# PARITY 💸 `v1.3.0`
+# PARITY 💸 `v1.4.0`
 
 **Master the Flux. Two Currencies. One Wallet.**
 
@@ -62,6 +62,30 @@ The project is built as a lightweight, performant Single Page Application (SPA) 
 ---
 
 ## 📜 Changelog
+
+### v1.4.0
+
+- **Interactive Tutorial System (full rewrite):**
+  - `feat`: live spotlight overlay with 4-rect cutout — real click-through to the highlighted element; clicking outside the spotlight opens an exit-confirmation dialog
+  - `feat`: `waitForClick` event listeners auto-advance tutorial steps on genuine user interaction (FAB, type buttons, etc.)
+  - `feat`: `getBoundingClientRect` tooltip positioning — prefers below target, flips above when space is insufficient, clamped to viewport
+  - `feat`: async step setup with 15×100 ms DOM retry loop for post-navigation renders (e.g. AddTransaction modal)
+  - `feat`: tutorial system lifted to App.tsx so the overlay persists across view changes
+  - `feat`: 10 tutorials covering the full core workflow
+  - `feat`: tutorial cards use Lucide icons with per-tutorial accent colors (replaced emojis)
+  - `feat`: desktop-only guard — informational sheet shown on screens < 1024 px
+- **Filter UX overhaul:**
+  - `feat`: unified collapsible filter bar in Dashboard Transactions widget — search + 4 icon/label popup buttons (Period, Wallet, Type, Category)
+  - `feat`: TransactionsListView filter bar — 3-column popup grid (Wallet, Type, Category); month picker promoted to header row
+  - `feat`: wallet filter covers both source and destination accounts (transfers included)
+- **Dashboard header restructure:**
+  - `feat`: two-row header layout — profile + rate on top; action buttons (Sync, Widgets, Update, Settings, Tutorials) left-aligned below
+  - `feat`: 5 action buttons fully translated (EN/ES/PT)
+- **AddTransaction:**
+  - `feat`: fixed-commission ("Fijo") input shows `USD` / `VES` / `EUR` suffix matching the active currency
+  - `fix`: commission deducted from source account, not destination; preview and reversal updated
+  - `fix`: VES→USD transfer normalization (`manualExchangeRate` always stored as Bs/USD)
+- **i18n:** `btn_sync`, `btn_widgets`, `btn_update`, `btn_settings`, `btn_tutorials`, `filter`, `clearFilters` added to EN/ES/PT
 
 ### v1.3.0
 

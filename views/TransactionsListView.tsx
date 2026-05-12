@@ -58,6 +58,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   const [monthFormat, setMonthFormat] = useState(() => localStorage.getItem('parity_month_format') || 'YYYY-MM');
 
   const popupRef = useRef<HTMLDivElement>(null);
+  const monthHeaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleSync = () => {
@@ -78,9 +79,9 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
-        setOpenPopup(null);
-      }
+      const inPopup = popupRef.current?.contains(e.target as Node);
+      const inMonth = monthHeaderRef.current?.contains(e.target as Node);
+      if (!inPopup && !inMonth) setOpenPopup(null);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -191,7 +192,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         >
           <ArrowLeft size={20} />
         </motion.button>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-xl font-bold text-theme-primary">{t('transactions')}</h1>
           <div className="flex items-center gap-2">
             <p className="text-xs text-theme-secondary font-medium">{t('fullHistory')}</p>
@@ -208,6 +209,77 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
               </>
             )}
           </div>
+        </div>
+
+        {/* Month picker in header */}
+        <div className="relative flex-shrink-0" ref={monthHeaderRef}>
+          <button
+            onClick={() => togglePopup('month')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-[11px] font-black transition-all ${selectedMonth !== 'ALL' ? 'bg-theme-brand text-white border-theme-brand shadow-lg' : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}
+          >
+            <Calendar size={14} />
+            <span>{selectedMonth !== 'ALL' ? formatMonth(selectedMonth, 'MMM YY', lang) : t('month')}</span>
+          </button>
+          <AnimatePresence>
+            {openPopup === 'month' && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-1.5 w-52 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+              >
+                <div className="max-h-64 overflow-y-auto no-scrollbar py-1">
+                  <button
+                    onClick={() => { setSelectedMonth('ALL'); setOpenPopup(null); }}
+                    className={`w-full text-left px-4 py-2.5 text-xs font-black transition-colors hover:bg-white/5 ${selectedMonth === 'ALL' ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
+                  >
+                    {t('allPeriods')}
+                  </button>
+                  <div className="h-px bg-white/5 mx-3" />
+                  {availableMonths.map(m => (
+                    <div key={m} className={`group flex items-center justify-between px-4 py-2 transition-colors hover:bg-white/5 ${selectedMonth === m ? 'bg-white/5' : ''}`}>
+                      <button
+                        onClick={() => { setSelectedMonth(m); setOpenPopup(null); }}
+                        className={`flex-1 text-left text-xs font-black ${selectedMonth === m ? 'text-theme-brand' : 'text-theme-secondary'}`}
+                      >
+                        {formatMonth(m, monthFormat, lang)}
+                      </button>
+                      {addedMonths.includes(m) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 text-theme-secondary transition-all"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="border-t border-white/5 mt-1 p-2 flex items-center gap-1">
+                    <button
+                      onClick={() => { setOpenPopup(null); setShowAddMonthModal(true); }}
+                      className="flex-1 flex items-center gap-1.5 px-2 py-2 text-[10px] font-black text-theme-brand hover:bg-theme-brand/10 rounded-lg transition-colors border border-theme-brand/20"
+                    >
+                      <Plus size={12} /> {t('addMonth')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const formats = ['YYYY-MM', 'MM/YYYY', 'MMM YYYY', 'MMMM YYYY'];
+                        const next = formats[(formats.indexOf(monthFormat) + 1) % formats.length];
+                        setMonthFormat(next);
+                        localStorage.setItem('parity_month_format', next);
+                        window.dispatchEvent(new Event('parity-format-changed'));
+                      }}
+                      className="p-2 text-theme-secondary hover:text-theme-primary hover:bg-white/5 rounded-lg transition-colors"
+                      title={t('dateFormat')}
+                    >
+                      <RefreshCw size={13} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -232,7 +304,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
       </div>
 
       {/* Filter bar */}
-      <div ref={popupRef} className="flex flex-col gap-3 mb-6">
+      <div className="flex flex-col gap-3 mb-6">
 
         {/* Row 1: Search */}
         <div className="relative">
@@ -251,78 +323,8 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           )}
         </div>
 
-        {/* Row 2: 4 filter buttons — icon + label */}
-        <div className="grid grid-cols-4 gap-2">
-
-          {/* Month */}
-          <div className="relative">
-            <button onClick={() => togglePopup('month')} className={filterBtnActive(selectedMonth !== 'ALL')}>
-              <Calendar size={17} />
-              <span className="text-[8px] font-black uppercase tracking-tight leading-none truncate w-full text-center px-1">
-                {selectedMonth !== 'ALL' ? formatMonth(selectedMonth, 'MMM YY', lang) : t('allPeriods').split(' ')[0]}
-              </span>
-            </button>
-            <AnimatePresence>
-              {openPopup === 'month' && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute left-0 top-full mt-1.5 w-48 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
-                >
-                  <div className="max-h-64 overflow-y-auto no-scrollbar py-1">
-                    <button
-                      onClick={() => { setSelectedMonth('ALL'); setOpenPopup(null); }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-black transition-colors hover:bg-white/5 ${selectedMonth === 'ALL' ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
-                    >
-                      {t('allPeriods')}
-                    </button>
-                    <div className="h-px bg-white/5 mx-3" />
-                    {availableMonths.map(m => (
-                      <div key={m} className={`group flex items-center justify-between px-4 py-2 transition-colors hover:bg-white/5 ${selectedMonth === m ? 'bg-white/5' : ''}`}>
-                        <button
-                          onClick={() => { setSelectedMonth(m); setOpenPopup(null); }}
-                          className={`flex-1 text-left text-xs font-black ${selectedMonth === m ? 'text-theme-brand' : 'text-theme-secondary'}`}
-                        >
-                          {formatMonth(m, monthFormat, lang)}
-                        </button>
-                        {addedMonths.includes(m) && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 text-theme-secondary transition-all"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <div className="border-t border-white/5 mt-1 p-2 flex items-center gap-1">
-                      <button
-                        onClick={() => { setOpenPopup(null); setShowAddMonthModal(true); }}
-                        className="flex-1 flex items-center gap-1.5 px-2 py-2 text-[10px] font-black text-theme-brand hover:bg-theme-brand/10 rounded-lg transition-colors border border-theme-brand/20"
-                      >
-                        <Plus size={12} /> {t('addMonth')}
-                      </button>
-                      <button
-                        onClick={() => {
-                          const formats = ['YYYY-MM', 'MM/YYYY', 'MMM YYYY', 'MMMM YYYY'];
-                          const next = formats[(formats.indexOf(monthFormat) + 1) % formats.length];
-                          setMonthFormat(next);
-                          localStorage.setItem('parity_month_format', next);
-                          window.dispatchEvent(new Event('parity-format-changed'));
-                        }}
-                        className="p-2 text-theme-secondary hover:text-theme-primary hover:bg-white/5 rounded-lg transition-colors"
-                        title={t('dateFormat')}
-                      >
-                        <RefreshCw size={13} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+        {/* Row 2: 3 filter buttons — wallet | type | category */}
+        <div ref={popupRef} className="grid grid-cols-3 gap-2">
 
           {/* Wallet */}
           <div className="relative">

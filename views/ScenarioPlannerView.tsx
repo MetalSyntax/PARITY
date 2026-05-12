@@ -42,8 +42,6 @@ interface AddEventForm {
 }
 
 const EMPTY_FORM: AddEventForm = { name: '', amount: '', type: 'income', color: 'green', rateShift: '' };
-const RATE_BASELINE = 34.0;
-const RATE_MAX = 45.0;
 const MAX_SCENARIOS = 5;
 const LS_KEY = 'parity_scenarios';
 
@@ -57,7 +55,7 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
   const t = (key: any) => getTranslation(lang, key);
   const [scenarios, setScenarios] = useState<NamedScenario[]>(loadScenarios);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(() => loadScenarios()[0]?.id || null);
-  const [rateSlider, setRateSlider] = useState(exchangeRate || RATE_BASELINE);
+  const [simulatedRate, setSimulatedRate] = useState(String(exchangeRate || ''));
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<AddEventForm>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
@@ -126,13 +124,14 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
   );
   const projectedBalance = totalBalanceUSD + scenarioImpact;
   const projectedPct = totalBalanceUSD > 0 ? ((projectedBalance - totalBalanceUSD) / totalBalanceUSD) * 100 : 0;
-  const rateImpactUSD = (rateSlider - (exchangeRate || RATE_BASELINE)) * (totalBalanceUSD / (rateSlider || 1)) * -1;
-  const rateImpactVES = rateImpactUSD * rateSlider * -1;
+  const simRate = parseFloat(simulatedRate) || 0;
+  const baseRate = exchangeRate || 0;
+  const rateImpactUSD = simRate > 0 ? (simRate - baseRate) * (totalBalanceUSD / (simRate || 1)) * -1 : 0;
+  const rateImpactVES = simRate > 0 ? rateImpactUSD * simRate * -1 : 0;
+  const rateDeltaPct = simRate > 0 && baseRate > 0 ? ((simRate - baseRate) / baseRate) * 100 : 0;
 
   const fmt = (n: number) => isBalanceVisible ? `$${Math.abs(n).toFixed(2)}` : '••••••';
   const fmtSigned = (n: number) => isBalanceVisible ? `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}` : '••••';
-
-  const sliderPct = Math.min(100, Math.max(0, ((rateSlider - RATE_BASELINE) / (RATE_MAX - RATE_BASELINE)) * 100));
 
   const colorMap = {
     green: { dot: 'bg-emerald-500 shadow-[0_0_10px_rgba(62,180,137,0.5)]', icon: 'bg-emerald-500/10 text-emerald-400', amount: 'text-emerald-400' },
@@ -193,12 +192,12 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
       </div>
 
       {/* Scenario Selector Pills */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-4">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pt-2 pb-8 mb-4">
         {scenarios.map(s => (
           <button
             key={s.id}
             onClick={() => setActiveScenarioId(s.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black whitespace-nowrap transition-all border ${activeScenarioId === s.id ? 'bg-theme-surface text-theme-primary border-white/20 shadow-inner' : 'bg-transparent text-theme-secondary border-transparent hover:border-white/10 hover:bg-theme-surface/50'}`}
+            className={`flex items-center gap-1.5 px-4 py-3 rounded-full text-xs font-black whitespace-nowrap transition-all border ${activeScenarioId === s.id ? 'bg-theme-surface text-theme-primary border-white/20 shadow-inner' : 'bg-transparent text-theme-secondary border-transparent hover:border-white/10 hover:bg-theme-surface/50'}`}
           >
             {s.name}
             {s.events.length > 0 && <span className="opacity-50 text-[10px]">{s.events.length}</span>}
@@ -207,7 +206,7 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
         {scenarios.length < MAX_SCENARIOS && (
           <button
             onClick={() => setShowNewScenario(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black whitespace-nowrap text-theme-secondary border border-dashed border-white/15 hover:border-white/30 transition-all"
+            className="flex items-center gap-1.5 px-4 py-3 rounded-full text-xs font-black whitespace-nowrap text-theme-secondary border border-dashed border-white/15 hover:border-white/30 transition-all"
           >
             <Plus size={11} /> {t('newScenario')}
           </button>
@@ -323,47 +322,106 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
           </div>
 
           {/* Rate Shock Simulator */}
-          <div className="bg-theme-surface/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl space-y-4">
-            <div>
-              <h2 className="text-base font-black text-theme-primary">{t('rateShockSimulator')}</h2>
-              <p className="text-[11px] text-theme-secondary">{t('rateShockDesc')}</p>
+          <div className="bg-theme-surface/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl space-y-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-black text-theme-primary">{t('rateShockSimulator')}</h2>
+                <p className="text-[11px] text-theme-secondary mt-0.5">{t('rateShockDesc')}</p>
+              </div>
+              {simulatedRate && (
+                <button
+                  onClick={() => setSimulatedRate('')}
+                  className="shrink-0 text-[10px] font-bold text-theme-secondary hover:text-red-400 transition-colors px-2.5 py-1 rounded-lg border border-white/10 hover:border-red-500/30"
+                >
+                  {t('resetSimulation')}
+                </button>
+              )}
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-theme-primary">{t('exchangeRateVES')}</span>
-                <span className="text-sm font-black text-orange-400">{rateSlider.toFixed(2)}</span>
-              </div>
-              <div className="relative w-full h-2 bg-theme-surface rounded-full overflow-visible flex items-center">
-                <div className="absolute h-full bg-orange-400 rounded-full" style={{ width: `${sliderPct}%` }} />
-                <div
-                  className="absolute w-6 h-6 bg-theme-bg border-2 border-orange-400 rounded-full shadow-[0_0_15px_rgba(255,127,80,0.5)] cursor-pointer transition-transform hover:scale-110"
-                  style={{ left: `calc(${sliderPct}% - 12px)` }}
-                />
-                <input
-                  type="range" min={RATE_BASELINE} max={RATE_MAX} step={0.1} value={rateSlider}
-                  onChange={e => setRateSlider(parseFloat(e.target.value))}
-                  className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                />
-              </div>
-              <div className="flex justify-between text-[10px] text-theme-secondary font-bold">
-                <span>{t('baseline')} ({RATE_BASELINE.toFixed(2)})</span>
-                <span>{t('shock')} ({RATE_MAX.toFixed(2)})</span>
-              </div>
-            </div>
+
+            {/* Two-field layout */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-theme-surface/50 border border-white/5 p-4 rounded-xl">
-                <span className="text-[11px] text-theme-secondary font-semibold mb-1 block">{t('impactNetWorthUSD')}</span>
-                <span className={`text-base font-black ${rateImpactUSD >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {isBalanceVisible ? `${rateImpactUSD >= 0 ? '+' : '-'}$${Math.abs(rateImpactUSD).toFixed(2)}` : '••••'}
-                </span>
+              <div className="bg-theme-surface/50 border border-white/5 rounded-xl p-4 space-y-1">
+                <span className="text-[10px] font-bold text-theme-secondary uppercase tracking-wide block">{t('currentRateLabel')}</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-black text-theme-primary">{baseRate > 0 ? baseRate.toFixed(2) : '—'}</span>
+                  <span className="text-[10px] text-theme-secondary font-semibold">{t('bsPerDollar')}</span>
+                </div>
               </div>
-              <div className="bg-theme-surface/50 border border-white/5 p-4 rounded-xl">
-                <span className="text-[11px] text-theme-secondary font-semibold mb-1 block">{t('impactNetWorthVES')}</span>
-                <span className={`text-base font-black ${rateImpactVES >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {isBalanceVisible ? `${rateImpactVES >= 0 ? '+' : '-'}Bs ${Math.abs(rateImpactVES).toFixed(2)}` : '••••'}
-                </span>
+              <div className={`rounded-xl p-4 space-y-1 border transition-colors ${simulatedRate && simRate !== baseRate ? 'bg-orange-500/10 border-orange-500/30' : 'bg-theme-surface/50 border-white/5'}`}>
+                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-wide block">{t('simulatedRateLabel')}</span>
+                <div className="flex items-baseline gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={simulatedRate}
+                    onChange={e => setSimulatedRate(e.target.value)}
+                    placeholder={baseRate > 0 ? baseRate.toFixed(2) : '0.00'}
+                    className="bg-transparent text-xl font-black text-orange-400 outline-none w-full placeholder:text-theme-secondary/40"
+                  />
+                  <span className="text-[10px] text-theme-secondary font-semibold shrink-0">{t('bsPerDollar')}</span>
+                </div>
               </div>
             </div>
+
+            {/* Quick preset chips */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-theme-secondary uppercase tracking-wide">{t('quickAdjustments')}</span>
+              <div className="flex gap-2 flex-wrap">
+                {[5, 10, 20, 30, 50].map(pct => {
+                  const target = parseFloat((baseRate * (1 + pct / 100)).toFixed(2));
+                  const isActive = simRate === target;
+                  return (
+                    <button
+                      key={pct}
+                      onClick={() => setSimulatedRate(isActive ? '' : String(target))}
+                      className={`text-[11px] font-black px-3 py-1.5 rounded-full border transition-all ${
+                        isActive
+                          ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_12px_rgba(249,115,22,0.4)]'
+                          : 'bg-theme-surface/50 border-white/10 text-theme-secondary hover:border-orange-500/40 hover:text-orange-400'
+                      }`}
+                    >
+                      +{pct}%
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Impact cards */}
+            {simRate > 0 && (
+              <div className="grid grid-cols-2 gap-3">
+                {/* USD impact */}
+                <div className={`rounded-xl p-4 border space-y-2 ${rateImpactUSD < 0 ? 'bg-red-500/5 border-red-500/20' : rateImpactUSD > 0 ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-theme-surface/50 border-white/5'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-theme-secondary uppercase tracking-wide">{t('impactInUSD')}</span>
+                    {rateDeltaPct !== 0 && (
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${rateDeltaPct > 0 ? 'bg-red-500/15 text-red-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
+                        {rateDeltaPct > 0 ? '+' : ''}{rateDeltaPct.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-lg font-black block ${rateImpactUSD < 0 ? 'text-red-400' : rateImpactUSD > 0 ? 'text-emerald-400' : 'text-theme-secondary'}`}>
+                    {simRate === baseRate ? '—' : isBalanceVisible ? `${rateImpactUSD >= 0 ? '+' : ''}$${rateImpactUSD.toFixed(2)}` : '••••'}
+                  </span>
+                  <p className="text-[10px] text-theme-secondary leading-tight">
+                    {simRate === baseRate ? t('noRateChange') : rateImpactUSD < 0 ? t('rateChangeLossUSD') : t('rateChangeGainUSD')}
+                  </p>
+                </div>
+                {/* VES impact */}
+                <div className={`rounded-xl p-4 border space-y-2 ${rateImpactVES < 0 ? 'bg-red-500/5 border-red-500/20' : rateImpactVES > 0 ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-theme-surface/50 border-white/5'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-theme-secondary uppercase tracking-wide">{t('impactInVES')}</span>
+                  </div>
+                  <span className={`text-lg font-black block ${rateImpactVES < 0 ? 'text-red-400' : rateImpactVES > 0 ? 'text-emerald-400' : 'text-theme-secondary'}`}>
+                    {simRate === baseRate ? '—' : isBalanceVisible ? `${rateImpactVES >= 0 ? '+' : ''}Bs ${rateImpactVES.toFixed(2)}` : '••••'}
+                  </span>
+                  <p className="text-[10px] text-theme-secondary leading-tight">
+                    {simRate === baseRate ? t('noRateChange') : rateImpactVES < 0 ? t('rateChangeLossVES') : t('rateChangeGainVES')}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Scenario Builder */}

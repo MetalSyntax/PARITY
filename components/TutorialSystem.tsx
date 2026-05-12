@@ -1,103 +1,108 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, GraduationCap, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { X, ChevronLeft, ChevronRight, GraduationCap, CheckCircle2, MousePointer2, Monitor, Trophy, Receipt, TrendingUp, ArrowRightLeft, Landmark, Tag, PieChart, BarChart3, Repeat2, Upload, LayoutDashboard } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface TutorialStep {
   title: string;
   description: string;
   selector?: string;
-  position?: "top" | "bottom" | "left" | "right";
+  navigateTo?: string;
+  waitForClick?: boolean;
+  position?: "top" | "bottom";
 }
 
 interface Tutorial {
   id: string;
   title: string;
-  emoji: string;
+  icon: React.ElementType;
+  iconColor: string;
   description: string;
   steps: TutorialStep[];
 }
 
 interface TutorialSystemProps {
   onClose: () => void;
+  onNavigate: (view: string) => void;
+  lang?: string;
 }
 
-// ─── Tutorial Data ─────────────────────────────────────────────────────────────
+type Phase = "list" | "running" | "exit-confirm" | "complete";
+
+const PAD = 10;
+
+// ─── Tutorial Definitions ──────────────────────────────────────────────────────
 
 const TUTORIALS: Tutorial[] = [
   {
-    id: "record-income",
-    title: "Registrar un ingreso",
-    emoji: "💰",
-    description: "Aprende a agregar tus fuentes de ingresos",
+    id: "record-expense",
+    title: "Registrar un gasto",
+    icon: Receipt,
+    iconColor: "text-red-400",
+    description: "Registra tus gastos diarios fácilmente",
     steps: [
       {
-        title: "Botón principal (+)",
-        description: 'El gran botón "+" en la barra inferior es tu acceso principal para crear cualquier transacción nueva.',
+        title: "Botón de nueva transacción",
+        description: "El botón + al centro de la barra inferior es tu acceso principal. Tócalo para abrir el formulario de transacción.",
         selector: "[data-tutorial='fab-add']",
+        navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "top",
       },
       {
-        title: 'Selecciona "Ingreso"',
-        description: "Al abrir el formulario verás tres tipos en la parte superior: Gasto, Ingreso y Transferencia. Toca Ingreso.",
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
+        title: "Tipo: Gasto (por defecto)",
+        description: "Al abrir el formulario, \"Gasto\" ya está seleccionado. El punto rojo indica el tipo activo. No necesitas cambiarlo.",
+        selector: "[data-tutorial='tx-type-expense']",
+        position: "bottom",
       },
       {
         title: "Ingresa el monto",
-        description: "Usa el teclado numérico para escribir el monto. Toca el selector de moneda para cambiar entre USD, Bs y EUR.",
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
+        description: "Usa el teclado numérico para escribir el monto. Toca el símbolo de moneda para cambiar entre USD, Bs y EUR.",
+        selector: "[data-tutorial='tx-amount-input']",
+        position: "bottom",
       },
       {
-        title: "Elige la categoría",
-        description: "Selecciona una categoría como Salario, Freelance, Inversiones, etc. para clasificar tu ingreso correctamente.",
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
-      },
-      {
-        title: "Guarda el ingreso",
-        description: "Agrega una nota opcional y toca el botón de confirmar. ¡Tu ingreso quedará registrado y el balance se actualizará!",
-        selector: "[data-tutorial='fab-add']",
+        title: "Confirma el gasto",
+        description: "Selecciona la categoría, agrega una nota opcional con el nombre del comercio y toca Guardar. El balance se actualizará.",
+        selector: "[data-tutorial='tx-save-btn']",
         position: "top",
       },
     ],
   },
   {
-    id: "record-expense",
-    title: "Registrar un gasto",
-    emoji: "🧾",
-    description: "Registra tus gastos diarios fácilmente",
+    id: "record-income",
+    title: "Registrar un ingreso",
+    icon: TrendingUp,
+    iconColor: "text-emerald-400",
+    description: "Aprende a agregar tus fuentes de ingresos",
     steps: [
       {
         title: "Abrir formulario",
-        description: 'Toca el "+" en la barra inferior. También puedes usar los accesos rápidos del Dashboard.',
+        description: "Toca el botón + en la barra inferior para abrir el formulario de transacción.",
         selector: "[data-tutorial='fab-add']",
+        navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "top",
       },
       {
-        title: "Tipo Gasto (por defecto)",
-        description: '"Gasto" es el tipo seleccionado automáticamente al abrir el formulario — no necesitas cambiarlo.',
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
+        title: "Selecciona Ingreso",
+        description: "Toca el botón \"Ingreso\" en la parte superior del formulario. El punto verde indicará que este tipo está activo.",
+        selector: "[data-tutorial='tx-type-income']",
+        waitForClick: true,
+        position: "bottom",
       },
       {
-        title: "Detección inteligente",
-        description: "Al escribir el nombre del comercio en el campo de nota (ej. 'McDonald's'), la app detecta la categoría automáticamente.",
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
+        title: "Ingresa el monto",
+        description: "Escribe el monto recibido con el teclado numérico. Puedes seleccionar la moneda en la que recibiste el pago.",
+        selector: "[data-tutorial='tx-amount-input']",
+        position: "bottom",
       },
       {
-        title: "Selecciona la cuenta",
-        description: "Elige de qué cuenta se descuenta el gasto. El monto se registrará en la moneda de esa cuenta.",
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
-      },
-      {
-        title: "Confirma el gasto",
-        description: "Verifica el monto y toca confirmar. El balance de tu cuenta se descontará de inmediato.",
-        selector: "[data-tutorial='fab-add']",
+        title: "Guarda el ingreso",
+        description: "Selecciona la categoría (Salario, Freelance, Inversiones…), agrega nota opcional y toca Guardar.",
+        selector: "[data-tutorial='tx-save-btn']",
         position: "top",
       },
     ],
@@ -105,37 +110,35 @@ const TUTORIALS: Tutorial[] = [
   {
     id: "create-transfer",
     title: "Transferencia entre cuentas",
-    emoji: "🔄",
+    icon: ArrowRightLeft,
+    iconColor: "text-blue-400",
     description: "Mueve dinero entre tus wallets",
     steps: [
       {
-        title: "Acceso rápido",
-        description: "Desliza los accesos rápidos del Dashboard y toca Transferencia, o usa el botón \"+\" y selecciona el tipo.",
+        title: "Accesos rápidos",
+        description: "Los accesos rápidos del Dashboard llevan directamente a las funciones más usadas. Desliza para ver todas las opciones disponibles.",
         selector: "[data-tutorial='quick-actions']",
+        navigateTo: "DASHBOARD",
         position: "bottom",
       },
       {
-        title: "Origen y destino",
-        description: "Selecciona la cuenta de origen (de dónde sale) y la cuenta de destino (a dónde llega). Puedes tocar cada una para cambiarla.",
+        title: "Abrir formulario",
+        description: "Toca el botón + para abrir el formulario de transacción. Desde aquí puedes crear gastos, ingresos y transferencias.",
         selector: "[data-tutorial='fab-add']",
+        waitForClick: true,
         position: "top",
       },
       {
-        title: "Tipo de cambio automático",
-        description: "Si las cuentas son de distinta moneda (ej. Bs → USD), la app calcula la tasa automáticamente. Puedes ajustarla manualmente.",
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
-      },
-      {
-        title: "Comisiones bancarias",
-        description: "Si hay comisión, ingrésala como monto fijo o porcentaje en la sección \"Comisiones\". Sale de la cuenta origen.",
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
+        title: "Selecciona Transferencia",
+        description: "Toca el botón \"Transferencia\" para activar los campos de cuenta origen y destino.",
+        selector: "[data-tutorial='tx-type-transfer']",
+        waitForClick: true,
+        position: "bottom",
       },
       {
         title: "Confirmar transferencia",
-        description: "Revisa el monto enviado y el que llega al destino. Toca confirmar para completar la transferencia.",
-        selector: "[data-tutorial='fab-add']",
+        description: "Selecciona cuenta origen, cuenta destino y el monto. Si son de diferente moneda, la conversión es automática. Toca Guardar.",
+        selector: "[data-tutorial='tx-save-btn']",
         position: "top",
       },
     ],
@@ -143,37 +146,27 @@ const TUTORIALS: Tutorial[] = [
   {
     id: "add-account",
     title: "Agregar cuenta bancaria",
-    emoji: "🏦",
+    icon: Landmark,
+    iconColor: "text-violet-400",
     description: "Crea y gestiona tus cuentas y wallets",
     steps: [
       {
-        title: "Ir a Wallets",
-        description: "Toca el acceso rápido \"Wallet\" en el Dashboard para abrir la vista de gestión de cuentas.",
+        title: "Accesos rápidos del Dashboard",
+        description: "Desde los accesos rápidos puedes acceder al módulo Wallet para gestionar todas tus cuentas bancarias y billeteras digitales.",
         selector: "[data-tutorial='quick-actions']",
+        navigateTo: "DASHBOARD",
         position: "bottom",
       },
       {
-        title: "Resumen en Dashboard",
-        description: "El widget de Wallets muestra todas tus cuentas con su balance actual en la moneda correspondiente.",
-        selector: "[data-label='wallets']",
-        position: "top",
-      },
-      {
-        title: "Crear cuenta nueva",
-        description: "En la vista Wallet toca \"+\". Asígnale un nombre descriptivo (ej. \"Banco Venezuela\") y elige la moneda (USD, Bs, EUR, USDT).",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Widget de Balance",
+        description: "El widget de balance muestra tu patrimonio neto total calculado en tu moneda de visualización (USD, Bs o EUR).",
+        selector: "[data-label='balanceChart']",
         position: "bottom",
       },
       {
-        title: "Saldo inicial",
-        description: "Ingresa el saldo actual de tu cuenta para que el balance refleje la realidad desde el primer momento.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Ícono y color",
-        description: "Personaliza el ícono y color de la cuenta para identificarla fácilmente en el Dashboard.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Personalizar el Dashboard",
+        description: "Usa el botón de Widgets para activar, desactivar y reordenar los widgets que aparecen en tu Dashboard.",
+        selector: "[data-tutorial='customize-btn']",
         position: "bottom",
       },
     ],
@@ -181,112 +174,84 @@ const TUTORIALS: Tutorial[] = [
   {
     id: "categorize-transaction",
     title: "Categorizar transacciones",
-    emoji: "🏷️",
+    icon: Tag,
+    iconColor: "text-amber-400",
     description: "Organiza tus movimientos por categorías",
     steps: [
       {
-        title: "Detección automática",
-        description: "Al escribir el nombre de un comercio conocido en la nota, la app asigna la categoría sin que hagas nada.",
+        title: "Abrir formulario",
+        description: "Toca el botón + para registrar una transacción. Al escribir el nombre del comercio en la nota, la categoría se asigna sola.",
         selector: "[data-tutorial='fab-add']",
+        navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "top",
       },
       {
-        title: "+30 categorías disponibles",
-        description: "Puedes seleccionar manualmente entre categorías como Alimentación, Transporte, Salud, Entretenimiento, y más.",
-        selector: "[data-tutorial='fab-add']",
-        position: "top",
-      },
-      {
-        title: "Gráfico de gastos",
-        description: "El widget de Estructura de Gastos muestra cómo se distribuyen tus gastos por categoría con gráfico interactivo.",
-        selector: "[data-label='expenses']",
-        position: "top",
-      },
-      {
-        title: "Filtrar por categoría",
-        description: "En la vista de Transacciones puedes filtrar por categoría específica para ver todos los movimientos de ese tipo.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Tipo de transacción",
+        description: "La detección automática funciona para gastos principalmente. Prueba escribir \"McDonald's\", \"Uber\" o \"Netflix\" en la nota.",
+        selector: "[data-tutorial='tx-type-expense']",
         position: "bottom",
       },
       {
-        title: "Editar categoría",
-        description: "Si necesitas cambiar la categoría de un movimiento existente, tócalo en el historial y selecciona Editar.",
-        selector: "[data-label='transactions']",
-        position: "top",
+        title: "Estructura de Gastos",
+        description: "El widget de Estructura de Gastos muestra la distribución de tus gastos por categoría. Toca cualquier segmento para el detalle.",
+        selector: "[data-label='expenses']",
+        navigateTo: "DASHBOARD",
+        position: "bottom",
       },
     ],
   },
   {
     id: "set-budget",
     title: "Establecer un presupuesto",
-    emoji: "📊",
+    icon: PieChart,
+    iconColor: "text-orange-400",
     description: "Controla tus gastos con límites mensuales",
     steps: [
       {
-        title: "Acceder a Presupuestos",
-        description: "Toca el acceso rápido \"Presupuesto\" para abrir la vista de gestión de límites de gasto.",
+        title: "Accesos rápidos",
+        description: "Desde los accesos rápidos del Dashboard accede al módulo de Presupuestos para crear y gestionar tus límites de gasto por categoría.",
         selector: "[data-tutorial='quick-actions']",
+        navigateTo: "DASHBOARD",
         position: "bottom",
       },
       {
-        title: "Crear presupuesto",
-        description: "Toca \"+\" para crear un nuevo presupuesto. Selecciona la categoría a la que quieres asignar un límite.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Botón de Widgets",
+        description: "Activa el widget de Pronóstico desde el personalizador para ver alertas inteligentes cuando te acerques al límite de un presupuesto.",
+        selector: "[data-tutorial='customize-btn']",
         position: "bottom",
       },
       {
-        title: "Define el límite",
-        description: "Ingresa el monto máximo mensual para esa categoría. Puedes definirlo en USD o Bs según prefieras.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Sincronización",
+        description: "Cuando tus presupuestos estén configurados, sincroniza con la nube para respaldarlo todo de forma cifrada.",
+        selector: "[data-tutorial='sync-btn']",
         position: "bottom",
-      },
-      {
-        title: "Seguimiento automático",
-        description: "La app suma automáticamente los gastos de esa categoría y te avisa cuando te acerques al límite.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Resumen en Dashboard",
-        description: "El widget de Resumen Fiscal muestra tu situación fiscal del año. El widget de Pronóstico estima tu gasto a fin de mes.",
-        selector: "[data-label='forecastCard']",
-        position: "top",
       },
     ],
   },
   {
     id: "expense-report",
     title: "Reporte de gastos",
-    emoji: "📈",
+    icon: BarChart3,
+    iconColor: "text-cyan-400",
     description: "Analiza tus gastos por categoría y período",
     steps: [
       {
         title: "Estructura de Gastos",
-        description: "Este widget muestra un gráfico de tus categorías de gasto. Toca cualquier segmento para ver el detalle.",
+        description: "Este widget muestra tus categorías de gasto principales. Toca cualquier segmento del gráfico para ver el detalle de transacciones.",
         selector: "[data-label='expenses']",
-        position: "top",
-      },
-      {
-        title: "Vista de Análisis",
-        description: "Toca \"Análisis\" en los accesos rápidos para reportes detallados con filtros por fecha y categoría.",
-        selector: "[data-tutorial='quick-actions']",
+        navigateTo: "DASHBOARD",
         position: "bottom",
       },
       {
         title: "Ingresos vs Gastos",
-        description: "El widget de Ingresos vs Gastos compara tus flujos mensuales en un gráfico de barras por mes.",
+        description: "El widget de Ingresos vs Gastos compara tus flujos mensuales con un gráfico de barras para cada mes del año.",
         selector: "[data-label='incomeVsExpense']",
-        position: "top",
+        position: "bottom",
       },
       {
-        title: "Resumen Fiscal",
-        description: "El Resumen Fiscal muestra ingresos gravables y gastos deducibles del año fiscal actual.",
-        selector: "[data-label='fiscalSummary']",
-        position: "top",
-      },
-      {
-        title: "Exportar PDF",
-        description: "El acceso rápido \"PDF Report\" genera un reporte visual completo con gráficos y estadísticas del período elegido.",
+        title: "Vista de Análisis",
+        description: "Desde los accesos rápidos accede a la vista de Análisis para reportes con filtros avanzados por fecha, categoría y tipo.",
         selector: "[data-tutorial='quick-actions']",
         position: "bottom",
       },
@@ -295,36 +260,26 @@ const TUTORIALS: Tutorial[] = [
   {
     id: "recurring-transaction",
     title: "Transacciones recurrentes",
-    emoji: "🔁",
+    icon: Repeat2,
+    iconColor: "text-indigo-400",
     description: "Automatiza pagos y cobros fijos",
     steps: [
       {
-        title: "Accede a Programados",
-        description: "Toca el acceso rápido \"Programados\" para ver y crear pagos o cobros recurrentes.",
+        title: "Accesos rápidos",
+        description: "Desde los accesos rápidos del Dashboard busca el ícono de Programados para gestionar pagos y cobros recurrentes como suscripciones.",
+        selector: "[data-tutorial='quick-actions']",
+        navigateTo: "DASHBOARD",
+        position: "bottom",
+      },
+      {
+        title: "Configurar programación",
+        description: "Crea un pago programado con monto, categoría y frecuencia: diario, semanal, mensual o anual. La app registra la transacción automáticamente.",
         selector: "[data-tutorial='quick-actions']",
         position: "bottom",
       },
       {
-        title: "Crear programación",
-        description: "Toca \"+\" y define el monto, categoría y frecuencia: diario, semanal, mensual o anual.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Fecha de inicio",
-        description: "Establece la fecha del primer pago o cobro. La app creará la transacción automáticamente en esa fecha.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Activar y pausar",
-        description: "Puedes activar, pausar o eliminar una programación en cualquier momento desde la lista de Programados.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Calendario Financiero",
-        description: "El acceso rápido \"Calendario Financiero\" muestra todas tus transacciones programadas en vista de calendario.",
+        title: "Calendario financiero",
+        description: "El acceso rápido de Calendario Financiero muestra todos tus compromisos programados en vista de calendario mensual.",
         selector: "[data-tutorial='quick-actions']",
         position: "bottom",
       },
@@ -333,37 +288,27 @@ const TUTORIALS: Tutorial[] = [
   {
     id: "export-summary",
     title: "Exportar resumen financiero",
-    emoji: "📤",
+    icon: Upload,
+    iconColor: "text-teal-400",
     description: "Comparte o respalda tus datos",
     steps: [
       {
-        title: "Centro de Exportación",
-        description: "Toca el acceso rápido \"Exportar\" para acceder a todas las opciones de exportación disponibles.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Formatos disponibles",
-        description: "Puedes exportar en CSV (para Excel/Google Sheets) o JSON (respaldo completo de todos tus datos).",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Reporte PDF",
-        description: "El acceso rápido \"PDF Report\" genera un reporte visual con gráficos y estadísticas del período seleccionado.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Respaldo en la nube",
-        description: "Toca el ícono de nube (☁) en la esquina superior para respaldar todos tus datos en Google Drive.",
+        title: "Botón de sincronización",
+        description: "El ícono de nube sincroniza y respalda todos tus datos cifrados en Google Drive. Tócalo cuando tengas conexión a internet.",
         selector: "[data-tutorial='sync-btn']",
+        navigateTo: "DASHBOARD",
         position: "bottom",
       },
       {
-        title: "Importar datos",
-        description: "El acceso rápido \"Importar\" permite restaurar datos desde un respaldo CSV o JSON previo.",
+        title: "Exportar e Importar",
+        description: "Desde los accesos rápidos puedes exportar en CSV (para Excel) o JSON (respaldo completo). También puedes generar un Reporte PDF visual.",
         selector: "[data-tutorial='quick-actions']",
+        position: "bottom",
+      },
+      {
+        title: "Verificar actualizaciones",
+        description: "Cuando hay una nueva versión disponible, este botón se ilumina en azul. Tócalo para actualizar y obtener las últimas mejoras.",
+        selector: "[data-tutorial='customize-btn']",
         position: "bottom",
       },
     ],
@@ -371,383 +316,520 @@ const TUTORIALS: Tutorial[] = [
   {
     id: "customize-dashboard",
     title: "Personalizar el Dashboard",
-    emoji: "🎨",
+    icon: LayoutDashboard,
+    iconColor: "text-pink-400",
     description: "Organiza los widgets a tu gusto",
     steps: [
       {
         title: "Botón de personalización",
-        description: "Toca este ícono de engranaje (⚙) para abrir el personalizador del Dashboard.",
+        description: "Toca este botón para abrir el personalizador del Dashboard donde puedes activar, desactivar y reordenar los widgets.",
         selector: "[data-tutorial='customize-btn']",
-        position: "bottom",
-      },
-      {
-        title: "Mostrar u ocultar widgets",
-        description: "Activa o desactiva widgets individualmente: Balance Chart, Estructura de Gastos, Pronóstico, Resumen Fiscal, Metas, etc.",
-        selector: "[data-tutorial='customize-btn']",
-        position: "bottom",
-      },
-      {
-        title: "Reordenar widgets",
-        description: "En el Dashboard, mantén presionado el ícono de arrastre (⠿) de un widget y arrástralo a la posición que prefieras.",
-        selector: "[data-tutorial='customize-btn']",
+        navigateTo: "DASHBOARD",
         position: "bottom",
       },
       {
         title: "Gestionar accesos rápidos",
-        description: "En el personalizador también puedes activar o desactivar cuáles accesos rápidos aparecen en la fila horizontal.",
+        description: "En la barra de accesos rápidos puedes deslizar para ver todas las opciones. Los accesos activos aparecen según tu configuración personal.",
         selector: "[data-tutorial='quick-actions']",
         position: "bottom",
       },
       {
-        title: "Guardado automático",
-        description: "Todos los cambios de layout se guardan automáticamente y se sincronizan con tu perfil.",
-        selector: "[data-tutorial='customize-btn']",
+        title: "Configuración general",
+        description: "El botón de Ajustes da acceso a la configuración de perfil, seguridad, idioma, moneda y formato de fecha.",
+        selector: "[data-tutorial='sync-btn']",
         position: "bottom",
       },
     ],
   },
 ];
 
-// ─── Spotlight ─────────────────────────────────────────────────────────────────
-
-interface SpotlightProps {
-  selector?: string;
-  onRectReady: (rect: DOMRect | null) => void;
-}
-
-function Spotlight({ selector, onRectReady }: SpotlightProps) {
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const animFrameRef = useRef<number>(0);
-
-  const measure = useCallback(() => {
-    if (!selector) { setRect(null); onRectReady(null); return; }
-    const el = document.querySelector(selector) as HTMLElement | null;
-    if (!el) { setRect(null); onRectReady(null); return; }
-    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    // Wait for scroll to settle before measuring
-    setTimeout(() => {
-      const r = el.getBoundingClientRect();
-      setRect(r);
-      onRectReady(r);
-    }, 320);
-  }, [selector, onRectReady]);
-
-  useEffect(() => {
-    measure();
-    return () => cancelAnimationFrame(animFrameRef.current);
-  }, [measure]);
-
-  const PAD = 10;
-  const RADIUS = 14;
-
-  return (
-    <>
-      {/* Dark overlay with cutout via box-shadow */}
-      <div
-        aria-hidden="true"
-        className="fixed inset-0 pointer-events-none z-[9998]"
-        style={
-          rect
-            ? {
-                top: rect.top - PAD,
-                left: rect.left - PAD,
-                width: rect.width + PAD * 2,
-                height: rect.height + PAD * 2,
-                borderRadius: RADIUS,
-                boxShadow:
-                  "0 0 0 9999px rgba(0,0,0,0.78), 0 0 0 2px rgba(99,102,241,0.9), 0 0 28px 6px rgba(99,102,241,0.45)",
-              }
-            : { top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.78)" }
-        }
-      />
-    </>
-  );
-}
-
-// ─── Step Tooltip ──────────────────────────────────────────────────────────────
-
-interface TooltipProps {
-  step: TutorialStep;
-  stepIndex: number;
-  total: number;
-  tutorialTitle: string;
-  rect: DOMRect | null;
-  onNext: () => void;
-  onPrev: () => void;
-  onClose: () => void;
-}
-
-function StepTooltip({ step, stepIndex, total, tutorialTitle, rect, onNext, onPrev, onClose }: TooltipProps) {
-  const isFirst = stepIndex === 0;
-  const isLast = stepIndex === total - 1;
-  const CARD_W = 320;
-  const CARD_MARGIN = 16;
-
-  const getStyle = (): React.CSSProperties => {
-    if (!rect) {
-      return { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: CARD_W };
-    }
-    const pos = step.position ?? "bottom";
-    const centeredLeft = Math.max(
-      CARD_MARGIN,
-      Math.min(rect.left + rect.width / 2 - CARD_W / 2, window.innerWidth - CARD_W - CARD_MARGIN)
-    );
-
-    if (pos === "bottom") {
-      const top = rect.bottom + 16;
-      if (top + 220 > window.innerHeight) {
-        // Flip to top if not enough space below
-        return { position: "fixed", bottom: window.innerHeight - rect.top + 16, left: centeredLeft, width: CARD_W };
-      }
-      return { position: "fixed", top, left: centeredLeft, width: CARD_W };
-    }
-    // top
-    const bottom = window.innerHeight - rect.top + 16;
-    return { position: "fixed", bottom, left: centeredLeft, width: CARD_W };
-  };
-
-  return (
-    <motion.div
-      key={stepIndex}
-      initial={{ opacity: 0, y: 8, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.96 }}
-      transition={{ duration: 0.2 }}
-      className="z-[10000] bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-4"
-      style={getStyle()}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Tutorial: ${step.title}`}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex-1">
-          <p className="text-[9px] font-black text-theme-brand uppercase tracking-[0.2em] opacity-70 mb-0.5">{tutorialTitle}</p>
-          <h3 className="text-sm font-black text-theme-primary leading-tight">{step.title}</h3>
-        </div>
-        <button
-          onClick={onClose}
-          aria-label="Cerrar tutorial"
-          className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-theme-secondary hover:text-theme-primary transition-colors flex-shrink-0"
-        >
-          <X size={14} />
-        </button>
-      </div>
-
-      {/* Description */}
-      <p className="text-[12px] text-theme-secondary leading-relaxed mb-4">{step.description}</p>
-
-      {/* Progress dots */}
-      <div className="flex items-center gap-1.5 mb-4">
-        {Array.from({ length: total }).map((_, i) => (
-          <div
-            key={i}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === stepIndex ? "w-6 bg-theme-brand" : i < stepIndex ? "w-1.5 bg-theme-brand/40" : "w-1.5 bg-white/15"
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between gap-2">
-        <button
-          onClick={onPrev}
-          disabled={isFirst}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-theme-secondary hover:text-theme-primary transition-all text-[11px] font-black"
-        >
-          <ChevronLeft size={13} />
-          Anterior
-        </button>
-
-        <span className="text-[10px] text-theme-secondary opacity-50 font-black">
-          {stepIndex + 1} / {total}
-        </span>
-
-        {isLast ? (
-          <button
-            onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-theme-brand text-white text-[11px] font-black hover:opacity-90 transition-opacity"
-          >
-            <CheckCircle2 size={13} />
-            Finalizar
-          </button>
-        ) : (
-          <button
-            onClick={onNext}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-theme-brand text-white text-[11px] font-black hover:opacity-90 transition-opacity"
-          >
-            Siguiente
-            <ChevronRight size={13} />
-          </button>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
 // ─── Tutorial List ─────────────────────────────────────────────────────────────
 
-interface TutorialListProps {
-  onSelect: (id: string) => void;
-  onClose: () => void;
-}
-
-function TutorialList({ onSelect, onClose }: TutorialListProps) {
+function TutorialList({ onSelect, onClose }: { onSelect: (id: string) => void; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[9997] flex items-end justify-center md:items-center" role="dialog" aria-modal="true" aria-label="Lista de tutoriales">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-[9990] flex items-end justify-center md:items-center" role="dialog" aria-modal="true" aria-label="Lista de tutoriales">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        transition={{ duration: 0.25 }}
-        className="relative z-10 w-full max-w-lg bg-theme-surface border border-white/10 rounded-t-3xl md:rounded-3xl shadow-2xl pb-safe"
-      >
-        {/* Handle */}
+      <div className="relative z-10 w-full max-w-lg bg-theme-surface border border-white/10 rounded-t-3xl md:rounded-3xl shadow-2xl pb-safe animate-in slide-in-from-bottom-4 duration-200">
         <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-1 md:hidden" />
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-theme-brand/15 border border-theme-brand/20 flex items-center justify-center">
-              <GraduationCap size={20} className="text-theme-brand" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center">
+              <GraduationCap size={18} className="text-theme-brand" />
             </div>
             <div>
-              <h2 className="text-sm font-black text-theme-primary">Tutoriales</h2>
-              <p className="text-[10px] text-theme-secondary opacity-60">{TUTORIALS.length} guías disponibles</p>
+              <h2 className="text-[13px] font-black text-theme-primary">Tutoriales</h2>
+              <p className="text-[10px] text-theme-secondary opacity-50">{TUTORIALS.length} guías interactivas</p>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Cerrar tutoriales"
-            className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-theme-secondary hover:text-theme-primary transition-colors"
+            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-theme-secondary hover:text-theme-primary transition-colors"
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
-
-        {/* Tutorial list */}
         <div className="overflow-y-auto max-h-[65vh] no-scrollbar p-3">
-          <div className="grid grid-cols-1 gap-2">
-            {TUTORIALS.map((tut, idx) => (
-              <motion.button
+          <div className="grid grid-cols-1 gap-1.5">
+            {TUTORIALS.map((tut) => (
+              <button
                 key={tut.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.04 }}
                 onClick={() => onSelect(tut.id)}
-                className="flex items-center gap-4 p-3.5 bg-white/3 hover:bg-white/6 active:bg-white/8 border border-white/5 hover:border-theme-brand/20 rounded-2xl text-left transition-all group"
+                className="flex items-center gap-3.5 p-3 bg-white/3 hover:bg-white/6 active:bg-white/8 border border-white/5 hover:border-theme-brand/20 rounded-2xl text-left transition-all group"
               >
-                <div className="w-11 h-11 rounded-2xl bg-theme-bg flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-110 transition-transform">
-                  {tut.emoji}
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <tut.icon size={18} className={tut.iconColor} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-black text-theme-primary leading-tight truncate">{tut.title}</p>
-                  <p className="text-[10px] text-theme-secondary opacity-60 mt-0.5 truncate">{tut.description}</p>
+                  <p className="text-[12px] font-black text-theme-primary leading-tight">{tut.title}</p>
+                  <p className="text-[10px] text-theme-secondary opacity-50 mt-0.5">{tut.description}</p>
                 </div>
-                <div className="flex-shrink-0 flex items-center gap-1 text-[9px] text-theme-secondary opacity-40 font-black">
+                <div className="flex-shrink-0 flex items-center gap-1 text-[9px] text-theme-secondary opacity-30 font-black">
                   <span>{tut.steps.length}</span>
                   <span>pasos</span>
-                  <ChevronRight size={11} />
+                  <ChevronRight size={10} />
                 </div>
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Completion Screen ─────────────────────────────────────────────────────────
+
+function CompletionScreen({ tutorial, onBackToList, onClose }: { tutorial: Tutorial; onBackToList: () => void; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[9990] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-80 bg-theme-surface border border-white/10 rounded-3xl shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center mx-auto mb-3">
+          <Trophy size={24} className="text-emerald-400" />
+        </div>
+        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">Tutorial completado</p>
+        <h3 className="text-base font-black text-theme-primary mb-1">{tutorial.title}</h3>
+        <p className="text-[11px] text-theme-secondary opacity-60 mb-5 leading-relaxed">
+          Has completado todos los pasos de este tutorial. ¡Ya puedes aplicarlo en tu gestión financiera!
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={onBackToList}
+            className="w-full py-2.5 rounded-xl bg-theme-brand text-white font-black text-[12px] hover:opacity-90 transition-opacity"
+          >
+            Ver más tutoriales
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-theme-secondary font-black text-[12px] transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ─── Main TutorialSystem ───────────────────────────────────────────────────────
 
-export function TutorialSystem({ onClose }: TutorialSystemProps) {
+export function TutorialSystem({ onClose, onNavigate }: TutorialSystemProps) {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handle = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+  }, []);
+
+  const [phase, setPhase] = useState<Phase>("list");
   const [activeTutorialId, setActiveTutorialId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
-  const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({ opacity: 0 });
+  const [isReady, setIsReady] = useState(false);
+
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<Tutorial | null>(null);
 
   const activeTutorial = TUTORIALS.find((t) => t.id === activeTutorialId) ?? null;
+  activeRef.current = activeTutorial;
   const currentStep = activeTutorial?.steps[stepIndex] ?? null;
+  const isLastStep = activeTutorial ? stepIndex >= activeTutorial.steps.length - 1 : false;
 
-  // Keyboard navigation
+  // Keyboard
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
+    const handle = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (activeTutorialId) {
-          setActiveTutorialId(null);
-        } else {
-          onClose();
-        }
-      }
-      if (e.key === "ArrowRight" && activeTutorial && stepIndex < activeTutorial.steps.length - 1) {
-        setStepIndex((s) => s + 1);
-      }
-      if (e.key === "ArrowLeft" && stepIndex > 0) {
-        setStepIndex((s) => s - 1);
+        if (phase === "running") setPhase("exit-confirm");
+        else if (phase === "exit-confirm") setPhase("running");
+        else if (phase === "list") onClose();
       }
     };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [activeTutorialId, activeTutorial, stepIndex, onClose]);
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [phase, onClose]);
+
+  // Step setup
+  useEffect(() => {
+    if (phase !== "running" || !activeTutorial || !currentStep) return;
+
+    let cancelled = false;
+    let removeClick: (() => void) | null = null;
+
+    setTargetRect(null);
+    setIsReady(false);
+
+    const setup = async () => {
+      if (currentStep.navigateTo) {
+        onNavigate(currentStep.navigateTo);
+        await sleep(700);
+        if (cancelled) return;
+      }
+
+      if (!currentStep.selector) {
+        setTargetRect(null);
+        setIsReady(true);
+        return;
+      }
+
+      let el: HTMLElement | null = null;
+      for (let i = 0; i < 15; i++) {
+        el = document.querySelector(currentStep.selector) as HTMLElement | null;
+        if (el) break;
+        await sleep(100);
+        if (cancelled) return;
+      }
+
+      if (!el || cancelled) {
+        setTargetRect(null);
+        setIsReady(true);
+        return;
+      }
+
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      await sleep(350);
+      if (cancelled) return;
+
+      setTargetRect(el.getBoundingClientRect());
+      setIsReady(true);
+
+      if (currentStep.waitForClick) {
+        const handler = () => {
+          if (cancelled) return;
+          const tut = activeRef.current;
+          if (!tut) return;
+          setStepIndex((prev) => {
+            const next = prev + 1;
+            if (next >= tut.steps.length) {
+              setPhase("complete");
+              return prev;
+            }
+            return next;
+          });
+        };
+        el.addEventListener("click", handler, { once: true });
+        removeClick = () => el?.removeEventListener("click", handler);
+      }
+    };
+
+    setup();
+
+    return () => {
+      cancelled = true;
+      removeClick?.();
+    };
+  }, [phase, activeTutorialId, stepIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-measure on resize
+  useEffect(() => {
+    if (phase !== "running" || !currentStep?.selector) return;
+    const handle = () => {
+      const el = document.querySelector(currentStep.selector!) as HTMLElement | null;
+      if (el) setTargetRect(el.getBoundingClientRect());
+    };
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+  }, [phase, activeTutorialId, stepIndex, currentStep?.selector]);
+
+  // Tooltip positioning
+  useLayoutEffect(() => {
+    if (!tooltipRef.current || !isReady) return;
+
+    const CARD_W = 316;
+    const MARGIN = 16;
+    const GAP = 14;
+    const th = tooltipRef.current.offsetHeight;
+
+    if (!targetRect) {
+      setTooltipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%,-50%)",
+        width: CARD_W,
+        opacity: 1,
+      });
+      return;
+    }
+
+    const centeredLeft = Math.max(
+      MARGIN,
+      Math.min(
+        targetRect.left + targetRect.width / 2 - CARD_W / 2,
+        window.innerWidth - CARD_W - MARGIN
+      )
+    );
+
+    const tBottom = targetRect.bottom + PAD;
+    const tTop = targetRect.top - PAD;
+    const spaceBelow = window.innerHeight - tBottom - GAP;
+    const spaceAbove = tTop - GAP;
+
+    let style: React.CSSProperties;
+    if (spaceBelow >= th || spaceBelow >= spaceAbove) {
+      style = {
+        position: "fixed",
+        top: tBottom + GAP,
+        left: centeredLeft,
+        width: CARD_W,
+        opacity: 1,
+      };
+    } else {
+      style = {
+        position: "fixed",
+        bottom: window.innerHeight - tTop + GAP,
+        left: centeredLeft,
+        width: CARD_W,
+        opacity: 1,
+      };
+    }
+    setTooltipStyle(style);
+  }, [targetRect, isReady, stepIndex, activeTutorialId]);
+
+  // ─── Handlers ───────────────────────────────────────────────────────────────
 
   const handleSelectTutorial = (id: string) => {
     setActiveTutorialId(id);
     setStepIndex(0);
-    setSpotlightRect(null);
-  };
-
-  const handleBack = () => {
-    setActiveTutorialId(null);
-    setSpotlightRect(null);
+    setTargetRect(null);
+    setIsReady(false);
+    setPhase("running");
   };
 
   const handleNext = () => {
     if (!activeTutorial) return;
-    if (stepIndex < activeTutorial.steps.length - 1) {
+    if (isLastStep) {
+      setPhase("complete");
+    } else {
       setStepIndex((s) => s + 1);
-      setSpotlightRect(null);
     }
   };
 
   const handlePrev = () => {
-    if (stepIndex > 0) {
-      setStepIndex((s) => s - 1);
-      setSpotlightRect(null);
-    }
+    if (stepIndex > 0) setStepIndex((s) => s - 1);
   };
+
+  const handleBackToList = () => {
+    setActiveTutorialId(null);
+    setTargetRect(null);
+    setIsReady(false);
+    setPhase("list");
+  };
+
+  // ─── Mobile guard ────────────────────────────────────────────────────────────
+
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-[9990] flex items-end justify-center">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative z-10 w-full max-w-md bg-theme-surface border border-white/10 rounded-t-3xl shadow-2xl pb-10 px-5 pt-5">
+          <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-11 h-11 rounded-xl bg-theme-brand/15 flex items-center justify-center">
+              <Monitor size={20} className="text-theme-brand" />
+            </div>
+            <div>
+              <h3 className="text-[13px] font-black text-theme-primary">Solo disponible en escritorio</h3>
+              <p className="text-[10px] text-theme-secondary opacity-50 mt-0.5">Requiere pantalla ≥ 1024 px</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-theme-secondary leading-relaxed mb-5 opacity-70">
+            Los tutoriales interactivos usan un spotlight en vivo sobre la app real. Ábrela en una tablet o computadora para acceder a las guías paso a paso.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full py-3 rounded-2xl bg-theme-brand text-white font-black text-[13px]"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── List screen ─────────────────────────────────────────────────────────────
+
+  if (phase === "list") {
+    return <TutorialList onSelect={handleSelectTutorial} onClose={onClose} />;
+  }
+
+  // ─── Completion screen ────────────────────────────────────────────────────────
+
+  if (phase === "complete") {
+    return (
+      <CompletionScreen
+        tutorial={activeTutorial!}
+        onBackToList={handleBackToList}
+        onClose={onClose}
+      />
+    );
+  }
+
+  // ─── Running + exit-confirm ───────────────────────────────────────────────────
+
+  const t = targetRect ? targetRect.top - PAD : 0;
+  const b = targetRect ? targetRect.bottom + PAD : 0;
+  const l = targetRect ? targetRect.left - PAD : 0;
+  const r = targetRect ? targetRect.right + PAD : 0;
+
+  const overlayClick = () => setPhase("exit-confirm");
+  const cls = "fixed z-[9990] bg-black/75 cursor-pointer";
 
   return (
     <>
-      {!activeTutorialId ? (
-        <TutorialList onSelect={handleSelectTutorial} onClose={onClose} />
+      {/* 4-rect overlay */}
+      {targetRect ? (
+        <>
+          <div className={cls} style={{ top: 0, left: 0, right: 0, height: Math.max(0, t) }} onClick={overlayClick} />
+          <div className={cls} style={{ top: Math.max(0, t), left: 0, width: Math.max(0, l), height: Math.max(0, b - t) }} onClick={overlayClick} />
+          <div className={cls} style={{ top: Math.max(0, t), left: r, right: 0, height: Math.max(0, b - t) }} onClick={overlayClick} />
+          <div className={cls} style={{ top: b, left: 0, right: 0, bottom: 0 }} onClick={overlayClick} />
+          <div
+            aria-hidden="true"
+            className="fixed z-[9991] pointer-events-none rounded-xl border-2 border-indigo-400/80"
+            style={{
+              top: t,
+              left: l,
+              width: r - l,
+              height: b - t,
+              boxShadow: "0 0 0 3px rgba(99,102,241,0.15), 0 0 28px 6px rgba(99,102,241,0.12)",
+            }}
+          />
+        </>
       ) : (
-        currentStep && (
-          <>
-            <Spotlight
-              selector={currentStep.selector}
-              onRectReady={setSpotlightRect}
-            />
-            {/* Clickable backdrop to return to list */}
-            <div
-              className="fixed inset-0 z-[9999] cursor-pointer"
-              onClick={handleBack}
-              aria-label="Volver a la lista"
-            />
-            <StepTooltip
-              step={currentStep}
-              stepIndex={stepIndex}
-              total={activeTutorial.steps.length}
-              tutorialTitle={activeTutorial.title}
-              rect={spotlightRect}
-              onNext={handleNext}
-              onPrev={handlePrev}
-              onClose={handleBack}
-            />
-          </>
-        )
+        <div className={cls} style={{ inset: 0 }} onClick={overlayClick} />
+      )}
+
+      {/* Tooltip */}
+      {isReady && currentStep && (
+        <div
+          ref={tooltipRef}
+          className="z-[9993] bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-4"
+          style={{ ...tooltipStyle, position: "fixed" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Tutorial: ${currentStep.title}`}
+        >
+          <div className="flex items-start justify-between gap-2 mb-2.5">
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] font-black text-theme-brand uppercase tracking-[0.18em] opacity-70 mb-0.5 truncate">
+                {activeTutorial!.title}
+              </p>
+              <h3 className="text-[13px] font-black text-theme-primary leading-tight">{currentStep.title}</h3>
+            </div>
+            <button
+              onClick={() => setPhase("exit-confirm")}
+              aria-label="Cerrar tutorial"
+              className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-theme-secondary hover:text-theme-primary flex-shrink-0 transition-colors"
+            >
+              <X size={13} />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-theme-secondary leading-relaxed mb-3">{currentStep.description}</p>
+
+          {currentStep.waitForClick && (
+            <div className="flex items-center gap-2 mb-3 py-1.5 px-2.5 rounded-xl bg-theme-brand/10 border border-theme-brand/20">
+              <MousePointer2 size={11} className="text-theme-brand flex-shrink-0" />
+              <span className="text-[10px] text-theme-brand font-black">Toca el elemento resaltado para continuar</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1 mb-3">
+            {activeTutorial!.steps.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1 rounded-full transition-all duration-300 ${
+                  i === stepIndex ? "w-5 bg-theme-brand" : i < stepIndex ? "w-1 bg-theme-brand/40" : "w-1 bg-white/15"
+                }`}
+              />
+            ))}
+          </div>
+
+          {!currentStep.waitForClick && (
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={handlePrev}
+                disabled={stepIndex === 0}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-theme-secondary hover:text-theme-primary transition-all text-[10px] font-black"
+              >
+                <ChevronLeft size={12} />
+                Anterior
+              </button>
+
+              <span className="text-[9px] text-theme-secondary opacity-40 font-black tabular-nums">
+                {stepIndex + 1} / {activeTutorial!.steps.length}
+              </span>
+
+              {isLastStep ? (
+                <button
+                  onClick={() => setPhase("complete")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-theme-brand text-white text-[10px] font-black hover:opacity-90 transition-opacity"
+                >
+                  <CheckCircle2 size={12} />
+                  Finalizar
+                </button>
+              ) : (
+                <button
+                  onClick={handleNext}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-theme-brand text-white text-[10px] font-black hover:opacity-90 transition-opacity"
+                >
+                  Siguiente
+                  <ChevronRight size={12} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Exit confirm */}
+      {phase === "exit-confirm" && (
+        <div className="fixed inset-0 z-[9995] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setPhase("running")} />
+          <div className="relative z-10 w-72 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-5 animate-in zoom-in-95 duration-150">
+            <h3 className="text-[13px] font-black text-theme-primary mb-2">¿Salir del tutorial?</h3>
+            <p className="text-[11px] text-theme-secondary mb-4 leading-relaxed opacity-70">
+              Tu progreso se perderá. Puedes reiniciar el tutorial cuando quieras desde el botón Tutoriales.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPhase("running")}
+                className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-theme-secondary text-[11px] font-black transition-colors"
+              >
+                Continuar
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 text-red-400 text-[11px] font-black transition-colors"
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
