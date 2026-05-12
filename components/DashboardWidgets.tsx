@@ -449,7 +449,7 @@ export const TransactionsWidget: React.FC<{
                 : 'bg-theme-soft border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'
             }`}
           >
-            <span>{acc.icon}</span>
+            <span className="flex-shrink-0">{renderAccountIcon(acc.icon, 12)}</span>
             <span>{acc.name}</span>
           </button>
         ))}

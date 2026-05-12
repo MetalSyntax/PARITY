@@ -7,6 +7,7 @@ import { formatMonth } from '../utils/formatUtils';
 import { CATEGORIES } from '../constants';
 import { TransactionDetailModal } from '../components/TransactionDetailModal';
 import { TransactionItem } from '../components/TransactionItem';
+import { renderAccountIcon } from '../utils/iconUtils';
 
 interface TransactionsListViewProps {
   onBack: () => void;
@@ -67,6 +68,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         window.removeEventListener('parity-months-changed', handleSync);
     };
   }, []);
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
@@ -87,17 +89,18 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
     return transactions.filter((tx) => {
       const category = CATEGORIES.find((c) => c.id === tx.category);
       const categoryName = category ? t(category.name.toLowerCase()) : '';
-      const matchesSearch = 
+      const matchesSearch =
         (tx.note || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         categoryName.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesType = filterType === 'ALL' || tx.type === filterType;
       const matchesCategory = selectedCategory === 'ALL' || tx.category === selectedCategory;
       const matchesMonth = selectedMonth === 'ALL' || tx.date.startsWith(selectedMonth);
-      
-      return matchesSearch && matchesType && matchesCategory && matchesMonth;
+      const matchesWallet = !selectedWalletId || tx.accountId === selectedWalletId || tx.toAccountId === selectedWalletId;
+
+      return matchesSearch && matchesType && matchesCategory && matchesMonth && matchesWallet;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, searchQuery, filterType, selectedCategory, lang, selectedMonth]);
+  }, [transactions, searchQuery, filterType, selectedCategory, lang, selectedMonth, selectedWalletId]);
 
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, Transaction[]> = {};
@@ -309,6 +312,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           </div>
 
           <div className="flex flex-col gap-2">
+            {/* Type filter */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {(['ALL', TransactionType.INCOME, TransactionType.EXPENSE, TransactionType.TRANSFER] as const).map((type) => (
                 <button
@@ -323,8 +327,36 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                   {type === 'ALL' ? t('allTypes') : t(type.toLowerCase())}
                 </button>
               ))}
+            </div>
+
+            {/* Wallet filter */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setSelectedWalletId(null)}
+                className={`flex-shrink-0 px-3 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border ${
+                  selectedWalletId === null
+                    ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-brand/20'
+                    : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary'
+                }`}
+              >
+                {t('all')}
+              </button>
+              {accounts.map(acc => (
+                <button
+                  key={acc.id}
+                  onClick={() => setSelectedWalletId(acc.id === selectedWalletId ? null : acc.id)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border ${
+                    selectedWalletId === acc.id
+                      ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-brand/20'
+                      : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary'
+                  }`}
+                >
+                  <span className="flex-shrink-0">{renderAccountIcon(acc.icon, 13)}</span>
+                  <span>{acc.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
       </div>
 
       {/* Transactions List */}
