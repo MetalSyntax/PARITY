@@ -165,4 +165,9 @@ export const common = {
     maxScenariosReached: 'Maximum 5 scenarios',
     duplicatesSkipped: 'duplicates skipped',
     exchangeRatesAppendix: 'Exchange Rates',
+    btn_sync: 'Sync',
+    btn_widgets: 'Widgets',
+    btn_update: 'Update',
+    btn_settings: 'Settings',
+    btn_tutorials: 'Tutorials',
 };

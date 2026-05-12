@@ -1360,6 +1360,7 @@ function AppContent() {
               onVerifyBiometrics={verifyBiometrics}
                euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
               euroRateParallel={euroRateParallel}
+              usdRateParallel={usdRateParallel}
               onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
               hasFetchedRates={hasFetchedRates}
               onUpdateProfile={handleUpdateProfile}
@@ -1753,6 +1754,7 @@ function AppContent() {
             {/* FAB container */}
             <div className="relative -top-6">
               <button
+                data-tutorial="fab-add"
                 onClick={() => {
                   if (accounts.length === 0) {
                     showAlert('alert_walletFirst', 'error');
@@ -1763,6 +1765,7 @@ function AppContent() {
                   setShowAdd(true);
                 }}
                 className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform border-4 border-theme-bg ${accounts.length === 0 ? 'bg-zinc-600 shadow-zinc-900/50 grayscale' : 'bg-theme-brand shadow-brand/50'}`}
+                aria-label="Nueva transacción"
               >
                 <Plus size={32} />
               </button>

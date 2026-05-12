@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { GripVertical, Settings, Eye, EyeOff, DollarSign, Euro, ArrowUpRight, TrendingDown, Activity, Plus, PieChart, TrendingUp, Receipt, ArrowRightLeft, ChartArea, CalendarRange, ShoppingCart, Image as ImageIcon, User, Trophy, Calendar1, FileText } from 'lucide-react';
 import { Currency, Transaction, Account, TransactionType, UserProfile, WidgetId, Language } from '../types';
@@ -405,65 +405,113 @@ export const TransactionsWidget: React.FC<{
   onDeleteTransaction: (id: string) => void;
   setSelectedTx: (t: Transaction) => void;
   t: (key: string) => string;
-}> = ({ transactions, groupedTransactions, accounts, userProfile, isBalanceVisible, displayCurrency, onNavigate, onEditTransaction, onDeleteTransaction, setSelectedTx, t }) => (
-  <div className="bg-theme-surface/50 md:bg-theme-surface rounded-2xl md:p-6 md:border border-theme-soft min-h-[500px]">
-    <h2 className="text-sm font-semibold text-theme-secondary mb-6 px-2 md:px-0 uppercase tracking-wider">{t("recentTransactions")}</h2>
-    {transactions.length === 0 ? (
-      <div className="text-center py-20 text-theme-secondary text-sm">{t("noTransactions")}</div>
-    ) : (
-      <div className="flex flex-col gap-6">
-        {(() => {
-          let count = 0;
-          const MAX_ITEMS = userProfile.dashboardTxLimit || 5;
-          const sortedDates = Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-          return (
-            <>
-              {sortedDates.map(date => {
-                if (count >= MAX_ITEMS) return null;
-                const dayTransactions = groupedTransactions[date].sort((a, b) => (b.id || '').localeCompare(a.id || ''));
-                const itemsToRender = [];
-                for (const t of dayTransactions) {
-                  if (count < MAX_ITEMS) { itemsToRender.push(t); count++; }
-                }
-                if (itemsToRender.length === 0) return null;
-                return (
-                  <div key={date}>
-                    <h3 className="text-xs font-bold text-zinc-500 sticky top-0 bg-background/95 backdrop-blur-sm bg-transparent py-2 px-2 z-10">
-                      {(() => {
-                        const dateObj = new Date(`${date}T12:00:00`);
-                        const todayStr = new Date().toISOString().split('T')[0];
-                        return date === todayStr ? t('today') : dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-                      })()}
-                    </h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2 mt-1">
-                      {itemsToRender.map(transaction => (
-                        <TransactionItem
-                          key={transaction.id}
-                          transaction={transaction}
-                          accounts={accounts}
-                          lang={userProfile.language}
-                          isBalanceVisible={isBalanceVisible}
-                          displayCurrency={displayCurrency}
-                          onSelect={setSelectedTx}
-                          onEdit={onEditTransaction}
-                          onDelete={onDeleteTransaction}
-                          compact={true}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              {transactions.length > (userProfile.dashboardTxLimit || 5) && (
-                <button onClick={() => onNavigate('TRANSACTIONS')} className="w-full py-4 text-center text-sm font-bold text-theme-brand hover:text-theme-primary transition-colors border-t border-theme-soft mt-2">{t('viewMore')}</button>
-              )}
-            </>
-          );
-        })()}
+}> = ({ transactions, groupedTransactions, accounts, userProfile, isBalanceVisible, displayCurrency, onNavigate, onEditTransaction, onDeleteTransaction, setSelectedTx, t }) => {
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
+
+  const filteredTransactions = useMemo(() => {
+    if (!selectedWalletId) return transactions;
+    return transactions.filter(tx => tx.accountId === selectedWalletId || tx.toAccountId === selectedWalletId);
+  }, [transactions, selectedWalletId]);
+
+  const filteredGrouped = useMemo(() => {
+    const groups: Record<string, Transaction[]> = {};
+    filteredTransactions.forEach(tx => {
+      const date = tx.date.split('T')[0];
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(tx);
+    });
+    return groups;
+  }, [filteredTransactions]);
+
+  return (
+    <div className="bg-theme-surface/50 md:bg-theme-surface rounded-2xl md:p-6 md:border border-theme-soft min-h-[500px]">
+      <h2 className="text-sm font-semibold text-theme-secondary mb-4 px-2 md:px-0 uppercase tracking-wider">{t("recentTransactions")}</h2>
+
+      {/* Wallet filter chips */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 px-2 md:px-0 mb-4 -mx-2 md:mx-0">
+        <button
+          onClick={() => setSelectedWalletId(null)}
+          className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-tight transition-all border ${
+            selectedWalletId === null
+              ? 'bg-theme-brand text-white border-theme-brand shadow-lg'
+              : 'bg-theme-soft border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'
+          }`}
+        >
+          {t('all')}
+        </button>
+        {accounts.map(acc => (
+          <button
+            key={acc.id}
+            onClick={() => setSelectedWalletId(acc.id === selectedWalletId ? null : acc.id)}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black tracking-tight transition-all border ${
+              selectedWalletId === acc.id
+                ? 'bg-theme-brand text-white border-theme-brand shadow-lg'
+                : 'bg-theme-soft border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'
+            }`}
+          >
+            <span>{acc.icon}</span>
+            <span>{acc.name}</span>
+          </button>
+        ))}
       </div>
-    )}
-  </div>
-);
+
+      {filteredTransactions.length === 0 ? (
+        <div className="text-center py-20 text-theme-secondary text-sm">{t("noTransactions")}</div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {(() => {
+            let count = 0;
+            const MAX_ITEMS = userProfile.dashboardTxLimit || 5;
+            const sortedDates = Object.keys(filteredGrouped).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+            return (
+              <>
+                {sortedDates.map(date => {
+                  if (count >= MAX_ITEMS) return null;
+                  const dayTransactions = filteredGrouped[date].sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+                  const itemsToRender = [];
+                  for (const tx of dayTransactions) {
+                    if (count < MAX_ITEMS) { itemsToRender.push(tx); count++; }
+                  }
+                  if (itemsToRender.length === 0) return null;
+                  return (
+                    <div key={date}>
+                      <h3 className="text-xs font-bold text-zinc-500 sticky top-0 bg-background/95 backdrop-blur-sm bg-transparent py-2 px-2 z-10">
+                        {(() => {
+                          const dateObj = new Date(`${date}T12:00:00`);
+                          const todayStr = new Date().toISOString().split('T')[0];
+                          return date === todayStr ? t('today') : dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                        })()}
+                      </h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2 mt-1">
+                        {itemsToRender.map(transaction => (
+                          <TransactionItem
+                            key={transaction.id}
+                            transaction={transaction}
+                            accounts={accounts}
+                            lang={userProfile.language}
+                            isBalanceVisible={isBalanceVisible}
+                            displayCurrency={displayCurrency}
+                            onSelect={setSelectedTx}
+                            onEdit={onEditTransaction}
+                            onDelete={onDeleteTransaction}
+                            compact={true}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {filteredTransactions.length > (userProfile.dashboardTxLimit || 5) && (
+                  <button onClick={() => onNavigate('TRANSACTIONS')} className="w-full py-4 text-center text-sm font-bold text-theme-brand hover:text-theme-primary transition-colors border-t border-theme-soft mt-2">{t('viewMore')}</button>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const IncomeVsExpenseWidget: React.FC<{
   transactions: Transaction[];

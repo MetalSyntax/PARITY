@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon, Trophy, FileText, Cloud, CloudOff, Users, Split, Download, CalendarDays, Upload, FileBarChart, LineChart, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, CalendarRange, ChartArea, Eye, EyeOff, Settings, ChartCandlestick, User, Activity, TrendingDown, Receipt, Wallet, GripVertical, DollarSign, RefreshCw, ArrowDownToLine, ShoppingCart, Euro, Image as ImageIcon, Trophy, FileText, Cloud, CloudOff, Users, Split, Download, CalendarDays, Upload, FileBarChart, LineChart, ChevronLeft, ChevronRight, SlidersHorizontal, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useDragAndDrop } from "@formkit/drag-and-drop/react";
 import { animations } from "@formkit/drag-and-drop";
@@ -31,6 +31,7 @@ import {
 } from "../components/DashboardWidgets";
 import { WIDGET_REGISTRY, DEFAULT_LEFT_COLUMN, DEFAULT_RIGHT_COLUMN } from "../utils/widgetRegistry";
 import { WidgetId } from "../types";
+import { TutorialSystem } from "../components/TutorialSystem";
 
 const ALL_QUICK_ACTIONS: QuickActionDef[] = [
   { id: "TRANSACTIONS", labelKey: "transactions", Icon: Receipt, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
@@ -78,6 +79,7 @@ interface DashboardProps {
   onVerifyBiometrics?: () => Promise<boolean>;
   euroRate?: number;
   euroRateParallel?: number;
+  usdRateParallel?: number;
   onUpdateTransaction: (t: Transaction) => void;
   hasFetchedRates: boolean;
   onUpdateProfile: (p: UserProfile) => void;
@@ -111,6 +113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onVerifyBiometrics,
   euroRate,
   euroRateParallel,
+  usdRateParallel,
   onUpdateTransaction,
   hasFetchedRates,
   onUpdateProfile,
@@ -125,6 +128,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [showTutorials, setShowTutorials] = useState(false);
+  const [showParallelRates, setShowParallelRates] = useState(false);
   const [balanceChartType, setBalanceChartType] = useState<'LINE' | 'BAR'>('LINE');
   const [expenseChartType, setExpenseChartType] = useState<'DOUGHNUT' | 'BAR'>('DOUGHNUT');
 
@@ -391,8 +396,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
 
   useEffect(() => {
-    onToggleBottomNav(!(showPinModal || showCustomizer));
-  }, [showPinModal, showCustomizer, onToggleBottomNav]);
+    onToggleBottomNav(!(showPinModal || showCustomizer || showTutorials));
+  }, [showPinModal, showCustomizer, showTutorials, onToggleBottomNav]);
 
 
   const handlePrivacyToggle = async (e: React.MouseEvent) => {
@@ -746,96 +751,165 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden relative bg-theme-bg">
       <div className="flex-1 overflow-y-auto no-scrollbar pb-32 w-full max-w-7xl mx-auto md:px-8 overscroll-y-auto">
-        <div className="flex justify-between items-center px-6 md:px-0 pt-6 pb-6 flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onNavigate("PROFILE")}
-              className="w-14 h-14 rounded-full bg-theme-surface border border-white/10 flex items-center justify-center text-lg font-black text-theme-primary shadow-2xl cursor-pointer overflow-hidden"
-            >
-              {userProfile.profileImage ? (
-                <img src={userProfile.profileImage} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                userProfile.name.slice(0, 2).toUpperCase()
-              )}
-            </motion.div>
-            <div className="flex flex-col">
-              {isDevMode && !userProfile.hideDevMode && (
-                <div className="flex items-center gap-1 mb-1">
-                  <span className="px-1.5 py-0.5 rounded-2xl bg-theme-brand/20 border border-theme-soft text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
-                    {t('devMode')}
+        <div className="flex flex-col gap-3 px-6 md:px-0 pt-6 pb-4 flex-shrink-0">
+
+          {/* Row 1: Profile + Exchange rate */}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onNavigate("PROFILE")}
+                className="w-14 h-14 rounded-full bg-theme-surface border border-white/10 flex items-center justify-center text-lg font-black text-theme-primary shadow-2xl cursor-pointer overflow-hidden"
+              >
+                {userProfile.profileImage ? (
+                  <img src={userProfile.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  userProfile.name.slice(0, 2).toUpperCase()
+                )}
+              </motion.div>
+              <div className="flex flex-col">
+                {isDevMode && !userProfile.hideDevMode && (
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="px-1.5 py-0.5 rounded-2xl bg-theme-brand/20 border border-theme-soft text-[8px] font-black text-theme-brand uppercase tracking-tighter animate-pulse">
+                      {t('devMode')}
+                    </span>
+                  </div>
+                )}
+                {!userProfile.hideWelcome && (
+                  <p className="text-[10px] text-theme-secondary uppercase tracking-[0.15em] font-black opacity-60 mb-0.5">
+                    {t("welcome_back")}
+                  </p>
+                )}
+                {!userProfile.hideName && (
+                  <p className="text-sm font-black text-theme-primary tracking-tight">
+                    {userProfile.name}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Exchange rate display — dev mode: tap to see parallel rates */}
+            <div className="relative">
+              <button
+                onClick={() => isDevMode ? setShowParallelRates(v => !v) : undefined}
+                className={`bg-theme-surface/50 backdrop-blur-md border border-white/5 transition-all px-5 py-3 rounded-2xl flex flex-col items-end gap-0.5 shadow-xl ${isDevMode ? 'cursor-pointer hover:border-theme-brand/20' : 'cursor-default'}`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-black text-emerald-400">
+                    {t('usd_rate')}: {exchangeRate?.toFixed(2)} Bs
                   </span>
                 </div>
-              )}
-              {!userProfile.hideWelcome && (
-                <p className="text-[10px] text-theme-secondary uppercase tracking-[0.15em] font-black opacity-60 mb-0.5">
-                  {t("welcome_back")}
-                </p>
-              )}
-              {!userProfile.hideName && (
-                <p className="text-sm font-black text-theme-primary tracking-tight">
-                  {userProfile.name}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col-reverse items-end gap-3">
-            <div className="flex items-center gap-2">
-              <motion.button
-                 whileHover={{ scale: 1.1 }}
-                 whileTap={{ scale: 0.9 }}
-                 onClick={() => {
-                   if (navigator.onLine && onSync) onSync();
-                 }}
-                 className={`w-10 h-10 rounded-full transition-all flex items-center justify-center relative bg-theme-surface border border-white/5 text-theme-secondary hover:text-theme-primary shadow-lg ${isSyncing ? 'animate-spin' : ''}`}
-              >
-                 {navigator.onLine ? <Cloud size={18} /> : <CloudOff size={18} className="opacity-50" />}
-                 {syncPendingCount > 0 && (
-                   <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 bg-orange-500 border border-theme-bg rounded-full text-[8px] font-black text-white flex items-center justify-center shadow-lg">
-                     {syncPendingCount}
-                   </span>
-                 )}
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setShowCustomizer(true)}
-                className="w-10 h-10 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-all flex items-center justify-center shadow-lg"
-              >
-                <Settings size={18} />
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onCheckUpdate}
-                className={`w-10 h-10 rounded-full transition-all flex items-center justify-center relative bg-theme-surface border border-white/5 text-theme-secondary hover:text-theme-primary shadow-lg ${needUpdate ? 'bg-theme-brand/20 text-theme-brand border-theme-brand/30' : ''}`}
-              >
-                {needUpdate ? <ArrowDownToLine size={18} /> : <RefreshCw size={18} />}
-                {needUpdate && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-theme-bg rounded-full" />
-                )}
-              </motion.button>
-            </div>
-
-            <button
-              onClick={onOpenSettings}
-              className="bg-theme-surface/50 backdrop-blur-md border border-white/5 hover:border-theme-brand/20 transition-all px-5 py-3 rounded-2xl flex flex-col items-end gap-0.5 shadow-xl group"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black text-emerald-400">
-                    {t('usd_rate')}: {exchangeRate?.toFixed(2)} Bs
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black text-blue-400">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-black text-blue-400">
                     {t('eur_rate')}: {euroRate?.toFixed(2)} Bs
-                </span>
-              </div>
-            </button>
+                  </span>
+                </div>
+              </button>
+
+              {/* Parallel rates popover (dev mode only) */}
+              {isDevMode && showParallelRates && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="absolute right-0 top-full mt-2 z-50 bg-theme-surface border border-theme-brand/20 rounded-2xl shadow-2xl p-4 min-w-[180px]"
+                >
+                  <p className="text-[8px] font-black text-theme-brand uppercase tracking-[0.2em] opacity-60 mb-2">Tasas Paralelas</p>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[10px] text-theme-secondary font-black">USD Paralelo</span>
+                      <span className="text-[11px] font-black text-emerald-400">{usdRateParallel?.toFixed(2) ?? '—'} Bs</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[10px] text-theme-secondary font-black">EUR Paralelo</span>
+                      <span className="text-[11px] font-black text-blue-400">{euroRateParallel?.toFixed(2) ?? '—'} Bs</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowParallelRates(false)}
+                    className="mt-3 w-full text-[9px] font-black text-theme-secondary hover:text-theme-primary transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                </motion.div>
+              )}
+            </div>
           </div>
+
+          {/* Row 2: Action buttons aligned left */}
+          <div className="flex items-center gap-2">
+
+            {/* Sync */}
+            <motion.button
+              data-tutorial="sync-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => { if (navigator.onLine && onSync) onSync(); }}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 bg-theme-surface border border-white/5 rounded-2xl transition-all shadow-lg relative ${isSyncing ? 'animate-pulse' : ''} ${!navigator.onLine ? 'opacity-50' : 'text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}
+              aria-label="Sincronizar con la nube"
+            >
+              {navigator.onLine ? <Cloud size={15} /> : <CloudOff size={15} />}
+              <span className="text-[7px] font-black uppercase tracking-tight">{t('btn_sync')}</span>
+              {syncPendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 bg-orange-500 border border-theme-bg rounded-full text-[8px] font-black text-white flex items-center justify-center shadow-lg">
+                  {syncPendingCount}
+                </span>
+              )}
+            </motion.button>
+
+            {/* Widgets customizer */}
+            <motion.button
+              data-tutorial="customize-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowCustomizer(true)}
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 bg-theme-surface border border-white/5 rounded-2xl text-theme-secondary hover:text-theme-primary hover:border-white/10 transition-all shadow-lg"
+              aria-label="Personalizar widgets"
+            >
+              <Settings size={15} />
+              <span className="text-[7px] font-black uppercase tracking-tight">{t('btn_widgets')}</span>
+            </motion.button>
+
+            {/* Update */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onCheckUpdate}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-2xl transition-all shadow-lg relative ${needUpdate ? 'bg-theme-brand/15 border border-theme-brand/30 text-theme-brand' : 'bg-theme-surface border border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}
+              aria-label="Buscar actualizaciones"
+            >
+              {needUpdate ? <ArrowDownToLine size={15} /> : <RefreshCw size={15} />}
+              <span className="text-[7px] font-black uppercase tracking-tight">{t('btn_update')}</span>
+              {needUpdate && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-theme-bg rounded-full" />
+              )}
+            </motion.button>
+
+            {/* App settings */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onOpenSettings}
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 bg-theme-surface border border-white/5 rounded-2xl text-theme-secondary hover:text-theme-primary hover:border-white/10 transition-all shadow-lg"
+              aria-label="Ajustes de la aplicación"
+            >
+              <SlidersHorizontal size={15} />
+              <span className="text-[7px] font-black uppercase tracking-tight">{t('btn_settings')}</span>
+            </motion.button>
+
+            {/* Tutorials */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowTutorials(true)}
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 bg-theme-surface border border-white/5 rounded-2xl text-theme-secondary hover:text-theme-primary hover:border-white/10 transition-all shadow-lg"
+              aria-label="Ver tutoriales"
+            >
+              <GraduationCap size={15} />
+              <span className="text-[7px] font-black uppercase tracking-tight">{t('btn_tutorials')}</span>
+            </motion.button>
+          </div>
+
         </div>
         {/* Quick Actions Horizontal List */}
         <div className="px-6 md:px-0 mb-6 animate-in slide-in-from-top-4 duration-700">
@@ -857,7 +931,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* Left fade edge — desktop only */}
             <div className={`hidden md:block absolute left-0 top-0 bottom-4 w-14 bg-gradient-to-r from-theme-bg to-transparent pointer-events-none z-[5] transition-opacity duration-200 ${canScrollLeft ? "opacity-100" : "opacity-0"}`} />
 
-            <div ref={quickActionsRef} className="flex gap-1 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0 snap-x cursor-grab active:cursor-grabbing select-none">
+            <div data-tutorial="quick-actions" ref={quickActionsRef} className="flex gap-1 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0 snap-x cursor-grab active:cursor-grabbing select-none">
               {ALL_QUICK_ACTIONS.filter(action => enabledQuickActionIds.includes(action.id)).map((action) => (
                 <button
                   key={action.id}
@@ -994,6 +1068,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         exchangeRate={exchangeRate}
         displayCurrency={displayCurrency}
       />
+
+      {showTutorials && (
+        <TutorialSystem onClose={() => setShowTutorials(false)} />
+      )}
     </div>
   );
 };

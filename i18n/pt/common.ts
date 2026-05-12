@@ -165,4 +165,9 @@ export const common = {
     maxScenariosReached: 'Máximo 5 cenários',
     duplicatesSkipped: 'duplicatas omitidas',
     exchangeRatesAppendix: 'Taxas de Câmbio',
+    btn_sync: 'Sincronizar',
+    btn_widgets: 'Widgets',
+    btn_update: 'Atualizar',
+    btn_settings: 'Configurações',
+    btn_tutorials: 'Tutoriais',
 };
