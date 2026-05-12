@@ -111,11 +111,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
     const isUSD = (c: string) => c === Currency.USD || c === Currency.USDT;
     const isEUR = (c: string) => c === Currency.EUR;
 
-    // Cross-currency transfer logic
+    // Cross-currency transfer logic — always store as Bs/USD or Bs/EUR
     if (isUSD(fromCur) && isVES(toCur)) rate = exchangeRate;
-    else if (isVES(fromCur) && isUSD(toCur)) rate = 1 / exchangeRate;
+    else if (isVES(fromCur) && isUSD(toCur)) rate = exchangeRate;
     else if (isEUR(fromCur) && isVES(toCur)) rate = euroRate || 1;
-    else if (isVES(fromCur) && isEUR(toCur)) rate = 1 / (euroRate || 1);
+    else if (isVES(fromCur) && isEUR(toCur)) rate = euroRate || 1;
     // Note: EUR <-> USD is blocked by UI/Filter, but logic would result in 1 if selected
 
     setManualExchangeRate(rate.toFixed(4));
@@ -852,8 +852,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                         const fee = commF + (amount * (commP / 100));
                                         if (type === TransactionType.TRANSFER) {
                                             let total = amount - fee;
-                                            if (getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency)
-                                                total = total * (parseFloat(manualExchangeRate) || 1);
+                                            if (getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency) {
+                                                const rate = parseFloat(manualExchangeRate) || 1;
+                                                total = getActiveAccount(fromAccountId).currency === Currency.VES ? total / rate : total * rate;
+                                            }
                                             return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
                                         }
                                         return (amount + fee).toLocaleString(undefined, { maximumFractionDigits: 2 });
