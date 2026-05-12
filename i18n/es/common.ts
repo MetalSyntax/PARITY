@@ -183,4 +183,6 @@ export const common = {
   btn_update: 'Actualizar',
   btn_settings: 'Ajustes',
   btn_tutorials: 'Tutoriales',
+  filter: 'Filtrar',
+  clearFilters: 'Limpiar filtros',
 };

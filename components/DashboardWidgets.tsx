@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { GripVertical, Settings, Eye, EyeOff, DollarSign, Euro, ArrowUpRight, TrendingDown, Activity, Plus, PieChart, TrendingUp, Receipt, ArrowRightLeft, ChartArea, CalendarRange, ShoppingCart, Image as ImageIcon, User, Trophy, Calendar1, FileText } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GripVertical, Settings, Eye, EyeOff, DollarSign, Euro, ArrowUpRight, TrendingDown, Activity, Plus, PieChart, TrendingUp, Receipt, ArrowRightLeft, ChartArea, CalendarRange, ShoppingCart, Image as ImageIcon, User, Trophy, Calendar1, FileText, SlidersHorizontal, Search, ChevronDown, X, Calendar } from 'lucide-react';
 import { Currency, Transaction, Account, TransactionType, UserProfile, WidgetId, Language } from '../types';
 import { CurrencyAmount } from './CurrencyAmount';
-import { formatSecondaryAmount } from '../utils/formatUtils';
+import { formatSecondaryAmount, formatMonth } from '../utils/formatUtils';
 import { BalanceHistoryChart, IncomeVsExpenseChart, DailySpendingChart, ExpenseStructureChart } from './Charts';
 import { renderAccountIcon } from '../utils/iconUtils';
 import { TransactionItem } from './TransactionItem';
@@ -405,13 +405,48 @@ export const TransactionsWidget: React.FC<{
   onDeleteTransaction: (id: string) => void;
   setSelectedTx: (t: Transaction) => void;
   t: (key: string) => string;
-}> = ({ transactions, groupedTransactions, accounts, userProfile, isBalanceVisible, displayCurrency, onNavigate, onEditTransaction, onDeleteTransaction, setSelectedTx, t }) => {
+}> = ({ transactions, accounts, userProfile, isBalanceVisible, displayCurrency, onNavigate, onEditTransaction, onDeleteTransaction, setSelectedTx, t }) => {
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<TransactionType | 'ALL'>('ALL');
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [openPopup, setOpenPopup] = useState<'month' | 'wallet' | 'type' | 'category' | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        setOpenPopup(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    transactions.forEach(tx => months.add(tx.date.slice(0, 7)));
+    return Array.from(months).sort().reverse();
+  }, [transactions]);
+
+  const activeFilterCount = [searchQuery, filterType !== 'ALL', selectedWalletId, selectedMonth !== 'ALL', selectedCategory !== 'ALL'].filter(Boolean).length;
 
   const filteredTransactions = useMemo(() => {
-    if (!selectedWalletId) return transactions;
-    return transactions.filter(tx => tx.accountId === selectedWalletId || tx.toAccountId === selectedWalletId);
-  }, [transactions, selectedWalletId]);
+    return transactions.filter(tx => {
+      const category = CATEGORIES.find(c => c.id === tx.category);
+      const categoryName = category ? t(category.name.toLowerCase()) : '';
+      const matchesSearch = !searchQuery ||
+        (tx.note || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        categoryName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = filterType === 'ALL' || tx.type === filterType;
+      const matchesWallet = !selectedWalletId || tx.accountId === selectedWalletId || tx.toAccountId === selectedWalletId;
+      const matchesMonth = selectedMonth === 'ALL' || tx.date.startsWith(selectedMonth);
+      const matchesCategory = selectedCategory === 'ALL' || tx.category === selectedCategory;
+      return matchesSearch && matchesType && matchesWallet && matchesMonth && matchesCategory;
+    });
+  }, [transactions, searchQuery, filterType, selectedWalletId, selectedMonth, selectedCategory]);
 
   const filteredGrouped = useMemo(() => {
     const groups: Record<string, Transaction[]> = {};
@@ -423,40 +458,212 @@ export const TransactionsWidget: React.FC<{
     return groups;
   }, [filteredTransactions]);
 
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setFilterType('ALL');
+    setSelectedWalletId(null);
+    setSelectedMonth('ALL');
+    setSelectedCategory('ALL');
+    setOpenPopup(null);
+  };
+
+  const togglePopup = (name: typeof openPopup) => setOpenPopup(prev => prev === name ? null : name);
+
+  const selectedWallet = accounts.find(a => a.id === selectedWalletId);
+  const selectedCat = CATEGORIES.find(c => c.id === selectedCategory);
+
   return (
     <div className="bg-theme-surface/50 md:bg-theme-surface rounded-2xl md:p-6 md:border border-theme-soft min-h-[500px]">
-      <h2 className="text-sm font-semibold text-theme-secondary mb-4 px-2 md:px-0 uppercase tracking-wider">{t("recentTransactions")}</h2>
 
-      {/* Wallet filter chips */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 px-2 md:px-0 mb-4 -mx-2 md:mx-0">
-        <button
-          onClick={() => setSelectedWalletId(null)}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-tight transition-all border ${
-            selectedWalletId === null
-              ? 'bg-theme-brand text-white border-theme-brand shadow-lg'
-              : 'bg-theme-soft border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'
-          }`}
-        >
-          {t('all')}
-        </button>
-        {accounts.map(acc => (
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 px-2 md:px-0">
+        <h2 className="text-sm font-semibold text-theme-secondary uppercase tracking-wider">{t('recentTransactions')}</h2>
+        <div className="flex items-center gap-2">
+          {activeFilterCount > 0 && (
+            <button onClick={clearAllFilters} className="flex items-center gap-1 text-[10px] font-black text-red-400 hover:text-red-300 transition-colors">
+              <X size={11} /> {t('clearFilters')}
+            </button>
+          )}
           <button
-            key={acc.id}
-            onClick={() => setSelectedWalletId(acc.id === selectedWalletId ? null : acc.id)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black tracking-tight transition-all border ${
-              selectedWalletId === acc.id
+            onClick={() => { setShowFilters(v => !v); setOpenPopup(null); }}
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border ${
+              showFilters || activeFilterCount > 0
                 ? 'bg-theme-brand text-white border-theme-brand shadow-lg'
-                : 'bg-theme-soft border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'
+                : 'bg-theme-soft border-white/5 text-theme-secondary hover:text-theme-primary'
             }`}
           >
-            <span className="flex-shrink-0">{renderAccountIcon(acc.icon, 12)}</span>
-            <span>{acc.name}</span>
+            <SlidersHorizontal size={12} />
+            <span>{t('filter')}</span>
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white text-theme-brand rounded-full text-[9px] font-black flex items-center justify-center shadow">
+                {activeFilterCount}
+              </span>
+            )}
           </button>
-        ))}
+        </div>
       </div>
 
+      {/* Collapsible filter panel */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-visible mb-4 px-2 md:px-0"
+          >
+            <div ref={popupRef} className="flex flex-col gap-3 pt-1 pb-3 border-b border-white/5">
+
+              {/* Row 1: Search alone */}
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder={t('searchTransactions')}
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full bg-theme-bg border border-white/5 rounded-xl py-2.5 pl-8 pr-8 text-[11px] text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-brand/40 transition-colors"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-secondary hover:text-theme-primary">
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+
+              {/* Row 2: 4 filter buttons, icon + label, evenly distributed */}
+              <div className="grid grid-cols-4 gap-2">
+
+                {/* Month */}
+                <div className="relative flex flex-col items-center">
+                  <button onClick={() => togglePopup('month')} className={`w-full flex flex-col items-center gap-1 py-2.5 rounded-2xl transition-all border shadow-sm ${selectedMonth !== 'ALL' ? 'bg-theme-brand text-white border-theme-brand shadow-lg' : 'bg-theme-bg border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}>
+                    <Calendar size={15} />
+                    <span className="text-[8px] font-black uppercase tracking-tight leading-none truncate max-w-full px-1">
+                      {selectedMonth !== 'ALL' ? formatMonth(selectedMonth, 'MMM YY', userProfile.language) : t('allPeriods').split(' ')[0]}
+                    </span>
+                  </button>
+                  <AnimatePresence>
+                    {openPopup === 'month' && (
+                      <motion.div initial={{ opacity: 0, y: -6, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.95 }} transition={{ duration: 0.15 }}
+                        className="absolute left-0 top-full mt-1.5 w-40 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div className="max-h-52 overflow-y-auto no-scrollbar py-1">
+                          <button onClick={() => { setSelectedMonth('ALL'); setOpenPopup(null); }}
+                            className={`w-full text-left px-4 py-2.5 text-[11px] font-black transition-colors hover:bg-white/5 ${selectedMonth === 'ALL' ? 'text-theme-brand' : 'text-theme-secondary'}`}>
+                            {t('allPeriods')}
+                          </button>
+                          <div className="h-px bg-white/5 mx-3" />
+                          {availableMonths.map(m => (
+                            <button key={m} onClick={() => { setSelectedMonth(m); setOpenPopup(null); }}
+                              className={`w-full text-left px-4 py-2.5 text-[11px] font-black transition-colors hover:bg-white/5 ${selectedMonth === m ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}>
+                              {formatMonth(m, 'MMM YYYY', userProfile.language)}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Wallet */}
+                <div className="relative flex flex-col items-center">
+                  <button onClick={() => togglePopup('wallet')} className={`w-full flex flex-col items-center gap-1 py-2.5 rounded-2xl transition-all border shadow-sm ${selectedWalletId ? 'bg-theme-brand text-white border-theme-brand shadow-lg' : 'bg-theme-bg border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}>
+                    {selectedWallet ? renderAccountIcon(selectedWallet.icon, 15) : <Receipt size={15} />}
+                    <span className="text-[8px] font-black uppercase tracking-tight leading-none truncate max-w-full px-1">
+                      {selectedWallet ? selectedWallet.name : t('wallet')}
+                    </span>
+                  </button>
+                  <AnimatePresence>
+                    {openPopup === 'wallet' && (
+                      <motion.div initial={{ opacity: 0, y: -6, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.95 }} transition={{ duration: 0.15 }}
+                        className="absolute left-0 top-full mt-1.5 w-44 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div className="max-h-52 overflow-y-auto no-scrollbar py-1">
+                          <button onClick={() => { setSelectedWalletId(null); setOpenPopup(null); }}
+                            className={`w-full text-left px-4 py-2.5 text-[11px] font-black transition-colors hover:bg-white/5 ${!selectedWalletId ? 'text-theme-brand' : 'text-theme-secondary'}`}>
+                            {t('all')}
+                          </button>
+                          <div className="h-px bg-white/5 mx-3" />
+                          {accounts.map(acc => (
+                            <button key={acc.id} onClick={() => { setSelectedWalletId(acc.id); setOpenPopup(null); }}
+                              className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[11px] font-black transition-colors hover:bg-white/5 ${selectedWalletId === acc.id ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}>
+                              <span className="flex-shrink-0">{renderAccountIcon(acc.icon, 13)}</span>
+                              <span>{acc.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Type */}
+                <div className="relative flex flex-col items-center">
+                  <button onClick={() => togglePopup('type')} className={`w-full flex flex-col items-center gap-1 py-2.5 rounded-2xl transition-all border shadow-sm ${filterType !== 'ALL' ? 'bg-theme-brand text-white border-theme-brand shadow-lg' : 'bg-theme-bg border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}>
+                    <ArrowRightLeft size={15} />
+                    <span className="text-[8px] font-black uppercase tracking-tight leading-none truncate max-w-full px-1">
+                      {filterType === 'ALL' ? t('type') : t(filterType.toLowerCase())}
+                    </span>
+                  </button>
+                  <AnimatePresence>
+                    {openPopup === 'type' && (
+                      <motion.div initial={{ opacity: 0, y: -6, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.95 }} transition={{ duration: 0.15 }}
+                        className="absolute left-0 top-full mt-1.5 w-36 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div className="py-1">
+                          {(['ALL', TransactionType.INCOME, TransactionType.EXPENSE, TransactionType.TRANSFER] as const).map(type => (
+                            <button key={type} onClick={() => { setFilterType(type); setOpenPopup(null); }}
+                              className={`w-full text-left px-4 py-2.5 text-[11px] font-black transition-colors hover:bg-white/5 ${filterType === type ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}>
+                              {type === 'ALL' ? t('all') : t(type.toLowerCase())}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Category */}
+                <div className="relative flex flex-col items-center">
+                  <button onClick={() => togglePopup('category')} className={`w-full flex flex-col items-center gap-1 py-2.5 rounded-2xl transition-all border shadow-sm ${selectedCategory !== 'ALL' ? 'bg-theme-brand text-white border-theme-brand shadow-lg' : 'bg-theme-bg border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}>
+                    {selectedCat
+                      ? <span className="flex items-center justify-center w-[15px] h-[15px] text-[13px] leading-none">{selectedCat.icon}</span>
+                      : <PieChart size={15} />
+                    }
+                    <span className="text-[8px] font-black uppercase tracking-tight leading-none truncate max-w-full px-1">
+                      {selectedCat ? t(selectedCat.name.toLowerCase()) : t('category')}
+                    </span>
+                  </button>
+                  <AnimatePresence>
+                    {openPopup === 'category' && (
+                      <motion.div initial={{ opacity: 0, y: -6, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.95 }} transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-1.5 w-48 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div className="max-h-64 overflow-y-auto no-scrollbar py-1">
+                          <button onClick={() => { setSelectedCategory('ALL'); setOpenPopup(null); }}
+                            className={`w-full text-left px-4 py-2.5 text-[11px] font-black transition-colors hover:bg-white/5 ${selectedCategory === 'ALL' ? 'text-theme-brand' : 'text-theme-secondary'}`}>
+                            {t('all')}
+                          </button>
+                          <div className="h-px bg-white/5 mx-3" />
+                          {CATEGORIES.map(cat => (
+                            <button key={cat.id} onClick={() => { setSelectedCategory(cat.id); setOpenPopup(null); }}
+                              className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[11px] font-black transition-colors hover:bg-white/5 ${selectedCategory === cat.id ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}>
+                              <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] flex-shrink-0 ${cat.color}`}>{cat.icon}</span>
+                              <span className="truncate">{t(cat.name.toLowerCase())}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Transaction list */}
       {filteredTransactions.length === 0 ? (
-        <div className="text-center py-20 text-theme-secondary text-sm">{t("noTransactions")}</div>
+        <div className="text-center py-20 text-theme-secondary text-sm">{t('noTransactions')}</div>
       ) : (
         <div className="flex flex-col gap-6">
           {(() => {
@@ -467,9 +674,9 @@ export const TransactionsWidget: React.FC<{
               <>
                 {sortedDates.map(date => {
                   if (count >= MAX_ITEMS) return null;
-                  const dayTransactions = filteredGrouped[date].sort((a, b) => (b.id || '').localeCompare(a.id || ''));
-                  const itemsToRender = [];
-                  for (const tx of dayTransactions) {
+                  const dayTxns = filteredGrouped[date].sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+                  const itemsToRender: Transaction[] = [];
+                  for (const tx of dayTxns) {
                     if (count < MAX_ITEMS) { itemsToRender.push(tx); count++; }
                   }
                   if (itemsToRender.length === 0) return null;

@@ -170,4 +170,6 @@ export const common = {
     btn_update: 'Update',
     btn_settings: 'Settings',
     btn_tutorials: 'Tutorials',
+    filter: 'Filter',
+    clearFilters: 'Clear filters',
 };
