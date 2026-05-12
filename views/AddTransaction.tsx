@@ -851,7 +851,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                         const commP = parseFloat(commissionPercent) || 0;
                                         const fee = commF + (amount * (commP / 100));
                                         if (type === TransactionType.TRANSFER) {
-                                            let total = amount - fee;
+                                            let total = amount;
                                             if (getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency) {
                                                 const rate = parseFloat(manualExchangeRate) || 1;
                                                 total = getActiveAccount(fromAccountId).currency === Currency.VES ? total / rate : total * rate;
@@ -869,7 +869,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
                         <div className="h-8 w-px bg-white/5" />
 
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase tracking-[0.15em]">{t('commissions')}</span>
+                            <div className="grid grid-cols-2 gap-x-4">
                              <div className="flex flex-col">
                                 <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">{t('fixed')}</span>
                                 <input ref={commFixedRef} type="text" inputMode="none" value={commissionFixed}
@@ -886,6 +888,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                     className="bg-transparent text-[11px] font-bold text-theme-primary outline-none focus:text-theme-brand w-12"
                                 />
                              </div>
+                            </div>
                         </div>
 
                         {type === TransactionType.TRANSFER && getActiveAccount(fromAccountId).currency !== getActiveAccount(toAccountId).currency && (

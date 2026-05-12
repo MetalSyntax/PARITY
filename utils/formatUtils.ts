@@ -20,6 +20,8 @@ export const formatAmount = (
     symbol = '€';
   }
 
+  val = val || 0; // normalize -0 → 0
+
   return `${symbol}${val?.toLocaleString(undefined, { 
     minimumFractionDigits: decimals, 
     maximumFractionDigits: decimals 
@@ -48,9 +50,11 @@ export const formatSecondaryAmount = (
     val = usd;
     symbol = '$';
   } else if (displayCurrency === Currency.EUR && euroRate) {
-    val = usd * exchangeRate; // Show VES as secondary for EUR too
+    val = usd * exchangeRate;
     symbol = 'Bs';
   }
+
+  val = val || 0; // normalize -0 → 0
 
   return `${symbol} ${val?.toLocaleString(undefined, { 
     minimumFractionDigits: 0,

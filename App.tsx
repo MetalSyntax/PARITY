@@ -930,18 +930,16 @@ function AppContent() {
       if (tx) {
         const updatedAccounts = accounts.map(acc => {
           if (acc.id === tx.accountId) {
-            let amount = tx.amount;
-            if (tx.type === TransactionType.TRANSFER && (tx.fee || 0) > 0) {
-               amount += tx.fee;
-            }
+            // Source lost `amount + fee` (fee always charged to source), so restore both
+            let amount = tx.amount + (tx.fee || 0);
 
             if (acc.currency !== tx.originalCurrency) {
               const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
-              
+
               if (isUSDType(acc.currency) && tx.originalCurrency === Currency.VES) {
-                amount = tx.amount / tx.exchangeRate;
+                amount = (tx.amount + (tx.fee || 0)) / tx.exchangeRate;
               } else if (acc.currency === Currency.VES && isUSDType(tx.originalCurrency)) {
-                amount = tx.amount * tx.exchangeRate;
+                amount = (tx.amount + (tx.fee || 0)) * tx.exchangeRate;
               }
             }
 
@@ -950,6 +948,7 @@ function AppContent() {
           }
 
           if (tx.type === TransactionType.TRANSFER && tx.toAccountId && acc.id === tx.toAccountId) {
+            // Destination received full `amount`, so reverse exactly that
             let amount = tx.amount;
 
             if (tx.originalCurrency !== acc.currency) {
@@ -1040,8 +1039,9 @@ function AppContent() {
       if (data.skipBalanceUpdate) return acc;
 
       if (acc.id === data.accountId) {
+        // Fee always comes from source (both EXPENSE and TRANSFER)
         let deduction = data.amount;
-        if (data.type === TransactionType.EXPENSE && (data.fee || 0) > 0) {
+        if ((data.type === TransactionType.EXPENSE || data.type === TransactionType.TRANSFER) && (data.fee || 0) > 0) {
             deduction += data.fee;
         }
 
@@ -1062,18 +1062,19 @@ function AppContent() {
       }
 
       if (data.type === TransactionType.TRANSFER && data.toAccountId && acc.id === data.toAccountId) {
-        let addition = data.amount - (data.fee || 0);
+        // Destination receives the full amount; fee was already charged to source
+        let addition = data.amount;
 
         if (data.originalCurrency !== acc.currency) {
           if (acc.currency === Currency.VES) {
-             if (isUSDType(data.originalCurrency)) addition = (data.amount - (data.fee || 0)) * txRate;
-             else if (data.originalCurrency === Currency.EUR) addition = (data.amount - (data.fee || 0)) * txEuroRate;
+             if (isUSDType(data.originalCurrency)) addition = data.amount * txRate;
+             else if (data.originalCurrency === Currency.EUR) addition = data.amount * txEuroRate;
           } else if (acc.currency === Currency.EUR) {
-             if (isUSDType(data.originalCurrency)) addition = (data.amount - (data.fee || 0)) * (txRate / txEuroRate);
-             else if (data.originalCurrency === Currency.VES) addition = (data.amount - (data.fee || 0)) / txEuroRate;
+             if (isUSDType(data.originalCurrency)) addition = data.amount * (txRate / txEuroRate);
+             else if (data.originalCurrency === Currency.VES) addition = data.amount / txEuroRate;
           } else if (isUSDType(acc.currency)) {
-             if (data.originalCurrency === Currency.VES) addition = (data.amount - (data.fee || 0)) / txRate;
-             else if (data.originalCurrency === Currency.EUR) addition = (data.amount - (data.fee || 0)) * (txEuroRate / txRate);
+             if (data.originalCurrency === Currency.VES) addition = data.amount / txRate;
+             else if (data.originalCurrency === Currency.EUR) addition = data.amount * (txEuroRate / txRate);
           }
         }
 
