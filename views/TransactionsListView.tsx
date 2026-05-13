@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ArrowLeft, Search, TrendingUp, Coins, DollarSign, X, Receipt, Euro, Layers, Trash2, Calendar, RefreshCw, Plus, PieChart, ArrowRightLeft } from 'lucide-react';
+import { ArrowLeft, Search, TrendingUp, Coins, DollarSign, X, Receipt, Euro, Layers, Trash2, Calendar, RefreshCw, Plus, PieChart, ArrowRightLeft, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Transaction, Language, Currency, TransactionType, Account } from '../types';
 import { getTranslation } from '../i18n';
@@ -180,45 +180,20 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           </div>
           <span className="hidden sm:inline">{displayCurrency}</span>
         </button>
-      </div>
 
-      {/* Main Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onBack}
-          className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </motion.button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-theme-primary">{t('transactions')}</h1>
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-theme-secondary font-medium">{t('fullHistory')}</p>
-            <div className="w-1 h-1 bg-white/10 rounded-full" />
-            <span className="text-[10px] font-black text-theme-brand uppercase tracking-tighter">
-              {filteredTransactions.length}
-            </span>
-            {activeFilterCount > 0 && (
-              <>
-                <div className="w-1 h-1 bg-white/10 rounded-full" />
-                <button onClick={clearAllFilters} className="flex items-center gap-1 text-[10px] font-black text-red-400 hover:text-red-300 transition-colors">
-                  <X size={10} /> {t('clearFilters')}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Month picker in header */}
-        <div className="relative flex-shrink-0" ref={monthHeaderRef}>
+        {/* Month picker — same position and design as BudgetView */}
+        <div className="relative" ref={monthHeaderRef}>
           <button
             onClick={() => togglePopup('month')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-[11px] font-black transition-all ${selectedMonth !== 'ALL' ? 'bg-theme-brand text-white border-theme-brand shadow-lg' : 'bg-theme-surface border-white/5 text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}
+            className="bg-theme-surface border border-white/5 text-xs font-black text-theme-secondary rounded-2xl px-5 py-3 outline-none focus:border-theme-brand/50 transition-all cursor-pointer hover:text-theme-primary flex items-center gap-3 min-w-[140px] justify-between shadow-lg active:scale-95"
           >
-            <Calendar size={14} />
-            <span>{selectedMonth !== 'ALL' ? formatMonth(selectedMonth, 'MMM YY', lang) : t('month')}</span>
+            <div className="flex items-center gap-2">
+              <Calendar size={14} className="text-theme-brand" />
+              <span className="truncate">
+                {selectedMonth !== 'ALL' ? formatMonth(selectedMonth, monthFormat, lang) : t('allPeriods')}
+              </span>
+            </div>
+            <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-300 ${openPopup === 'month' ? 'rotate-180' : ''}`} />
           </button>
           <AnimatePresence>
             {openPopup === 'month' && (
@@ -227,9 +202,9 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-1.5 w-52 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                className="absolute right-0 top-full mt-2 w-48 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden"
               >
-                <div className="max-h-64 overflow-y-auto no-scrollbar py-1">
+                <div className="max-h-[240px] overflow-y-auto no-scrollbar py-2">
                   <button
                     onClick={() => { setSelectedMonth('ALL'); setOpenPopup(null); }}
                     className={`w-full text-left px-4 py-2.5 text-xs font-black transition-colors hover:bg-white/5 ${selectedMonth === 'ALL' ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
@@ -281,6 +256,37 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
             )}
           </AnimatePresence>
         </div>
+      </div>
+
+      {/* Main Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onBack}
+          className="p-2 bg-theme-surface border border-white/5 rounded-full text-theme-secondary hover:text-theme-primary transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </motion.button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold text-theme-primary">{t('transactions')}</h1>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-theme-secondary font-medium">{t('fullHistory')}</p>
+            <div className="w-1 h-1 bg-white/10 rounded-full" />
+            <span className="text-[10px] font-black text-theme-brand uppercase tracking-tighter">
+              {filteredTransactions.length}
+            </span>
+            {activeFilterCount > 0 && (
+              <>
+                <div className="w-1 h-1 bg-white/10 rounded-full" />
+                <button onClick={clearAllFilters} className="flex items-center gap-1 text-[10px] font-black text-red-400 hover:text-red-300 transition-colors">
+                  <X size={10} /> {t('clearFilters')}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* Switcher Tabs */}

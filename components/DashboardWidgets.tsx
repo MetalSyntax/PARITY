@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { GripVertical, Settings, Eye, EyeOff, DollarSign, Euro, ArrowUpRight, TrendingDown, Activity, Plus, PieChart, TrendingUp, Receipt, ArrowRightLeft, ChartArea, CalendarRange, ShoppingCart, Image as ImageIcon, User, Trophy, Calendar1, FileText, SlidersHorizontal, Search, ChevronDown, X, Calendar } from 'lucide-react';
 import { Currency, Transaction, Account, TransactionType, UserProfile, WidgetId, Language } from '../types';
 import { CurrencyAmount } from './CurrencyAmount';
@@ -67,7 +67,16 @@ export const BalanceCardWidget: React.FC<{
   onToggleDisplayCurrency: () => void;
   onTogglePrivacy: (e: React.MouseEvent) => void;
   t: (key: string) => string;
-}> = ({ totalBalanceUSD, exchangeRate, euroRate, displayCurrency, isBalanceVisible, trendPercent, points, area, onToggleDisplayCurrency, onTogglePrivacy, t }) => (
+}> = ({ totalBalanceUSD, exchangeRate, euroRate, displayCurrency, isBalanceVisible, trendPercent, points, area, onToggleDisplayCurrency, onTogglePrivacy, t }) => {
+  // Spring-animated balance value for smooth countup on rate/balance changes
+  const motionBalance = useMotionValue(totalBalanceUSD);
+  const springBalance = useSpring(motionBalance, { stiffness: 120, damping: 30, mass: 0.8 });
+  const [animatedBalance, setAnimatedBalance] = useState(totalBalanceUSD);
+
+  useEffect(() => { motionBalance.set(totalBalanceUSD); }, [totalBalanceUSD, motionBalance]);
+  useEffect(() => springBalance.on('change', v => setAnimatedBalance(v)), [springBalance]);
+
+  return (
   <div className="px-4 md:px-0">
     <div className="bg-theme-surface rounded-2xl p-8 relative overflow-hidden active:scale-[0.99] transition-all duration-300 shadow-theme border border-theme-soft bg-gradient-to-br from-theme-surface to-theme-bg group">
       <div className="absolute top-8 right-8 flex gap-3 z-20">
@@ -121,7 +130,7 @@ export const BalanceCardWidget: React.FC<{
         <div className="flex flex-col gap-1 mb-2">
           <h1 className="text-5xl font-black tracking-tighter text-theme-primary leading-tight">
             <CurrencyAmount
-              amount={totalBalanceUSD}
+              amount={animatedBalance}
               exchangeRate={exchangeRate}
               euroRate={euroRate}
               displayCurrency={displayCurrency}
@@ -134,7 +143,7 @@ export const BalanceCardWidget: React.FC<{
           <div className="flex items-center gap-3">
             <span className="text-theme-secondary font-mono text-xs font-bold px-2 py-1 bg-theme-soft rounded-2xl border border-theme-soft flex items-center gap-1">
               <span className="opacity-50 text-[10px] uppercase">≈</span>
-              {formatSecondaryAmount(totalBalanceUSD, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}
+              {formatSecondaryAmount(animatedBalance, exchangeRate, displayCurrency, isBalanceVisible, 2, euroRate)}
             </span>
             {isBalanceVisible && (
               <div className={`p-1 flex items-center gap-1 rounded-full text-[10px] font-black ${trendPercent >= 0 ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
@@ -147,7 +156,8 @@ export const BalanceCardWidget: React.FC<{
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export const BalanceChartWidget: React.FC<{
   type: 'LINE' | 'BAR';

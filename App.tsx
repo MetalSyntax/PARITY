@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useExchangeRates } from './hooks/useExchangeRates';
 import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint, ShoppingCart } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { AddTransaction } from './views/AddTransaction';
@@ -40,6 +42,8 @@ import { encryptData, decryptData } from './services/crypto';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 import { syncService } from './services/sync';
 
+const queryClient = new QueryClient();
+
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const STORAGE_KEY = 'parity_data_v3';
@@ -51,9 +55,11 @@ const STORAGE_KEY = 'parity_data_v3';
  */
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -189,6 +195,29 @@ function AppContent() {
   };
 
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // react-query powered rate fetching — placed after isLoaded declaration to avoid TDZ
+  const { data: ratesData } = useExchangeRates(isLoaded);
+  useEffect(() => {
+    if (!ratesData) return;
+    if (ratesData.exchangeRate !== null) setExchangeRate(ratesData.exchangeRate);
+    if (ratesData.usdRateParallel !== null) setUsdRateParallel(ratesData.usdRateParallel);
+    if (ratesData.euroRate !== null) setEuroRate(ratesData.euroRate);
+    if (ratesData.euroRateParallel !== null) setEuroRateParallel(ratesData.euroRateParallel);
+    if (ratesData.rateEntries.length > 0) {
+      setRateHistory(prev => {
+        const history = [...prev];
+        for (const entry of ratesData.rateEntries) {
+          const idx = history.findIndex(h => h.date === entry.date && h.currency === entry.currency);
+          if (idx >= 0) history[idx].rate = entry.rate;
+          else history.push(entry);
+        }
+        return history.sort((a, b) => a.date.localeCompare(b.date)).slice(-60);
+      });
+    }
+    setHasFetchedRates(true);
+  }, [ratesData]);
+
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [isDevMode, setIsDevMode] = useState(() => {
     const saved = localStorage.getItem("isDevMode");
@@ -381,74 +410,6 @@ function AppContent() {
     load();
   }, [storageType]);
 
-    const fetchAllRates = async () => {
-         try {
-             const [usdRes, eurRes] = await Promise.all([
-                fetch('https://ve.dolarapi.com/v1/dolares'),
-                fetch('https://ve.dolarapi.com/v1/euros'),
-             ]);
-
-             if (usdRes.ok) {
-                 const data = await usdRes.json();
-                 if (Array.isArray(data)) {
-                    const official = data.find(r => r.fuente === 'oficial');
-                    const parallel = data.find(r => r.fuente === 'paralelo');
-                    let newRate = exchangeRate;
-                    if (official) {
-                        newRate = Number(official.promedio);
-                        setExchangeRate(newRate);
-                        localStorage.setItem('last_bcv_update', Date.now().toString());
-                    }
-                    if (parallel) {
-                        setUsdRateParallel(Number(parallel.promedio));
-                    }
-
-                    if (official) {
-                        setRateHistory(prev => {
-                            const today = new Date().toISOString().split('T')[0];
-                            const history = [...prev];
-                            const existingIdx = history.findIndex(h => h.date === today && h.currency === Currency.USD);
-                            if (existingIdx >= 0) {
-                                history[existingIdx].rate = newRate;
-                            } else {
-                                history.push({ date: today, rate: newRate, currency: Currency.USD });
-                            }
-                            return history.sort((a,b) => a.date.localeCompare(b.date)).slice(-60);
-                        });
-                    }
-                 }
-             }
-
-             if (eurRes.ok) {
-                const data = await eurRes.json();
-                if (Array.isArray(data)) {
-                    const official = data.find(r => r.fuente === 'oficial');
-                    const parallel = data.find(r => r.fuente === 'paralelo');
-                    if (official) setEuroRate(Number(official.promedio));
-                    if (parallel) setEuroRateParallel(Number(parallel.promedio));
-
-                    if (official) {
-                        setRateHistory(prev => {
-                            const today = new Date().toISOString().split('T')[0];
-                            const history = [...prev];
-                            const existingIdx = history.findIndex(h => h.date === today && h.currency === Currency.EUR);
-                            if (existingIdx >= 0) {
-                                history[existingIdx].rate = Number(official.promedio);
-                            } else {
-                                history.push({ date: today, rate: Number(official.promedio), currency: Currency.EUR });
-                            }
-                            return history.sort((a,b) => a.date.localeCompare(b.date)).slice(-60);
-                        });
-                    }
-                }
-             }
-             setHasFetchedRates(true);
-             return true;
-         } catch (e) {
-             console.error("Fetch all rates failed", e);
-             return false;
-         }
-    };
 
     const checkScheduledNotifications = () => {
         const currentProfile = userProfileRef.current;
@@ -565,7 +526,6 @@ function AppContent() {
 
     useEffect(() => {
         if (!isLoaded) return;
-        fetchAllRates();
         checkScheduledNotifications();
         checkAutoPost();
     }, [isLoaded]);
@@ -689,9 +649,9 @@ function AppContent() {
       if (document.visibilityState === 'hidden') {
         setBackgroundTime(Date.now());
       } else if (document.visibilityState === 'visible') {
-        fetchAllRates();
+        // Rate refetch handled by react-query refetchOnWindowFocus
         checkScheduledNotifications();
-        
+
         if (autoLockEnabled) {
           if (backgroundTime !== null) {
             const elapsed = (Date.now() - backgroundTime) / 1000;
@@ -706,10 +666,9 @@ function AppContent() {
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('online', fetchAllRates);
+    // Rate refetch on reconnect handled by react-query refetchOnReconnect
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('online', fetchAllRates);
     };
   }, [autoLockEnabled, autoLockDelay, backgroundTime]);
 
@@ -1329,6 +1288,15 @@ function AppContent() {
             }
           }}
         >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={currentView}
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -16 }}
+              transition={{ duration: 0.16, ease: 'easeInOut' }}
+              className="flex-1 flex flex-col min-h-full"
+            >
           {currentView === 'DASHBOARD' && (
             <Dashboard
               accounts={filteredAccounts}
@@ -1724,6 +1692,8 @@ function AppContent() {
               }}
             />
           )}
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
 
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}

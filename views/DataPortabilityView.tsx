@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import Papa from 'papaparse';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download, Filter, Wallet, ChevronDown, X,
@@ -111,12 +112,12 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
     setIsExporting(true);
     try {
       const filtered = getFilteredTransactions();
-      const headers = [
+      const fields = [
         t('csv_id'), t('csv_date'), t('csv_type'), t('csv_amount'),
         t('csv_currency'), t('csv_category'), t('csv_account'),
         t('csv_note'), t('csv_exchangeRate'), t('csv_usdEquivalent'),
       ];
-      const rows = filtered.map(tx => {
+      const data = filtered.map(tx => {
         const accName = accounts.find(a => a.id === tx.accountId)?.name || t('unknown') || 'Unknown';
         return [
           tx.id,
@@ -126,12 +127,13 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
           tx.originalCurrency,
           tx.category,
           accName,
-          `"${(tx.note || '').replace(/"/g, '""')}"`,
+          tx.note || '',
           tx.exchangeRate,
           tx.normalizedAmountUSD.toFixed(2),
-        ].join(',');
+        ];
       });
-      const csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',') + '\n' + rows.join('\n');
+      const csv = Papa.unparse({ fields, data });
+      const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
       triggerDownload(csvContent, `parity_transactions_${new Date().toISOString().split('T')[0]}.csv`);
     } finally {
       setIsExporting(false);
@@ -179,25 +181,24 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
   const handleCsvFile = (file: File) => {
     setCsvFileName(file.name);
     setCsvFileSize(`${(file.size / 1024 / 1024).toFixed(1)} MB`);
-    const reader = new FileReader();
-    reader.onload = e => {
-      const text = e.target?.result as string;
-      const lines = text.trim().split('\n');
-      setCsvFileRows(lines.length - 1);
-      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-      const firstRow = lines[1]?.split(',').map(c => c.replace(/"/g, '').trim()) || [];
-      setRawData(lines.slice(1).map(l => l.split(',').map(c => c.replace(/"/g, '').trim())));
-      setMappings(headers.map((h, i) => {
-        const lh = h.toLowerCase();
-        let targetField: ColumnMapping['targetField'] = 'skip';
-        if (lh.includes('date')) targetField = 'date';
-        else if (lh.includes('amount') || lh.includes('value') || lh.includes('monto') || lh.includes('valor')) targetField = 'amount';
-        else if (lh.includes('merchant') || lh.includes('description') || lh.includes('category') || lh.includes('categoria')) targetField = 'category';
-        else if (lh.includes('note') || lh.includes('memo') || lh.includes('nota')) targetField = 'note';
-        return { csvColumn: h, targetField, preview: firstRow[i] || '' };
-      }));
-    };
-    reader.readAsText(file);
+    Papa.parse<string[]>(file, {
+      skipEmptyLines: true,
+      complete: (result) => {
+        const [headerRow = [], firstDataRow = [], ...rest] = result.data;
+        const allRows = [firstDataRow, ...rest];
+        setCsvFileRows(allRows.length);
+        setRawData(allRows);
+        setMappings(headerRow.map((h, i) => {
+          const lh = h.toLowerCase().trim();
+          let targetField: ColumnMapping['targetField'] = 'skip';
+          if (lh.includes('date')) targetField = 'date';
+          else if (lh.includes('amount') || lh.includes('value') || lh.includes('monto') || lh.includes('valor')) targetField = 'amount';
+          else if (lh.includes('merchant') || lh.includes('description') || lh.includes('category') || lh.includes('categoria')) targetField = 'category';
+          else if (lh.includes('note') || lh.includes('memo') || lh.includes('nota')) targetField = 'note';
+          return { csvColumn: h.trim(), targetField, preview: firstDataRow[i] || '' };
+        }));
+      },
+    });
   };
 
   const handleCommit = async () => {
