@@ -1,0 +1,23 @@
+{
+  "entryPoints": [
+    "./App.tsx",
+    "./components",
+    "./contexts",
+    "./hooks",
+    "./services",
+    "./utils",
+    "./views"
+  ],
+  "entryPointStrategy": "expand",
+  "out": "docs",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__/**",
+    "**/node_modules/**",
+    "**/backlog/**"
+  ],
+  "tsconfig": "./tsconfig.docs.json",
+  "readme": "README.md",
+  "name": "PARITY Documentation"
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "backlog",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "cypress"
+  ]
+}

@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Default Fallbacks */
+  --bg-primary: #000000;
+  --bg-secondary: #09090b;
+  --bg-tertiary: #18181b;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --border: rgba(255, 255, 255, 0.1);
+  --radius: 1rem;
+}
+html,
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  user-select: none;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-y: none; /* Prevent pull-to-refresh globally */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  height: 100%;
+  overflow: hidden; /* Prevent body scroll, handle scroll in children */
+}
+
+/* Custom Utilities for usage with variables */
+.bg-theme-bg {
+  background-color: var(--bg-primary);
+}
+.bg-theme-surface {
+  background-color: var(--bg-secondary);
+}
+.bg-theme-card {
+  background-color: var(--bg-tertiary);
+}
+.text-theme-primary {
+  color: var(--text-primary);
+}
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+.text-theme-brand {
+  color: var(--primary);
+}
+.border-theme {
+  border-color: var(--border);
+}
+.border-theme-soft {
+  border-color: color-mix(in sRGB, var(--text-primary), transparent 90%);
+}
+.bg-theme-brand {
+  background-color: var(--primary);
+}
+.bg-theme-soft {
+  background-color: color-mix(in sRGB, var(--text-primary), transparent 95%);
+}
+.shadow-theme {
+  box-shadow: var(--shadow);
+}
+
+/* Global transitions for theme switching */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+}
+
+/* Animation Utils */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Make calendar icon white in date inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
