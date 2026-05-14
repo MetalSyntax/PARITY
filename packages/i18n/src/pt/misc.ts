@@ -419,4 +419,12 @@ export const misc = {
   totalWithFees: "Total com Comissões",
   savings: "Poupança",
   net: "Líquido",
+  monthEndForecast: "Previsão de Fim do Mês",
+  baseProjectedSpend: "Gasto Projetado",
+  optimistic: "Otimista",
+  pessimistic: "Pessimista",
+  runway: "Autonomia",
+  manualRate: "Taxa Manual",
+  vsCurrentBalance: "vs. Saldo Atual",
+  days: "dias",
 };

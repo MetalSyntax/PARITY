@@ -419,4 +419,12 @@ export const misc = {
   checkingUpdates: "Buscando actualizaciones...",
   savings: "Ahorro",
   net: "Neto",
+  monthEndForecast: "Pronóstico de Fin de Mes",
+  baseProjectedSpend: "Gasto Proyectado",
+  optimistic: "Optimista",
+  pessimistic: "Pesimista",
+  runway: "Duración",
+  manualRate: "Tasa Manual",
+  vsCurrentBalance: "vs. Saldo Actual",
+  days: "días",
 };

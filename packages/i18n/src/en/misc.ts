@@ -420,4 +420,12 @@ export const misc = {
   checkingUpdates: "Checking for updates...",
   savings: "Savings",
   net: "Net",
+  monthEndForecast: "Month-End Forecast",
+  baseProjectedSpend: "Projected Spend",
+  optimistic: "Optimistic",
+  pessimistic: "Pessimistic",
+  runway: "Runway",
+  manualRate: "Manual Rate",
+  vsCurrentBalance: "vs. Current Balance",
+  days: "days",
 };
