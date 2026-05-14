@@ -197,7 +197,7 @@ function AppContent() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   // react-query powered rate fetching — placed after isLoaded declaration to avoid TDZ
-  const { data: ratesData } = useExchangeRates(isLoaded);
+  const { data: ratesData, refetch: fetchAllRates } = useExchangeRates(isLoaded);
   useEffect(() => {
     if (!ratesData) return;
     if (ratesData.exchangeRate !== null) setExchangeRate(ratesData.exchangeRate);
