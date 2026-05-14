@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { X, ChevronLeft, ChevronRight, GraduationCap, CheckCircle2, MousePointer2, Monitor, Trophy, Receipt, TrendingUp, ArrowRightLeft, Landmark, Tag, PieChart, BarChart3, Repeat2, Upload, LayoutDashboard } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, GraduationCap, CheckCircle2, MousePointer2, Trophy, Receipt, TrendingUp, ArrowRightLeft, Landmark, Tag, PieChart, BarChart3, Repeat2, Upload, LayoutDashboard } from "lucide-react";
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
@@ -435,14 +435,6 @@ function CompletionScreen({ tutorial, onBackToList, onClose }: { tutorial: Tutor
 // ─── Main TutorialSystem ───────────────────────────────────────────────────────
 
 export function TutorialSystem({ onClose, onNavigate }: TutorialSystemProps) {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
-
-  useEffect(() => {
-    const handle = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener("resize", handle);
-    return () => window.removeEventListener("resize", handle);
-  }, []);
-
   const [phase, setPhase] = useState<Phase>("list");
   const [activeTutorialId, setActiveTutorialId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
@@ -557,11 +549,41 @@ export function TutorialSystem({ onClose, onNavigate }: TutorialSystemProps) {
   useLayoutEffect(() => {
     if (!tooltipRef.current || !isReady) return;
 
+    const vw = window.innerWidth;
+    const isMobileLayout = vw < 640;
     const CARD_W = 316;
     const MARGIN = 16;
     const GAP = 14;
     const th = tooltipRef.current.offsetHeight;
 
+    // ── Mobile: anchor to top or bottom depending on where the target is ──
+    if (isMobileLayout) {
+      // If target is in the bottom 50% (or no target), place card at the top
+      // If target is in the top 50%, place card at the bottom above the nav bar
+      const targetInBottomHalf = !targetRect || targetRect.top > window.innerHeight * 0.5;
+      if (targetInBottomHalf) {
+        setTooltipStyle({
+          position: "fixed",
+          top: 56,
+          left: MARGIN,
+          right: MARGIN,
+          width: "auto",
+          opacity: 1,
+        });
+      } else {
+        setTooltipStyle({
+          position: "fixed",
+          bottom: 90,
+          left: MARGIN,
+          right: MARGIN,
+          width: "auto",
+          opacity: 1,
+        });
+      }
+      return;
+    }
+
+    // ── Desktop: floating near the target ──
     if (!targetRect) {
       setTooltipStyle({
         position: "fixed",
@@ -637,37 +659,6 @@ export function TutorialSystem({ onClose, onNavigate }: TutorialSystemProps) {
     setIsReady(false);
     setPhase("list");
   };
-
-  // ─── Mobile guard ────────────────────────────────────────────────────────────
-
-  if (isMobile) {
-    return (
-      <div className="fixed inset-0 z-[9990] flex items-end justify-center">
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative z-10 w-full max-w-md bg-theme-surface border border-white/10 rounded-t-3xl shadow-2xl pb-10 px-5 pt-5">
-          <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-11 h-11 rounded-xl bg-theme-brand/15 flex items-center justify-center">
-              <Monitor size={20} className="text-theme-brand" />
-            </div>
-            <div>
-              <h3 className="text-[13px] font-black text-theme-primary">Solo disponible en escritorio</h3>
-              <p className="text-[10px] text-theme-secondary opacity-50 mt-0.5">Requiere pantalla ≥ 1024 px</p>
-            </div>
-          </div>
-          <p className="text-[11px] text-theme-secondary leading-relaxed mb-5 opacity-70">
-            Los tutoriales interactivos usan un spotlight en vivo sobre la app real. Ábrela en una tablet o computadora para acceder a las guías paso a paso.
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full py-3 rounded-2xl bg-theme-brand text-white font-black text-[13px]"
-          >
-            Entendido
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // ─── List screen ─────────────────────────────────────────────────────────────
 
