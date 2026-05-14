@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { ArrowRightLeft, RefreshCw, Delete, X, TrendingUp, DollarSign, Coins, TrendingDown, Euro } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getTranslation } from "../i18n";
-import { Language, Currency } from "../types";
+import { getTranslation } from '@parity/i18n';
+import { Language, Currency } from '@parity/core';
 
 interface CurrencyConverterProps {
   exchangeRate: number;

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Lock, Fingerprint, Delete } from "lucide-react";
 import { motion } from "framer-motion";
-import { getTranslation } from "../i18n";
-import { Language } from "../types";
+import { getTranslation } from '@parity/i18n';
+import { Language } from '@parity/core';
 
 interface PinModalProps {
   onSuccess: () => void;

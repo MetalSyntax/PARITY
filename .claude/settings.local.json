@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Wonder\\\\Downloads\\\\PARITY\" -Recurse -File -Include \"*.tsx\", \"*.ts\", \"*.jsx\", \"*.js\")",
-      "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Wonder\\\\Downloads\\\\PARITY\" -Recurse -Directory)"
-    ]
-  }
-}

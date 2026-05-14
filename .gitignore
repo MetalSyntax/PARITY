@@ -32,3 +32,9 @@ parity_*.md
 Captura*
 views/AddTransaction_BAK.tsx
 stitch_parity
+backlog
+# Archived root files (migrated to apps/web and packages/)
+.archive/
+
+# Claude Code settings
+.claude/

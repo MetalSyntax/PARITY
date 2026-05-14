@@ -3,19 +3,19 @@ import { ArrowRightLeft, TrendingUp, PieChart, ArrowUpRight, Plus, Calendar1, Ca
 import { motion } from "framer-motion";
 import { useDragAndDrop } from "@formkit/drag-and-drop/react";
 import { animations } from "@formkit/drag-and-drop";
-import { Transaction, Account, Currency, UserProfile, TransactionType } from "../types";
+import { Transaction, Account, Currency, UserProfile, TransactionType } from '@parity/core';
 import { CATEGORIES } from "../constants";
-import { getTranslation } from "../i18n";
+import { getTranslation } from '@parity/i18n';
 import { TransactionDetailModal } from "../components/TransactionDetailModal";
 import { PinModal } from "../components/PinModal";
 import { TransactionItem } from "../components/TransactionItem";
 import { CurrencyConverter } from "../components/CurrencyConverter";
 import { DashboardCustomizer, QuickActionDef } from "../components/DashboardCustomizer";
 import { CurrencyAmount } from "../components/CurrencyAmount";
-import { formatSecondaryAmount } from "../utils/formatUtils";
+import { formatSecondaryAmount } from "@parity/core";
 import { IncomeVsExpenseChart, ExpenseStructureChart, DailySpendingChart, BalanceHistoryChart } from "../components/Charts";
 import { renderAccountIcon } from "../utils/iconUtils";
-import { projectMonthEndSpending, calculateRunway } from "../utils/forecast";
+import { projectMonthEndSpending, calculateRunway } from "@parity/core";
 import { 
   WidgetWrapper, 
   BalanceCardWidget, 
@@ -30,7 +30,7 @@ import {
   CategoryBreakdownWidget 
 } from "../components/DashboardWidgets";
 import { WIDGET_REGISTRY, DEFAULT_LEFT_COLUMN, DEFAULT_RIGHT_COLUMN } from "../utils/widgetRegistry";
-import { WidgetId } from "../types";
+import { WidgetId } from '@parity/core';
 
 const ALL_QUICK_ACTIONS: QuickActionDef[] = [
   { id: "TRANSACTIONS", labelKey: "transactions", Icon: Receipt, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },

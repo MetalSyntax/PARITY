@@ -1,7 +1,7 @@
 import React from "react";
 import { X, Activity, PieChart, BarChart, TrendingUp, Trophy } from "lucide-react";
-import { Language, UserProfile } from "../types";
-import { getTranslation } from "../i18n";
+import { Language, UserProfile } from '@parity/core';
+import { getTranslation } from '@parity/i18n';
 
 export interface QuickActionDef {
   id: string;

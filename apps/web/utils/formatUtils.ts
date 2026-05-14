@@ -1,4 +1,4 @@
-import { Currency } from "../types";
+import { Currency } from '@parity/core';
 
 export const formatAmount = (
   usd: number, 
