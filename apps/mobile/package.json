@@ -1,0 +1,27 @@
+{
+  "name": "@parity/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@parity/core": "workspace:*",
+    "@parity/i18n": "workspace:*",
+    "expo": "^53.0.0",
+    "expo-router": "^4.0.0",
+    "expo-status-bar": "~2.0.1",
+    "react": "^19.0.0",
+    "react-native": "0.79.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "@types/react": "^19.0.0",
+    "@types/react-native": "~0.79.0",
+    "typescript": "~5.8.2"
+  }
+}
