@@ -5,7 +5,9 @@ export class SyncService {
     private isProcessing = false;
 
     constructor() {
-        window.addEventListener('online', () => this.processQueue());
+        if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+            window.addEventListener('online', () => this.processQueue());
+        }
     }
 
     /**
@@ -29,7 +31,7 @@ export class SyncService {
 
         await idbService.pushToSyncQueue(syncAction);
         
-        if (navigator.onLine) {
+        if (typeof navigator !== 'undefined' && navigator.onLine) {
             this.processQueue();
         }
     }
@@ -39,7 +41,8 @@ export class SyncService {
      * This is called automatically when the browser goes online.
      */
     public async processQueue(): Promise<void> {
-        if (this.isProcessing || !navigator.onLine) return;
+        if (this.isProcessing) return;
+        if (typeof navigator !== 'undefined' && !navigator.onLine) return;
         
         const queue = await idbService.getSyncQueue();
         const pending = queue.filter(a => a.syncStatus === 'pending');
@@ -56,9 +59,11 @@ export class SyncService {
             
             // For now, we emit an event that App.tsx can listen to
             // so it can perform the Drive sync with the latest local state.
-            window.dispatchEvent(new CustomEvent('parity-sync-required', { 
-                detail: { pendingCount: pending.length } 
-            }));
+            if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('parity-sync-required', {
+                    detail: { pendingCount: pending.length }
+                }));
+            }
             
             // We don't mark as 'synced' here yet; 
             // we wait for the Drive sync to successfully complete.
