@@ -5,6 +5,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Version
 
 ---
 
+## [2.0.0] — 2026-05-14
+
+### Added
+- **Monorepo architecture** — migrated to pnpm workspaces + Turborepo. New structure: `apps/web` (React PWA), `apps/mobile` (Expo SDK 53), `packages/core` (zero-React shared logic), `packages/i18n` (modular translations), `packages/ui` (shared React components). All cross-app imports now use `@parity/core`, `@parity/i18n`, `@parity/ui` path aliases.
+- **Gamification system** (Phases A–E) — complete XP/badge/level engine built as a pure, isolated layer over the financial core:
+  - `packages/core/src/gamification/` — `schema.ts`, `events.ts`, `levels.ts`, `badges.ts`, `challenges.ts`, `engine.ts`. Pure functions, zero side-effects, fully unit-testable.
+  - **5 levels** (Novice → Analyst → Strategist → Architect → CFO) with XP thresholds, unlockable features, and level-up detection.
+  - **19 badges** across 5 families: First Steps, Planner, Consistency, Multicurrency, Builder.
+  - **21 event types** with per-type XP values and daily caps (anti-farming).
+  - **Daily streak system** with bonus XP table (3/7/30/90-day milestones) and freeze support.
+  - **10 challenge templates** (daily / weekly / monthly) with financial-context-aware assignment.
+  - **Anti-gaming rules** — duplicate entity protection (60s window), daily XP caps, one-time badge enforcement, no negative XP.
+  - `useGamification` hook with encrypted IndexedDB persistence + XP audit log (7-day pruning).
+  - `dispatchGamEvent` wired to: `transaction_created`, `transfer_completed`, `transaction_with_receipt`, `goal_completed`.
+- **AcademyView** — full dedicated view with: level card + XP progress bar, 7-day streak calendar, active challenge cards with progress bars, custom SVG XP sparkline (7-day), badge grid (19 badges, locked/earned states), lifetime stats (4 metrics).
+- **Gamification feedback UI** — `XPToast` (slide-up, auto-dismiss 2.5s), `LevelUpModal` (CSS confetti, unlocked features list), `BadgeEarnedSheet` (bottom sheet / expandable toast).
+- **GamificationWidget** — compact Dashboard widget showing level, XP bar, active streak, and current challenge. Registered in widget registry, appears at top of right column by default.
+- **Academy added to Quick Actions** — violet `GraduationCap` icon, toggleable via Dashboard customizer.
+- **3 light themes** — `Light` (indigo accent), `Light Blue` (sky accent), `Light Green` (green accent). Backgrounds: `#ffffff` / `#f4f4f5` / `#e4e4e7`, dark text (`#18181b`). Calendar picker and Chart.js tooltips adapt automatically.
+- **Mobile tutorial support** — removed desktop-only (≥ 1024 px) guard from `TutorialSystem`. Adaptive tooltip positioning: target in bottom half → tooltip anchors to top; target in top half → tooltip anchors above nav bar.
+- **80+ i18n keys** (EN/ES/PT) — all gamification strings: level names, badge names/descriptions, challenge titles/descriptions, Academy section labels, lifetime stat labels.
+
+### Fixed
+- **`fetchAllRates is not defined`** — fixed in both root `App.tsx` and `apps/web/App.tsx` by destructuring `refetch` from `useExchangeRates` hook result.
+- **Import resolution after monorepo migration** — 6 files with double-quoted or 3-level-deep relative imports fixed to use `@parity/*` aliases.
+
+### Changed
+- **Midnight Ocean theme** — backgrounds aligned to original dark (`#000000` / `#121212` / `#1e1e1e`); only accent color (sky blue `#0ea5e9`) differs.
+- **Forest theme** — backgrounds aligned to original dark; only accent color (green `#22c55e`) differs.
+- **Shadows removed app-wide** — single CSS variable override (`--tw-shadow: 0 0 #0000`) eliminates all `shadow-sm/lg/2xl/xl` and colored shadow utilities. Renders correctly in both dark and light themes.
+- **AcademyView** — all emoji icons replaced with Lucide icon components (level icons, lifetime stat icons).
+- `ProfileView` version label updated `v1.4.0` → `v2.0.0`.
+- `apps/web/package.json` version bumped `1.4.0` → `2.0.0`.
+- `package.json` (monorepo root) version set to `2.0.0`.
+
+---
+
 ## [1.4.0] — 2026-05-12
 
 ### Added
