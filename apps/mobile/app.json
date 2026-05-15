@@ -2,10 +2,16 @@
   "expo": {
     "name": "Parity Finance",
     "slug": "parity-finance",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "scheme": "parity",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050505"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.metalsyntax.parity",
@@ -22,6 +28,7 @@
         "backgroundColor": "#050505"
       },
       "package": "com.metalsyntax.parity",
+      "versionCode": 1,
       "intentFilters": [
         {
           "action": "VIEW",
@@ -43,7 +50,16 @@
           "cameraPermission": "Allow Parity to scan receipts."
         }
       ],
-      "expo-sqlite"
-    ]
+      "expo-sqlite",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Parity to authenticate with Face ID"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }
