@@ -3,7 +3,7 @@ import { ArrowLeft, Wallet, TrendingUp, Filter, Search, Plus, DollarSign, Chevro
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDragAndDrop } from "@formkit/drag-and-drop/react";
 import { animations } from "@formkit/drag-and-drop";
-import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig } from '@parity/core';
+import { Account, Language, Currency, Transaction, TransactionType, ScheduledPayment, ConfirmConfig, convertCurrency } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 import { CATEGORIES } from '../constants';
 import { renderAccountIcon, ACCOUNT_ICONS } from '../utils/iconUtils';
@@ -744,6 +744,21 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                 value={balance} 
                                 onChange={e => setBalance(e.target.value)} 
                             />
+                            {/* Live conversion hint for USD */}
+                            {currency !== Currency.USD && (
+                                <div className="mt-2 text-xs font-mono text-indigo-400 opacity-80 flex items-center gap-1.5 px-1">
+                                    <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">≈</span>
+                                    {(() => {
+                                        const val = parseFloat(balance) || 0;
+                                        // Use convertCurrency from @parity/core
+                                        const usd = convertCurrency(val, currency, Currency.USD, { 
+                                            usdToVes: exchangeRate, 
+                                            eurToVes: euroRate || exchangeRate 
+                                        });
+                                        return `$ ${usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                    })()}
+                                </div>
+                            )}
                         </div>
 
                         <div>

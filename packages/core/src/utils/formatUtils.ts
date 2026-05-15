@@ -18,6 +18,9 @@ export const formatAmount = (
   } else if (displayCurrency === Currency.EUR && euroRate) {
     val = usd * (exchangeRate / euroRate);
     symbol = '€';
+  } else if (displayCurrency === Currency.USDT) {
+    val = usd; // Treat as 1:1 USD for simple display
+    symbol = '₮';
   }
 
   val = val || 0; // normalize -0 → 0

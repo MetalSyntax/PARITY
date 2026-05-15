@@ -4,6 +4,7 @@ export * from './services/crypto';
 export * from './services/db';
 export * from './services/schemas';
 export * from './services/sync';
+export * from './services/rateService';
 export * from './utils/forecast';
 export * from './utils/formatUtils';
 export * from './utils/chartUtils';

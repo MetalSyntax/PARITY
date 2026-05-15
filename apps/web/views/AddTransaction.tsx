@@ -799,7 +799,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 {/* Currency Pill Toggle */}
                 {!isSameCurrencyTransfer && (
                     <div className="flex bg-theme-surface border border-white/10 p-1 rounded-2xl shadow-lg">
-                        {[Currency.USD, Currency.VES].map((cur) => (
+                        {[Currency.USD, Currency.VES, Currency.EUR, Currency.USDT].map((cur) => (
                             <button
                                 key={cur}
                                 onClick={() => {
@@ -812,7 +812,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                 }}
                                 className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${currency === cur ? 'bg-theme-brand text-white shadow-md' : 'text-theme-secondary hover:text-theme-primary opacity-60'}`}
                             >
-                                {cur === Currency.VES ? 'VES' : 'USD'}
+                                {cur}
                             </button>
                         ))}
                     </div>

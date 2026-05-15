@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft, ArrowDown, ArrowRight, DollarSign, Euro } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Account, TransactionType, Language, Currency, Transaction } from '@parity/core';
+import { Account, TransactionType, Language, Currency, Transaction, convertCurrency } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 import { CATEGORIES } from '../constants';
 
@@ -18,6 +18,7 @@ interface TransferViewProps {
   euroRate?: number;
   displayCurrency: Currency;
   onToggleDisplayCurrency: () => void;
+  usdtSpread?: number;
 }
 
 export const TransferSchema = z.object({
@@ -43,21 +44,21 @@ function calcConverted(
   toCurrency: Currency | undefined,
   exchangeRate: number,
   euroRate?: number,
+  usdtSpread: number = 0,
 ): number | null {
   if (!amount || !fromCurrency || !toCurrency) return null;
   const val = parseFloat(amount);
   if (isNaN(val) || val <= 0) return null;
   const f = parseFloat(fee || '0') || 0;
   const net = val - f;
-  if (fromCurrency === toCurrency) return net;
-
-  let usdBase = net;
-  if (fromCurrency === Currency.VES) usdBase = net / exchangeRate;
-  else if (fromCurrency === Currency.EUR) usdBase = (net * (euroRate || 0)) / exchangeRate;
-
-  if (toCurrency === Currency.VES) return usdBase * exchangeRate;
-  if (toCurrency === Currency.EUR) return (usdBase * exchangeRate) / (euroRate || 1);
-  return usdBase;
+  
+  return convertCurrency(
+    net,
+    fromCurrency,
+    toCurrency,
+    { usdToVes: exchangeRate, eurToVes: euroRate || exchangeRate },
+    usdtSpread / 100 // Convert percentage to decimal
+  );
 }
 
 export const TransferView: React.FC<TransferViewProps> = ({
@@ -70,6 +71,7 @@ export const TransferView: React.FC<TransferViewProps> = ({
   euroRate,
   displayCurrency,
   onToggleDisplayCurrency,
+  usdtSpread = 0,
 }) => {
   const t = (key: any) => getTranslation(lang, key);
 
@@ -95,7 +97,7 @@ export const TransferView: React.FC<TransferViewProps> = ({
 
   const fromAccount = accounts.find(a => a.id === fromId);
   const toAccount = accounts.find(a => a.id === toId);
-  const convertedAmount = calcConverted(amount, fee, fromAccount?.currency, toAccount?.currency, exchangeRate, euroRate);
+  const convertedAmount = calcConverted(amount, fee, fromAccount?.currency, toAccount?.currency, exchangeRate, euroRate, usdtSpread);
 
   const onSubmit = (data: TransferFormValues) => {
     const val = parseFloat(data.amount);

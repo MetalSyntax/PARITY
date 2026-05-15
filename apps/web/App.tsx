@@ -1001,17 +1001,20 @@ function AppContent() {
     const currentEuroRate = userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate;
     const currentUSDRes = userProfile.rateType === 'PARALLEL' ? (usdRateParallel || exchangeRate) : exchangeRate;
 
-    const totalAmountForStats = data.type === TransactionType.EXPENSE || data.type === TransactionType.TRANSFER 
-      ? (data.amount + (data.fee || 0)) 
+    const totalAmountForStats = data.type === TransactionType.EXPENSE || data.type === TransactionType.TRANSFER
+      ? (data.amount + (data.fee || 0))
       : data.amount;
 
-    const normalizedUSD = (data.originalCurrency === Currency.USD || data.originalCurrency === Currency.USDT)
-      ? totalAmountForStats
-      : data.originalCurrency === Currency.EUR
-      ? (totalAmountForStats * (data.euroRate || currentEuroRate)) / (data.exchangeRate || currentUSDRes)
-      : totalAmountForStats / (data.exchangeRate || currentUSDRes);
+    const normalizedUSD = convertCurrency(
+      totalAmountForStats,
+      data.originalCurrency,
+      Currency.USD,
+      { usdToVes: data.exchangeRate || currentUSDRes, eurToVes: data.euroRate || currentEuroRate },
+      (userProfile.usdtSpread || 0) / 100
+    );
 
     const newTransaction: Transaction = {
+
       ...data,
       id: data.id || Math.random().toString(36).substr(2, 9),
       normalizedAmountUSD: normalizedUSD,
@@ -1397,8 +1400,11 @@ function AppContent() {
               exchangeRate={exchangeRate}
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
+              euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
+              usdtSpread={userProfile.usdtSpread}
             />
           )}
+
           {currentView === 'SCHEDULED' && (
             <ScheduledPaymentView
               onBack={() => setCurrentView('DASHBOARD')}
