@@ -15,7 +15,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.metalsyntax.parity",
-      "associatedDomains": ["applinks:parity.finance"],
+      "associatedDomains": [
+        "applinks:parity.finance"
+      ],
       "infoPlist": {
         "NSCameraUsageDescription": "Scan receipts and invoices",
         "NSFaceIDUsageDescription": "Authenticate with Face ID",
@@ -34,11 +36,26 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "parity.finance", "pathPrefix": "/" },
-            { "scheme": "parity" }
+            {
+              "scheme": "https",
+              "host": "parity.finance",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "parity"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
+      ],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ]
     },
     "plugins": [
@@ -60,6 +77,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0dc93b13-eaa3-437c-bb02-3a3856015288"
+      }
     }
   }
 }
