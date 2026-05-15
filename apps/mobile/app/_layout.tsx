@@ -1,3 +1,4 @@
+import '../src/polyfills';
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -6,6 +7,11 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { haptics } from '../src/utils/haptics';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { DataProvider } from '../src/context/DataContext';
+import { setCryptoEngine } from '@parity/core';
+import { mobileCryptoEngine } from '../src/services/cryptoEngine';
+
+// Initialize Crypto Engine for Mobile
+setCryptoEngine(mobileCryptoEngine);
 
 function LayoutContent() {
   const { isAuthenticated, authenticate } = useAuth();

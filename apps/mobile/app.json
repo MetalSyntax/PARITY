@@ -16,12 +16,14 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.metalsyntax.parity",
       "associatedDomains": [
+        "applinks:parity.finance",
         "applinks:parity.finance"
       ],
       "infoPlist": {
         "NSCameraUsageDescription": "Scan receipts and invoices",
         "NSFaceIDUsageDescription": "Authenticate with Face ID",
-        "NSUserDefaultsSuite": "group.com.metalsyntax.parity"
+        "NSUserDefaultsSuite": "group.com.metalsyntax.parity",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

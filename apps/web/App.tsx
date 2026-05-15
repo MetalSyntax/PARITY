@@ -42,7 +42,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { INITIAL_RATE, INITIAL_USD_RATE_PARALLEL, INITIAL_EURO_RATE, INITIAL_EURO_RATE_PARALLEL, MOCK_ACCOUNTS, CATEGORIES } from './constants';
 import { formatAmount } from '@parity/core';
 import { projectMonthEndSpending, calculateRunway, checkBudgetForecasts } from '@parity/core';
-import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList, EntityType, Contact, Debt } from '@parity/core';
+import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList, EntityType, Contact, Debt, convertCurrency } from '@parity/core';
 import { idbService, StorageType, AppData } from '@parity/core';
 import { encryptData, decryptData, setWebCryptoSecrets } from '@parity/core';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
@@ -1834,13 +1834,14 @@ function AppContent() {
         {/* Modals */}
         {showAdd && (
           <AddTransaction
-            onClose={() => { 
-                setShowAdd(false); 
-                setEditingTransaction(null); 
+            onClose={() => {
+                setShowAdd(false);
+                setEditingTransaction(null);
                 setShoppingItemToConvert(null);
             }}
             onSave={handleSaveTransaction}
             exchangeRate={userProfile.rateType === 'PARALLEL' ? (usdRateParallel || exchangeRate) : exchangeRate}
+            usdRateParallel={usdRateParallel}
             euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
             accounts={accounts}
             lang={userProfile.language}

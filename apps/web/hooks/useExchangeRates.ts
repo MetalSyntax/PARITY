@@ -1,24 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { Currency } from '@parity/core';
 import { DolarApiResponseSchema } from '@parity/core';
-import { fetchEurUsdRate } from '@parity/core';
 
 export interface ExchangeRatesResult {
   exchangeRate: number | null;
   usdRateParallel: number | null;
   euroRate: number | null;
   euroRateParallel: number | null;
-  eurUsdRate: number | null; // Frankfurter rate
   rateEntries: Array<{ date: string; rate: number; currency: Currency }>;
 }
 
 async function fetchRates(): Promise<ExchangeRatesResult> {
   const today = new Date().toISOString().split('T')[0];
 
-  const [usdRes, eurRes, eurUsdRate] = await Promise.all([
+  const [usdRes, eurRes] = await Promise.all([
     fetch('https://ve.dolarapi.com/v1/dolares'),
     fetch('https://ve.dolarapi.com/v1/euros'),
-    fetchEurUsdRate(),
   ]);
 
   let exchangeRate: number | null = null;
@@ -54,12 +51,7 @@ async function fetchRates(): Promise<ExchangeRatesResult> {
     if (parallel) euroRateParallel = Number(parallel.promedio);
   }
 
-  // If DolarAPI EUR rate is missing but we have USD and EUR/USD from Frankfurter, calculate it
-  if (!euroRate && exchangeRate && eurUsdRate) {
-    euroRate = exchangeRate * eurUsdRate;
-  }
-
-  return { exchangeRate, usdRateParallel, euroRate, euroRateParallel, eurUsdRate, rateEntries };
+  return { exchangeRate, usdRateParallel, euroRate, euroRateParallel, rateEntries };
 }
 
 export function useExchangeRates(enabled: boolean) {

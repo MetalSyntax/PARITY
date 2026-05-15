@@ -39,6 +39,7 @@ interface AddTransactionProps {
   onClose: () => void;
   onSave: (data: any) => void;
   exchangeRate: number;
+  usdRateParallel?: number;
   accounts: Account[];
   lang: Language;
   initialData?: Transaction | null;
@@ -49,7 +50,7 @@ interface AddTransactionProps {
   contacts?: Contact[];
 }
 
-export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, euroRate, accounts, lang, initialData, showAlert, transactions, budgets, contacts = [] }) => {
+export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, usdRateParallel, euroRate, accounts, lang, initialData, showAlert, transactions, budgets, contacts = [] }) => {
   const [amountStr, setAmountStr] = useState(initialData ? initialData.amount.toString() : '0');
   const [currency, setCurrency] = useState<Currency>(initialData ? initialData.originalCurrency : Currency.USD);
   const [type, setType] = useState<TransactionType>(initialData ? initialData.type : TransactionType.EXPENSE);
@@ -781,7 +782,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         )}
         {/* Amount Section */}
         <div data-tutorial="tx-amount-input" className="flex flex-col items-center justify-center mb-2 mt-1 relative">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center">
                 <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl text-theme-secondary font-light">{(currency === Currency.USD || currency === Currency.USDT) ? '$' : currency === Currency.EUR ? '€' : 'Bs'}</span>
                     <input
@@ -791,32 +792,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         value={amountStr}
                         onChange={(e) => { const val = e.target.value.replace(',', '.'); setAmountStr(val.replace(/[^0-9\.\+\-\*\/]/g, '')); }}
                         onFocus={() => setFocusedField('amount')}
-                        className={`bg-transparent text-5xl font-bold tracking-tighter outline-none w-48 text-center selection:bg-theme-brand/20 ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
+                        className={`bg-transparent text-4xl font-bold tracking-tighter outline-none w-48 text-center selection:bg-theme-brand/20 ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
                     />
                 </div>
-                
-                
-                {/* Currency Pill Toggle */}
-                {!isSameCurrencyTransfer && (
-                    <div className="flex bg-theme-surface border border-white/10 p-1 rounded-2xl shadow-lg">
-                        {[Currency.USD, Currency.VES, Currency.EUR, Currency.USDT].map((cur) => (
-                            <button
-                                key={cur}
-                                onClick={() => {
-                                    if (type === TransactionType.TRANSFER && currency !== cur) {
-                                        const prevFrom = fromAccountId;
-                                        setFromAccountId(toAccountId);
-                                        setToAccountId(prevFrom);
-                                    }
-                                    setCurrency(cur);
-                                }}
-                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${currency === cur ? 'bg-theme-brand text-white shadow-md' : 'text-theme-secondary hover:text-theme-primary opacity-60'}`}
-                            >
-                                {cur}
-                            </button>
-                        ))}
-                    </div>
-                )}
             </div>
 
             {/* Conversion Summary */}
@@ -825,8 +803,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                     <span className="text-xs font-medium text-theme-secondary italic">
                         ≈ {(() => {
                             const amt = parseFloat(amountStr) || 0;
-                            if (currency === Currency.USD || currency === Currency.USDT) {
+                            if (currency === Currency.USD) {
                                 return `Bs. ${(amt * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                            } else if (currency === Currency.USDT) {
+                                return `Bs. ${(amt * (usdRateParallel || exchangeRate)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
                             } else if (currency === Currency.VES) {
                                 return `$ ${(amt / exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
                             } else if (currency === Currency.EUR) {
@@ -838,7 +818,29 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 </div>
             )}
 
-            {/* Compact Commissions (New Position) */}
+            {/* Currency Pill Toggle */}
+            {!isSameCurrencyTransfer && (
+                <div className="mt-2 flex bg-theme-surface border border-white/10 p-1 rounded-2xl shadow-lg">
+                    {[Currency.USD, Currency.VES, Currency.EUR, Currency.USDT].map((cur) => (
+                        <button
+                            key={cur}
+                            onClick={() => {
+                                if (type === TransactionType.TRANSFER && currency !== cur) {
+                                    const prevFrom = fromAccountId;
+                                    setFromAccountId(toAccountId);
+                                    setToAccountId(prevFrom);
+                                }
+                                setCurrency(cur);
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${currency === cur ? 'bg-theme-brand text-white shadow-md' : 'text-theme-secondary hover:text-theme-primary opacity-60'}`}
+                        >
+                            {cur}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Compact Commissions */}
             {(type === TransactionType.TRANSFER || type === TransactionType.EXPENSE) && (
                 <div className="mt-2 w-full max-w-md mx-auto px-2 animate-in fade-in zoom-in duration-300">
                     <div className="bg-theme-surface rounded-2xl p-2 flex items-center gap-4 border border-white/5 shadow-inner">
@@ -1204,7 +1206,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
           )}
 
           {/* Keypad — grows to fill available space */}
-          <div className="flex-1 grid grid-cols-3 gap-2 px-1 pb-1 mb-1">
+          <div className="flex-1 grid grid-cols-3 gap-2 px-1 pb-1 mb-0">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button
                 key={num}
@@ -1224,7 +1226,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
         </div>
 
         {/* Bottom Actions */}
-        <div className="flex flex-col gap-4 px-2 pt-2">
+        <div className="flex flex-col gap-4 px-2 pt-0">
             <div className="flex items-center gap-3 mt-1">
                 <button 
                   onClick={() => setIsCalculatorMode(!isCalculatorMode)}
