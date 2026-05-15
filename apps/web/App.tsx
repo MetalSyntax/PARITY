@@ -44,9 +44,16 @@ import { formatAmount } from '@parity/core';
 import { projectMonthEndSpending, calculateRunway, checkBudgetForecasts } from '@parity/core';
 import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList, EntityType, Contact, Debt } from '@parity/core';
 import { idbService, StorageType, AppData } from '@parity/core';
-import { encryptData, decryptData } from '@parity/core';
+import { encryptData, decryptData, setWebCryptoSecrets } from '@parity/core';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 import { syncService } from '@parity/core';
+
+// Bootstrap web crypto secrets from Vite env vars before any encrypt/decrypt call.
+// import.meta.env is Vite-only — must not appear in packages/core.
+setWebCryptoSecrets(
+  import.meta.env.VITE_APP_ENCRYPTION_SECRET ?? 'fallback_secret',
+  import.meta.env.VITE_APP_ENCRYPTION_SALT   ?? 'fallback_salt',
+);
 
 const queryClient = new QueryClient();
 

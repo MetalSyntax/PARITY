@@ -23,13 +23,26 @@ const str2ab = (str: string) => {
   return enc.encode(str);
 };
 
+let _webSecret = 'fallback_secret';
+let _webSalt = 'fallback_salt';
 let _cachedKeyPromise: Promise<CryptoKey> | null = null;
+
+/**
+ * Sets the PBKDF2 secret/salt for the web crypto fallback.
+ * Call this at app startup from the web app using import.meta.env values.
+ * Not needed on mobile — setCryptoEngine() bypasses this entirely.
+ */
+export const setWebCryptoSecrets = (secret: string, salt: string) => {
+  _webSecret = secret;
+  _webSalt = salt;
+  _cachedKeyPromise = null; // reset cached key so next call re-derives
+};
 
 const getWebKey = (): Promise<CryptoKey> => {
   if (_cachedKeyPromise) return _cachedKeyPromise;
 
-  const secret = (import.meta as any).env?.VITE_APP_ENCRYPTION_SECRET || 'fallback_secret';
-  const salt = (import.meta as any).env?.VITE_APP_ENCRYPTION_SALT || 'fallback_salt';
+  const secret = _webSecret;
+  const salt = _webSalt;
 
   _cachedKeyPromise = (async () => {
     const keyMaterial = await window.crypto.subtle.importKey(
