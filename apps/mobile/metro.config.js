@@ -15,10 +15,12 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
-// Ensure a single copy of React and React Native (prevent dual-instance issues)
+// Ensure a single copy of React, React Native and web packages (prevent dual-instance issues)
 config.resolver.extraNodeModules = {
   react: path.resolve(projectRoot, 'node_modules/react'),
   'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
+  'react-dom': path.resolve(projectRoot, 'node_modules/react-dom'),
+  'react-native-web': path.resolve(projectRoot, 'node_modules/react-native-web'),
 };
 
 module.exports = config;

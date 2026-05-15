@@ -2,7 +2,7 @@
   "name": "@parity/mobile",
   "version": "1.0.0",
   "private": true,
-  "main": "expo-router/entry",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~5.0.5",
     "@parity/core": "workspace:*",
     "@parity/i18n": "workspace:*",
     "@parity/ui": "workspace:*",
@@ -30,11 +31,13 @@
     "expo-sqlite": "^15.2.14",
     "expo-status-bar": "~2.2.3",
     "react": "^19.0.0",
+    "react-dom": "19.0.0",
     "react-native": "0.79.6",
     "react-native-gesture-handler": "^2.24.0",
     "react-native-reanimated": "^3.17.5",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "^15.11.2",
+    "react-native-web": "^0.20.0",
     "text-encoding": "^0.7.0"
   },
   "devDependencies": {
