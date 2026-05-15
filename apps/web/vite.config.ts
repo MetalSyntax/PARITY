@@ -33,6 +33,7 @@ export default defineConfig({
     })
   ],
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@parity/core': path.resolve(__dirname, '../../packages/core/src/index.ts'),
       '@parity/i18n': path.resolve(__dirname, '../../packages/i18n/src/index.ts'),
