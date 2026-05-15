@@ -15,6 +15,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Allow Metro to bundle .wasm files as static assets (required by expo-sqlite web worker)
+config.resolver.assetExts.push('wasm');
+
 // Ensure a single copy of React, React Native and web packages (prevent dual-instance issues)
 config.resolver.extraNodeModules = {
   react: path.resolve(projectRoot, 'node_modules/react'),
