@@ -9,6 +9,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.metalsyntax.parity",
+      "associatedDomains": ["applinks:parity.finance"],
       "infoPlist": {
         "NSCameraUsageDescription": "Scan receipts and invoices",
         "NSFaceIDUsageDescription": "Authenticate with Face ID",
@@ -20,15 +21,29 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#050505"
       },
-      "package": "com.metalsyntax.parity"
+      "package": "com.metalsyntax.parity",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "parity.finance", "pathPrefix": "/" },
+            { "scheme": "parity" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       [
         "expo-camera",
-        { "cameraPermission": "Allow Parity to scan receipts." }
-      ]
+        {
+          "cameraPermission": "Allow Parity to scan receipts."
+        }
+      ],
+      "expo-sqlite"
     ]
   }
 }
