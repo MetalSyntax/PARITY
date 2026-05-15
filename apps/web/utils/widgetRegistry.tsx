@@ -1,18 +1,19 @@
 import React from 'react';
-import { 
-  BalanceCardWidget, 
-  BalanceChartWidget, 
-  WalletsWidget, 
-  ExpenseStructureWidget, 
-  ForecastWidget, 
-  FiscalSummaryWidget, 
-  TransactionsWidget, 
-  IncomeVsExpenseWidget, 
-  DailySpendingWidget, 
+import {
+  BalanceCardWidget,
+  BalanceChartWidget,
+  WalletsWidget,
+  ExpenseStructureWidget,
+  ForecastWidget,
+  FiscalSummaryWidget,
+  TransactionsWidget,
+  IncomeVsExpenseWidget,
+  DailySpendingWidget,
   CategoryBreakdownWidget,
   GoalsWidget
 } from '../components/DashboardWidgets';
 import { CurrencyConverter } from '../components/CurrencyConverter';
+import { GamificationWidget } from '../components/gamification/GamificationWidget';
 import { WidgetId } from '@parity/core';
 
 export const WIDGET_REGISTRY: Record<WidgetId, (props: any) => React.ReactNode> = {
@@ -28,7 +29,8 @@ export const WIDGET_REGISTRY: Record<WidgetId, (props: any) => React.ReactNode> 
   dailySpending: (props) => <DailySpendingWidget {...props} />,
   categoryBreakdown: (props) => <CategoryBreakdownWidget {...props} />,
   goals: (props) => <GoalsWidget {...props} />,
+  gamification: (props) => <GamificationWidget {...props} />,
 };
 
 export const DEFAULT_LEFT_COLUMN: WidgetId[] = ["balanceCard", "converter", "balanceChart", "wallets", "expenses"];
-export const DEFAULT_RIGHT_COLUMN: WidgetId[] = ["forecastCard", "fiscalSummary", "goals", "transactions", "incomeVsExpense", "dailySpending", "categoryBreakdown"];
+export const DEFAULT_RIGHT_COLUMN: WidgetId[] = ["gamification", "forecastCard", "fiscalSummary", "goals", "transactions", "incomeVsExpense", "dailySpending", "categoryBreakdown"];

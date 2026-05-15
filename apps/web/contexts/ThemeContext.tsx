@@ -30,12 +30,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Sync Chart.js defaults if Chart is available globally
     if ((window as any).Chart) {
       const Chart = (window as any).Chart;
+      const isLight = colors['--bg-primary'] === '#ffffff';
       Chart.defaults.color = colors['--chart-text'];
       Chart.defaults.borderColor = colors['--chart-grid'];
-      Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.9)';
-      Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
-      Chart.defaults.plugins.tooltip.bodyColor = '#a1a1aa';
-      Chart.defaults.plugins.tooltip.borderColor = 'rgba(255, 255, 255, 0.1)';
+      Chart.defaults.plugins.tooltip.backgroundColor = isLight ? 'rgba(255,255,255,0.95)' : 'rgba(15, 23, 42, 0.9)';
+      Chart.defaults.plugins.tooltip.titleColor = isLight ? '#18181b' : '#ffffff';
+      Chart.defaults.plugins.tooltip.bodyColor = isLight ? '#71717a' : '#a1a1aa';
+      Chart.defaults.plugins.tooltip.borderColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255, 255, 255, 0.1)';
       Chart.defaults.plugins.tooltip.borderWidth = 1;
       
       // Force refresh charts

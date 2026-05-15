@@ -1,5 +1,6 @@
 import { Account, Transaction, ScheduledPayment, UserProfile, Budget, Goal, SyncAction, RateHistoryItem, ShoppingItem, ShoppingList, Contact, Debt } from '../types';
 import { encryptData, decryptData } from './crypto';
+import type { GamificationProfile, XPAuditEntry } from '../gamification/schema';
 
 export const DB_NAME = 'parity_db';
 export const DB_VERSION = 2; // Bump version for migration
@@ -21,7 +22,9 @@ export const KEYS = {
     PROFILES: 'profiles',
     ACTIVE_PROFILE_ID: 'active_profile_id',
     CONTACTS: 'contacts',
-    DEBTS: 'debts'
+    DEBTS: 'debts',
+    GAMIFICATION_PROFILE: 'gamification_profile',
+    XP_AUDIT_LOG: 'xp_audit_log',
 };
 
 export type StorageType = 'LOCAL_STORAGE' | 'INDEXED_DB';
@@ -278,6 +281,60 @@ export class IndexedDBService {
          }
          const updated = { ...current, ...partialData };
          await this.save(updated);
+    }
+
+    public async saveGamificationProfile(profile: GamificationProfile): Promise<void> {
+        await this.ensureOpen();
+        const enc = await encryptData(profile);
+        return new Promise((resolve, reject) => {
+            const tx = this.db!.transaction([STORE_NAME], 'readwrite');
+            tx.objectStore(STORE_NAME).put(enc, KEYS.GAMIFICATION_PROFILE);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    public async loadGamificationProfile(): Promise<GamificationProfile | null> {
+        await this.ensureOpen();
+        return new Promise((resolve) => {
+            const tx = this.db!.transaction([STORE_NAME], 'readonly');
+            const req = tx.objectStore(STORE_NAME).get(KEYS.GAMIFICATION_PROFILE);
+            req.onsuccess = async () => {
+                if (!req.result) { resolve(null); return; }
+                try { resolve(await decryptData(req.result)); }
+                catch { resolve(null); }
+            };
+            req.onerror = () => resolve(null);
+        });
+    }
+
+    public async loadXPAuditLog(): Promise<XPAuditEntry[]> {
+        await this.ensureOpen();
+        return new Promise((resolve) => {
+            const tx = this.db!.transaction([STORE_NAME], 'readonly');
+            const req = tx.objectStore(STORE_NAME).get(KEYS.XP_AUDIT_LOG);
+            req.onsuccess = async () => {
+                if (!req.result) { resolve([]); return; }
+                try { resolve(await decryptData(req.result)); }
+                catch { resolve([]); }
+            };
+            req.onerror = () => resolve([]);
+        });
+    }
+
+    public async appendXPAuditEntry(entry: XPAuditEntry): Promise<void> {
+        const log = await this.loadXPAuditLog();
+        const sevenDaysAgo = Date.now() - 7 * 86_400_000;
+        const pruned = log.filter(e => e.timestamp > sevenDaysAgo);
+        pruned.push(entry);
+        await this.ensureOpen();
+        const enc = await encryptData(pruned);
+        return new Promise((resolve, reject) => {
+            const tx = this.db!.transaction([STORE_NAME], 'readwrite');
+            tx.objectStore(STORE_NAME).put(enc, KEYS.XP_AUDIT_LOG);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
     }
 
     private async ensureOpen() {

@@ -363,7 +363,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleSave}
-              className="w-full bg-theme-primary text-theme-bg font-black py-4 rounded-2xl shadow-xl flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+              className="w-full bg-theme-primary text-theme-bg font-black py-4 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
             >
               <Save size={18} /> {t('update')}
             </motion.button>

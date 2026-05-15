@@ -26,7 +26,13 @@ import { ScenarioPlannerView } from './views/ScenarioPlannerView';
 import { LegalBanner } from './components/LegalBanner';
 import { PinModal } from './components/PinModal';
 import { TutorialSystem } from './components/TutorialSystem';
+import { AcademyView } from './views/AcademyView';
+import { useGamification } from './hooks/useGamification';
+import { XPToastContainer } from './components/gamification/XPToast';
+import { LevelUpModal } from './components/gamification/LevelUpModal';
+import { BadgeEarnedSheet } from './components/gamification/BadgeEarnedSheet';
 import { ThemeProvider } from './contexts/ThemeContext';
+import type { BadgeDefinition, LevelId, GamificationProfile } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import './index.css';
@@ -198,6 +204,27 @@ function AppContent() {
 
   // react-query powered rate fetching — placed after isLoaded declaration to avoid TDZ
   const { data: ratesData, refetch: fetchAllRates } = useExchangeRates(isLoaded);
+
+  // Gamification engine
+  const { profile: gamProfile, dispatchEvent: dispatchGamEvent, pendingRewards, clearRewards } = useGamification();
+  const [xpToasts, setXpToasts] = useState<{ xpGained: number; label: string }[]>([]);
+  const [levelUpLevel, setLevelUpLevel] = useState<LevelId | null>(null);
+  const [badgesToShow, setBadgesToShow] = useState<BadgeDefinition[]>([]);
+
+  useEffect(() => {
+    if (pendingRewards.length === 0) return;
+    const latest = pendingRewards[pendingRewards.length - 1];
+    if (latest.xpGained > 0) {
+      setXpToasts(prev => [...prev, { xpGained: latest.xpGained, label: 'XP' }]);
+    }
+    if (latest.leveledUp && latest.newLevel) {
+      setLevelUpLevel(latest.newLevel);
+    }
+    if (latest.newBadges.length > 0) {
+      setBadgesToShow(prev => [...prev, ...latest.newBadges]);
+    }
+    clearRewards();
+  }, [pendingRewards, clearRewards]);
   useEffect(() => {
     if (!ratesData) return;
     if (ratesData.exchangeRate !== null) setExchangeRate(ratesData.exchangeRate);
@@ -866,6 +893,12 @@ function AppContent() {
   };
 
   const handleUpdateGoals = (newActiveGoals: Goal[]) => {
+    // Detect newly completed goals for gamification
+    const currentCompleted = new Set(filteredGoals.filter(g => g.completed).map(g => g.id));
+    newActiveGoals
+      .filter(g => g.completed && !currentCompleted.has(g.id))
+      .forEach(g => dispatchGamEvent({ type: 'goal_completed', entityId: g.id, timestamp: Date.now() }));
+
     setGoals(prev => [
         ...prev.filter(g => g.profileId !== activeProfileId && (g.profileId || activeProfileId !== 'default')),
         ...newActiveGoals.map(g => ({ ...g, profileId: g.profileId || activeProfileId }))
@@ -1071,6 +1104,18 @@ function AppContent() {
     // Update React state (also triggers the useEffect save as a backup)
     setTransactions(finalTransactions);
     setAccounts(finalAccounts);
+
+    // Gamification events — only for new transactions (not edits)
+    if (!data.id) {
+      if (data.type === TransactionType.TRANSFER) {
+        dispatchGamEvent({ type: 'transfer_completed', entityId: newTransaction.id, timestamp: Date.now() });
+      } else {
+        dispatchGamEvent({ type: 'transaction_created', entityId: newTransaction.id, timestamp: Date.now() });
+        if (data.receipt) {
+          dispatchGamEvent({ type: 'transaction_with_receipt', entityId: newTransaction.id, timestamp: Date.now() });
+        }
+      }
+    }
 
     pushToSyncQueue('TRANSACTION', newTransaction.id, data.id ? 'UPDATE' : 'CREATE', newTransaction);
 
@@ -1339,6 +1384,7 @@ function AppContent() {
               onSync={exportToCloud}
               goals={goals}
               onOpenTutorials={() => setShowTutorials(true)}
+              gamProfile={gamProfile}
             />
           )}
           {currentView === 'TRANSFER' && (
@@ -1661,6 +1707,13 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
             />
           )}
+          {currentView === 'ACADEMY' && (
+            <AcademyView
+              profile={gamProfile}
+              onBack={() => setCurrentView('DASHBOARD')}
+              t={t}
+            />
+          )}
           {currentView === 'SCENARIO_PLANNER' && (
             <ScenarioPlannerView
               onBack={() => setCurrentView('DASHBOARD')}
@@ -1903,9 +1956,29 @@ function AppContent() {
             </div>
         )}
 
+        {/* Gamification Overlays */}
+        <XPToastContainer
+          rewards={xpToasts}
+          onDismiss={(i) => setXpToasts(prev => prev.filter((_, idx) => idx !== i))}
+        />
+        {levelUpLevel && (
+          <LevelUpModal
+            newLevel={levelUpLevel}
+            onDismiss={() => setLevelUpLevel(null)}
+            onViewAcademy={() => { setLevelUpLevel(null); setCurrentView('ACADEMY'); }}
+          />
+        )}
+        {badgesToShow.length > 0 && (
+          <BadgeEarnedSheet
+            badges={badgesToShow}
+            onDismiss={() => setBadgesToShow([])}
+            t={t}
+          />
+        )}
+
         {/* PIN Lock Overlay */}
         {isAppLocked && (
-            <PinModal 
+            <PinModal
                 lang={userProfile.language}
                 onSuccess={() => {
                     setIsAppLocked(false);

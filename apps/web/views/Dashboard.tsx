@@ -53,6 +53,7 @@ const ALL_QUICK_ACTIONS: QuickActionDef[] = [
   { id: "IMPORT", labelKey: "importMigration", Icon: Upload, color: "bg-lime-500/10 text-lime-400 border-lime-500/20" },
   { id: "PDF_REPORT", labelKey: "pdfReport", Icon: FileBarChart, color: "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20" },
   { id: "SCENARIO_PLANNER", labelKey: "scenarioPlanner", Icon: LineChart, color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+  { id: "ACADEMY", labelKey: "gamification_academy_title", Icon: GraduationCap, color: "bg-violet-500/10 text-violet-400 border-violet-500/20" },
 ];
 
 interface DashboardProps {
@@ -87,6 +88,7 @@ interface DashboardProps {
   onSync?: () => void;
   goals: any[];
   onOpenTutorials?: () => void;
+  gamProfile?: import('@parity/core').GamificationProfile | null;
 }
 
 
@@ -122,6 +124,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onSync,
   goals,
   onOpenTutorials,
+  gamProfile,
 }) => {
 
   const [showPinModal, setShowPinModal] = useState(false);
@@ -740,6 +743,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
            onNavigate,
            t
          };
+       case 'gamification':
+         return {
+           profile: gamProfile,
+           onNavigate,
+           t
+         };
        default:
          return {};
     }
@@ -936,7 +945,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   key={action.id}
                   onClick={() => onNavigate(action.id as any)}
-                  className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start shadow-xl group"
+                  className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start group"
                 >
                   <div className={`w-16 h-16 rounded-2xl ${action.color} border flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <action.Icon size={28} />
