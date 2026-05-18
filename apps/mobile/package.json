@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
+    "@expo/metro-runtime": "~6.1.2",
     "@parity/core": "workspace:*",
     "@parity/i18n": "workspace:*",
     "@parity/ui": "workspace:*",
+    "@shopify/flash-list": "^2.0.2",
     "@shopify/flash-list": "^2.0.2",
     "base-64": "^1.0.0",
     "buffer": "^6.0.3",
