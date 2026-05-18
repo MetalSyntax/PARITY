@@ -211,6 +211,7 @@ export const views = {
   handleCash: 'Efectivo',
   handleOther: 'Otro',
   fromYourWallets: 'De tus billeteras',
+  noWalletsAvailable: 'Agrega una billetera para registrar pagos',
   namePlaceholder: 'ej. Juan García',
   emailPlaceholder: 'Correo o teléfono',
   handlePlaceholder: 'Cuenta / alias',

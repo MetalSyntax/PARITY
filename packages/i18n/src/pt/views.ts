@@ -211,6 +211,7 @@ export const views = {
     handleCash: 'Dinheiro',
     handleOther: 'Outro',
     fromYourWallets: 'Das suas carteiras',
+    noWalletsAvailable: 'Adicione uma carteira para registrar pagamentos',
     namePlaceholder: 'ex. João Silva',
     emailPlaceholder: 'E-mail ou telefone',
     handlePlaceholder: 'Conta / identificador',

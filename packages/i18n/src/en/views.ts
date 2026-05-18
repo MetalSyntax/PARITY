@@ -211,6 +211,7 @@ export const views = {
     handleCash: 'Cash',
     handleOther: 'Other',
     fromYourWallets: 'From your wallets',
+    noWalletsAvailable: 'Add a wallet to register payments',
     namePlaceholder: 'e.g. John Doe',
     emailPlaceholder: 'Email or phone',
     handlePlaceholder: 'Account / handle',

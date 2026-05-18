@@ -18,8 +18,7 @@ import { CalendarHeatmapView } from './views/CalendarHeatmapView';
 import { CurrencyPerformanceView } from './views/CurrencyPerformanceView';
 import { ScheduledNotificationsView } from './views/ScheduledNotificationsView';
 import { ShoppingListView } from './views/ShoppingListView';
-import { ContactDirectoryView } from './views/ContactDirectoryView';
-import { DebtSplitTrackerView } from './views/DebtSplitTrackerView';
+import { PeopleView } from './views/PeopleView';
 import { DataPortabilityView } from './views/DataPortabilityView';
 import { FinancialCalendarView } from './views/FinancialCalendarView';
 import { ScenarioPlannerView } from './views/ScenarioPlannerView';
@@ -1663,31 +1662,29 @@ function AppContent() {
               onShowConfirm={showConfirm}
             />
           )}
-          {currentView === 'CONTACTS' && (
-            <ContactDirectoryView
+          {(currentView === 'CONTACTS' || currentView === 'DEBT_TRACKER') && (
+            <PeopleView
               onBack={() => setCurrentView('DASHBOARD')}
               lang={userProfile.language}
-              contacts={contacts.filter(c => c.profileId === activeProfileId || (!c.profileId && activeProfileId === 'default'))}
+              contacts={contacts.filter(c => c.profileId === activeProfileId || (!c.profileId && activeProfileId === 'default')) as any}
               onUpdateContacts={(updated) => setContacts(prev => [
                 ...prev.filter(c => c.profileId !== activeProfileId && (c.profileId || activeProfileId !== 'default')),
-                ...updated.map(c => ({ ...c, profileId: c.profileId || activeProfileId }))
+                ...updated.map((c: any) => ({ ...c, profileId: c.profileId || activeProfileId }))
+              ])}
+              debts={debts.filter(d => d.profileId === activeProfileId || (!d.profileId && activeProfileId === 'default')) as any}
+              onUpdateDebts={(updated) => setDebts(prev => [
+                ...prev.filter(d => d.profileId !== activeProfileId && (d.profileId || activeProfileId !== 'default')),
+                ...updated.map((d: any) => ({ ...d, profileId: d.profileId || activeProfileId }))
               ])}
               transactions={filteredTransactions}
               exchangeRate={exchangeRate}
-              onQuickTransfer={() => setCurrentView('TRANSFER')}
               accounts={accounts.filter(a => a.profileId === activeProfileId || (!a.profileId && activeProfileId === 'default'))}
-            />
-          )}
-          {currentView === 'DEBT_TRACKER' && (
-            <DebtSplitTrackerView
-              onBack={() => setCurrentView('DASHBOARD')}
-              lang={userProfile.language}
-              exchangeRate={exchangeRate}
-              debts={debts.filter(d => d.profileId === activeProfileId || (!d.profileId && activeProfileId === 'default'))}
-              onUpdateDebts={(updated) => setDebts(prev => [
-                ...prev.filter(d => d.profileId !== activeProfileId && (d.profileId || activeProfileId !== 'default')),
-                ...updated.map(d => ({ ...d, profileId: d.profileId || activeProfileId }))
-              ])}
+              onQuickTransfer={() => setCurrentView('TRANSFER')}
+              onAddPaymentTransaction={(prefilled) => {
+                setEditingTransaction(prefilled as Transaction);
+                setShowAdd(true);
+              }}
+              initialTab={currentView === 'DEBT_TRACKER' ? 'DEBTS' : 'CONTACTS'}
             />
           )}
           {(currentView === 'EXPORT' || currentView === 'IMPORT' || currentView === 'PDF_REPORT') && (
