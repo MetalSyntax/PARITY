@@ -28,15 +28,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang: initialLang, onSta
     const [lang, setLang] = useState<Language>(initialLang);
     const [hideBalances, setHideBalances] = useState(false);
     const [currency, setCurrency] = useState<Currency>(Currency.USD);
-    const [favorites, setFavorites] = useState<string[]>(['DASHBOARD', 'TRANSACTIONS', 'BUDGET']);
+    const [favorites, setFavorites] = useState<string[]>(['DASHBOARD', 'TRANSACTIONS', 'BUDGET', 'ANALYSIS']);
 
     const t = (key: any) => getTranslation(lang, key);
 
     const toggleFavorite = (id: string) => {
+        if (id === 'DASHBOARD') return; // Dashboard is fixed
+
         if (favorites.includes(id)) {
-            if (favorites.length > 2) setFavorites(favorites.filter(f => f !== id));
+            setFavorites(favorites.filter(f => f !== id));
         } else {
-            if (favorites.length < 5) setFavorites([...favorites, id]);
+            // Limit to 4 total (Dashboard + 3 favorites)
+            if (favorites.length < 4) {
+                setFavorites([...favorites, id]);
+            }
         }
     };
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useExchangeRates } from './hooks/useExchangeRates';
-import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint, ShoppingCart } from 'lucide-react';
+import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint, ShoppingCart, Target, FileText, Users, Scale, CalendarDays, FlaskConical, GraduationCap } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { AddTransaction } from './views/AddTransaction';
 import { SettingsModal } from './components/SettingsModal';
@@ -157,7 +157,14 @@ function AppContent() {
   });
   const [navbarFavorites, setNavbarFavorites] = useState<ViewState[]>(() => {
     const saved = localStorage.getItem("navbarFavorites");
-    return saved ? JSON.parse(saved) : ['WALLET', 'ANALYSIS', 'PROFILE'];
+    if (saved) {
+      const parsed = JSON.parse(saved) as ViewState[];
+      if (!parsed.includes('DASHBOARD')) {
+        return ['DASHBOARD', ...parsed].slice(0, 4);
+      }
+      return parsed;
+    }
+    return ['DASHBOARD', 'WALLET', 'ANALYSIS', 'PROFILE'];
   });
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string>(() => {
@@ -1220,8 +1227,13 @@ function AppContent() {
     localStorage.setItem("displayCurrency", data.displayCurrency);
     setIsBalanceVisible(data.isBalanceVisible);
     localStorage.setItem("isBalanceVisible", JSON.stringify(data.isBalanceVisible));
-    setNavbarFavorites(data.navbarFavorites as ViewState[]);
-    localStorage.setItem("navbarFavorites", JSON.stringify(data.navbarFavorites));
+    
+    const favs = data.navbarFavorites.includes('DASHBOARD') 
+      ? data.navbarFavorites 
+      : ['DASHBOARD', ...data.navbarFavorites].slice(0, 4);
+    
+    setNavbarFavorites(favs as ViewState[]);
+    localStorage.setItem("navbarFavorites", JSON.stringify(favs));
     const initialWallet: Account = {
       id: Math.random().toString(36).substr(2, 9),
       name: data.profile.name || 'Wallet',
@@ -1762,19 +1774,14 @@ function AppContent() {
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
         {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF', 'SHOPPING_LIST', 'CONTACTS', 'DEBT_TRACKER', 'EXPORT', 'FIN_CALENDAR', 'IMPORT', 'PDF_REPORT', 'SCENARIO_PLANNER'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
           <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-4 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
-            <button
-              onClick={() => setCurrentView('DASHBOARD')}
-              className={`p-3 transition-colors ${currentView === 'DASHBOARD' ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
-            >
-              <Home size={24} />
-            </button>
-            {/* Dynamic favorites - First half */}
-            {navbarFavorites.slice(0, 1).map(view => (
+            {/* Dynamic favorites - First half (2 items) */}
+            {navbarFavorites.slice(0, 2).map(view => (
                <button
                   key={view}
                   onClick={() => setCurrentView(view)}
                   className={`p-3 transition-colors ${currentView === view ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
                 >
+                  {view === 'DASHBOARD' && <Home size={24} />}
                   {view === 'WALLET' && <Wallet size={24} />}
                   {view === 'ANALYSIS' && <ChartArea size={24} />}
                   {view === 'PROFILE' && <User size={24} />}
@@ -1784,6 +1791,9 @@ function AppContent() {
                   {view === 'HEATMAP' && <CalendarRange size={24} />}
                   {view === 'CURRENCY_PERF' && <ChartCandlestick size={24} />}
                   {view === 'SHOPPING_LIST' && <ShoppingCart size={24} />}
+                  {view === 'GOALS' && <Target size={24} />}
+                  {view === 'FISCAL_REPORT' && <FileText size={24} />}
+                  {view === 'INCOME' && <TrendingUp size={24} />}
                 </button>
             ))}
 
@@ -1807,22 +1817,26 @@ function AppContent() {
               </button>
             </div>
 
-            {/* Dynamic favorites - Second half */}
-            {navbarFavorites.slice(1).map(view => (
+            {/* Dynamic favorites - Second half (2 items) */}
+            {navbarFavorites.slice(2, 4).map(view => (
                <button
                   key={view}
                   onClick={() => setCurrentView(view)}
                   className={`p-3 transition-colors ${currentView === view ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
                 >
+                  {view === 'DASHBOARD' && <Home size={24} />}
                   {view === 'WALLET' && <Wallet size={24} />}
                   {view === 'ANALYSIS' && <ChartArea size={24} />}
                   {view === 'PROFILE' && <User size={24} />}
                   {view === 'BUDGET' && <PieChart size={24} />}
-                  {view === 'SCHEDULED' && <CalendarIcon size={24} />}
+                  {view === 'SCHEDULED' && <Calendar1 size={24} />}
                   {view === 'TRANSACTIONS' && <Receipt size={24} />}
-                  {view === 'HEATMAP' && <Activity size={24} />}
-                  {view === 'CURRENCY_PERF' && <TrendingUp size={24} />}
+                  {view === 'HEATMAP' && <CalendarRange size={24} />}
+                  {view === 'CURRENCY_PERF' && <ChartCandlestick size={24} />}
                   {view === 'SHOPPING_LIST' && <ShoppingCart size={24} />}
+                  {view === 'GOALS' && <Target size={24} />}
+                  {view === 'FISCAL_REPORT' && <FileText size={24} />}
+                  {view === 'INCOME' && <TrendingUp size={24} />}
                 </button>
             ))}
           </div>

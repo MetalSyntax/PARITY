@@ -288,12 +288,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             variants={itemVariants} 
             className="bg-theme-surface border border-theme-soft rounded-2xl p-6 shadow-sm"
         >
-          <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-4 block flex items-center gap-2 opacity-60">
+          <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-4 block flex items-center gap-2 opacity-60 px-1">
             <Layout size={12} className="text-theme-brand" /> {t('navbarFavorites')}
-            <span className="ml-auto text-theme-brand font-black">{navbarFavorites.length}/3</span>
+            <span className="ml-auto text-theme-brand font-black">{navbarFavorites.length}/4</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             {[
+              { id: 'DASHBOARD', name: t('dashboard') },
               { id: 'PROFILE', name: t('profile') },
               { id: 'WALLET', name: t('wallet') },
               { id: 'ANALYSIS', name: t('analysis') },
@@ -305,20 +306,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               { id: 'HEATMAP', name: t('heatmap') },
               { id: 'CURRENCY_PERF', name: t('currencyPerformance') },
               { id: 'FISCAL_REPORT', name: t('fiscalReport') },
-              { id: 'SHOPPING_LIST', name: t('shoppingList') }
+              { id: 'SHOPPING_LIST', name: t('shoppingList') },
+              { id: 'CONTACTS', name: t('people') || 'People' },
+              { id: 'DEBT_TRACKER', name: t('debts') || 'Debts' },
+              { id: 'FIN_CALENDAR', name: t('financialCalendar') || 'Calendar' },
+              { id: 'SCENARIO_PLANNER', name: t('scenarioPlanner') || 'Scenarios' },
+              { id: 'ACADEMY', name: t('academy') || 'Academy' }
             ].map((view) => (
               <motion.button
                 key={view.id}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
+                  if (view.id === 'DASHBOARD') return; // Fixed
                   if (navbarFavorites.includes(view.id)) {
                     onUpdateNavbarFavorites(navbarFavorites.filter(f => f !== view.id));
-                  } else if (navbarFavorites.length < 3) {
+                  } else if (navbarFavorites.length < 4) {
                     onUpdateNavbarFavorites([...navbarFavorites, view.id]);
                   }
                 }}
-                className={`p-3 rounded-2xl border text-[11px] font-bold transition-all flex items-center justify-between ${navbarFavorites.includes(view.id) ? 'bg-theme-brand/10 border-theme-soft text-theme-brand shadow-inner' : 'bg-theme-bg border-theme-soft text-theme-secondary opacity-70'}`}
+                className={`p-3 rounded-2xl border text-[11px] font-bold transition-all flex items-center justify-between ${navbarFavorites.includes(view.id) ? 'bg-theme-brand/10 border-theme-soft text-theme-brand shadow-inner' : 'bg-theme-bg border-theme-soft text-theme-secondary opacity-70'} ${view.id === 'DASHBOARD' ? 'border-theme-brand/30' : ''}`}
               >
                 {view.name}
                 {navbarFavorites.includes(view.id) && <CheckCircle2 size={12} />}

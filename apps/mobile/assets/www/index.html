@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Parity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="./assets/favicon-DLXiF7mh.png" type="image/png" />
+    <script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            colors: {
+              background: "#050505", // OLED Black
+              surface: "#121212",
+              glass: "rgba(255, 255, 255, 0.05)",
+              glassBorder: "rgba(255, 255, 255, 0.1)",
+              primary: "#6366f1", // Indigo
+              income: "#34d399", // Emerald 400
+              expense: "#fb7185", // Rose 400
+            },
+            borderRadius: {
+              'none': '0',
+              'sm': '1rem',
+              DEFAULT: '1rem',
+              'md': '1rem',
+              'lg': '1rem',
+              'xl': '1rem',
+              '2xl': '1rem',
+              '3xl': '1rem',
+              'full': '9999px',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #050505;
+        color: #ffffff;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior-y: none;
+        overscroll-behavior-x: none;
+        overflow: hidden; /* Critical for preventing body scroll bounce */
+      }
+      html {
+        overscroll-behavior-y: none;
+        overscroll-behavior-x: none;
+        overflow: hidden;
+      }
+      /* Hide scrollbar for clean UI */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      @keyframes scan {
+        0% { top: 0%; }
+        100% { top: 100%; }
+      }
+      .animate-scan-line {
+        animation: scan 2s linear infinite;
+      }
+      /* Safe-area support — works both in PWA standalone and in React Native WebView */
+      .pb-safe    { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      .pt-safe    { padding-top:    env(safe-area-inset-top, 0px); }
+      .pl-safe    { padding-left:   env(safe-area-inset-left, 0px); }
+      .pr-safe    { padding-right:  env(safe-area-inset-right, 0px); }
+      /* When running inside the native shell, push body content below the status bar */
+      body.__native { padding-top: env(safe-area-inset-top, 0px); }
+    </style>
+    <meta name="theme-color" content="#050505" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <style>
+      #splash-screen {
+        position: fixed;
+        inset: 0;
+        background-color: #050505;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      }
+      #splash-screen img {
+        width: 128px;
+        height: 128px;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% { opacity: 0.8; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.05); }
+        100% { opacity: 0.8; transform: scale(1); }
+      }
+    </style>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      if (window.location.protocol === 'https:' && window.location.hostname === 'parity-finance.vercel.app') {
+        // Load SDK dynamically only on production
+        const script = document.createElement('script');
+        script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+        script.defer = true;
+        document.head.appendChild(script);
+
+        OneSignalDeferred.push(async function(OneSignal) {
+          try {
+            await OneSignal.init({
+              appId: "d0e12d89-6054-430e-aad1-9fa8220d61c4",
+              safari_web_id: "web.onesignal.auto.639febc2-a356-4a97-8e69-81281557724a",
+              notifyButton: { enable: false },
+              promptOptions: {
+                slidedown: {
+                  prompts: [{
+                    type: "push",
+                    autoPrompt: false,
+                    text: {
+                      actionMessage: "Enable push notifications to receive payment reminders.",
+                      acceptButton: "Allow",
+                      cancelButton: "No thanks"
+                    }
+                  }]
+                }
+              }
+            });
+          } catch (e) {
+            console.warn('OneSignal init error:', e);
+          }
+        });
+      }
+    </script>
+    <script type="module" crossorigin src="./assets/index-CRA-JxZW.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DT4s0vtG.css">
+  <link rel="manifest" href="./manifest.webmanifest"></head>
+  <body>
+    <div id="root">
+       <div id="splash-screen">
+          <img src="./pwa-512x512.png" alt="Parity" />
+       </div>
+    </div>
+  </body>
+</html>
