@@ -30,17 +30,30 @@ const PRETTY_FORMAT_PATH = path.join(
   'node_modules/.pnpm/pretty-format@29.7.0/node_modules/pretty-format/build/index.js'
 );
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // If Metro is looking for the main 'index' entry point and it's not found at the server root,
+  // redirect it to the mobile app's index.js.
+  if ((moduleName === 'index' || moduleName === './index') && context.originModulePath === undefined) {
+    try {
+      return context.resolveRequest(context, moduleName, platform);
+    } catch (e) {
+      return {
+        filePath: path.join(mobileDir, 'index.js'),
+        type: 'sourceFile',
+      };
+    }
+  }
+
   if (moduleName === 'pretty-format') {
     return { filePath: PRETTY_FORMAT_PATH, type: 'sourceFile' };
   }
   return context.resolveRequest(context, moduleName, platform);
 };
 
-// Same fix as apps/mobile/metro.config.js: override serverRoot back to mobileDir
-// so Metro resolves ./index from apps/mobile/ not the monorepo root.
+// Same fix as apps/mobile/metro.config.js: set serverRoot to monorepo root
+// so that pnpm symlinks in node_modules/.pnpm can be served as bundles.
 config.server = {
   ...config.server,
-  unstable_serverRoot: mobileDir,
+  unstable_serverRoot: monorepoRoot,
 };
 
 module.exports = config;

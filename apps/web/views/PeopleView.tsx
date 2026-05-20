@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Users, ArrowUpRight, ArrowDownLeft, Plus, Check, X,
-  ChevronDown, ChevronUp, Trash2, ArrowRightLeft, Wallet,
-  Receipt, DollarSign, AlertCircle, ArrowLeft,
+  ChevronDown, ChevronUp, Trash2, Wallet, Pencil,
+  Receipt, DollarSign, AlertCircle, ArrowLeft, UserCircle2,
 } from 'lucide-react';
 import { Language, Currency, Transaction, TransactionType, Account } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
@@ -49,22 +49,21 @@ interface PaymentHandle { type: HandleType; value: string; }
 interface Contact {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   initials?: string;
   avatarColor: string;
   defaultCurrency: Currency;
   paymentHandles: PaymentHandle[];
   notes?: string;
-  balance: number;
-  direction: 'OWED_TO_YOU' | 'YOU_OWE' | 'SETTLED';
   createdAt: string;
+  // legacy fields (may exist in stored data but no longer set by UI)
+  balance?: number;
+  direction?: 'OWED_TO_YOU' | 'YOU_OWE' | 'SETTLED';
 }
 
 interface AddContactForm {
   name: string;
   email: string;
-  amount: string;
-  direction: 'OWED_TO_YOU' | 'YOU_OWE';
   avatarColor: string;
   defaultCurrency: Currency;
   notes: string;
@@ -72,12 +71,12 @@ interface AddContactForm {
 }
 
 const EMPTY_CONTACT_FORM: AddContactForm = {
-  name: '', email: '', amount: '', direction: 'OWED_TO_YOU',
+  name: '', email: '',
   avatarColor: AVATAR_COLORS[0], defaultCurrency: Currency.USD,
   notes: '', paymentHandles: [],
 };
 
-type ContactFilter = 'ALL' | 'YOU_OWE' | 'OWED_TO_YOU';
+type ContactFilter = 'ALL' | 'YOU_OWE' | 'OWED_TO_YOU' | 'SETTLED';
 
 // ─── Debt/Split types ─────────────────────────────────────────────────────────
 
@@ -92,6 +91,9 @@ interface Split {
   status: 'active' | 'partial' | 'settled';
   dueDate?: string;
   createdAt: string;
+  contactId?: string;
+  currency?: Currency;
+  walletId?: string;
 }
 
 interface AddSplitForm {
@@ -100,10 +102,14 @@ interface AddSplitForm {
   amount: string;
   direction: 'OWED_TO_YOU' | 'YOU_OWE';
   dueDate: string;
+  contactId: string;
+  currency: Currency;
+  walletId: string;
 }
 
 const EMPTY_SPLIT_FORM: AddSplitForm = {
   name: '', category: '', amount: '', direction: 'OWED_TO_YOU', dueDate: '',
+  contactId: '', currency: Currency.USD, walletId: '',
 };
 
 type DebtTab = 'OWED_TO_YOU' | 'YOU_OWE';
@@ -122,6 +128,7 @@ interface PeopleViewProps {
   accounts: Account[];
   onQuickTransfer?: () => void;
   onAddPaymentTransaction?: (prefilled: Partial<Transaction>) => void;
+  onCreateDirectTransaction?: (tx: Partial<Transaction>) => void;
   initialTab?: 'CONTACTS' | 'DEBTS';
 }
 
@@ -131,10 +138,22 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
   onBack, lang, contacts, onUpdateContacts,
   debts: externalDebts, onUpdateDebts,
   transactions, exchangeRate, accounts,
-  onQuickTransfer, onAddPaymentTransaction,
+  onQuickTransfer, onAddPaymentTransaction, onCreateDirectTransaction,
   initialTab = 'CONTACTS',
 }) => {
   const t = (key: any) => getTranslation(lang, key);
+
+  const toUSD = (amount: number, currency: Currency): number => {
+    if (currency === Currency.VES) return exchangeRate > 0 ? amount / exchangeRate : 0;
+    return amount; // USD, USDT, EUR treated as USD-equivalent
+  };
+
+  const currencySymbol = (currency?: Currency) => {
+    if (currency === Currency.VES) return 'Bs';
+    if (currency === Currency.EUR) return '€';
+    return '$';
+  };
+
   const [activeTab, setActiveTab] = useState<'CONTACTS' | 'DEBTS'>(initialTab);
 
   // ── Contacts state ──────────────────────────────────────────────────────────
@@ -145,7 +164,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
   const [contactForm, setContactForm] = useState<AddContactForm>(EMPTY_CONTACT_FORM);
   const [contactFormError, setContactFormError] = useState('');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [showHandlesDropdown, setShowHandlesDropdown] = useState(false);
 
   // ── Debts state ─────────────────────────────────────────────────────────────
@@ -158,30 +177,52 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
   };
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddSplit, setShowAddSplit] = useState(false);
+  const [editingSplitId, setEditingSplitId] = useState<string | null>(null);
   const [splitForm, setSplitForm] = useState<AddSplitForm>(EMPTY_SPLIT_FORM);
   const [splitFormError, setSplitFormError] = useState('');
   const [debtTab, setDebtTab] = useState<DebtTab>('OWED_TO_YOU');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [showWalletPicker, setShowWalletPicker] = useState(false);
+  // Settlement modal
+  const [settlingSplit, setSettlingSplit] = useState<Split | null>(null);
+  const [settleWalletId, setSettleWalletId] = useState('');
 
   // ── Contacts computed ───────────────────────────────────────────────────────
-  const contactsWithFlow = contacts.map(c => {
+  const getContactNetBalance = (contactId: string) => {
+    const linked = splits.filter(s => s.contactId === contactId && s.status !== 'settled');
+    const owedToYou = linked.filter(s => s.direction === 'OWED_TO_YOU').reduce((sum, s) => sum + toUSD(s.remaining, s.currency || Currency.USD), 0);
+    const youOwe = linked.filter(s => s.direction === 'YOU_OWE').reduce((sum, s) => sum + toUSD(s.remaining, s.currency || Currency.USD), 0);
+    return owedToYou - youOwe;
+  };
+
+  const getContactDirection = (netBalance: number): 'OWED_TO_YOU' | 'YOU_OWE' | 'SETTLED' => {
+    if (netBalance > 0) return 'OWED_TO_YOU';
+    if (netBalance < 0) return 'YOU_OWE';
+    return 'SETTLED';
+  };
+
+  const contactsWithBalance = contacts.map(c => {
     const linked = transactions.filter(tx => (tx as any).contactId === c.id);
     const income = linked.filter(tx => tx.type === TransactionType.INCOME).reduce((s, tx) => s + tx.normalizedAmountUSD, 0);
     const expense = linked.filter(tx => tx.type === TransactionType.EXPENSE).reduce((s, tx) => s + tx.normalizedAmountUSD, 0);
-    return { ...c, _netFlow: income - expense, _linkedCount: linked.length };
+    const netBalance = getContactNetBalance(c.id);
+    const direction = getContactDirection(netBalance);
+    return { ...c, _netFlow: income - expense, _linkedCount: linked.length, _netBalance: netBalance, _direction: direction };
   });
 
-  const totalOwedToYouContacts = contacts.filter(c => c.direction === 'OWED_TO_YOU').reduce((s, c) => s + c.balance, 0);
-  const totalYouOweContacts = contacts.filter(c => c.direction === 'YOU_OWE').reduce((s, c) => s + c.balance, 0);
+  const totalOwedToYouContacts = splits.filter(s => s.direction === 'OWED_TO_YOU' && s.status !== 'settled').reduce((sum, s) => sum + toUSD(s.remaining, s.currency || Currency.USD), 0);
+  const totalYouOweContacts = splits.filter(s => s.direction === 'YOU_OWE' && s.status !== 'settled').reduce((sum, s) => sum + toUSD(s.remaining, s.currency || Currency.USD), 0);
 
-  const filteredContacts = contactsWithFlow.filter(c => {
-    const matchFilter = contactFilter === 'ALL' || c.direction === contactFilter;
+  const filteredContacts = contactsWithBalance.filter(c => {
+    const matchFilter = contactFilter === 'ALL' || c._direction === contactFilter;
     const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.email || '').toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
   // ── Debts computed ──────────────────────────────────────────────────────────
-  const totalOwedToYouDebts = splits.filter(s => s.direction === 'OWED_TO_YOU' && s.status !== 'settled').reduce((sum, s) => sum + s.remaining, 0);
-  const totalYouOweDebts = splits.filter(s => s.direction === 'YOU_OWE' && s.status !== 'settled').reduce((sum, s) => sum + s.remaining, 0);
+  const totalOwedToYouDebts = splits.filter(s => s.direction === 'OWED_TO_YOU' && s.status !== 'settled').reduce((sum, s) => sum + toUSD(s.remaining, s.currency || Currency.USD), 0);
+  const totalYouOweDebts = splits.filter(s => s.direction === 'YOU_OWE' && s.status !== 'settled').reduce((sum, s) => sum + toUSD(s.remaining, s.currency || Currency.USD), 0);
   const settledCount = splits.filter(s => s.status === 'settled').length;
   const recoveryRate = splits.length > 0 ? Math.round((settledCount / splits.length) * 100) : 0;
   const visibleSplits = splits.filter(s => s.direction === debtTab);
@@ -200,7 +241,28 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
   };
 
   // ── Contacts handlers ───────────────────────────────────────────────────────
-  const openAddContact = () => { setContactForm(EMPTY_CONTACT_FORM); setContactFormError(''); setShowHandlesDropdown(false); setShowAddContact(true); };
+  const openAddContact = () => {
+    setEditingContactId(null);
+    setContactForm(EMPTY_CONTACT_FORM);
+    setContactFormError('');
+    setShowHandlesDropdown(false);
+    setShowAddContact(true);
+  };
+
+  const openEditContact = (contact: Contact) => {
+    setEditingContactId(contact.id);
+    setContactForm({
+      name: contact.name,
+      email: contact.email || '',
+      avatarColor: contact.avatarColor,
+      defaultCurrency: contact.defaultCurrency,
+      notes: contact.notes || '',
+      paymentHandles: contact.paymentHandles,
+    });
+    setContactFormError('');
+    setShowHandlesDropdown(false);
+    setShowAddContact(true);
+  };
 
   const toggleWalletHandle = (acc: Account) => {
     const alreadyAdded = contactForm.paymentHandles.some(h => h.value === acc.name);
@@ -213,22 +275,32 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
 
   const saveContact = () => {
     if (!contactForm.name.trim()) { setContactFormError(`${t('name')} ${t('fieldRequired')}`); return; }
-    const amount = parseFloat(contactForm.amount) || 0;
     const initials = contactForm.name.trim().split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
-    const newContact: Contact = {
-      id: Date.now().toString(),
-      name: contactForm.name.trim(),
-      email: contactForm.email.trim(),
-      initials,
-      avatarColor: contactForm.avatarColor,
-      defaultCurrency: contactForm.defaultCurrency,
-      paymentHandles: contactForm.paymentHandles,
-      notes: contactForm.notes.trim() || undefined,
-      balance: amount,
-      direction: amount === 0 ? 'SETTLED' : contactForm.direction,
-      createdAt: new Date().toISOString(),
-    } as any;
-    onUpdateContacts([...contacts, newContact]);
+    if (editingContactId) {
+      onUpdateContacts(contacts.map(c => c.id === editingContactId ? {
+        ...c,
+        name: contactForm.name.trim(),
+        email: contactForm.email.trim(),
+        initials,
+        avatarColor: contactForm.avatarColor,
+        defaultCurrency: contactForm.defaultCurrency,
+        paymentHandles: contactForm.paymentHandles,
+        notes: contactForm.notes.trim() || undefined,
+      } as any : c));
+    } else {
+      onUpdateContacts([...contacts, {
+        id: Date.now().toString(),
+        name: contactForm.name.trim(),
+        email: contactForm.email.trim(),
+        initials,
+        avatarColor: contactForm.avatarColor,
+        defaultCurrency: contactForm.defaultCurrency,
+        paymentHandles: contactForm.paymentHandles,
+        notes: contactForm.notes.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      } as any]);
+    }
+    setEditingContactId(null);
     setShowAddContact(false);
   };
 
@@ -237,15 +309,33 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
     setSelectedContactId(null);
   };
 
-  const markContactSettled = (id: string) => {
-    onUpdateContacts(contacts.map(c => c.id === id ? { ...c, balance: 0, direction: 'SETTLED' } : c));
-  };
-
   // ── Debts handlers ──────────────────────────────────────────────────────────
   const openAddSplit = () => {
+    setEditingSplitId(null);
     setSplitForm({ ...EMPTY_SPLIT_FORM, direction: debtTab });
     setSplitFormError('');
     setShowCategoryDropdown(false);
+    setShowContactPicker(false);
+    setShowWalletPicker(false);
+    setShowAddSplit(true);
+  };
+
+  const openEditSplit = (split: Split) => {
+    setEditingSplitId(split.id);
+    setSplitForm({
+      name: split.name,
+      category: split.category,
+      amount: split.amount.toString(),
+      direction: split.direction,
+      dueDate: split.dueDate || '',
+      contactId: split.contactId || '',
+      currency: split.currency || Currency.USD,
+      walletId: split.walletId || '',
+    });
+    setSplitFormError('');
+    setShowCategoryDropdown(false);
+    setShowContactPicker(false);
+    setShowWalletPicker(false);
     setShowAddSplit(true);
   };
 
@@ -253,30 +343,79 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
     if (!splitForm.name.trim()) { setSplitFormError(`${t('description')} ${t('fieldRequired')}`); return; }
     const amount = parseFloat(splitForm.amount) || 0;
     if (amount <= 0) { setSplitFormError(`${t('amount')} ${t('mustBePositive')}`); return; }
-    setSplits((prev: Split[]) => [...prev, {
-      id: Date.now().toString(),
-      name: splitForm.name.trim(),
-      category: splitForm.category || 'other',
-      amount,
-      remaining: amount,
-      amountAtRateUSD: amount,
-      direction: splitForm.direction,
-      status: 'active',
-      dueDate: splitForm.dueDate || undefined,
-      createdAt: new Date().toISOString(),
-    }]);
+
+    const currency = splitForm.currency || Currency.USD;
+    const amountUSD = toUSD(amount, currency);
+
+    if (editingSplitId) {
+      setSplits(prev => prev.map(s => {
+        if (s.id !== editingSplitId) return s;
+        const paid = s.amount - s.remaining;
+        const newRemaining = Math.max(0, amount - paid);
+        return {
+          ...s,
+          name: splitForm.name.trim(),
+          category: splitForm.category || 'other',
+          amount,
+          remaining: newRemaining,
+          amountAtRateUSD: amountUSD,
+          direction: splitForm.direction,
+          dueDate: splitForm.dueDate || undefined,
+          status: newRemaining === 0 ? 'settled' : paid > 0 ? 'partial' : 'active',
+          contactId: splitForm.contactId || undefined,
+          currency,
+          walletId: splitForm.walletId || undefined,
+        };
+      }));
+    } else {
+      const newSplit: any = {
+        id: Date.now().toString(),
+        name: splitForm.name.trim(),
+        category: splitForm.category || 'other',
+        amount,
+        remaining: amount,
+        amountAtRateUSD: amountUSD,
+        direction: splitForm.direction,
+        status: 'active',
+        dueDate: splitForm.dueDate || undefined,
+        createdAt: new Date().toISOString(),
+        contactId: splitForm.contactId || undefined,
+        currency,
+        walletId: splitForm.walletId || undefined,
+      };
+      setSplits((prev: Split[]) => [...prev, newSplit]);
+
+      // Auto-create transaction if wallet is selected
+      if (splitForm.walletId && onCreateDirectTransaction) {
+        onCreateDirectTransaction({
+          id: `debt-${Date.now()}`,
+          amount,
+          originalCurrency: currency,
+          exchangeRate,
+          normalizedAmountUSD: amountUSD,
+          // OWED_TO_YOU = you lent → EXPENSE from wallet; YOU_OWE = you received → INCOME to wallet
+          type: splitForm.direction === 'OWED_TO_YOU' ? TransactionType.EXPENSE : TransactionType.INCOME,
+          category: splitForm.direction === 'OWED_TO_YOU' ? 'other' : 'income',
+          accountId: splitForm.walletId,
+          note: splitForm.name.trim(),
+          date: new Date().toISOString(),
+        });
+      }
+    }
+    setEditingSplitId(null);
     setShowAddSplit(false);
   };
 
   const handleAddPayment = (split: Split) => {
     if (!onAddPaymentTransaction || accounts.length === 0) return;
     const catId = CATEGORIES.find(c => c.id === split.category)?.id || (split.direction === 'OWED_TO_YOU' ? 'income' : 'other');
+    const splitCurrency = split.currency || Currency.USD;
     onAddPaymentTransaction({
       id: '',
       amount: split.remaining,
-      originalCurrency: Currency.USD,
+      originalCurrency: splitCurrency,
       exchangeRate,
-      normalizedAmountUSD: split.remaining,
+      normalizedAmountUSD: toUSD(split.remaining, splitCurrency),
       type: split.direction === 'OWED_TO_YOU' ? TransactionType.INCOME : TransactionType.EXPENSE,
       category: catId,
       accountId: accounts[0]?.id || '',
@@ -287,6 +426,34 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
 
   const markSplitSettled = (id: string) => {
     setSplits(prev => prev.map(s => s.id === id ? { ...s, remaining: 0, status: 'settled' } : s));
+  };
+
+  const openSettleModal = (split: Split) => {
+    setSettlingSplit(split);
+    setSettleWalletId(split.walletId || (accounts[0]?.id ?? ''));
+  };
+
+  const confirmSettle = () => {
+    if (!settlingSplit) return;
+    if (settleWalletId && onCreateDirectTransaction) {
+      const settleCurrency = settlingSplit.currency || Currency.USD;
+      onCreateDirectTransaction({
+        id: `settle-${Date.now()}`,
+        amount: settlingSplit.remaining,
+        originalCurrency: settleCurrency,
+        exchangeRate,
+        normalizedAmountUSD: toUSD(settlingSplit.remaining, settleCurrency),
+        // OWED_TO_YOU settled = they paid you → INCOME; YOU_OWE settled = you paid → EXPENSE
+        type: settlingSplit.direction === 'OWED_TO_YOU' ? TransactionType.INCOME : TransactionType.EXPENSE,
+        category: settlingSplit.direction === 'OWED_TO_YOU' ? 'income' : 'other',
+        accountId: settleWalletId,
+        note: settlingSplit.name,
+        date: new Date().toISOString(),
+      });
+    }
+    markSplitSettled(settlingSplit.id);
+    setSettlingSplit(null);
+    setSettleWalletId('');
   };
 
   const deleteSplit = (id: string) => {
@@ -371,10 +538,10 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
               )}
             </AnimatePresence>
 
-            {/* Network Balance Card */}
+            {/* Network Balance Card — computed from debt tracker */}
             <div className="bg-theme-surface/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5 mb-5 shadow-2xl">
               <h2 className="text-base font-black text-theme-primary mb-0.5">{t('networkBalance')}</h2>
-              <p className="text-[11px] text-theme-secondary mb-4 font-medium">{t('networkBalanceDesc')}</p>
+              <p className="text-[11px] text-theme-secondary mb-4 font-medium">{t('balanceFromDebts') || 'Auto-calculated from Debt Tracker'}</p>
               <div className="flex gap-6">
                 <div>
                   <span className="text-[10px] text-theme-secondary mb-1 block font-black uppercase tracking-widest">{t('youOwe')}</span>
@@ -418,118 +585,109 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
               </div>
             ) : (
               <div className="flex flex-col gap-2.5">
-                {filteredContacts.map((contact: any, i: number) => (
-                  <div key={contact.id}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      className={`bg-theme-surface/50 border border-white/5 cursor-pointer group active:scale-[0.98] transition-all hover:bg-theme-surface ${selectedContactId === contact.id ? 'rounded-t-2xl border-b-0' : 'rounded-2xl'}`}
-                      onClick={() => setSelectedContactId(selectedContactId === contact.id ? null : contact.id)}
-                    >
-                      <div className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-12 h-12">
-                            <div className={`w-12 h-12 rounded-full ${contact.avatarColor} flex items-center justify-center font-black text-base text-white`}>
-                              {(contact.initials || contact.name.slice(0, 2)).toUpperCase()}
-                            </div>
-                            {contact.direction === 'SETTLED' ? (
-                              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-theme-bg bg-emerald-500 flex items-center justify-center">
-                                <Check size={7} className="text-white" strokeWidth={3} />
+                {filteredContacts.map((contact: any, i: number) => {
+                  const netBalance = contact._netBalance as number;
+                  const dir = contact._direction as 'OWED_TO_YOU' | 'YOU_OWE' | 'SETTLED';
+                  return (
+                    <div key={contact.id}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        className={`bg-theme-surface/50 border border-white/5 cursor-pointer group active:scale-[0.98] transition-all hover:bg-theme-surface ${selectedContactId === contact.id ? 'rounded-t-2xl border-b-0' : 'rounded-2xl'}`}
+                        onClick={() => setSelectedContactId(selectedContactId === contact.id ? null : contact.id)}
+                      >
+                        <div className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-12 h-12">
+                              <div className={`w-12 h-12 rounded-full ${contact.avatarColor} flex items-center justify-center font-black text-base text-white`}>
+                                {(contact.initials || contact.name.slice(0, 2)).toUpperCase()}
                               </div>
-                            ) : (
-                              <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-theme-bg ${contact.direction === 'OWED_TO_YOU' ? 'bg-emerald-500' : 'bg-gray-500'}`} />
-                            )}
+                              {dir === 'SETTLED' ? (
+                                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-theme-bg bg-emerald-500 flex items-center justify-center">
+                                  <Check size={7} className="text-white" strokeWidth={3} />
+                                </div>
+                              ) : (
+                                <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-theme-bg ${dir === 'OWED_TO_YOU' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-theme-primary group-hover:text-theme-brand transition-colors">{contact.name}</p>
+                              <p className="text-[11px] text-theme-secondary">{contact.email || '—'}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-black text-theme-primary group-hover:text-theme-brand transition-colors">{contact.name}</p>
-                            <p className="text-[11px] text-theme-secondary">{contact.email || '—'}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              {dir === 'SETTLED' || netBalance === 0 ? (
+                                <p className="text-sm font-bold text-theme-secondary">{t('noBalance')}</p>
+                              ) : (
+                                <>
+                                  <p className={`text-sm font-black ${dir === 'OWED_TO_YOU' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {dir === 'OWED_TO_YOU' ? '+' : ''}${netBalance.toFixed(2)}
+                                  </p>
+                                  <p className="text-[11px] text-theme-secondary">
+                                    {dir === 'OWED_TO_YOU' ? `${contact.name.split(' ')[0]} ${t('owesYou')}` : t('youOweLabel')}
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                            {selectedContactId === contact.id ? <ChevronUp size={14} className="text-theme-secondary" /> : <ChevronDown size={14} className="text-theme-secondary" />}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-right">
-                            {contact.direction === 'SETTLED' ? (
-                              <>
-                                <p className="text-sm font-bold text-theme-secondary">{t('settled')}</p>
-                                <p className="text-[11px] text-theme-secondary">{t('noBalance')}</p>
-                              </>
-                            ) : (
-                              <>
-                                <p className={`text-sm font-black ${contact.direction === 'OWED_TO_YOU' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                  {contact.direction === 'OWED_TO_YOU' ? '+' : '-'}${contact.balance.toFixed(2)}
-                                </p>
-                                <p className="text-[11px] text-theme-secondary">
-                                  {contact.direction === 'OWED_TO_YOU' ? `${contact.name.split(' ')[0]} ${t('owesYou')}` : t('youOweLabel')}
-                                </p>
-                              </>
-                            )}
-                          </div>
-                          {selectedContactId === contact.id ? <ChevronUp size={14} className="text-theme-secondary" /> : <ChevronDown size={14} className="text-theme-secondary" />}
-                        </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
 
-                    {/* Contact detail panel */}
-                    <AnimatePresence>
-                      {selectedContactId === contact.id && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="bg-theme-surface/30 border border-white/5 border-t-0 rounded-b-2xl px-4 pb-4 pt-3 space-y-3">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="px-2 py-1 rounded-full bg-theme-brand/10 border border-theme-brand/20 text-[10px] text-theme-brand font-black">{contact.defaultCurrency}</span>
-                              {contact.paymentHandles.map((h: PaymentHandle, idx: number) => (
-                                <span key={idx} className="px-2 py-1 rounded-full bg-theme-surface border border-white/10 text-[10px] text-theme-secondary font-bold">
-                                  <span className="text-theme-primary">{t(HANDLE_TYPE_KEY[h.type as HandleType] || h.type)}</span>: {h.value}
-                                </span>
-                              ))}
-                              {contact.paymentHandles.length === 0 && (
-                                <span className="text-[10px] text-theme-secondary opacity-50">{t('paymentHandles')}: —</span>
-                              )}
-                            </div>
-                            {contact.notes && <p className="text-[11px] text-theme-secondary italic">"{contact.notes}"</p>}
-                            <p className="text-[10px] text-theme-secondary opacity-40">{t('createdAt')}: {new Date(contact.createdAt).toLocaleDateString()}</p>
-                            {contact._linkedCount > 0 && (
-                              <div className="flex items-center gap-2 text-[10px] text-theme-secondary bg-theme-surface/50 rounded-lg px-3 py-2">
-                                <span>{contact._linkedCount} tx →</span>
-                                <span className={contact._netFlow >= 0 ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
-                                  {contact._netFlow >= 0 ? '+' : ''}${contact._netFlow.toFixed(2)}
-                                </span>
-                                <span>{t('contactNetFlow')}</span>
+                      {/* Contact detail panel */}
+                      <AnimatePresence>
+                        {selectedContactId === contact.id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="bg-theme-surface/30 border border-white/5 border-t-0 rounded-b-2xl px-4 pb-4 pt-3 space-y-3">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2 py-1 rounded-full bg-theme-brand/10 border border-theme-brand/20 text-[10px] text-theme-brand font-black">{contact.defaultCurrency}</span>
+                                {contact.paymentHandles.map((h: PaymentHandle, idx: number) => (
+                                  <span key={idx} className="px-2 py-1 rounded-full bg-theme-surface border border-white/10 text-[10px] text-theme-secondary font-bold">
+                                    <span className="text-theme-primary">{t(HANDLE_TYPE_KEY[h.type as HandleType] || h.type)}</span>: {h.value}
+                                  </span>
+                                ))}
+                                {contact.paymentHandles.length === 0 && (
+                                  <span className="text-[10px] text-theme-secondary opacity-50">{t('paymentHandles')}: —</span>
+                                )}
                               </div>
-                            )}
-                            <div className="flex gap-2 pt-1">
-                              {contact.direction !== 'SETTLED' && (
-                                <button
-                                  onClick={() => markContactSettled(contact.id)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-emerald-500/30 text-emerald-400 text-xs font-black hover:bg-emerald-500/10 transition-colors"
-                                >
-                                  <Check size={12} /> {t('markAsSettled')}
-                                </button>
+                              {contact.notes && <p className="text-[11px] text-theme-secondary italic">"{contact.notes}"</p>}
+                              <p className="text-[10px] text-theme-secondary opacity-40">{t('createdAt')}: {new Date(contact.createdAt).toLocaleDateString()}</p>
+                              {contact._linkedCount > 0 && (
+                                <div className="flex items-center gap-2 text-[10px] text-theme-secondary bg-theme-surface/50 rounded-lg px-3 py-2">
+                                  <span>{contact._linkedCount} tx →</span>
+                                  <span className={contact._netFlow >= 0 ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
+                                    {contact._netFlow >= 0 ? '+' : ''}${contact._netFlow.toFixed(2)}
+                                  </span>
+                                  <span>{t('contactNetFlow')}</span>
+                                </div>
                               )}
-                              {onQuickTransfer && (
+                              <div className="flex gap-2 pt-1">
                                 <button
-                                  onClick={onQuickTransfer}
-                                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-theme-brand/30 text-theme-brand text-xs font-black hover:bg-theme-brand/10 transition-colors"
+                                  onClick={() => openEditContact(contact)}
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-theme-brand/30 text-theme-brand text-xs font-black hover:bg-theme-brand/10 transition-colors"
                                 >
-                                  <ArrowRightLeft size={12} />
+                                  <Pencil size={12} /> {t('edit') || 'Edit'}
                                 </button>
-                              )}
-                              <button
-                                onClick={() => deleteContact(contact.id)}
-                                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-500/20 text-red-400 text-xs font-black hover:bg-red-500/10 transition-colors"
-                              >
-                                <Trash2 size={12} />
-                              </button>
+                                <button
+                                  onClick={() => deleteContact(contact.id)}
+                                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-500/20 text-red-400 text-xs font-black hover:bg-red-500/10 transition-colors"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </motion.div>
@@ -621,6 +779,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                   const badge = getDueDateBadge(split);
                   const paidPct = split.amount > 0 ? ((split.amount - split.remaining) / split.amount) * 100 : 0;
                   const catDisplay = getCategoryDisplay(split.category);
+                  const linkedContact = split.contactId ? contacts.find(c => c.id === split.contactId) : null;
                   return (
                     <motion.div key={split.id} layout className="bg-theme-surface/50 border border-white/5 rounded-2xl overflow-hidden">
                       <button className="w-full p-4 text-left" onClick={() => setExpandedId(expandedId === split.id ? null : split.id)}>
@@ -639,9 +798,17 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                                   <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black">{t('settled')}</span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 {catDisplay.icon && <span className="text-[10px] opacity-60">{catDisplay.icon}</span>}
                                 <p className="text-[11px] text-theme-secondary">{catDisplay.label}</p>
+                                {split.currency && split.currency !== Currency.USD && (
+                                  <span className="px-1 py-0.5 rounded bg-white/5 text-[9px] text-theme-secondary font-black">{split.currency}</span>
+                                )}
+                                {linkedContact && (
+                                  <span className="flex items-center gap-0.5 text-[9px] text-theme-brand font-black">
+                                    <UserCircle2 size={9} />{linkedContact.name.split(' ')[0]}
+                                  </span>
+                                )}
                                 {badge && (
                                   <span className={`px-1.5 py-0.5 rounded-full border text-[9px] font-black ${badge.color}`}>{badge.label}</span>
                                 )}
@@ -651,7 +818,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                           <div className="flex items-center gap-3">
                             <div className="text-right">
                               <p className={`text-base font-black ${split.direction === 'OWED_TO_YOU' ? 'text-theme-brand' : 'text-red-400'}`}>
-                                ${split.remaining.toFixed(2)}
+                                {currencySymbol(split.currency)}{split.remaining.toFixed(2)}
                               </p>
                               <p className="text-[10px] uppercase tracking-widest text-theme-secondary font-black">{t('remaining')}</p>
                             </div>
@@ -679,17 +846,40 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                               <div className="flex gap-2 mt-3">
                                 <div className="flex-1 bg-theme-bg/50 rounded-xl p-3 text-center">
                                   <p className="text-[10px] text-theme-secondary font-black uppercase tracking-widest mb-1">{t('total')}</p>
-                                  <p className="text-sm font-black text-theme-primary">${split.amount.toFixed(2)}</p>
+                                  <p className="text-sm font-black text-theme-primary">{currencySymbol(split.currency)}{split.amount.toFixed(2)}</p>
                                 </div>
                                 <div className="flex-1 bg-theme-bg/50 rounded-xl p-3 text-center">
                                   <p className="text-[10px] text-theme-secondary font-black uppercase tracking-widest mb-1">{t('remaining')}</p>
-                                  <p className={`text-sm font-black ${split.direction === 'OWED_TO_YOU' ? 'text-emerald-400' : 'text-red-400'}`}>${split.remaining.toFixed(2)}</p>
+                                  <p className={`text-sm font-black ${split.direction === 'OWED_TO_YOU' ? 'text-emerald-400' : 'text-red-400'}`}>{currencySymbol(split.currency)}{split.remaining.toFixed(2)}</p>
                                 </div>
                                 <div className="flex-1 bg-theme-bg/50 rounded-xl p-3 text-center">
                                   <p className="text-[10px] text-theme-secondary font-black uppercase tracking-widest mb-1">{t('paid')}</p>
-                                  <p className="text-sm font-black text-theme-primary">${(split.amount - split.remaining).toFixed(2)}</p>
+                                  <p className="text-sm font-black text-theme-primary">{currencySymbol(split.currency)}{(split.amount - split.remaining).toFixed(2)}</p>
                                 </div>
                               </div>
+
+                              {/* Linked contact info */}
+                              {linkedContact && (
+                                <div className="mt-3 flex items-center gap-2 bg-theme-bg/40 rounded-xl px-3 py-2">
+                                  <div className={`w-6 h-6 rounded-full ${linkedContact.avatarColor} flex items-center justify-center text-[9px] font-black text-white flex-shrink-0`}>
+                                    {(linkedContact.initials || linkedContact.name.slice(0, 2)).toUpperCase()}
+                                  </div>
+                                  <span className="text-[11px] text-theme-secondary">{t('linkedContact') || 'Contact'}: <span className="text-theme-primary font-bold">{linkedContact.name}</span></span>
+                                </div>
+                              )}
+
+                              {/* Source wallet info */}
+                              {split.walletId && (() => {
+                                const wallet = accounts.find(a => a.id === split.walletId);
+                                return wallet ? (
+                                  <div className="mt-2 flex items-center gap-2 bg-theme-bg/40 rounded-xl px-3 py-2">
+                                    <span className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-theme-secondary">
+                                      {renderAccountIcon(wallet.icon, 13)}
+                                    </span>
+                                    <span className="text-[11px] text-theme-secondary">{t('sourceWallet') || 'Wallet'}: <span className="text-theme-primary font-bold">{wallet.name}</span></span>
+                                  </div>
+                                ) : null;
+                              })()}
 
                               {exchangeRate > 1 && split.status !== 'settled' && (
                                 <div className="mt-3 p-3 rounded-xl bg-orange-500/5 border border-orange-500/15 flex items-start gap-2">
@@ -697,13 +887,13 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                                   <div>
                                     <p className="text-[10px] font-black text-orange-400">{t('inflationGuard')}</p>
                                     <p className="text-[10px] text-theme-secondary">
-                                      {t('originalValue')}: ${split.amountAtRateUSD.toFixed(2)} ≈ Bs {(split.amountAtRateUSD * exchangeRate).toFixed(0)}
+                                      {t('originalValue')}: ${split.amountAtRateUSD.toFixed(2)} {split.currency !== Currency.VES ? `≈ Bs ${(split.amountAtRateUSD * exchangeRate).toFixed(0)}` : ''}
                                     </p>
                                   </div>
                                 </div>
                               )}
 
-                              <div className="flex gap-2 mt-3">
+                              <div className="flex gap-2 mt-3 flex-wrap">
                                 {split.status !== 'settled' && (
                                   <button
                                     onClick={() => handleAddPayment(split)}
@@ -716,12 +906,18 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                                 )}
                                 {split.status !== 'settled' && (
                                   <button
-                                    onClick={() => markSplitSettled(split.id)}
+                                    onClick={() => openSettleModal(split)}
                                     className="flex-1 py-2 rounded-xl border border-emerald-500/30 text-emerald-400 text-xs font-black hover:bg-emerald-500/10 transition-colors"
                                   >
                                     {t('markAsSettled')}
                                   </button>
                                 )}
+                                <button
+                                  onClick={() => openEditSplit(split)}
+                                  className="px-3 py-2 rounded-xl border border-theme-brand/20 text-theme-brand text-xs font-black hover:bg-theme-brand/10 transition-colors"
+                                >
+                                  <Pencil size={12} />
+                                </button>
                                 <button
                                   onClick={() => deleteSplit(split.id)}
                                   className="px-3 py-2 rounded-xl border border-red-500/20 text-red-400 text-xs font-black hover:bg-red-500/10 transition-colors"
@@ -748,7 +944,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
 
       {/* ══════════════════ MODALS ══════════════════════════════════════════════ */}
 
-      {/* Add Contact Modal */}
+      {/* Add / Edit Contact Modal */}
       <AnimatePresence>
         {showAddContact && (
           <motion.div
@@ -761,8 +957,8 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
               className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-3xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-black text-theme-primary">{t('newContact')}</h3>
-                <button onClick={() => setShowAddContact(false)} className="w-8 h-8 rounded-full bg-theme-bg border border-white/5 flex items-center justify-center text-theme-secondary hover:text-theme-primary">
+                <h3 className="text-base font-black text-theme-primary">{editingContactId ? t('editContact') || 'Edit Contact' : t('newContact')}</h3>
+                <button onClick={() => { setEditingContactId(null); setShowAddContact(false); }} className="w-8 h-8 rounded-full bg-theme-bg border border-white/5 flex items-center justify-center text-theme-secondary hover:text-theme-primary">
                   <X size={16} />
                 </button>
               </div>
@@ -804,17 +1000,6 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('amount')} (USD)</label>
-                  <input
-                    type="number" min="0" step="0.01"
-                    value={contactForm.amount}
-                    onChange={e => setContactForm(f => ({ ...f, amount: e.target.value }))}
-                    placeholder="0.00"
-                    className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
-                  />
-                </div>
-
-                <div>
                   <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('currency')}</label>
                   <div className="flex gap-2">
                     {CURRENCIES.map(c => (
@@ -826,24 +1011,6 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                         {c}
                       </button>
                     ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('direction')}</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setContactForm(f => ({ ...f, direction: 'OWED_TO_YOU' }))}
-                      className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${contactForm.direction === 'OWED_TO_YOU' ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
-                    >
-                      <ArrowDownLeft size={14} /> {t('owedToYou')}
-                    </button>
-                    <button
-                      onClick={() => setContactForm(f => ({ ...f, direction: 'YOU_OWE' }))}
-                      className={`flex items-center justify-center gap-2 py-3 rounded-2xl border text-xs font-black transition-all ${contactForm.direction === 'YOU_OWE' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
-                    >
-                      <ArrowUpRight size={14} /> {t('youOwe')}
-                    </button>
                   </div>
                 </div>
 
@@ -929,7 +1096,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
               </div>
 
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setShowAddContact(false)} className="flex-1 py-3 rounded-2xl border border-white/10 text-sm font-black text-theme-secondary hover:bg-white/5 transition-colors">
+                <button onClick={() => { setEditingContactId(null); setShowAddContact(false); }} className="flex-1 py-3 rounded-2xl border border-white/10 text-sm font-black text-theme-secondary hover:bg-white/5 transition-colors">
                   {t('cancel')}
                 </button>
                 <button onClick={saveContact} className="flex-1 py-3 rounded-2xl bg-theme-brand text-white font-black text-sm hover:brightness-110 active:scale-[0.98] transition-all">
@@ -941,7 +1108,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Add Split Modal */}
+      {/* Add / Edit Debt Modal */}
       <AnimatePresence>
         {showAddSplit && (
           <motion.div
@@ -954,31 +1121,99 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
               className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-3xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-base font-black text-theme-primary">{t('newSplit')}</h3>
-                <button onClick={() => setShowAddSplit(false)} className="w-8 h-8 rounded-full bg-theme-bg border border-white/5 flex items-center justify-center text-theme-secondary hover:text-theme-primary">
+                <h3 className="text-base font-black text-theme-primary">{editingSplitId ? t('editDebt') || 'Edit Debt' : t('newSplit')}</h3>
+                <button onClick={() => { setEditingSplitId(null); setShowAddSplit(false); }} className="w-8 h-8 rounded-full bg-theme-bg border border-white/5 flex items-center justify-center text-theme-secondary hover:text-theme-primary">
                   <X size={16} />
                 </button>
               </div>
 
               <div className="space-y-3">
+                {/* Description */}
                 <div>
                   <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('description')}</label>
                   <input
                     autoFocus
                     value={splitForm.name}
                     onChange={e => { setSplitForm(f => ({ ...f, name: e.target.value })); setSplitFormError(''); }}
-                    placeholder="Cena, Viaje, Servicio…"
+                    placeholder="Cena, Viaje, Crédito…"
                     className="w-full bg-theme-bg border border-white/10 rounded-2xl px-4 py-3 text-sm text-theme-primary placeholder-theme-secondary/40 outline-none focus:border-theme-brand/50"
                   />
                 </div>
 
-                {/* Category picker — dropdown list */}
+                {/* Contact picker (optional) */}
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('selectContact') || 'Contact'} <span className="opacity-50 normal-case font-normal">{t('optional')}</span></label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { setShowContactPicker(s => !s); setShowCategoryDropdown(false); setShowWalletPicker(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-theme-bg border border-white/10 rounded-2xl hover:border-white/20 transition-all"
+                    >
+                      {splitForm.contactId ? (() => {
+                        const c = contacts.find(x => x.id === splitForm.contactId);
+                        return c ? (
+                          <>
+                            <span className={`w-7 h-7 rounded-full ${c.avatarColor} flex items-center justify-center text-[10px] font-black text-white flex-shrink-0`}>
+                              {(c.initials || c.name.slice(0, 2)).toUpperCase()}
+                            </span>
+                            <span className="text-sm text-theme-primary font-bold flex-1 text-left truncate">{c.name}</span>
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); setSplitForm(f => ({ ...f, contactId: '' })); }}
+                              className="text-theme-secondary hover:text-red-400 flex-shrink-0"
+                            >
+                              <X size={14} />
+                            </button>
+                          </>
+                        ) : null;
+                      })() : (
+                        <>
+                          <span className="w-7 h-7 rounded-full bg-theme-surface/50 border border-white/10 flex items-center justify-center text-theme-secondary flex-shrink-0">
+                            <UserCircle2 size={14} />
+                          </span>
+                          <span className="text-sm text-theme-secondary/50 flex-1 text-left">{t('noContactSelected') || 'No contact'}</span>
+                          <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 flex-shrink-0 ${showContactPicker ? 'rotate-180' : ''}`} />
+                        </>
+                      )}
+                    </button>
+                    <AnimatePresence>
+                      {showContactPicker && contacts.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute left-0 right-0 top-full mt-1.5 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[80] overflow-hidden"
+                        >
+                          <div className="max-h-48 overflow-y-auto no-scrollbar py-1">
+                            {contacts.map(c => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => { setSplitForm(f => ({ ...f, contactId: c.id })); setShowContactPicker(false); }}
+                                className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-black transition-colors hover:bg-white/5 ${splitForm.contactId === c.id ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
+                              >
+                                <span className={`w-6 h-6 rounded-full ${c.avatarColor} flex items-center justify-center text-[9px] font-black text-white flex-shrink-0`}>
+                                  {(c.initials || c.name.slice(0, 2)).toUpperCase()}
+                                </span>
+                                <span className="flex-1 text-left truncate">{c.name}</span>
+                                {splitForm.contactId === c.id && <Check size={12} className="ml-auto flex-shrink-0 text-theme-brand" />}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                {/* Category picker */}
                 <div>
                   <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('category')}</label>
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => setShowCategoryDropdown(s => !s)}
+                      onClick={() => { setShowCategoryDropdown(s => !s); setShowContactPicker(false); setShowWalletPicker(false); }}
                       className="w-full flex items-center gap-3 px-4 py-3 bg-theme-bg border border-white/10 rounded-2xl hover:border-white/20 transition-all"
                     >
                       {splitForm.category ? (() => {
@@ -1026,8 +1261,25 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                   </div>
                 </div>
 
+                {/* Currency */}
                 <div>
-                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('amount')} (USD)</label>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('currency')}</label>
+                  <div className="flex gap-2">
+                    {CURRENCIES.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setSplitForm(f => ({ ...f, currency: c }))}
+                        className={`flex-1 py-2 rounded-xl border text-xs font-black transition-all ${splitForm.currency === c ? 'bg-theme-brand border-theme-brand text-white' : 'border-white/10 text-theme-secondary hover:border-white/20'}`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('amount')} ({splitForm.currency})</label>
                   <input
                     type="number" min="0.01" step="0.01"
                     value={splitForm.amount}
@@ -1037,6 +1289,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                   />
                 </div>
 
+                {/* Due Date */}
                 <div>
                   <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('dueDate')} {t('optional')}</label>
                   <input
@@ -1047,6 +1300,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                   />
                 </div>
 
+                {/* Direction */}
                 <div>
                   <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">{t('direction')}</label>
                   <div className="grid grid-cols-2 gap-2">
@@ -1065,15 +1319,168 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                   </div>
                 </div>
 
+                {/* Source/Receive Wallet (optional) — auto-creates transaction */}
+                {!editingSplitId && (
+                  <div>
+                    <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-1.5 block">
+                      {splitForm.direction === 'OWED_TO_YOU' ? (t('sourceWallet') || 'Source Wallet') : (t('receiveWallet') || 'Receive Wallet')}
+                      {' '}<span className="opacity-50 normal-case font-normal">{t('optional')}</span>
+                    </label>
+                    <p className="text-[10px] text-theme-secondary/60 mb-1.5">
+                      {splitForm.direction === 'OWED_TO_YOU'
+                        ? (t('sourceWalletHint') || 'Money left your wallet → auto-creates expense')
+                        : (t('receiveWalletHint') || 'Money entered your wallet → auto-creates income')}
+                    </p>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        disabled={accounts.length === 0}
+                        onClick={() => { setShowWalletPicker(s => !s); setShowCategoryDropdown(false); setShowContactPicker(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 bg-theme-bg border rounded-2xl transition-all ${accounts.length === 0 ? 'border-white/5 opacity-40 cursor-not-allowed' : 'border-white/10 hover:border-white/20'}`}
+                      >
+                        {splitForm.walletId ? (() => {
+                          const acc = accounts.find(a => a.id === splitForm.walletId);
+                          return acc ? (
+                            <>
+                              <span className="w-7 h-7 rounded-lg bg-theme-brand/10 border border-theme-brand/20 flex items-center justify-center text-theme-brand flex-shrink-0">
+                                {renderAccountIcon(acc.icon, 14)}
+                              </span>
+                              <span className="text-sm text-theme-primary font-bold flex-1 text-left truncate">{acc.name}</span>
+                              <span className="text-[10px] text-theme-brand font-black flex-shrink-0">{acc.currency}</span>
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setSplitForm(f => ({ ...f, walletId: '' })); }}
+                                className="text-theme-secondary hover:text-red-400 flex-shrink-0 ml-1"
+                              >
+                                <X size={14} />
+                              </button>
+                            </>
+                          ) : null;
+                        })() : (
+                          <>
+                            <span className="w-7 h-7 rounded-lg bg-theme-surface/50 border border-white/10 flex items-center justify-center text-theme-secondary flex-shrink-0">
+                              <Wallet size={14} />
+                            </span>
+                            <span className="text-sm text-theme-secondary/50 flex-1 text-left">{t('selectWallet') || 'Select wallet'}</span>
+                            <ChevronDown size={14} className={`text-theme-secondary transition-transform duration-200 flex-shrink-0 ${showWalletPicker ? 'rotate-180' : ''}`} />
+                          </>
+                        )}
+                      </button>
+                      <AnimatePresence>
+                        {showWalletPicker && accounts.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute left-0 right-0 top-full mt-1.5 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl z-[80] overflow-hidden"
+                          >
+                            <div className="max-h-48 overflow-y-auto no-scrollbar py-1">
+                              {accounts.map(acc => (
+                                <button
+                                  key={acc.id}
+                                  type="button"
+                                  onClick={() => { setSplitForm(f => ({ ...f, walletId: acc.id })); setShowWalletPicker(false); }}
+                                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-black transition-colors hover:bg-white/5 ${splitForm.walletId === acc.id ? 'text-theme-brand bg-white/5' : 'text-theme-secondary'}`}
+                                >
+                                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${splitForm.walletId === acc.id ? 'bg-theme-brand/10 text-theme-brand' : 'bg-theme-surface text-theme-secondary'}`}>
+                                    {renderAccountIcon(acc.icon, 13)}
+                                  </span>
+                                  <span className="flex-1 text-left truncate">{acc.name}</span>
+                                  <span className="text-theme-secondary/40 font-normal text-[10px] flex-shrink-0">{acc.currency}</span>
+                                  {splitForm.walletId === acc.id && <Check size={12} className="ml-1 flex-shrink-0 text-theme-brand" />}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )}
+
                 {splitFormError && <p className="text-xs text-red-400 font-bold">{splitFormError}</p>}
               </div>
 
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setShowAddSplit(false)} className="flex-1 py-3 rounded-2xl border border-white/10 text-sm font-black text-theme-secondary hover:bg-white/5 transition-colors">
+                <button onClick={() => { setEditingSplitId(null); setShowAddSplit(false); }} className="flex-1 py-3 rounded-2xl border border-white/10 text-sm font-black text-theme-secondary hover:bg-white/5 transition-colors">
                   {t('cancel')}
                 </button>
                 <button onClick={saveSplit} className="flex-1 py-3 rounded-2xl bg-theme-brand text-white font-black text-sm hover:brightness-110 active:scale-[0.98] transition-all">
                   {t('save')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settlement Modal */}
+      <AnimatePresence>
+        {settlingSplit && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[70] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-3xl p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-base font-black text-theme-primary">{t('markAsSettled')}</h3>
+                <button onClick={() => setSettlingSplit(null)} className="w-8 h-8 rounded-full bg-theme-bg border border-white/5 flex items-center justify-center text-theme-secondary hover:text-theme-primary">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="bg-theme-bg/50 rounded-2xl p-4 mb-4">
+                <p className="text-sm font-black text-theme-primary">{settlingSplit.name}</p>
+                <p className={`text-xl font-black mt-1 ${settlingSplit.direction === 'OWED_TO_YOU' ? 'text-emerald-400' : 'text-red-400'}`}>
+                  ${settlingSplit.remaining.toFixed(2)} {settlingSplit.currency || 'USD'}
+                </p>
+                <p className="text-[11px] text-theme-secondary mt-0.5">
+                  {settlingSplit.direction === 'OWED_TO_YOU'
+                    ? (t('settleOwedToYouDesc') || 'Receiving payment → adds to wallet')
+                    : (t('settleYouOweDesc') || 'Paying debt → deducts from wallet')}
+                </p>
+              </div>
+
+              <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-2 block">
+                {settlingSplit.direction === 'OWED_TO_YOU' ? (t('receiveWallet') || 'Receive Wallet') : (t('sourceWallet') || 'Source Wallet')}
+                {' '}<span className="opacity-50 normal-case font-normal">{t('optional')}</span>
+              </label>
+
+              <div className="flex flex-col gap-1.5 mb-5">
+                <button
+                  onClick={() => setSettleWalletId('')}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl border text-sm transition-all ${settleWalletId === '' ? 'bg-theme-surface border-white/20 text-theme-primary' : 'border-white/5 text-theme-secondary hover:border-white/10'}`}
+                >
+                  <X size={14} className="text-theme-secondary" />
+                  <span className="font-bold text-xs">{t('noLinkedWallet') || 'Skip — just mark settled'}</span>
+                </button>
+                {accounts.map(acc => (
+                  <button
+                    key={acc.id}
+                    onClick={() => setSettleWalletId(acc.id)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-2xl border text-xs font-black transition-all ${settleWalletId === acc.id ? 'bg-theme-brand/10 border-theme-brand/40 text-theme-brand' : 'border-white/5 text-theme-secondary hover:border-white/10 hover:bg-white/5'}`}
+                  >
+                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${settleWalletId === acc.id ? 'bg-theme-brand/20 text-theme-brand' : 'bg-theme-surface text-theme-secondary'}`}>
+                      {renderAccountIcon(acc.icon, 14)}
+                    </span>
+                    <span className="flex-1 text-left truncate">{acc.name}</span>
+                    <span className="text-[10px] font-normal opacity-60 flex-shrink-0">{acc.currency}</span>
+                    {settleWalletId === acc.id && <Check size={12} className="flex-shrink-0" />}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setSettlingSplit(null)} className="flex-1 py-3 rounded-2xl border border-white/10 text-sm font-black text-theme-secondary hover:bg-white/5 transition-colors">
+                  {t('cancel')}
+                </button>
+                <button onClick={confirmSettle} className="flex-1 py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                  <Check size={16} /> {t('markAsSettled')}
                 </button>
               </div>
             </motion.div>

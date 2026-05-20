@@ -530,7 +530,9 @@ function AppContent() {
                 const alertKey = `parity_debt_overdue_${debt.id}_${todayStr}`;
                 if (!localStorage.getItem(alertKey)) {
                     const title = t('debtOverdueTitle') === 'debtOverdueTitle' ? 'Overdue Debt' : t('debtOverdueTitle');
-                    const body = `${debt.counterpartyName} — $${debt.amount.toFixed(2)} ${debt.currency}`;
+                    const personName = debt.counterpartyName || (debt as any).name || '—';
+                    const currency = debt.currency || 'USD';
+                    const body = `${personName} — $${debt.amount.toFixed(2)} ${currency}`;
                     sendPushNotification(title as string, body, `debt-overdue-${debt.id}-${todayStr}`);
                     localStorage.setItem(alertKey, 'true');
                 }
@@ -1695,6 +1697,9 @@ function AppContent() {
               onAddPaymentTransaction={(prefilled) => {
                 setEditingTransaction(prefilled as Transaction);
                 setShowAdd(true);
+              }}
+              onCreateDirectTransaction={(tx) => {
+                setTransactions(prev => [{ ...tx, id: tx.id || Date.now().toString(), profileId: activeProfileId } as Transaction, ...prev]);
               }}
               initialTab={currentView === 'DEBT_TRACKER' ? 'DEBTS' : 'CONTACTS'}
             />

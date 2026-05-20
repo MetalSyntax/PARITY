@@ -26,8 +26,11 @@ body {
   overscroll-behavior-y: none; /* Prevent pull-to-refresh globally */
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  height: 100%;
+  height: 100vh;
+  height: 100svh;
   overflow: hidden; /* Prevent body scroll, handle scroll in children */
+  width: 100vw;
+  position: fixed;
 }
 
 /* Custom Utilities for usage with variables */

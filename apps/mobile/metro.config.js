@@ -27,12 +27,10 @@ config.resolver.extraNodeModules = {
 };
 
 // Expo SDK 54 sets unstable_serverRoot to the pnpm workspace root via resolveWorkspaceRoot().
-// Metro then resolves the JS entry file (getJSMainModuleName = "index") relative to serverRoot,
-// not projectRoot — so it looks for ./index at the monorepo root instead of apps/mobile/.
-// Override serverRoot back to projectRoot so entry resolution stays correct.
+// This allows Metro to resolve all files in the monorepo, including pnpm's shared node_modules/.pnpm.
 config.server = {
   ...config.server,
-  unstable_serverRoot: projectRoot,
+  unstable_serverRoot: monorepoRoot,
 };
 
 // pnpm symlinks pretty-format@30 into .pnpm/node_modules/ which Metro finds first,
@@ -43,6 +41,20 @@ const PRETTY_FORMAT_PATH = path.resolve(
   'node_modules/.pnpm/pretty-format@29.7.0/node_modules/pretty-format/build/index.js'
 );
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // If Metro is looking for the main 'index' entry point and it's not found at the server root,
+  // redirect it to the project's index.js. This is necessary because unstable_serverRoot
+  // is set to the monorepo root.
+  if ((moduleName === 'index' || moduleName === './index') && context.originModulePath === undefined) {
+    try {
+      return context.resolveRequest(context, moduleName, platform);
+    } catch (e) {
+      return {
+        filePath: path.resolve(projectRoot, 'index.js'),
+        type: 'sourceFile',
+      };
+    }
+  }
+
   if (moduleName === 'pretty-format') {
     return { filePath: PRETTY_FORMAT_PATH, type: 'sourceFile' };
   }

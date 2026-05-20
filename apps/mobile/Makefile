@@ -13,6 +13,10 @@ build-web:
 	rm -rf $(ANDROID_ASSETS)
 	mkdir -p $(ANDROID_ASSETS)
 	cp -R $(WEB_DIR)/dist/. $(ANDROID_ASSETS)/
+	@if [ -f $(WEB_DIR)/.env ]; then \
+		echo "==> Copying .env to Android assets..."; \
+		cp $(WEB_DIR)/.env $(ANDROID_ASSETS)/.env; \
+	fi
 	@echo "==> Done. Web assets at $(ANDROID_ASSETS)"
 
 # Full native Android build (build web first, then compile & launch)
