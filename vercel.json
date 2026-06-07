@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm --filter @parity/web run build",
   "outputDirectory": "apps/web/dist",
-  "installCommand": "pnpm install --filter @parity/web...",
+  "installCommand": "npm install -g pnpm@9 && pnpm install --filter @parity/web...",
   "framework": null
 }
