@@ -6,6 +6,12 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
 const GOOGLE_TOKEN_KEY = 'google_drive_token_v1';
 
+// When running inside the React Native wrapper, window.ReactNativeWebView is injected
+// automatically by react-native-webview. We use it to detect the native context and
+// route OAuth through the system browser bridge (avoids Google's disallowed_useragent block).
+const IS_NATIVE_WRAPPER =
+  typeof window !== 'undefined' && !!(window as any).ReactNativeWebView;
+
 interface UseGoogleDriveSyncProps<T> {
   fileName: string;
   localData: T;
@@ -30,93 +36,116 @@ export const useGoogleDriveSync = <T extends object>({
   const [tokenClient, setTokenClient] = useState<any>(null);
   const [gapiInited, setGapiInited] = useState(false);
 
-  // Robust improvement: Use ref for localData to avoid re-creating syncNow on every data change
   const localDataRef = useRef(localData);
   useEffect(() => {
     localDataRef.current = localData;
   }, [localData]);
 
-  // Check for existing token on mount
+  // Restore a valid cached token on mount (works for both web and native wrapper)
   useEffect(() => {
     const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
     if (savedTokenData) {
       try {
         const { token, expiresAt } = JSON.parse(savedTokenData);
         if (Date.now() < expiresAt) {
-          // Token is still valid
           setIsAuthenticated(true);
         } else {
           localStorage.removeItem(GOOGLE_TOKEN_KEY);
         }
-      } catch (e) {
+      } catch {
         localStorage.removeItem(GOOGLE_TOKEN_KEY);
       }
     }
   }, []);
 
+  // ── Native wrapper: listen for GOOGLE_OAUTH_TOKEN injected by the React Native shell ──
+  // The shell handles OAuth via expo-web-browser (system browser) and injects the
+  // resulting access token here, bypassing Google's WebView disallowed_useragent block.
   useEffect(() => {
-    const loadGoogleScripts = () => {
-      const script1 = document.createElement('script');
-      script1.src = 'https://apis.google.com/js/api.js';
-      script1.onload = () => {
-        (window as any).gapi.load('client', async () => {
-          await (window as any).gapi.client.init({
-            discoveryDocs: DISCOVERY_DOCS,
-          });
-          
-          // If we have a stored token, apply it to gapi
-          const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
-          if (savedTokenData) {
-            const { token, expiresAt } = JSON.parse(savedTokenData);
-            if (Date.now() < expiresAt) {
-              (window as any).gapi.client.setToken({ access_token: token });
-              setIsAuthenticated(true);
-            }
-          }
-          
-          setGapiInited(true);
-        });
-      };
-      document.body.appendChild(script1);
+    if (!IS_NATIVE_WRAPPER) return;
 
-      const script2 = document.createElement('script');
-      script2.src = 'https://accounts.google.com/gsi/client';
-      script2.onload = () => {
-        const client = (window as any).google.accounts.oauth2.initTokenClient({
-          client_id: googleClientId,
-          scope: SCOPES,
-          callback: async (response: any) => {
-            if (response.error !== undefined) {
-              throw (response);
-            }
-            
-            // Save token to localStorage
-            const expiresAt = Date.now() + (response.expires_in * 1000);
-            localStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({
-              token: response.access_token,
-              expiresAt
-            }));
-            
-            setIsAuthenticated(true);
-          },
-        });
-        setTokenClient(client);
-      };
-      document.body.appendChild(script2);
+    const handleNativeMessage = (event: MessageEvent) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+
+        if (data?.type === 'GOOGLE_OAUTH_TOKEN' && data.accessToken) {
+          const expiresAt = Date.now() + (data.expiresIn ?? 3600) * 1000;
+          localStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({ token: data.accessToken, expiresAt }));
+          if ((window as any).gapi?.client) {
+            (window as any).gapi.client.setToken({ access_token: data.accessToken });
+          }
+          setIsAuthenticated(true);
+        }
+
+        if (data?.type === 'GOOGLE_OAUTH_ERROR') {
+          if (onLoginError) onLoginError('Error de autenticación con Google: ' + (data.error ?? 'unknown'));
+        }
+      } catch {
+        // ignore non-JSON messages from other sources
+      }
     };
 
-    loadGoogleScripts();
+    window.addEventListener('message', handleNativeMessage);
+    return () => window.removeEventListener('message', handleNativeMessage);
+  }, [onLoginError]);
+
+  // ── Web: load gapi + GIS scripts (skipped in native wrapper — not needed) ──
+  useEffect(() => {
+    if (IS_NATIVE_WRAPPER) return;
+
+    const script1 = document.createElement('script');
+    script1.src = 'https://apis.google.com/js/api.js';
+    script1.onload = () => {
+      (window as any).gapi.load('client', async () => {
+        await (window as any).gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
+
+        const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
+        if (savedTokenData) {
+          const { token, expiresAt } = JSON.parse(savedTokenData);
+          if (Date.now() < expiresAt) {
+            (window as any).gapi.client.setToken({ access_token: token });
+            setIsAuthenticated(true);
+          }
+        }
+
+        setGapiInited(true);
+      });
+    };
+    document.body.appendChild(script1);
+
+    const script2 = document.createElement('script');
+    script2.src = 'https://accounts.google.com/gsi/client';
+    script2.onload = () => {
+      const client = (window as any).google.accounts.oauth2.initTokenClient({
+        client_id: googleClientId,
+        scope: SCOPES,
+        callback: async (response: any) => {
+          if (response.error !== undefined) throw response;
+          const expiresAt = Date.now() + response.expires_in * 1000;
+          localStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({ token: response.access_token, expiresAt }));
+          setIsAuthenticated(true);
+        },
+      });
+      setTokenClient(client);
+    };
+    document.body.appendChild(script2);
   }, [googleClientId]);
 
   const handleLogin = useCallback(() => {
+    if (IS_NATIVE_WRAPPER) {
+      // Ask the native shell to open Google OAuth in the system browser
+      (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'GOOGLE_OAUTH_REQUEST' }));
+      return;
+    }
+
     if (tokenClient) {
       try {
         tokenClient.requestAccessToken({ prompt: '' });
       } catch (err) {
-        if (onLoginError) onLoginError("Error al intentar abrir la ventana de Google: " + err);
+        if (onLoginError) onLoginError('Error al intentar abrir la ventana de Google: ' + err);
       }
     } else {
-      if (onLoginError) onLoginError("El cliente de Google no se ha cargado. Verifica si tu navegador está bloqueando scripts de Google.");
+      if (onLoginError) onLoginError('El cliente de Google no se ha cargado. Verifica si tu navegador está bloqueando scripts de Google.');
     }
   }, [tokenClient, onLoginError]);
 

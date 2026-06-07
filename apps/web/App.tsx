@@ -56,7 +56,11 @@ setWebCryptoSecrets(
 
 const queryClient = new QueryClient();
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+// In the native wrapper, __PARITY_MOBILE_CONFIG__ is injected before this module runs.
+// Falls back to the Vite env var for web/Vercel deployments.
+const GOOGLE_CLIENT_ID =
+  (window as any).__PARITY_MOBILE_CONFIG__?.googleClientId ||
+  import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const STORAGE_KEY = 'parity_data_v3';
 
