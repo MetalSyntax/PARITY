@@ -30,3 +30,8 @@ execSync('npm install --include=dev --legacy-peer-deps --no-package-lock', {
   cwd: webDir,
   stdio: 'inherit',
 });
+
+const rootNodeModules = path.join(__dirname, 'node_modules');
+if (!fs.existsSync(rootNodeModules)) {
+  fs.symlinkSync(path.join(webDir, 'node_modules'), rootNodeModules, 'junction');
+}
