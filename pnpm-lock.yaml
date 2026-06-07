@@ -7954,10 +7954,6 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@expo/code-signing-certificates@0.0.6':
-    dependencies:
-      node-forge: 1.4.0
-
   '@expo/config-plugins@54.0.4':
     dependencies:
       '@expo/config-types': 54.0.10
