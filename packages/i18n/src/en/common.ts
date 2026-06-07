@@ -172,4 +172,9 @@ export const common = {
     btn_tutorials: 'Tutorials',
     filter: 'Filter',
     clearFilters: 'Clear filters',
+    legalNotices: 'Legal',
+    termsAndConditions: 'Terms & Conditions',
+    termsSubtitle: 'Usage terms, liability limits & disclaimers',
+    privacyPolicy: 'Privacy Policy',
+    privacySubtitle: 'How your data is stored and protected',
 };

@@ -185,4 +185,9 @@ export const common = {
   btn_tutorials: 'Tutoriales',
   filter: 'Filtrar',
   clearFilters: 'Limpiar filtros',
+  legalNotices: 'Legal',
+  termsAndConditions: 'Términos y Condiciones',
+  termsSubtitle: 'Términos de uso, limitaciones de responsabilidad y avisos',
+  privacyPolicy: 'Política de Privacidad',
+  privacySubtitle: 'Cómo se almacenan y protegen tus datos',
 };

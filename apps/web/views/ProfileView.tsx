@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Globe, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, HardDrive, Info, Settings2, Bell, Trash2, Plus, Users } from 'lucide-react';
+import { ArrowLeft, User, Globe, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, HardDrive, Info, Settings2, Bell, Trash2, Plus, Users, FileText, Scale } from 'lucide-react';
+import { TermsModal } from '../components/legal/TermsModal';
+import { PrivacyModal } from '../components/legal/PrivacyModal';
 import { UserProfile, Language, Transaction, Account } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 import { StorageType } from '@parity/core';
@@ -69,6 +71,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const t = (key: any) => getTranslation(lang, key);
 
   const containerVariants = {
@@ -507,12 +511,50 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )}
         </AnimatePresence>
 
+        {/* Legal notices — always visible */}
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-6 pt-5 pb-3 flex items-center gap-2">
+            <Scale className="w-3.5 h-3.5 text-theme-secondary opacity-50" />
+            <span className="text-[10px] font-black text-theme-secondary uppercase tracking-widest opacity-50">{t('legalNotices')}</span>
+          </div>
+          <button
+            onClick={() => setShowTerms(true)}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 active:bg-white/5 transition-colors border-t border-theme-soft/50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-theme-brand/10 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-3.5 h-3.5 text-theme-brand" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold text-theme-primary">{t('termsAndConditions')}</p>
+                <p className="text-[10px] text-theme-secondary opacity-50 mt-0.5">{t('termsSubtitle')}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-theme-secondary opacity-30 flex-shrink-0" />
+          </button>
+          <button
+            onClick={() => setShowPrivacy(true)}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 active:bg-white/5 transition-colors border-t border-theme-soft/50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold text-theme-primary">{t('privacyPolicy')}</p>
+                <p className="text-[10px] text-theme-secondary opacity-50 mt-0.5">{t('privacySubtitle')}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-theme-secondary opacity-30 flex-shrink-0" />
+          </button>
+        </motion.div>
+
         <motion.div variants={itemVariants} className="text-center py-8 opacity-40">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="w-1.5 h-1.5 rounded-full bg-theme-brand animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-primary">Parity Intelligence</span>
           </div>
-          <p 
+          <p
             onClick={onDevModeTrigger}
             className="text-[10px] font-mono cursor-pointer hover:text-theme-brand transition-colors select-none"
           >
@@ -572,6 +614,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
            </motion.div>
         </div>
       )}
+
+      {/* Terms & Conditions Modal */}
+      <AnimatePresence>
+        {showTerms && (
+          <TermsModal language={lang} onClose={() => setShowTerms(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Privacy Policy Modal */}
+      <AnimatePresence>
+        {showPrivacy && (
+          <PrivacyModal language={lang} onClose={() => setShowPrivacy(false)} />
+        )}
+      </AnimatePresence>
 
       {cloudBackups !== null && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
