@@ -1783,71 +1783,65 @@ function AppContent() {
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
         {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF', 'SHOPPING_LIST', 'CONTACTS', 'DEBT_TRACKER', 'EXPORT', 'FIN_CALENDAR', 'IMPORT', 'PDF_REPORT', 'SCENARIO_PLANNER'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
           <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-4 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
-            {/* Dynamic favorites - First half (2 items) */}
-            {navbarFavorites.slice(0, 2).map(view => (
-               <button
+            {(() => {
+              const NAV_ICON_MAP: Record<string, React.ReactNode> = {
+                DASHBOARD: <Home size={24} />,
+                WALLET: <Wallet size={24} />,
+                ANALYSIS: <ChartArea size={24} />,
+                PROFILE: <User size={24} />,
+                BUDGET: <PieChart size={24} />,
+                SCHEDULED: <Calendar1 size={24} />,
+                TRANSACTIONS: <Receipt size={24} />,
+                HEATMAP: <CalendarRange size={24} />,
+                CURRENCY_PERF: <ChartCandlestick size={24} />,
+                SHOPPING_LIST: <ShoppingCart size={24} />,
+                GOALS: <Target size={24} />,
+                FISCAL_REPORT: <FileText size={24} />,
+                INCOME: <TrendingUp size={24} />,
+                CONTACTS: <Users size={24} />,
+                DEBT_TRACKER: <Scale size={24} />,
+                FIN_CALENDAR: <CalendarDays size={24} />,
+                SCENARIO_PLANNER: <FlaskConical size={24} />,
+                ACADEMY: <GraduationCap size={24} />,
+              };
+              const validFavs = navbarFavorites.filter(v => v in NAV_ICON_MAP);
+              const leftItems = validFavs.slice(0, 2);
+              const rightItems = validFavs.slice(2, 4);
+              const renderBtn = (view: string) => (
+                <button
                   key={view}
-                  onClick={() => setCurrentView(view)}
+                  onClick={() => setCurrentView(view as ViewState)}
                   className={`p-3 transition-colors ${currentView === view ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
                 >
-                  {view === 'DASHBOARD' && <Home size={24} />}
-                  {view === 'WALLET' && <Wallet size={24} />}
-                  {view === 'ANALYSIS' && <ChartArea size={24} />}
-                  {view === 'PROFILE' && <User size={24} />}
-                  {view === 'BUDGET' && <PieChart size={24} />}
-                  {view === 'SCHEDULED' && <Calendar1 size={24} />}
-                  {view === 'TRANSACTIONS' && <Receipt size={24} />}
-                  {view === 'HEATMAP' && <CalendarRange size={24} />}
-                  {view === 'CURRENCY_PERF' && <ChartCandlestick size={24} />}
-                  {view === 'SHOPPING_LIST' && <ShoppingCart size={24} />}
-                  {view === 'GOALS' && <Target size={24} />}
-                  {view === 'FISCAL_REPORT' && <FileText size={24} />}
-                  {view === 'INCOME' && <TrendingUp size={24} />}
+                  {NAV_ICON_MAP[view]}
                 </button>
-            ))}
-
-            {/* FAB container */}
-            <div className="relative -top-6">
-              <button
-                data-tutorial="fab-add"
-                onClick={() => {
-                  if (accounts.length === 0) {
-                    showAlert('alert_walletFirst', 'error');
-                    setCurrentView('WALLET');
-                    return;
-                  }
-                  setEditingTransaction(null);
-                  setShowAdd(true);
-                }}
-                className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform border-4 border-theme-bg ${accounts.length === 0 ? 'bg-zinc-600 shadow-zinc-900/50 grayscale' : 'bg-theme-brand shadow-brand/50'}`}
-                aria-label="Nueva transacción"
-              >
-                <Plus size={32} />
-              </button>
-            </div>
-
-            {/* Dynamic favorites - Second half (2 items) */}
-            {navbarFavorites.slice(2, 4).map(view => (
-               <button
-                  key={view}
-                  onClick={() => setCurrentView(view)}
-                  className={`p-3 transition-colors ${currentView === view ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
-                >
-                  {view === 'DASHBOARD' && <Home size={24} />}
-                  {view === 'WALLET' && <Wallet size={24} />}
-                  {view === 'ANALYSIS' && <ChartArea size={24} />}
-                  {view === 'PROFILE' && <User size={24} />}
-                  {view === 'BUDGET' && <PieChart size={24} />}
-                  {view === 'SCHEDULED' && <Calendar1 size={24} />}
-                  {view === 'TRANSACTIONS' && <Receipt size={24} />}
-                  {view === 'HEATMAP' && <CalendarRange size={24} />}
-                  {view === 'CURRENCY_PERF' && <ChartCandlestick size={24} />}
-                  {view === 'SHOPPING_LIST' && <ShoppingCart size={24} />}
-                  {view === 'GOALS' && <Target size={24} />}
-                  {view === 'FISCAL_REPORT' && <FileText size={24} />}
-                  {view === 'INCOME' && <TrendingUp size={24} />}
-                </button>
-            ))}
+              );
+              return (
+                <>
+                  {leftItems.map(renderBtn)}
+                  {/* FAB container */}
+                  <div className="relative -top-6">
+                    <button
+                      data-tutorial="fab-add"
+                      onClick={() => {
+                        if (accounts.length === 0) {
+                          showAlert('alert_walletFirst', 'error');
+                          setCurrentView('WALLET');
+                          return;
+                        }
+                        setEditingTransaction(null);
+                        setShowAdd(true);
+                      }}
+                      className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform border-4 border-theme-bg ${accounts.length === 0 ? 'bg-zinc-600 shadow-zinc-900/50 grayscale' : 'bg-theme-brand shadow-brand/50'}`}
+                      aria-label="Nueva transacción"
+                    >
+                      <Plus size={32} />
+                    </button>
+                  </div>
+                  {rightItems.map(renderBtn)}
+                </>
+              );
+            })()}
           </div>
         )}
 
