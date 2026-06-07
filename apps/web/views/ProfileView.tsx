@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Globe, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, HardDrive, Info, Settings2, Bell, Trash2, Plus, Users, FileText, Scale } from 'lucide-react';
+import { ArrowLeft, User, Globe, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, HardDrive, Info, Settings2, Bell, Trash2, Plus, Users, FileText, Scale, Home, Wallet, PieChart, Receipt, ChartArea, ChartCandlestick, CalendarRange, Calendar1, ShoppingCart, Trophy, TrendingUp, CalendarDays, LineChart, GraduationCap, Pin } from 'lucide-react';
 import { TermsModal } from '../components/legal/TermsModal';
 import { PrivacyModal } from '../components/legal/PrivacyModal';
 import { UserProfile, Language, Transaction, Account } from '@parity/core';
@@ -272,15 +272,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <Globe size={12} className="text-theme-brand" /> {t('language')}
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {['en', 'es', 'pt'].map((l) => (
+              {[
+                { code: 'en', flag: '🇺🇸', label: 'English' },
+                { code: 'es', flag: '🇻🇪', label: 'Español' },
+                { code: 'pt', flag: '🇧🇷', label: 'Português' },
+              ].map((l) => (
                 <motion.button
-                  key={l}
+                  key={l.code}
                   whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setLang(l as Language)}
-                  className={`p-3 rounded-2xl border font-bold capitalize transition-all ${lang === l ? 'bg-theme-brand border-theme-soft text-white shadow-lg shadow-theme-brand/10' : 'bg-theme-bg border-theme-soft text-theme-secondary'}`}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setLang(l.code as Language)}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-2xl border font-bold transition-all
+                    ${lang === l.code
+                      ? 'bg-theme-brand border-theme-brand/50 text-white shadow-lg shadow-theme-brand/20 ring-1 ring-theme-brand/30'
+                      : 'bg-theme-bg border-theme-soft text-theme-secondary hover:border-theme-brand/30'}`}
                 >
-                  {l === 'en' ? 'EN' : l === 'es' ? 'ES' : 'PT'}
+                  <span className="text-2xl leading-none">{l.flag}</span>
+                  <span className="text-[10px] font-black uppercase tracking-wide leading-none">{l.label}</span>
                 </motion.button>
               ))}
             </div>
@@ -288,55 +296,82 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </motion.div>
 
         {/* Customization Card */}
-        <motion.div 
-            variants={itemVariants} 
-            className="bg-theme-surface border border-theme-soft rounded-2xl p-6 shadow-sm"
+        <motion.div
+          variants={itemVariants}
+          className="bg-theme-surface border border-theme-soft rounded-2xl p-6 shadow-sm"
         >
-          <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-4 block flex items-center gap-2 opacity-60 px-1">
-            <Layout size={12} className="text-theme-brand" /> {t('navbarFavorites')}
-            <span className="ml-auto text-theme-brand font-black">{navbarFavorites.filter(f => f !== 'DASHBOARD').length}/4</span>
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { id: 'DASHBOARD', name: t('dashboard') },
-              { id: 'PROFILE', name: t('profile') },
-              { id: 'WALLET', name: t('wallet') },
-              { id: 'ANALYSIS', name: t('analysis') },
-              { id: 'GOALS', name: t('goals') },
-              { id: 'INCOME', name: t('incomeView') },
-              { id: 'BUDGET', name: t('envelopes') },
-              { id: 'SCHEDULED', name: t('scheduled') },
-              { id: 'TRANSACTIONS', name: t('transactions') },
-              { id: 'HEATMAP', name: t('heatmap') },
-              { id: 'CURRENCY_PERF', name: t('currencyPerformance') },
-              { id: 'FISCAL_REPORT', name: t('fiscalReport') },
-              { id: 'SHOPPING_LIST', name: t('shoppingList') },
-              { id: 'CONTACTS', name: t('people') || 'People' },
-              { id: 'DEBT_TRACKER', name: t('debts') || 'Debts' },
-              { id: 'FIN_CALENDAR', name: t('financialCalendar') || 'Calendar' },
-              { id: 'SCENARIO_PLANNER', name: t('scenarioPlanner') || 'Scenarios' },
-              { id: 'ACADEMY', name: t('academy') || 'Academy' }
-            ].map((view) => (
-              <motion.button
-                key={view.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (view.id === 'DASHBOARD') return; // Fixed — always in navbar
-                  if (navbarFavorites.includes(view.id)) {
-                    onUpdateNavbarFavorites(navbarFavorites.filter(f => f !== view.id));
-                  } else if (navbarFavorites.filter(f => f !== 'DASHBOARD').length < 4) {
-                    onUpdateNavbarFavorites([...navbarFavorites, view.id]);
-                  }
-                }}
-                className={`p-3 rounded-2xl border text-[11px] font-bold transition-all flex items-center justify-between ${navbarFavorites.includes(view.id) ? 'bg-theme-brand/10 border-theme-soft text-theme-brand shadow-inner' : 'bg-theme-bg border-theme-soft text-theme-secondary opacity-70'} ${view.id === 'DASHBOARD' ? 'border-theme-brand/30' : ''}`}
-              >
-                {view.name}
-                {navbarFavorites.includes(view.id) && <CheckCircle2 size={12} />}
-              </motion.button>
-            ))}
+          <div className="flex items-center gap-2 mb-5">
+            <Layout size={14} className="text-theme-brand" />
+            <span className="text-[10px] font-black text-theme-secondary uppercase tracking-widest opacity-60">{t('navbarFavorites')}</span>
+            <div className="ml-auto flex items-center gap-1.5 bg-theme-brand/10 border border-theme-brand/20 rounded-full px-3 py-1">
+              <span className="text-[11px] font-black text-theme-brand">{navbarFavorites.filter(f => f !== 'DASHBOARD').length}</span>
+              <span className="text-[10px] text-theme-brand/60 font-bold">/4</span>
+            </div>
           </div>
-          <p className="text-[10px] text-theme-secondary mt-4 opacity-50 flex items-center gap-1">
+
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { id: 'DASHBOARD', name: t('dashboard'), Icon: Home, color: 'bg-theme-brand/10 text-theme-brand', fixed: true },
+              { id: 'WALLET', name: t('wallet'), Icon: Wallet, color: 'bg-indigo-500/10 text-indigo-400' },
+              { id: 'TRANSACTIONS', name: t('transactions'), Icon: Receipt, color: 'bg-emerald-500/10 text-emerald-400' },
+              { id: 'ANALYSIS', name: t('analysis'), Icon: ChartArea, color: 'bg-purple-500/10 text-purple-400' },
+              { id: 'BUDGET', name: t('envelopes'), Icon: PieChart, color: 'bg-blue-500/10 text-blue-400' },
+              { id: 'GOALS', name: t('goals'), Icon: Trophy, color: 'bg-yellow-500/10 text-yellow-500' },
+              { id: 'INCOME', name: t('incomeView'), Icon: TrendingUp, color: 'bg-blue-500/10 text-blue-400' },
+              { id: 'SCHEDULED', name: t('scheduled'), Icon: Calendar1, color: 'bg-orange-500/10 text-orange-400' },
+              { id: 'FISCAL_REPORT', name: t('fiscalReport'), Icon: FileText, color: 'bg-indigo-500/10 text-indigo-400' },
+              { id: 'HEATMAP', name: t('heatmap'), Icon: CalendarRange, color: 'bg-red-500/10 text-red-400' },
+              { id: 'CURRENCY_PERF', name: t('currencyPerformance'), Icon: ChartCandlestick, color: 'bg-teal-500/10 text-teal-400' },
+              { id: 'SHOPPING_LIST', name: t('shoppingList'), Icon: ShoppingCart, color: 'bg-amber-500/10 text-amber-500' },
+              { id: 'CONTACTS', name: t('people') || 'People', Icon: Users, color: 'bg-sky-500/10 text-sky-400' },
+              { id: 'DEBT_TRACKER', name: t('debts') || 'Debts', Icon: Scale, color: 'bg-rose-500/10 text-rose-400' },
+              { id: 'FIN_CALENDAR', name: t('financialCalendar') || 'Calendar', Icon: CalendarDays, color: 'bg-violet-500/10 text-violet-400' },
+              { id: 'SCENARIO_PLANNER', name: t('scenarioPlanner') || 'Scenarios', Icon: LineChart, color: 'bg-orange-500/10 text-orange-400' },
+              { id: 'ACADEMY', name: t('academy') || 'Academy', Icon: GraduationCap, color: 'bg-violet-500/10 text-violet-400' },
+              { id: 'PROFILE', name: t('profile'), Icon: User, color: 'bg-zinc-500/10 text-zinc-400' },
+            ] as { id: string; name: string; Icon: React.ElementType; color: string; fixed?: boolean }[]).map((view) => {
+              const isActive = navbarFavorites.includes(view.id);
+              const isFull = !isActive && navbarFavorites.filter(f => f !== 'DASHBOARD').length >= 4;
+              return (
+                <motion.button
+                  key={view.id}
+                  whileHover={!view.fixed ? { scale: 1.04 } : {}}
+                  whileTap={!view.fixed ? { scale: 0.94 } : {}}
+                  onClick={() => {
+                    if (view.fixed) return;
+                    if (isActive) {
+                      onUpdateNavbarFavorites(navbarFavorites.filter(f => f !== view.id));
+                    } else if (!isFull) {
+                      onUpdateNavbarFavorites([...navbarFavorites, view.id]);
+                    }
+                  }}
+                  className={`relative flex flex-col items-center gap-2 p-3 pt-3.5 rounded-2xl border transition-all text-center
+                    ${isActive
+                      ? 'bg-theme-surface border-theme-soft shadow-sm'
+                      : isFull
+                        ? 'bg-theme-bg border-theme-soft opacity-30 cursor-not-allowed'
+                        : 'bg-theme-bg border-theme-soft opacity-60 hover:opacity-90 hover:border-theme-brand/20'}
+                    ${view.fixed ? 'cursor-default' : ''}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${view.color} ${isActive ? 'opacity-100' : 'opacity-70'}`}
+                    style={{ borderColor: 'transparent' }}>
+                    <view.Icon size={20} />
+                  </div>
+                  <span className={`text-[9px] font-black leading-tight line-clamp-1 w-full text-center ${isActive ? 'text-theme-primary' : 'text-theme-secondary'}`}>
+                    {view.name}
+                  </span>
+                  {isActive && !view.fixed && (
+                    <CheckCircle2 size={12} className="absolute top-2 right-2 text-theme-brand" />
+                  )}
+                  {view.fixed && (
+                    <Pin size={9} className="absolute top-2 right-2 text-theme-brand opacity-50" />
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          <p className="text-[10px] text-theme-secondary mt-4 opacity-40 flex items-center gap-1">
             <Info size={10} /> {t('navbarFavoritesDesc')}
           </p>
         </motion.div>
