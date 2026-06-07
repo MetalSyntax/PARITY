@@ -294,7 +294,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         >
           <label className="text-[10px] font-black text-theme-secondary uppercase tracking-widest mb-4 block flex items-center gap-2 opacity-60 px-1">
             <Layout size={12} className="text-theme-brand" /> {t('navbarFavorites')}
-            <span className="ml-auto text-theme-brand font-black">{navbarFavorites.length}/4</span>
+            <span className="ml-auto text-theme-brand font-black">{navbarFavorites.filter(f => f !== 'DASHBOARD').length}/4</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             {[
@@ -322,10 +322,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
-                  if (view.id === 'DASHBOARD') return; // Fixed
+                  if (view.id === 'DASHBOARD') return; // Fixed — always in navbar
                   if (navbarFavorites.includes(view.id)) {
                     onUpdateNavbarFavorites(navbarFavorites.filter(f => f !== view.id));
-                  } else if (navbarFavorites.length < 4) {
+                  } else if (navbarFavorites.filter(f => f !== 'DASHBOARD').length < 4) {
                     onUpdateNavbarFavorites([...navbarFavorites, view.id]);
                   }
                 }}
@@ -519,7 +519,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
           <button
             onClick={() => setShowTerms(true)}
-            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 active:bg-white/5 transition-colors border-t border-theme-soft/50"
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 active:bg-white/5 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-theme-brand/10 flex items-center justify-center flex-shrink-0">
@@ -534,7 +534,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
           <button
             onClick={() => setShowPrivacy(true)}
-            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 active:bg-white/5 transition-colors border-t border-theme-soft/50"
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 active:bg-white/5 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">

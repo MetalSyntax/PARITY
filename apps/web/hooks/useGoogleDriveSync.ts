@@ -92,6 +92,7 @@ export const useGoogleDriveSync = <T extends object>({
   // ── Web: load gapi + GIS scripts (skipped in native wrapper — not needed) ──
   useEffect(() => {
     if (IS_NATIVE_WRAPPER) return;
+    if (!googleClientId) return; // no-op if key is not configured (dev env without .env)
 
     const script1 = document.createElement('script');
     script1.src = 'https://apis.google.com/js/api.js';

@@ -1484,7 +1484,7 @@ const GoalForm = ({
                             <option value="" className="bg-theme-surface">{t('none')}</option>
                             {CATEGORIES.map(cat => (
                                 <option key={cat.id} value={cat.id} className="bg-theme-surface">
-                                    {cat.icon} {cat.name}
+                                    {t(cat.name)}
                                 </option>
                             ))}
                         </select>
