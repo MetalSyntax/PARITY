@@ -1,4 +1,4 @@
-import { Account, Transaction, ScheduledPayment, UserProfile, Budget, Goal, SyncAction, RateHistoryItem, ShoppingItem, ShoppingList, Contact, Debt } from '../types';
+import { Account, Transaction, ScheduledPayment, UserProfile, Budget, Goal, SyncAction, RateHistoryItem, ShoppingItem, ShoppingList, Contact, Debt, AppData } from '../types';
 import { encryptData, decryptData } from './crypto';
 import type { GamificationProfile, XPAuditEntry } from '../gamification/schema';
 
@@ -28,27 +28,6 @@ export const KEYS = {
 };
 
 export type StorageType = 'LOCAL_STORAGE' | 'INDEXED_DB';
-
-export interface AppData {
-    exchangeRate: number;
-    usdRateParallel?: number;
-    euroRate?: number;
-    euroRateParallel?: number;
-    accounts: Account[];
-    transactions: Transaction[];
-    scheduledPayments: ScheduledPayment[];
-    userProfile: UserProfile;
-    budgets: Budget[];
-    goals: Goal[];
-    rateHistory?: RateHistoryItem[];
-    shoppingItems?: ShoppingItem[];
-    shoppingLists?: ShoppingList[];
-    syncQueue?: SyncAction[];
-    profiles?: UserProfile[];
-    activeProfileId?: string;
-    contacts?: Contact[];
-    debts?: Debt[];
-}
 
 export class IndexedDBService {
     private db: IDBDatabase | null = null;

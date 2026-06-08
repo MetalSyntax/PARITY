@@ -18,7 +18,7 @@
     "**/*",
     "../../packages/core/src/**/*",
     "../../packages/i18n/src/**/*",
-    "../../packages/ui/src/**/*",
+    "../../packages/ui/src/index.native.ts",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ]

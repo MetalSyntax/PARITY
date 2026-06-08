@@ -1,13 +1,13 @@
 import React from 'react';
-import { Text, TextStyle } from 'react-native';
+import { Text, TextStyle, Platform, StyleProp, TextProps } from 'react-native';
 
-interface TypographyProps {
+interface TypographyProps extends TextProps {
   children: React.ReactNode;
   variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'small' | 'tiny';
   color?: 'primary' | 'secondary' | 'brand' | 'error' | 'success';
   weight?: 'light' | 'normal' | 'medium' | 'bold' | 'black';
   align?: 'left' | 'center' | 'right';
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
 }
 
 export const Typography: React.FC<TypographyProps> = ({
@@ -17,6 +17,7 @@ export const Typography: React.FC<TypographyProps> = ({
   weight,
   align = 'left',
   style,
+  ...rest
 }) => {
   const getWeight = () => {
     switch (weight) {
@@ -56,16 +57,24 @@ export const Typography: React.FC<TypographyProps> = ({
   };
 
   return (
-    <Text style={[
-      {
-        fontSize: getFontSize(),
-        color: getColor(),
-        fontWeight: getWeight() as any,
-        textAlign: align as any,
-        letterSpacing: variant === 'h1' || variant === 'h2' ? -1 : 0,
-      },
-      style
-    ]}>
+    <Text
+      style={[
+        {
+          fontFamily: Platform.select({
+            ios: 'System',
+            android: 'sans-serif',
+            default: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          }),
+          fontSize: getFontSize(),
+          color: getColor(),
+          fontWeight: getWeight() as any,
+          textAlign: align as any,
+          letterSpacing: variant === 'h1' || variant === 'h2' ? -1 : 0,
+        },
+        style
+      ]}
+      {...rest}
+    >
       {children}
     </Text>
   );

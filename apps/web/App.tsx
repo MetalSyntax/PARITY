@@ -1345,7 +1345,7 @@ function AppContent() {
 
         {/* Main Content Router */}
         <motion.div 
-          className="flex-1 relative z-0 overflow-y-auto flex flex-col mb-0"
+          className="flex-1 relative z-0 overflow-y-auto overflow-x-hidden flex flex-col mb-0"
           onPanEnd={(_, info) => {
             // Swipe right from left edge (approx)
             if (info.offset.x > 80 && Math.abs(info.offset.y) < 50) {
