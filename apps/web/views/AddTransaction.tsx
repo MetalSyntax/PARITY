@@ -35,6 +35,18 @@ const renderAccountIcon = (iconKey: string, size: number = 24) => {
     return <span style={{ fontSize: size }}>{iconKey}</span>; 
 };
 
+const parseNumberInput = (val: string) => {
+    if (val.includes(',') && val.includes('.')) {
+        const lastDot = val.lastIndexOf('.');
+        const lastComma = val.lastIndexOf(',');
+        if (lastDot > lastComma) return val.replace(/,/g, '');
+        else return val.replace(/\./g, '').replace(/,/g, '.');
+    } else if (val.includes(',')) {
+        return val.replace(/,/g, '.');
+    }
+    return val;
+};
+
 interface AddTransactionProps {
   onClose: () => void;
   onSave: (data: any) => void;
@@ -790,7 +802,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                         type="text"
                         inputMode="none"
                         value={amountStr}
-                        onChange={(e) => { const val = e.target.value.replace(',', '.'); setAmountStr(val.replace(/[^0-9\.\+\-\*\/]/g, '')); }}
+                        onChange={(e) => { const val = parseNumberInput(e.target.value); setAmountStr(val.replace(/[^0-9\.\+\-\*\/]/g, '')); }}
                         onFocus={() => setFocusedField('amount')}
                         className={`bg-transparent text-4xl font-bold tracking-tighter outline-none w-48 text-center selection:bg-theme-brand/20 ${focusedField === 'amount' ? 'text-theme-brand' : 'text-theme-primary'}`}
                     />
@@ -879,7 +891,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                 <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">{t('fixed')}</span>
                                 <div className="flex items-baseline gap-1">
                                   <input ref={commFixedRef} type="text" inputMode="none" value={commissionFixed}
-                                      onChange={(e) => { const v = e.target.value.replace(',', '.'); setCommissionFixed(v.replace(/[^0-9\.]/g, '')); }}
+                                      onChange={(e) => { const v = parseNumberInput(e.target.value); setCommissionFixed(v.replace(/[^0-9\.]/g, '')); }}
                                       onFocus={() => setFocusedField('commissionFixed')}
                                       className="bg-transparent text-[11px] font-bold text-theme-primary outline-none focus:text-theme-brand w-10"
                                   />
@@ -891,7 +903,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                              <div className="flex flex-col">
                                 <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">%</span>
                                 <input ref={commPercentRef} type="text" inputMode="none" value={commissionPercent}
-                                    onChange={(e) => { const v = e.target.value.replace(',', '.'); setCommissionPercent(v.replace(/[^0-9\.]/g, '')); }}
+                                    onChange={(e) => { const v = parseNumberInput(e.target.value); setCommissionPercent(v.replace(/[^0-9\.]/g, '')); }}
                                     onFocus={() => setFocusedField('commissionPercent')}
                                     className="bg-transparent text-[11px] font-bold text-theme-primary outline-none focus:text-theme-brand w-12"
                                 />
@@ -905,7 +917,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                 <div className="flex flex-col pr-1">
                                     <span className="text-[7px] font-black text-theme-secondary opacity-40 uppercase">{t('rate')}</span>
                                     <input ref={exchangeRateRef} type="text" inputMode="none" value={manualExchangeRate}
-                                        onChange={(e) => { const v = e.target.value.replace(',', '.'); setManualExchangeRate(v.replace(/[^0-9\.]/g, '')); }}
+                                        onChange={(e) => { const v = parseNumberInput(e.target.value); setManualExchangeRate(v.replace(/[^0-9\.]/g, '')); }}
                                         onFocus={() => setFocusedField('exchangeRate')}
                                         className="bg-transparent text-[11px] font-bold text-theme-brand outline-none w-14"
                                     />
