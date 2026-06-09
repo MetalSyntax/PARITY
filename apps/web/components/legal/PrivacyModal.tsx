@@ -58,7 +58,7 @@ const content: Record<Language, { title: string; lastUpdated: string; intro: str
       },
       {
         heading: '11. Contact',
-        body: 'For privacy-related inquiries, contact: sar@multiproconsulting.com',
+        body: 'For privacy-related inquiries, contact: https://metalsyntax.vercel.app/',
       },
     ],
   },
@@ -109,7 +109,7 @@ const content: Record<Language, { title: string; lastUpdated: string; intro: str
       },
       {
         heading: '11. Contacto',
-        body: 'Para consultas relacionadas con la privacidad, contacta a: sar@multiproconsulting.com',
+        body: 'Para consultas relacionadas con la privacidad, contacta a: https://metalsyntax.vercel.app/',
       },
     ],
   },
@@ -160,7 +160,7 @@ const content: Record<Language, { title: string; lastUpdated: string; intro: str
       },
       {
         heading: '11. Contato',
-        body: 'Para consultas relacionadas à privacidade, entre em contato: sar@multiproconsulting.com',
+        body: 'Para consultas relacionadas à privacidade, entre em contato: https://metalsyntax.vercel.app/',
       },
     ],
   },

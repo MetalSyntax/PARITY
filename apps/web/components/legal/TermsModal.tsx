@@ -61,7 +61,7 @@ const content: Record<Language, { title: string; lastUpdated: string; sections: 
       },
       {
         heading: '12. Contact',
-        body: 'For questions about these Terms, contact: sar@multiproconsulting.com',
+        body: 'For questions about these Terms, contact: https://metalsyntax.vercel.app/',
       },
     ],
   },
@@ -115,7 +115,7 @@ const content: Record<Language, { title: string; lastUpdated: string; sections: 
       },
       {
         heading: '12. Contacto',
-        body: 'Para consultas sobre estos Términos, contacta a: sar@multiproconsulting.com',
+        body: 'Para consultas sobre estos Términos, contacta a: https://metalsyntax.vercel.app/',
       },
     ],
   },
@@ -169,7 +169,7 @@ const content: Record<Language, { title: string; lastUpdated: string; sections: 
       },
       {
         heading: '12. Contato',
-        body: 'Para dúvidas sobre estes Termos, entre em contato: sar@multiproconsulting.com',
+        body: 'Para dúvidas sobre estes Termos, entre em contato: https://metalsyntax.vercel.app/',
       },
     ],
   },
