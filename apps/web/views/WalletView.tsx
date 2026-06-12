@@ -598,7 +598,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   <div ref={parent} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {listAccounts.map(acc => {
                       const stripClass = acc.color ? `bg-gradient-to-b ${acc.color}` : 'bg-theme-brand';
-                      const amountUSD = acc.currency === Currency.USD || acc.currency === Currency.USDT ? acc.balance : (acc.currency === Currency.EUR ? (acc.balance * (euroRate || 0)) / exchangeRate : acc.balance / exchangeRate);
+                      const amountUSD = acc.currency === Currency.USD || acc.currency === Currency.USDT ? acc.balance : (acc.currency === Currency.EUR ? (acc.balance * (euroRate || exchangeRate)) / exchangeRate : acc.balance / exchangeRate);
 
                       return (
                       <div 

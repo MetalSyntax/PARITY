@@ -1439,6 +1439,7 @@ function AppContent() {
               onToggleBottomNav={setIsNavVisible}
               showConfirm={showConfirm}
               exchangeRate={exchangeRate}
+              euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
               isBalanceVisible={isBalanceVisible}
@@ -1467,6 +1468,7 @@ function AppContent() {
               lang={userProfile.language}
               transactions={filteredTransactions}
               exchangeRate={exchangeRate}
+              euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
               scheduledPayments={filteredScheduledPayments}
               isBalanceVisible={isBalanceVisible}
               onToggleBottomNav={setIsNavVisible}

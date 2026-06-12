@@ -15,8 +15,8 @@ export const formatAmount = (
   if (displayCurrency === Currency.VES) {
     val = usd * exchangeRate;
     symbol = 'Bs';
-  } else if (displayCurrency === Currency.EUR && euroRate) {
-    val = usd * (exchangeRate / euroRate);
+  } else if (displayCurrency === Currency.EUR) {
+    val = usd * (exchangeRate / (euroRate || exchangeRate));
     symbol = '€';
   } else if (displayCurrency === Currency.USDT) {
     val = usd; // Treat as 1:1 USD for simple display
@@ -52,7 +52,7 @@ export const formatSecondaryAmount = (
   if (displayCurrency === Currency.VES) {
     val = usd;
     symbol = '$';
-  } else if (displayCurrency === Currency.EUR && euroRate) {
+  } else if (displayCurrency === Currency.EUR) {
     val = usd * exchangeRate;
     symbol = 'Bs';
   }

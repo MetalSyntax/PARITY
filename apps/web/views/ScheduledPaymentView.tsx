@@ -585,9 +585,9 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
                   <>
                     {displayCurrency === Currency.USD ? '$' : displayCurrency === Currency.EUR ? '€' : 'Bs'}
                     {(() => {
-                        const amountUSD = p.currency === Currency.USD || p.currency === Currency.USDT ? p.amount : (p.currency === Currency.EUR ? (p.amount * (euroRate || 0)) / exchangeRate : p.amount / exchangeRate);
+                        const amountUSD = p.currency === Currency.USD || p.currency === Currency.USDT ? p.amount : (p.currency === Currency.EUR ? (p.amount * (euroRate || exchangeRate)) / exchangeRate : p.amount / exchangeRate);
                         if (displayCurrency === Currency.USD) return amountUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        if (displayCurrency === Currency.EUR) return ((amountUSD * exchangeRate) / (euroRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        if (displayCurrency === Currency.EUR) return ((amountUSD * exchangeRate) / (euroRate || exchangeRate)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         return (amountUSD * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     })()}
                   </>
@@ -597,7 +597,7 @@ const ScheduledItem: React.FC<ScheduledItemProps> = ({ p, t, onEdit, onDelete, o
               {isBalanceVisible ? (
                   <>
                   ~{displayCurrency === Currency.USD ? 'Bs' : '$'} {(() => {
-                        const amountUSD = p.currency === Currency.USD || p.currency === Currency.USDT ? p.amount : (p.currency === Currency.EUR ? (p.amount * (euroRate || 0)) / exchangeRate : p.amount / exchangeRate);
+                        const amountUSD = p.currency === Currency.USD || p.currency === Currency.USDT ? p.amount : (p.currency === Currency.EUR ? (p.amount * (euroRate || exchangeRate)) / exchangeRate : p.amount / exchangeRate);
                         if (displayCurrency === Currency.USD) return (amountUSD * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
                         return amountUSD.toLocaleString(undefined, { maximumFractionDigits: 0 });
                     })()}
