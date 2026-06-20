@@ -345,6 +345,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => startEdit()} 
+                    data-tutorial="add-wallet-btn"
                     className="p-2 bg-theme-brand rounded-full text-white shadow-lg shadow-brand/20"
                 >
                     <Plus size={20} />
@@ -680,7 +681,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                                <h3 className="text-theme-primary font-black text-xl mb-2">{t('noWallets')}</h3>
                                <p className="text-theme-secondary text-sm max-w-[240px] mx-auto leading-relaxed">{t('createFirstWallet')}</p>
                            </div>
-                           <button onClick={() => startEdit()} className="px-8 py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-xl shadow-brand/20 hover:scale-105 transition-all mt-2">{t('createWallet')}</button>
+                           <button onClick={() => startEdit()} data-tutorial="create-wallet-btn" className="px-8 py-4 bg-theme-brand text-white font-bold rounded-2xl shadow-xl shadow-brand/20 hover:scale-105 transition-all mt-2">{t('createWallet')}</button>
                       </div>
                   )}
               </div>
@@ -790,6 +791,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     <div className="p-6 bg-theme-surface shrink-0">
                         <button 
                             onClick={handleSave} 
+                            data-tutorial="wallet-save-btn"
                             className="w-full bg-theme-brand text-white font-black py-4 rounded-2xl shadow-xl hover:brightness-110 active:scale-[0.98] transition-all"
                         >
                             {t('saveWallet')}

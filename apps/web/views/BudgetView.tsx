@@ -501,6 +501,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 <h2 className="text-lg font-bold text-theme-primary">{t('envelopes')}</h2>
                 <button 
                     onClick={() => setShowAddBudgetModal(true)}
+                    data-tutorial="budget-add-btn"
                     className="flex items-center gap-1 bg-theme-brand hover:brightness-110 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg shadow-brand/20 transition-all active:scale-95"
                 >
                     <Plus size={14} /> {t('addBudget')}
@@ -843,6 +844,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => { setShowAddBudgetModal(false); setShowCustomEnvelopeModal(true); }} 
+                        data-tutorial="budget-custom-envelope-btn"
                         className="w-full p-4 bg-theme-brand text-white rounded-xl font-bold mb-4 flex items-center justify-center gap-2 shadow-lg shadow-brand/20"
                      >
                          <Plus size={20} /> {t('createCustomEnvelope')}
@@ -997,7 +999,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
                    <div className="flex gap-3 mt-4">
                        <button onClick={() => setShowCustomEnvelopeModal(false)} className="px-4 py-3 rounded-xl bg-white/5 text-theme-secondary font-bold flex-1">{t('cancel')}</button>
-                       <button onClick={handleAddCustomBudget} className="flex-[2] py-3 rounded-xl bg-theme-brand text-white font-bold shadow-lg shadow-brand/20">{t('createEnvelopeAction')}</button>
+                       <button onClick={handleAddCustomBudget} data-tutorial="budget-create-envelope-action" className="flex-[2] py-3 rounded-xl bg-theme-brand text-white font-bold shadow-lg shadow-brand/20">{t('createEnvelopeAction')}</button>
                    </div>
               </motion.div>
           </motion.div>

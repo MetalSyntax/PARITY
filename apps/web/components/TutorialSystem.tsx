@@ -151,23 +151,26 @@ const TUTORIALS: Tutorial[] = [
     description: "Crea y gestiona tus cuentas y wallets",
     steps: [
       {
-        title: "Accesos rápidos del Dashboard",
-        description: "Desde los accesos rápidos puedes acceder al módulo Wallet para gestionar todas tus cuentas bancarias y billeteras digitales.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Acceso a Wallet",
+        description: "Toca el botón Wallet en la barra de accesos rápidos para entrar al módulo de gestión de tus cuentas y billeteras.",
+        selector: "[data-tutorial='quick-action-WALLET']",
         navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Widget de Balance",
-        description: "El widget de balance muestra tu patrimonio neto total calculado en tu moneda de visualización (USD, Bs o EUR).",
-        selector: "[data-label='balanceChart']",
+        title: "Crear una nueva billetera",
+        description: "Toca el botón '+' (o 'Crear Billetera') para abrir el formulario y registrar tu nueva cuenta bancaria o billetera digital.",
+        selector: "[data-tutorial='add-wallet-btn'], [data-tutorial='create-wallet-btn']",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Personalizar el Dashboard",
-        description: "Usa el botón de Widgets para activar, desactivar y reordenar los widgets que aparecen en tu Dashboard.",
-        selector: "[data-tutorial='customize-btn']",
-        position: "bottom",
+        title: "Guardar tu billetera",
+        description: "Ingresa el nombre, saldo inicial y selecciona tu moneda. Luego toca 'Guardar' para crear tu billetera.",
+        selector: "[data-tutorial='wallet-save-btn']",
+        waitForClick: true,
+        position: "top",
       },
     ],
   },
@@ -180,23 +183,23 @@ const TUTORIALS: Tutorial[] = [
     steps: [
       {
         title: "Abrir formulario",
-        description: "Toca el botón + para registrar una transacción. Al escribir el nombre del comercio en la nota, la categoría se asigna sola.",
+        description: "Toca el botón + para abrir la pantalla de agregar transacción.",
         selector: "[data-tutorial='fab-add']",
         navigateTo: "DASHBOARD",
         waitForClick: true,
         position: "top",
       },
       {
-        title: "Tipo de transacción",
-        description: "La detección automática funciona para gastos principalmente. Prueba escribir \"McDonald's\", \"Uber\" o \"Netflix\" en la nota.",
-        selector: "[data-tutorial='tx-type-expense']",
+        title: "Desplegable de Categoría",
+        description: "Toca el botón de Categoría para desplegar la lista de categorías y seleccionar la que desees para esta transacción.",
+        selector: "[data-tutorial='tx-category-btn']",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Estructura de Gastos",
-        description: "El widget de Estructura de Gastos muestra la distribución de tus gastos por categoría. Toca cualquier segmento para el detalle.",
-        selector: "[data-label='expenses']",
-        navigateTo: "DASHBOARD",
+        title: "Detección Inteligente",
+        description: "Recuerda que si escribes notas como \"McDonald's\", \"Uber\" o \"Netflix\", la categoría se seleccionará automáticamente por ti.",
+        selector: "[data-tutorial='tx-amount-input']",
         position: "bottom",
       },
     ],
@@ -209,23 +212,33 @@ const TUTORIALS: Tutorial[] = [
     description: "Controla tus gastos con límites mensuales",
     steps: [
       {
-        title: "Accesos rápidos",
-        description: "Desde los accesos rápidos del Dashboard accede al módulo de Presupuestos para crear y gestionar tus límites de gasto por categoría.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Módulo de Presupuestos",
+        description: "Toca el botón Presupuesto en la barra de accesos rápidos del Dashboard para ingresar a la gestión de tus límites.",
+        selector: "[data-tutorial='quick-action-BUDGET']",
         navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Botón de Widgets",
-        description: "Activa el widget de Pronóstico desde el personalizador para ver alertas inteligentes cuando te acerques al límite de un presupuesto.",
-        selector: "[data-tutorial='customize-btn']",
+        title: "Agregar un Sobre de Presupuesto",
+        description: "Toca el botón '+ Presupuesto' para abrir el selector e iniciar el proceso de agregar un límite a tus categorías.",
+        selector: "[data-tutorial='budget-add-btn']",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Sincronización",
-        description: "Cuando tus presupuestos estén configurados, sincroniza con la nube para respaldarlo todo de forma cifrada.",
-        selector: "[data-tutorial='sync-btn']",
+        title: "Crear Sobre Personalizado",
+        description: "Toca 'Crear sobre personalizado' si deseas establecer un límite para una categoría personalizada o exclusiva.",
+        selector: "[data-tutorial='budget-custom-envelope-btn']",
+        waitForClick: true,
         position: "bottom",
+      },
+      {
+        title: "Guardar Sobre",
+        description: "Ingresa el nombre, límite mensual, ícono y toca 'Crear sobre' para añadirlo a tu lista.",
+        selector: "[data-tutorial='budget-create-envelope-action']",
+        waitForClick: true,
+        position: "top",
       },
     ],
   },
@@ -237,22 +250,17 @@ const TUTORIALS: Tutorial[] = [
     description: "Analiza tus gastos por categoría y período",
     steps: [
       {
-        title: "Estructura de Gastos",
-        description: "Este widget muestra tus categorías de gasto principales. Toca cualquier segmento del gráfico para ver el detalle de transacciones.",
-        selector: "[data-label='expenses']",
+        title: "Acceder a Transacciones",
+        description: "Toca el botón Transacciones en la barra de accesos rápidos para entrar a la lista de todos tus movimientos financieros.",
+        selector: "[data-tutorial='quick-action-TRANSACTIONS']",
         navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Ingresos vs Gastos",
-        description: "El widget de Ingresos vs Gastos compara tus flujos mensuales con un gráfico de barras para cada mes del año.",
-        selector: "[data-label='incomeVsExpense']",
-        position: "bottom",
-      },
-      {
-        title: "Vista de Análisis",
-        description: "Desde los accesos rápidos accede a la vista de Análisis para reportes con filtros avanzados por fecha, categoría y tipo.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Filtrar y Buscar",
+        description: "En esta vista puedes buscar transacciones por nombre usando la barra de búsqueda o filtrarlas por billetera, tipo y categoría.",
+        selector: "[data-tutorial='tx-list-search']",
         position: "bottom",
       },
     ],
@@ -265,23 +273,26 @@ const TUTORIALS: Tutorial[] = [
     description: "Automatiza pagos y cobros fijos",
     steps: [
       {
-        title: "Accesos rápidos",
-        description: "Desde los accesos rápidos del Dashboard busca el ícono de Programados para gestionar pagos y cobros recurrentes como suscripciones.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Acceso a Programados",
+        description: "Busca y toca el icono de 'Programados' en los accesos rápidos del Dashboard para ver tus transacciones recurrentes.",
+        selector: "[data-tutorial='quick-action-SCHEDULED']",
         navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Configurar programación",
-        description: "Crea un pago programado con monto, categoría y frecuencia: diario, semanal, mensual o anual. La app registra la transacción automáticamente.",
-        selector: "[data-tutorial='quick-actions']",
+        title: "Añadir Pago Programado",
+        description: "Toca el botón '+' para abrir el formulario y crear un pago o cobro automatizado (como renta, suscripciones, etc.).",
+        selector: "[data-tutorial='scheduled-add-btn']",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Calendario financiero",
-        description: "El acceso rápido de Calendario Financiero muestra todos tus compromisos programados en vista de calendario mensual.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
+        title: "Guardar Programación",
+        description: "Define el monto, la categoría, la frecuencia (mensual, anual, etc.) y toca 'Guardar' para automatizar tu transacción.",
+        selector: "[data-tutorial='scheduled-save-btn']",
+        waitForClick: true,
+        position: "top",
       },
     ],
   },
@@ -293,23 +304,19 @@ const TUTORIALS: Tutorial[] = [
     description: "Comparte o respalda tus datos",
     steps: [
       {
-        title: "Botón de sincronización",
-        description: "El ícono de nube sincroniza y respalda todos tus datos cifrados en Google Drive. Tócalo cuando tengas conexión a internet.",
-        selector: "[data-tutorial='sync-btn']",
+        title: "Centro de Gestión de Datos",
+        description: "Busca el icono de 'Centro de exportación' (o Exportar). Si no lo ves a simple vista, desliza (swipe) hacia la derecha o usa las flechas de navegación en la barra.",
+        selector: "[data-tutorial='quick-action-EXPORT']",
         navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "bottom",
       },
       {
-        title: "Exportar e Importar",
-        description: "Desde los accesos rápidos puedes exportar en CSV (para Excel) o JSON (respaldo completo). También puedes generar un Reporte PDF visual.",
-        selector: "[data-tutorial='quick-actions']",
-        position: "bottom",
-      },
-      {
-        title: "Verificar actualizaciones",
-        description: "Cuando hay una nueva versión disponible, este botón se ilumina en azul. Tócalo para actualizar y obtener las últimas mejoras.",
-        selector: "[data-tutorial='customize-btn']",
-        position: "bottom",
+        title: "Generar Archivo",
+        description: "Elige si deseas exportar tus datos en formato CSV para Excel o JSON como copia de seguridad cifrada, y presiona 'Generar Exportación'.",
+        selector: "[data-tutorial='export-generate-btn']",
+        waitForClick: true,
+        position: "top",
       },
     ],
   },
@@ -322,9 +329,10 @@ const TUTORIALS: Tutorial[] = [
     steps: [
       {
         title: "Botón de personalización",
-        description: "Toca este botón para abrir el personalizador del Dashboard donde puedes activar, desactivar y reordenar los widgets.",
+        description: "Toca este botón de Widgets para abrir el panel donde puedes activar, desactivar y reordenar tus widgets favoritos.",
         selector: "[data-tutorial='customize-btn']",
         navigateTo: "DASHBOARD",
+        waitForClick: true,
         position: "bottom",
       },
       {
@@ -336,7 +344,7 @@ const TUTORIALS: Tutorial[] = [
       {
         title: "Configuración general",
         description: "El botón de Ajustes da acceso a la configuración de perfil, seguridad, idioma, moneda y formato de fecha.",
-        selector: "[data-tutorial='sync-btn']",
+        selector: "[data-tutorial='settings-btn']",
         position: "bottom",
       },
     ],
@@ -418,7 +426,7 @@ function CompletionScreen({ tutorial, onBackToList, onClose }: { tutorial: Tutor
             onClick={onBackToList}
             className="w-full py-2.5 rounded-xl bg-theme-brand text-white font-black text-[12px] hover:opacity-90 transition-opacity"
           >
-            Ver más tutoriales
+            Ir al Dashboard
           </button>
           <button
             onClick={onClose}
@@ -672,7 +680,10 @@ export function TutorialSystem({ onClose, onNavigate }: TutorialSystemProps) {
     return (
       <CompletionScreen
         tutorial={activeTutorial!}
-        onBackToList={handleBackToList}
+        onBackToList={() => {
+          onNavigate("DASHBOARD");
+          onClose();
+        }}
         onClose={onClose}
       />
     );

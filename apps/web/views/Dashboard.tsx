@@ -849,22 +849,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center gap-2">
 
             {/* Sync */}
-            <motion.button
-              data-tutorial="sync-btn"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => { if (navigator.onLine && onSync) onSync(); }}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 bg-theme-surface border border-white/5 rounded-2xl transition-all shadow-lg relative ${isSyncing ? 'animate-pulse' : ''} ${!navigator.onLine ? 'opacity-50' : 'text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}
-              aria-label="Sincronizar con la nube"
-            >
-              {navigator.onLine ? <Cloud size={15} /> : <CloudOff size={15} />}
-              <span className="text-[7px] font-black uppercase tracking-tight">{t('btn_sync')}</span>
-              {syncPendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 bg-orange-500 border border-theme-bg rounded-full text-[8px] font-black text-white flex items-center justify-center shadow-lg">
-                  {syncPendingCount}
-                </span>
-              )}
-            </motion.button>
+            {isDevMode && (
+              <motion.button
+                data-tutorial="sync-btn"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => { if (navigator.onLine && onSync) onSync(); }}
+                className={`flex flex-col items-center gap-0.5 px-2 py-1.5 bg-theme-surface border border-white/5 rounded-2xl transition-all shadow-lg relative ${isSyncing ? 'animate-pulse' : ''} ${!navigator.onLine ? 'opacity-50' : 'text-theme-secondary hover:text-theme-primary hover:border-white/10'}`}
+                aria-label="Sincronizar con la nube"
+              >
+                {navigator.onLine ? <Cloud size={15} /> : <CloudOff size={15} />}
+                <span className="text-[7px] font-black uppercase tracking-tight">{t('btn_sync')}</span>
+                {syncPendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 bg-orange-500 border border-theme-bg rounded-full text-[8px] font-black text-white flex items-center justify-center shadow-lg">
+                    {syncPendingCount}
+                  </span>
+                )}
+              </motion.button>
+            )}
 
             {/* Widgets customizer */}
             <motion.button
@@ -899,6 +901,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onOpenSettings}
+              data-tutorial="settings-btn"
               className="flex flex-col items-center gap-0.5 px-2 py-1.5 bg-theme-surface border border-white/5 rounded-2xl text-theme-secondary hover:text-theme-primary hover:border-white/10 transition-all shadow-lg"
               aria-label="Ajustes de la aplicación"
             >
@@ -944,6 +947,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {ALL_QUICK_ACTIONS.filter(action => enabledQuickActionIds.includes(action.id)).map((action) => (
                 <button
                   key={action.id}
+                  data-tutorial={`quick-action-${action.id}`}
                   onClick={() => onNavigate(action.id as any)}
                   className="flex flex-col items-center gap-1.5 min-w-[95px] bg-theme-surface/50 backdrop-blur-sm p-2.5 hover:border-theme-brand/50 transition-all hover:bg-theme-surface active:scale-95 snap-start group"
                 >

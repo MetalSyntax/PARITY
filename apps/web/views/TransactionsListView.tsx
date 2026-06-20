@@ -317,6 +317,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-secondary pointer-events-none" size={16} />
           <input
             type="text"
+            data-tutorial="tx-list-search"
             placeholder={t('searchTransactions')}
             className="w-full bg-theme-surface border border-white/5 rounded-2xl py-3 pl-11 pr-10 text-sm text-theme-primary placeholder:text-theme-secondary outline-none focus:border-theme-brand/40 transition-colors"
             value={searchQuery}

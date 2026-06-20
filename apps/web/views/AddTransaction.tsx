@@ -1062,6 +1062,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
             {/* Category Button */}
             <button 
                 onClick={() => setShowCategoryModal(true)}
+                data-tutorial="tx-category-btn"
                 className="flex-shrink-0 bg-theme-surface rounded-2xl p-2 flex items-center gap-3 active:scale-[0.98] transition-all min-w-[140px] border border-white/5"
             >
                 <div className={`${CATEGORIES.find(c => c.id === categoryId)?.color || 'text-theme-primary'} bg-white/5 w-11 h-11 rounded-full flex items-center justify-center shadow-lg`}>

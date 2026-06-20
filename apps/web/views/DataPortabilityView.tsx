@@ -703,6 +703,7 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.97 }}
               onClick={handleExport}
+              data-tutorial="export-generate-btn"
               disabled={isExporting || transactions.length === 0}
               className="w-full bg-theme-brand text-white rounded-full py-4 font-black text-base shadow-[0_0_20px_rgba(43,108,238,0.4)] flex items-center justify-center gap-2 disabled:opacity-50"
             >

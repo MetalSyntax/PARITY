@@ -304,7 +304,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <Layout size={14} className="text-theme-brand" />
             <span className="text-[10px] font-black text-theme-secondary uppercase tracking-widest opacity-60">{t('navbarFavorites')}</span>
             <div className="ml-auto flex items-center gap-1.5 bg-theme-brand/10 border border-theme-brand/20 rounded-full px-3 py-1">
-              <span className="text-[11px] font-black text-theme-brand">{navbarFavorites.filter(f => f !== 'DASHBOARD').length}</span>
+              <span className="text-[11px] font-black text-theme-brand">{navbarFavorites.length}</span>
               <span className="text-[10px] text-theme-brand/60 font-bold">/4</span>
             </div>
           </div>
@@ -331,7 +331,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               { id: 'PROFILE', name: t('profile'), Icon: User, color: 'bg-zinc-500/10 text-zinc-400' },
             ] as { id: string; name: string; Icon: React.ElementType; color: string; fixed?: boolean }[]).map((view) => {
               const isActive = navbarFavorites.includes(view.id);
-              const isFull = !isActive && navbarFavorites.filter(f => f !== 'DASHBOARD').length >= 4;
+              const isFull = !isActive && navbarFavorites.length >= 4;
               return (
                 <motion.button
                   key={view.id}

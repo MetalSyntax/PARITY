@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useExchangeRates } from './hooks/useExchangeRates';
 import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint, ShoppingCart, Target, FileText, Users, Scale, CalendarDays, FlaskConical, GraduationCap } from 'lucide-react';
@@ -362,6 +362,34 @@ function AppContent() {
         setTimeout(() => setAlertConfig(null), 3000);
     }
   });
+
+  const [pendingSync, setPendingSync] = useState(false);
+
+  const performSyncFlow = useCallback(async () => {
+    try {
+      await exportToCloud();
+      await importFromCloud();
+    } catch (err) {
+      console.error("Dashboard sync error", err);
+    }
+  }, [exportToCloud, importFromCloud]);
+
+  useEffect(() => {
+    if (isAuthenticated && pendingSync) {
+      setPendingSync(false);
+      performSyncFlow();
+    }
+  }, [isAuthenticated, pendingSync, performSyncFlow]);
+
+  const handleDashboardSync = useCallback(async () => {
+    if (!isAuthenticated) {
+      setPendingSync(true);
+      handleLogin();
+    } else {
+      await performSyncFlow();
+    }
+  }, [isAuthenticated, handleLogin, performSyncFlow]);
+
 
 
   // Load Data
@@ -1408,7 +1436,7 @@ function AppContent() {
               onUpdateProfile={handleUpdateProfile}
               syncPendingCount={syncPendingCount}
               isSyncing={isSyncing}
-              onSync={exportToCloud}
+              onSync={handleDashboardSync}
               goals={goals}
               onOpenTutorials={() => setShowTutorials(true)}
               gamProfile={gamProfile}

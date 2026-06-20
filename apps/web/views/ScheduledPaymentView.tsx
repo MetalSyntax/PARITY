@@ -218,6 +218,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsAdding(true)} 
+                data-tutorial="scheduled-add-btn"
                 className="w-12 h-12 bg-theme-brand rounded-2xl text-white shadow-lg shadow-brand/20 flex items-center justify-center"
             >
                 <Plus size={24} />
@@ -460,6 +461,7 @@ export const ScheduledPaymentView: React.FC<ScheduledPaymentViewProps> = ({
                       <div className="p-6 bg-theme-surface shrink-0">
                           <button 
                             onClick={handleAdd} 
+                            data-tutorial="scheduled-save-btn"
                             className="w-full bg-theme-brand p-5 rounded-2xl font-bold text-white shadow-xl shadow-brand/20 hover:brightness-110 active:scale-[0.98] transition-all"
                           >
                             {editingId ? t('update') : t('save')}
