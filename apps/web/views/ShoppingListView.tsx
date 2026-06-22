@@ -70,8 +70,13 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         plugins: [animations()],
     });
 
+    const listItemsRef = useRef(listItems);
+    listItemsRef.current = listItems;
+
     React.useEffect(() => {
-        setListItems(items);
+        if (JSON.stringify(items) !== JSON.stringify(listItemsRef.current)) {
+            setListItems(items);
+        }
     }, [items]);
 
     React.useEffect(() => {
