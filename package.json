@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "turbo run dev --filter=@parity/web",
+    "desktop:dev": "pnpm --filter @parity/desktop dev",
+    "desktop:build": "pnpm --filter @parity/desktop build",
+    "desktop:install": "pnpm --filter @parity/desktop install-app",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",

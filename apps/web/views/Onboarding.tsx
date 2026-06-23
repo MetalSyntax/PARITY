@@ -28,7 +28,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang: initialLang, onSta
     const [lang, setLang] = useState<Language>(initialLang);
     const [hideBalances, setHideBalances] = useState(false);
     const [currency, setCurrency] = useState<Currency>(Currency.USD);
-    const [favorites, setFavorites] = useState<string[]>(['DASHBOARD', 'TRANSACTIONS', 'BUDGET', 'ANALYSIS']);
+    const [favorites, setFavorites] = useState<string[]>(['DASHBOARD', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED']);
 
     const t = (key: any) => getTranslation(lang, key);
 
@@ -134,7 +134,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang: initialLang, onSta
                         { id: 'BUDGET', label: t('budget'), icon: <Wallet size={14}/> },
                         { id: 'SCHEDULED', label: t('scheduled'), icon: <Star size={14}/> },
                         { id: 'ANALYSIS', label: t('analysis'), icon: <Layout size={14}/> },
-                        { id: 'SHOPPING', label: t('shoppingList'), icon: <ShoppingCart size={14}/> }
+                        { id: 'SHOPPING_LIST', label: t('shoppingList'), icon: <ShoppingCart size={14}/> }
                     ].map(item => (
                         <button
                             key={item.id}
