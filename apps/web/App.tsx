@@ -1279,6 +1279,12 @@ function AppContent() {
     setIsFirstTime(false);
   };
 
+  const handleResetAppData = () => {
+    localStorage.clear();
+    indexedDB.deleteDatabase('parity_db');
+    window.location.reload();
+  };
+
   const [isCloudOnboarding, setIsCloudOnboarding] = useState(false);
   useEffect(() => {
       if (isAuthenticated && isCloudOnboarding) {
@@ -1557,6 +1563,7 @@ function AppContent() {
                   setProfiles(prev => prev.filter(p => p.id !== id));
                   showAlert('profileDeleted', 'success');
               }}
+              onResetAppData={handleResetAppData}
             />
           )}
           {currentView === 'BUDGET' && (

@@ -177,4 +177,7 @@ export const common = {
     termsSubtitle: 'Termos de uso, limitações de responsabilidade e avisos',
     privacyPolicy: 'Política de Privacidade',
     privacySubtitle: 'Como seus dados são armazenados e protegidos',
+    resetAppData: 'Apagar todos os dados',
+    resetAppDataDesc: 'Exclui permanentemente contas, transações e configurações',
+    resetAppDataConfirm: 'Isso excluirá permanentemente todas as suas contas, transações, orçamentos e configurações. Esta ação não pode ser desfeita.',
 };

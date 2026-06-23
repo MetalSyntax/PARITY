@@ -177,4 +177,7 @@ export const common = {
     termsSubtitle: 'Usage terms, liability limits & disclaimers',
     privacyPolicy: 'Privacy Policy',
     privacySubtitle: 'How your data is stored and protected',
+    resetAppData: 'Reset App Data',
+    resetAppDataDesc: 'Permanently delete all accounts, transactions and settings',
+    resetAppDataConfirm: 'This will permanently delete all your accounts, transactions, budgets and settings. This action cannot be undone.',
 };

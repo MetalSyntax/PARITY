@@ -190,4 +190,7 @@ export const common = {
   termsSubtitle: 'Términos de uso, limitaciones de responsabilidad y avisos',
   privacyPolicy: 'Política de Privacidad',
   privacySubtitle: 'Cómo se almacenan y protegen tus datos',
+  resetAppData: 'Borrar todos los datos',
+  resetAppDataDesc: 'Elimina permanentemente cuentas, transacciones y configuración',
+  resetAppDataConfirm: 'Esto eliminará permanentemente todas tus cuentas, transacciones, presupuestos y configuración. Esta acción no se puede deshacer.',
 };

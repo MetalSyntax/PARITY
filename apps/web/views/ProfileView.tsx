@@ -32,6 +32,7 @@ interface ProfileViewProps {
   onSwitchProfile: (id: string) => void;
   onCreateProfile: (name: string) => void;
   onDeleteProfile: (id: string) => void;
+  onResetAppData: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -58,7 +59,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   activeProfileId,
   onSwitchProfile,
   onCreateProfile,
-  onDeleteProfile
+  onDeleteProfile,
+  onResetAppData
 }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
@@ -73,6 +75,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [newProfileName, setNewProfileName] = useState('');
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const t = (key: any) => getTranslation(lang, key);
 
   const containerVariants = {
@@ -584,6 +587,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
         </motion.div>
 
+        {/* Danger Zone */}
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-red-500/20 rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex items-center gap-2 px-6 pt-5 pb-3">
+            <Trash2 size={14} className="text-red-400" />
+            <span className="text-[10px] font-black text-red-400 uppercase tracking-widest opacity-80">Danger Zone</span>
+          </div>
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-red-500/5 active:bg-red-500/10 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold text-red-400">{t('resetAppData')}</p>
+                <p className="text-[10px] text-theme-secondary opacity-50 mt-0.5">{t('resetAppDataDesc')}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-red-400/40 flex-shrink-0" />
+          </button>
+        </motion.div>
+
         <motion.div variants={itemVariants} className="text-center py-8 opacity-40">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="w-1.5 h-1.5 rounded-full bg-theme-brand animate-pulse" />
@@ -663,6 +689,44 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <PrivacyModal language={lang} onClose={() => setShowPrivacy(false)} />
         )}
       </AnimatePresence>
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="w-full max-w-sm bg-theme-surface border border-red-500/30 rounded-2xl p-8 shadow-2xl"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5">
+              <Trash2 size={26} className="text-red-400" />
+            </div>
+            <h3 className="text-xl font-black text-theme-primary text-center mb-2">
+              {t('resetAppData')}
+            </h3>
+            <p className="text-xs text-theme-secondary text-center opacity-60 mb-8 leading-relaxed">
+              {t('resetAppDataConfirm')}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 py-4 rounded-2xl bg-theme-bg text-theme-secondary font-bold hover:bg-theme-soft transition-colors text-xs uppercase"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={() => {
+                  setShowResetConfirm(false);
+                  onResetAppData();
+                }}
+                className="flex-1 py-4 rounded-2xl bg-red-500 text-white font-black text-xs uppercase shadow-lg shadow-red-500/20 hover:brightness-110 active:scale-95 transition-all"
+              >
+                {t('delete')}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {cloudBackups !== null && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
