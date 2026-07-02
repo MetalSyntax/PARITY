@@ -1841,6 +1841,26 @@ function AppContent() {
                 SCENARIO_PLANNER: <FlaskConical size={24} />,
                 ACADEMY: <GraduationCap size={24} />,
               };
+              const NAV_LABEL_MAP: Record<string, string> = {
+                DASHBOARD: t('dashboard'),
+                WALLET: t('wallet'),
+                ANALYSIS: t('analysis'),
+                PROFILE: t('profile'),
+                BUDGET: t('envelopes'),
+                SCHEDULED: t('scheduled'),
+                TRANSACTIONS: t('transactions'),
+                HEATMAP: t('heatmap'),
+                CURRENCY_PERF: t('currencyPerformance'),
+                SHOPPING_LIST: t('shoppingList'),
+                GOALS: t('goals'),
+                FISCAL_REPORT: t('fiscalReport'),
+                INCOME: t('incomeView'),
+                CONTACTS: t('people') || 'People',
+                DEBT_TRACKER: t('debts') || 'Debts',
+                FIN_CALENDAR: t('financialCalendar') || 'Calendar',
+                SCENARIO_PLANNER: t('scenarioPlanner') || 'Scenarios',
+                ACADEMY: t('academy') || 'Academy',
+              };
               const validFavs = navbarFavorites.filter(v => v in NAV_ICON_MAP);
               const leftItems = validFavs.slice(0, 2);
               const rightItems = validFavs.slice(2, 4);
@@ -1848,9 +1868,10 @@ function AppContent() {
                 <button
                   key={view}
                   onClick={() => setCurrentView(view as ViewState)}
-                  className={`p-3 transition-colors ${currentView === view ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
+                  className={`flex flex-col items-center gap-0.5 p-3 transition-colors ${currentView === view ? 'text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
                 >
                   {NAV_ICON_MAP[view]}
+                  <span className="text-[9px] font-black uppercase tracking-tight leading-none">{NAV_LABEL_MAP[view]}</span>
                 </button>
               );
               return (

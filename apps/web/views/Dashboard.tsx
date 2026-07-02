@@ -631,7 +631,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
            exchangeRate,
            euroRate: userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate,
            lang: userProfile.language,
-           onToggleBottomNav
+           onToggleBottomNav,
+           isDevMode,
+           usdRateParallel,
+           euroRateParallel
          };
        case 'balanceChart':
          return {

@@ -9,13 +9,19 @@ interface CurrencyConverterProps {
   euroRate?: number;
   lang: Language;
   onToggleBottomNav: (visible: boolean) => void;
+  isDevMode?: boolean;
+  usdRateParallel?: number;
+  euroRateParallel?: number;
 }
 
 export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
   exchangeRate,
   euroRate,
   lang,
-  onToggleBottomNav
+  onToggleBottomNav,
+  isDevMode,
+  usdRateParallel,
+  euroRateParallel
 }) => {
   const [convertAmount, setConvertAmount] = useState<string>('');
   const [fromCurrency, setFromCurrency] = useState<Currency>(Currency.USD);
@@ -28,17 +34,17 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
     setConvertAmount(val.replace(/[^0-9\.]/g, ''));
   };
 
-  const calculatedResult = () => {
-    const eRate = euroRate || 1;
+  const calculatedResult = (usdRate: number = exchangeRate, eurRate: number = euroRate || 1) => {
+    const eRate = eurRate || 1;
     let amt = convertAmount === '' ? 0 : (parseFloat(convertAmount) || 0);
-    
+
     // If empty input, default to 1 unit of foreign currency if converting FROM USD/EUR
     // Or default to exchangeRate if converting FROM VES
     if (convertAmount === '') {
       if (fromCurrency === Currency.USD || fromCurrency === Currency.USDT || fromCurrency === Currency.EUR) {
           amt = 1;
       } else if (fromCurrency === Currency.VES) {
-          amt = toCurrency === Currency.EUR ? eRate : exchangeRate;
+          amt = toCurrency === Currency.EUR ? eRate : usdRate;
       }
     }
 
@@ -46,16 +52,19 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
 
     // Convert from source to VES first
     let inVES = amt;
-    if (fromCurrency === Currency.USD || fromCurrency === Currency.USDT) inVES = amt * exchangeRate;
+    if (fromCurrency === Currency.USD || fromCurrency === Currency.USDT) inVES = amt * usdRate;
     else if (fromCurrency === Currency.EUR) inVES = amt * eRate;
-    
+
     // Convert from VES to target
-    if (toCurrency === Currency.USD || toCurrency === Currency.USDT) result = inVES / exchangeRate;
+    if (toCurrency === Currency.USD || toCurrency === Currency.USDT) result = inVES / usdRate;
     else if (toCurrency === Currency.EUR) result = inVES / eRate;
     else result = inVES;
 
     return result.toLocaleString(undefined, { maximumFractionDigits: 2 });
   };
+
+  const hasParallelRate = Boolean(isDevMode && (usdRateParallel || euroRateParallel));
+  const calculatedResultParallel = () => calculatedResult(usdRateParallel || exchangeRate, euroRateParallel || euroRate || 1);
 
   const cycleCurrency = (current: Currency, isFrom: boolean): void => {
     if (isFrom) {
@@ -170,6 +179,13 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
               {calculatedResult()}
             </div>
           </motion.button>
+
+          {hasParallelRate && (
+            <div className="flex items-center justify-between px-2 -mt-1">
+              <span className="text-[9px] font-black text-amber-500/80 uppercase tracking-widest">{t('parallelRate') || 'Paralelo'}</span>
+              <span className="text-xs font-black text-amber-500">{calculatedResultParallel()} {toCurrency}</span>
+            </div>
+          )}
         </div>
       </motion.div>
 

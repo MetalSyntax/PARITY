@@ -664,8 +664,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                                     return true;
                                 }
                             }
-                            const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
-                            if (isUSDType(currency)) return isUSDType(acc.currency);
                             return acc.currency === currency;
                         })
                         .map(acc => (
