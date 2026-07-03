@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants';
 import { Transaction, TransactionType, Language, Budget, Goal, ConfirmConfig, Currency } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
+import { computeBudgetHealth } from '@parity/core';
+import { Heart } from 'lucide-react';
 import { PinModal } from '../components/PinModal';
 import { TransactionItem } from '../components/TransactionItem';
 import { formatAmount as fmtAmt, formatSecondaryAmount as fmtSec, formatMonth } from '@parity/core';
@@ -118,6 +120,20 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
     initialTab = 'ENVELOPES'
 }) => {
   const t = (key: any) => getTranslation(lang, key);
+
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const contextMock = useMemo(() => ({
+    accounts,
+    transactions,
+    budgets,
+    goals,
+    scheduledPayments: [],
+    userProfile: { language: lang, currency: displayCurrency, rateType: 'OFFICIAL' },
+    contacts: [],
+    debts: [],
+    exchangeRate,
+  }), [accounts, transactions, budgets, goals, lang, displayCurrency, exchangeRate]);
+  const health = useMemo(() => computeBudgetHealth(contextMock as any, today), [contextMock, today]);
 
   const [isBalanceVisibleLocal, setIsBalanceVisibleLocal] = useState(isBalanceVisible);
   const [showPinModal, setShowPinModal] = useState(false);
@@ -472,6 +488,28 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                <h1 className="text-xl font-bold text-theme-primary">{t('budgetsAndGoals')}</h1>
                <p className="text-xs text-theme-secondary font-medium">{t('manageBudgetsDesc')}</p>
            </div>
+      </div>
+
+      {/* Gamification Budget Health Integration widget */}
+      <div className="bg-theme-surface border border-theme rounded-2xl p-4 mb-6 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-0.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Heart
+                key={i}
+                size={16}
+                className={i < health.hearts ? 'fill-rose-500 text-rose-500' : 'text-theme/20'}
+              />
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-bold text-theme-primary">{t('gamification_integration_budget_health_title')}</p>
+            <p className="text-[10px] text-theme-secondary opacity-90">{t('gamification_integration_budget_health_tip')}</p>
+          </div>
+        </div>
+        <span className="text-xs font-extrabold text-theme-brand bg-theme-brand/10 px-2.5 py-0.5 rounded-full">
+          {health.hearts}/5 Hearts
+        </span>
       </div>
 
       {/* Tabs */}

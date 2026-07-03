@@ -16,6 +16,7 @@ import { ScheduledPaymentView } from './views/ScheduledPaymentView';
 import { TransactionsListView } from './views/TransactionsListView';
 import { CalendarHeatmapView } from './views/CalendarHeatmapView';
 import { CurrencyPerformanceView } from './views/CurrencyPerformanceView';
+import { InvoiceDigitizeView } from './views/settings/InvoiceDigitizeView';
 import { ScheduledNotificationsView } from './views/ScheduledNotificationsView';
 import { ShoppingListView } from './views/ShoppingListView';
 import { PeopleView } from './views/PeopleView';
@@ -31,7 +32,8 @@ import { XPToastContainer } from './components/gamification/XPToast';
 import { LevelUpModal } from './components/gamification/LevelUpModal';
 import { BadgeEarnedSheet } from './components/gamification/BadgeEarnedSheet';
 import { ThemeProvider } from './contexts/ThemeContext';
-import type { BadgeDefinition, LevelId, GamificationProfile } from '@parity/core';
+import type { BadgeDefinition, LevelId, GamificationProfile, DailyGoalTier } from '@parity/core';
+import { createDefaultProfile, toISODate, CHALLENGE_TEMPLATES, offsetDate } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import './index.css';
@@ -223,7 +225,7 @@ function AppContent() {
   const { data: ratesData, refetch: fetchAllRates } = useExchangeRates(isLoaded);
 
   // Gamification engine
-  const { profile: gamProfile, dispatchEvent: dispatchGamEvent, pendingRewards, clearRewards } = useGamification();
+  const { profile: gamProfile, dispatchEvent: dispatchGamEvent, pendingRewards, clearRewards, buyShopItem, equipOutfit, rerollChallenge, updateDailyGoal } = useGamification();
   const [xpToasts, setXpToasts] = useState<{ xpGained: number; label: string }[]>([]);
   const [levelUpLevel, setLevelUpLevel] = useState<LevelId | null>(null);
   const [badgesToShow, setBadgesToShow] = useState<BadgeDefinition[]>([]);
@@ -1255,7 +1257,15 @@ function AppContent() {
     }
   };
 
-  const handleStartFresh = (data: { profile: Partial<UserProfile>; displayCurrency: Currency; isBalanceVisible: boolean; navbarFavorites: string[] }) => {
+  const handleStartFresh = (data: { 
+    profile: Partial<UserProfile>; 
+    displayCurrency: Currency; 
+    isBalanceVisible: boolean; 
+    navbarFavorites: string[];
+    dailyGoal: DailyGoalTier;
+    hasDebtsSeed: boolean;
+    attentionGoal: 'saving' | 'budgeting' | 'logging';
+  }) => {
     setUserProfile(prev => ({ ...prev, ...data.profile }));
     setDisplayCurrency(data.displayCurrency);
     localStorage.setItem("displayCurrency", data.displayCurrency);
@@ -1276,6 +1286,61 @@ function AppContent() {
       icon: 'wallet',
     };
     setAccounts([initialWallet]);
+
+    // Create customized initial gamification profile
+    const initialGamProfile = createDefaultProfile();
+    initialGamProfile.dailyGoal = data.dailyGoal;
+    initialGamProfile.placementCompletedAt = new Date().toISOString();
+    
+    // Seed initial challenges based on attentionGoal and hasDebtsSeed
+    const today = toISODate(new Date());
+    const matchedTemplates: string[] = [];
+    if (data.attentionGoal === 'saving') {
+      matchedTemplates.push('daily_log_today', 'weekly_save_25', 'monthly_goal_progress');
+    } else if (data.attentionGoal === 'budgeting') {
+      matchedTemplates.push('daily_log_today', 'weekly_control_food', 'monthly_all_green');
+    } else {
+      matchedTemplates.push('daily_log_today', 'weekly_no_gaps', 'monthly_goal_progress');
+    }
+    
+    if (data.hasDebtsSeed) {
+      matchedTemplates.push('weekly_settle_debt');
+    }
+    
+    for (const tid of matchedTemplates) {
+      const temp = CHALLENGE_TEMPLATES.find(t => t.id === tid);
+      if (temp) {
+        let targetVal = 1;
+        const target = temp.target;
+        if (target) {
+          if ('count' in target) targetVal = target.count;
+          else if ('amount' in target) targetVal = target.amount;
+          else if ('limit' in target) targetVal = target.limit;
+          else if ('envelopeCount' in target) targetVal = target.envelopeCount;
+          else if ('days' in target) targetVal = target.days;
+          else if ('progressPercent' in target) targetVal = target.progressPercent;
+        }
+
+        const expiresAt = temp.horizon === 'daily' 
+          ? today + 'T23:59:59.999Z'
+          : temp.horizon === 'weekly'
+            ? offsetDate(today, 7) + 'T23:59:59.999Z'
+            : offsetDate(today, 30) + 'T23:59:59.999Z';
+
+        initialGamProfile.challengeProgress[temp.id] = {
+          challengeId: temp.id,
+          assignedAt: today + 'T00:00:00.000Z',
+          expiresAt,
+          current: 0,
+          target: targetVal,
+          completed: false,
+          completedAt: null,
+          xpClaimed: false,
+        };
+      }
+    }
+    
+    idbService.saveGamificationProfile(initialGamProfile);
     setIsFirstTime(false);
   };
 
@@ -1660,6 +1725,9 @@ function AppContent() {
               onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
               initialViewMode={currentView === 'INVOICES' ? 'INVOICES' : 'LIST'}
               showConfirm={showConfirm}
+              userProfile={userProfile}
+              isDevMode={isDevMode}
+              showAlert={showAlert}
             />
           )}
           {currentView === 'HEATMAP' && (
@@ -1685,6 +1753,15 @@ function AppContent() {
               euroRateParallel={euroRateParallel}
               usdRateParallel={usdRateParallel}
               isDevMode={isDevMode}
+            />
+          )}
+          {currentView === 'INVOICE_DIGITIZE' && (
+            <InvoiceDigitizeView
+              onBack={() => setCurrentView('PROFILE')}
+              transactions={filteredTransactions}
+              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
+              userProfile={userProfile}
+              showAlert={showAlert}
             />
           )}
           {currentView === 'SCHEDULED_NOTIFICATIONS' && (
@@ -1779,6 +1856,10 @@ function AppContent() {
             <AcademyView
               profile={gamProfile}
               onBack={() => setCurrentView('DASHBOARD')}
+              onBuyItem={buyShopItem}
+              onEquipOutfit={equipOutfit}
+              onRerollChallenge={rerollChallenge}
+              onUpdateDailyGoal={updateDailyGoal}
               t={t}
             />
           )}
@@ -1819,7 +1900,7 @@ function AppContent() {
 
         {/* Bottom Nav (Only visible on Dashboard and Wallet/Profile root) */}
         {['DASHBOARD', 'WALLET', 'PROFILE', 'ANALYSIS', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED', 'HEATMAP', 'CURRENCY_PERF', 'SHOPPING_LIST', 'CONTACTS', 'DEBT_TRACKER', 'EXPORT', 'FIN_CALENDAR', 'IMPORT', 'PDF_REPORT', 'SCENARIO_PLANNER'].includes(currentView) && isNavVisible && !showAdd && !showSettings && (
-          <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-4 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
+          <div className="h-20 bg-theme-surface/95 backdrop-blur-md border-t border-white/5 flex items-center justify-center gap-0 md:gap-24 px-2 relative z-10 pb-2 flex-shrink-0 w-full transition-all duration-300 animate-in slide-in-from-bottom-full">
             {(() => {
               const NAV_ICON_MAP: Record<string, React.ReactNode> = {
                 DASHBOARD: <Home size={24} />,
@@ -1934,6 +2015,8 @@ function AppContent() {
             } as Transaction : null)}
             showAlert={showAlert}
             contacts={contacts}
+            isDevMode={isDevMode}
+            userProfile={userProfile}
           />
         )}
 

@@ -1,18 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCw, RefreshCcw, Image as ImageIcon, Calendar, Edit2, Trash2, ArrowLeft, MoreVertical } from 'lucide-react';
+import { X, Delete, Check, Calculator, Mic, ChevronDown, Sparkles, ChevronRight, ArrowRightLeft, TrendingUp, TrendingDown, Search, Camera, Loader2, RefreshCw, RefreshCcw, Image as ImageIcon, Calendar, Edit2, Trash2, ArrowLeft, MoreVertical, Coins, ScanText, Cpu, Cloud } from 'lucide-react';
 
-declare global {
-  interface Window {
-    Tesseract: any;
-  }
-}
-const Tesseract = window.Tesseract;
 import { FaWallet, FaBuildingColumns, FaCreditCard, FaMoneyBillWave, FaBitcoin, FaPaypal, FaCcVisa, FaCcMastercard, FaMobileScreen, FaPiggyBank } from 'react-icons/fa6';
-import { TransactionType, Currency, Account, Language, Transaction, Budget, Contact } from '@parity/core';
+import { TransactionType, Currency, Account, Language, Transaction, Budget, Contact, UserProfile, InvoiceData, OcrProviderId } from '@parity/core';
 import { CATEGORIES, getSmartCategories } from '../constants';
 import { getTranslation } from '@parity/i18n';
 import { formatMonth } from '@parity/core';
 import { div } from 'framer-motion/client';
+import { createWebInvoiceOcr } from '../services/invoiceOcrClient';
 
 // Icon Map for Financial Services
 const ACCOUNT_ICONS: Record<string, React.ElementType> = {
@@ -60,9 +55,12 @@ interface AddTransactionProps {
   transactions: Transaction[];
   budgets: Budget[];
   contacts?: Contact[];
+  isDevMode?: boolean;
+  userProfile?: UserProfile;
 }
 
-export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, usdRateParallel, euroRate, accounts, lang, initialData, showAlert, transactions, budgets, contacts = [] }) => {
+export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave, exchangeRate, usdRateParallel, euroRate, accounts, lang, initialData, showAlert, transactions, budgets, contacts = [], isDevMode, userProfile }) => {
+  const [pendingInvoiceData, setPendingInvoiceData] = useState<InvoiceData | undefined>(initialData?.invoiceData);
   const [amountStr, setAmountStr] = useState(initialData ? initialData.amount.toString() : '0');
   const [currency, setCurrency] = useState<Currency>(initialData ? initialData.originalCurrency : Currency.USD);
   const [type, setType] = useState<TransactionType>(initialData ? initialData.type : TransactionType.EXPENSE);
@@ -145,6 +143,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   const [showScanOptions, setShowScanOptions] = useState(false);
+  const [ocrEngine, setOcrEngine] = useState<OcrProviderId>('tesseract');
+  const azureAvailable = Boolean(isDevMode && userProfile?.ocrCloudEnabled && userProfile.ocrAzureEndpoint && userProfile.ocrAzureApiKey);
   const [isScanning, setIsScanning] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showCropModal, setShowCropModal] = useState(false);
@@ -157,6 +157,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
     return saved ? JSON.parse(saved) : [];
   });
   const [monthFormat, setMonthFormat] = useState(() => localStorage.getItem('parity_month_format') || 'YYYY-MM');
+  const [showGamificationTip, setShowGamificationTip] = useState(() => localStorage.getItem('parity_hide_gamification_tx_tip') !== 'true');
 
   useEffect(() => {
     const handleSync = () => {
@@ -220,92 +221,31 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
   const processImage = async (imageSource: HTMLCanvasElement | string) => {
     setIsScanning(true);
     try {
-      const { data: { text } } = await Tesseract.recognize(imageSource, 'eng+spa');
-      console.log("OCR Result:", text);
-      
-      const totalKeywords = ['total', 'neto', 'suma', 'amount', 'grand total', 'valor total', 'importe total', 'pago total', 'pagar', 'total a pagar'];
-      const lines = text.split('\n');
-      let foundAmount = null;
-      let detectedCurrency: Currency | null = null;
+      const imageInput = typeof imageSource === 'string' ? imageSource : imageSource.toDataURL('image/jpeg', 0.9);
 
-      // Detect currency from whole text first
-      const lowerText = text.toLowerCase();
-      if (lowerText.includes('bs') || lowerText.includes('ves') || lowerText.includes('bolivares') || lowerText.includes('bolívares')) {
-          detectedCurrency = Currency.VES;
-      } else if (lowerText.includes('$') || lowerText.includes('usd') || lowerText.includes('dolar') || lowerText.includes('dólar')) {
-          detectedCurrency = Currency.USD;
-      }
+      // Cloud OCR is opt-in, dev-mode gated only — see .plans/parity_invoice_ocr_plan.md §2.
+      // The user picks the engine explicitly (Tesseract / PaddleOCR / Azure) via the scan menu;
+      // Azure is only ever reachable here if it's also configured and dev mode is on.
+      const azureConfig = isDevMode && userProfile?.ocrCloudEnabled && userProfile.ocrAzureEndpoint && userProfile.ocrAzureApiKey
+        ? { endpoint: userProfile.ocrAzureEndpoint, apiKey: userProfile.ocrAzureApiKey, model: userProfile.ocrAzureModel }
+        : undefined;
+      const engine = ocrEngine === 'azure_doc_intelligence' && !azureConfig ? 'tesseract' : ocrEngine;
+      const invoiceOcr = createWebInvoiceOcr(azureConfig);
+      const invoiceData = await invoiceOcr.extract(imageInput, engine);
+      console.log("OCR Result:", invoiceData.rawText);
 
-      for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          const lowerLine = line.toLowerCase();
-          
-          if (totalKeywords.some(kw => lowerLine.includes(kw))) {
-              if (lowerLine.includes('bs') || lowerLine.includes('ves')) detectedCurrency = Currency.VES;
-              else if (lowerLine.includes('$') || lowerLine.includes('usd')) detectedCurrency = Currency.USD;
+      if (invoiceData.total !== undefined) {
+        setAmountStr(invoiceData.total.toFixed(2));
+        setPendingInvoiceData(invoiceData);
 
-              const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2}))|(\d+[.,]\d{1,2})|(\d+)/g;
-              const matches = line.match(amountRegex);
-              
-              if (matches && matches.length > 0) {
-                  foundAmount = matches[matches.length - 1];
-                  break;
-              } else if (i + 1 < lines.length) {
-                  const nextLineMatches = lines[i+1].match(amountRegex);
-                  if (nextLineMatches && nextLineMatches.length > 0) {
-                      foundAmount = nextLineMatches[nextLineMatches.length - 1];
-                      break;
-                  }
-              }
-          }
-      }
-
-      if (!foundAmount) {
-          const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2}))|(\d+[.,]\d{1,2})|(\d+)/g;
-          const allMatches = text.match(amountRegex);
-          
-          if (allMatches) {
-              const numbers = allMatches.map(m => {
-                  let cleaned = m.replace(/\s/g, '');
-                  if (cleaned.includes(',') && cleaned.includes('.')) {
-                      const lastDot = cleaned.lastIndexOf('.');
-                      const lastComma = cleaned.lastIndexOf(',');
-                      if (lastDot > lastComma) cleaned = cleaned.replace(/,/g, '');
-                      else cleaned = cleaned.replace(/\./g, '').replace(',', '.');
-                  } else if (cleaned.includes(',')) {
-                      cleaned = cleaned.replace(',', '.');
-                  }
-                  const val = parseFloat(cleaned);
-                  return isNaN(val) ? 0 : val;
-              });
-              if (numbers.length > 0) {
-                foundAmount = Math.max(...numbers).toString();
-              }
-          }
-      }
-      
-      if (foundAmount) {
-        let forFinal = foundAmount.replace(/\s/g, '');
-        if (forFinal.includes(',') && forFinal.includes('.')) {
-            const lastDot = forFinal.lastIndexOf('.');
-            const lastComma = forFinal.lastIndexOf(',');
-            if (lastDot > lastComma) forFinal = forFinal.replace(/,/g, '');
-            else forFinal = forFinal.replace(/\./g, '').replace(',', '.');
-        } else if (forFinal.includes(',')) {
-            forFinal = forFinal.replace(',', '.');
-        }
-
-        const cleanedAmount = forFinal;
-        setAmountStr(cleanedAmount);
-        
         // Auto-save the full image as receipt
         if (selectedImage) setReceiptImage(selectedImage);
 
-        if (detectedCurrency) {
-            setCurrency(detectedCurrency);
-            showAlert(`${t('totalFound')}: ${detectedCurrency === Currency.USD ? '$' : 'Bs '}${cleanedAmount}`, 'success');
+        if (invoiceData.currency) {
+            setCurrency(invoiceData.currency);
+            showAlert(`${t('totalFound')}: ${invoiceData.currency === Currency.USD ? '$' : 'Bs '}${invoiceData.total.toFixed(2)}`, 'success');
         } else {
-            showAlert(`${t('totalFound')}: ${cleanedAmount}`, 'success');
+            showAlert(`${t('totalFound')}: ${invoiceData.total.toFixed(2)}`, 'success');
         }
         setShowCropModal(false);
         setSelectedImage(null);
@@ -599,6 +539,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       fee: finalFee,
       scheduledId: initialData?.scheduledId,
       receipt: receiptImage,
+      invoiceData: pendingInvoiceData,
       contactId: selectedContactId
     });
   };
@@ -766,7 +707,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
       <div className="flex-1 bg-theme-bg px-4 pb-3 pt-2 relative flex flex-col">
         {/* Receipt Preview Row */}
         {receiptImage && (
-            <div className="px-2 mb-4 animate-in slide-in-from-left duration-300">
+            <div className="px-2 mb-4 animate-in slide-in-from-left duration-300 absolute top-0 left-0">
                 <div className="relative inline-block group">
                     <img 
                       src={receiptImage} 
@@ -966,7 +907,30 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
                 <div className="relative">
                     <button onClick={() => setShowScanOptions(!showScanOptions)} className="p-2.5 text-theme-secondary hover:text-theme-primary"><Camera size={18} /></button>
                     {showScanOptions && (
-                        <div className="absolute top-full mt-2 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[200px] z-[60] animate-in fade-in slide-in-from-top-2">
+                        <div className="absolute top-full mt-2 right-0 bg-theme-surface border border-white/10 rounded-2xl shadow-2xl p-2 min-w-[220px] z-[60] animate-in fade-in slide-in-from-top-2">
+                            <p className="px-3 pt-1 pb-2 text-[9px] font-black text-theme-secondary uppercase tracking-widest opacity-50">{t('ocrEngineLabel')}</p>
+                            <div className="flex flex-col gap-1 mb-2">
+                                <button
+                                    onClick={() => setOcrEngine('tesseract')}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${ocrEngine === 'tesseract' ? 'bg-theme-brand/15 text-theme-brand' : 'text-theme-secondary hover:bg-white/5'}`}
+                                >
+                                    <ScanText size={14} /> {t('ocrEngineTesseract')}
+                                </button>
+                                <button
+                                    onClick={() => setOcrEngine('paddleocr')}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${ocrEngine === 'paddleocr' ? 'bg-theme-brand/15 text-theme-brand' : 'text-theme-secondary hover:bg-white/5'}`}
+                                >
+                                    <Cpu size={14} /> {t('ocrEnginePaddle')}
+                                </button>
+                                <button
+                                    onClick={() => azureAvailable && setOcrEngine('azure_doc_intelligence')}
+                                    disabled={!azureAvailable}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${ocrEngine === 'azure_doc_intelligence' ? 'bg-theme-brand/15 text-theme-brand' : 'text-theme-secondary hover:bg-white/5'} ${!azureAvailable ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                >
+                                    <Cloud size={14} /> {t('ocrEngineAzure')}
+                                </button>
+                            </div>
+                            <div className="h-px bg-white/10 mb-1" />
                             <button onClick={() => { setShowScanOptions(false); startCamera(); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-primary hover:bg-white/5 rounded-xl">
                                 <Camera size={18} className="text-theme-brand" />
                                 <span className="font-bold">{t('openCamera')}</span>
@@ -1238,6 +1202,32 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave,
 
         {/* Bottom Actions */}
         <div className="flex flex-col gap-4 px-2 pt-0">
+             {/* Gamification integration bonus banner */}
+             {showGamificationTip && (
+               <div className="p-3 bg-theme-surface border border-theme rounded-3xl flex items-center justify-between gap-3 shadow-md absolute bottom-20 w-[90%] mx-auto">
+                 <div className="flex items-center gap-2 text-yellow-500">
+                   <Coins size={14} className="fill-yellow-500" />
+                   <span className="text-[10px] font-bold text-theme-primary leading-tight pr-4">
+                     {t('gamification_integration_add_tx_bonus')}
+                   </span>
+                 </div>
+                 <div className="flex items-center gap-2 flex-shrink-0">
+                   <span className="text-[9px] font-black text-theme-brand bg-theme-brand/10 px-2 py-0.5 rounded-full">
+                     +10 XP / +5 Coins
+                   </span>
+                   <button
+                     onClick={() => {
+                       setShowGamificationTip(false);
+                       localStorage.setItem('parity_hide_gamification_tx_tip', 'true');
+                     }}
+                     className="p-1 rounded-full hover:bg-theme-card text-theme-secondary hover:text-theme-primary transition-colors flex items-center justify-center"
+                     title="Hide tip"
+                   >
+                     <X size={12} />
+                   </button>
+                 </div>
+               </div>
+             )}
             <div className="flex items-center gap-3 mt-1">
                 <button 
                   onClick={() => setIsCalculatorMode(!isCalculatorMode)}

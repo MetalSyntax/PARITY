@@ -1,8 +1,11 @@
 import type { GamificationEventType } from './events';
 import type { LevelId } from './levels';
+import type { DailyGoalTier } from './dailyGoal';
+import type { CoinWallet } from './coins';
+import type { PersonalLeagueState } from './personalLeague';
 
 export interface GamificationProfile {
-  version: 1;
+  version: number;
   xp: number;
   level: LevelId;
   streak: StreakData;
@@ -12,6 +15,14 @@ export interface GamificationProfile {
   stats: LifetimeStats;
   createdAt: string;
   updatedAt: string;
+  
+  // v2 Additions
+  dailyGoal: DailyGoalTier;
+  coins: CoinWallet;
+  personalLeague: PersonalLeagueState;
+  placementCompletedAt: string | null;
+  mascotOutfit: string | null;   // active ShopItem id, category 'mascot_outfit'
+  ownedShopItems: string[];      // ShopItem ids purchased
 }
 
 export interface StreakData {
@@ -89,6 +100,7 @@ export interface GamificationResult {
   newLevel: LevelId | null;
   streakBroken: boolean;
   streakMilestone: number | null;
+  coinsGained?: number; // v2 addition
 }
 
 export interface XPAuditEntry {
@@ -100,7 +112,7 @@ export interface XPAuditEntry {
 
 export function createDefaultProfile(): GamificationProfile {
   return {
-    version: 1,
+    version: 2,
     xp: 0,
     level: 'novice',
     streak: {
@@ -119,7 +131,23 @@ export function createDefaultProfile(): GamificationProfile {
       totalBudgetMonthsInGreen: 0,
       totalExportsGenerated: 0,
     },
+    dailyGoal: 'steady',
+    coins: {
+      balance: 0,
+      lifetimeEarned: 0,
+    },
+    personalLeague: {
+      currentTier: 'bronze',
+      weekXP: 0,
+      lastWeekXP: 0,
+      weeksAtCurrentTier: 0,
+      tierHistory: [],
+    },
+    placementCompletedAt: null,
+    mascotOutfit: null,
+    ownedShopItems: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 }
+

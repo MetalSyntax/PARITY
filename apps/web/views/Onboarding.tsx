@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Target, ShieldCheck, CloudDownload, ArrowRight, Wallet, BarChart3, Rocket, X, Globe, Eye, EyeOff, Layout, Star, CheckCircle2, List, ShoppingCart } from 'lucide-react';
+import { Target, ShieldCheck, CloudDownload, ArrowRight, Wallet, BarChart3, Rocket, X, Globe, Eye, EyeOff, Layout, Star, CheckCircle2, List, ShoppingCart, Swords } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTranslation } from '@parity/i18n';
-import { Language, Currency, UserProfile } from '@parity/core';
+import { Language, Currency, UserProfile, DailyGoalTier } from '@parity/core';
 import { Button, IconButton, Typography, Input, SegmentedControl, ToggleSwitch, Card } from '@parity/ui';
 
 interface OnboardingInitialData {
@@ -10,6 +10,9 @@ interface OnboardingInitialData {
     displayCurrency: Currency;
     isBalanceVisible: boolean;
     navbarFavorites: string[];
+    dailyGoal: DailyGoalTier;
+    hasDebtsSeed: boolean;
+    attentionGoal: 'saving' | 'budgeting' | 'logging';
 }
 
 interface OnboardingProps {
@@ -29,6 +32,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang: initialLang, onSta
     const [hideBalances, setHideBalances] = useState(false);
     const [currency, setCurrency] = useState<Currency>(Currency.USD);
     const [favorites, setFavorites] = useState<string[]>(['DASHBOARD', 'TRANSACTIONS', 'BUDGET', 'SCHEDULED']);
+    
+    // Quiz states
+    const [dailyGoal, setDailyGoal] = useState<DailyGoalTier>('steady');
+    const [hasDebts, setHasDebts] = useState(false);
+    const [attentionGoal, setAttentionGoal] = useState<'saving' | 'budgeting' | 'logging'>('logging');
 
     const t = (key: any) => getTranslation(lang, key);
 
@@ -51,6 +59,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang: initialLang, onSta
             displayCurrency: currency,
             isBalanceVisible: !hideBalances,
             navbarFavorites: favorites,
+            dailyGoal,
+            hasDebtsSeed: hasDebts,
+            attentionGoal,
         });
     };
 
@@ -149,6 +160,61 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang: initialLang, onSta
                             {favorites.includes(item.id) && <CheckCircle2 size={12} />}
                         </button>
                     ))}
+                </div>
+            )
+        },
+        {
+            id: 'placement_goal',
+            title: 'Daily Goal',
+            desc: 'How do you want your daily XP goal to feel? You can change this anytime.',
+            icon: <Target size={60} className="text-violet-400" />,
+            color: 'from-violet-500/20 to-fuchsia-500/20',
+            content: (
+                <div className="w-full mt-6">
+                    <SegmentedControl 
+                        value={dailyGoal}
+                        onChange={(val: any) => setDailyGoal(val)}
+                        options={[
+                            { label: 'Light (15 XP)', value: 'light' },
+                            { label: 'Steady (35 XP)', value: 'steady' },
+                            { label: 'Intense (70 XP)', value: 'intense' }
+                        ]}
+                    />
+                </div>
+            )
+        },
+        {
+            id: 'placement_debt',
+            title: 'Debt & Splits',
+            desc: 'Do you have any debts or shared expenses to track? We will adapt your challenges.',
+            icon: <Swords size={60} className="text-rose-400" />,
+            color: 'from-rose-500/20 to-red-500/20',
+            content: (
+                <div className="w-full mt-6 space-y-4">
+                    <Card variant="surface" className="p-4 flex items-center justify-between border-white/5 bg-white/5">
+                        <Typography variant="small" weight="bold">Track debts & shared balances</Typography>
+                        <ToggleSwitch enabled={hasDebts} onChange={setHasDebts} />
+                    </Card>
+                </div>
+            )
+        },
+        {
+            id: 'placement_focus',
+            title: 'Your Focus',
+            desc: 'What is pulling your attention most right now? We will seed matching challenges.',
+            icon: <Rocket size={60} className="text-amber-400" />,
+            color: 'from-amber-500/20 to-yellow-500/20',
+            content: (
+                <div className="w-full mt-6">
+                    <SegmentedControl 
+                        value={attentionGoal}
+                        onChange={(val: any) => setAttentionGoal(val)}
+                        options={[
+                            { label: 'Saving', value: 'saving' },
+                            { label: 'Budgeting', value: 'budgeting' },
+                            { label: 'Logging', value: 'logging' }
+                        ]}
+                    />
                 </div>
             )
         },

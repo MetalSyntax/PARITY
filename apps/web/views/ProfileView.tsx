@@ -69,6 +69,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [smartAlertsEnabled, setSmartAlertsEnabled] = useState(profile.smartAlertsEnabled !== false); // Default to true
   const [notificationLeadTime, setNotificationLeadTime] = useState(profile.notificationLeadTime || 1);
   const [usdtSpread, setUsdtSpread] = useState(profile.usdtSpread ?? 0);
+  const [ocrCloudEnabled, setOcrCloudEnabled] = useState(profile.ocrCloudEnabled ?? false);
+  const [ocrAzureEndpoint, setOcrAzureEndpoint] = useState(profile.ocrAzureEndpoint ?? '');
+  const [ocrAzureApiKey, setOcrAzureApiKey] = useState(profile.ocrAzureApiKey ?? '');
+  const [ocrAzureModel, setOcrAzureModel] = useState<'prebuilt-invoice' | 'prebuilt-receipt'>(profile.ocrAzureModel ?? 'prebuilt-invoice');
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -104,7 +108,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       notificationsEnabled,
       smartAlertsEnabled,
       notificationLeadTime,
-      usdtSpread
+      usdtSpread,
+      ocrCloudEnabled,
+      ocrAzureEndpoint: ocrAzureEndpoint || undefined,
+      ocrAzureApiKey: ocrAzureApiKey || undefined,
+      ocrAzureModel
     });
     onBack();
   };
@@ -544,6 +552,85 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </motion.button>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Invoice OCR digitization — dev mode only, mirrors the Cloud Sync gating above */}
+        <AnimatePresence>
+          {isDevMode && (
+            <motion.div
+              key="ocr-digitize-card"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0, height: 0, marginTop: 0, overflow: 'hidden' }}
+              className="bg-theme-surface border border-theme-soft rounded-2xl p-6 relative overflow-hidden shadow-lg space-y-5"
+            >
+              <div className="flex items-center gap-2">
+                <Receipt size={16} className="text-theme-brand" />
+                <h3 className="text-lg font-black text-theme-primary">{t('digitizeInvoices')}</h3>
+              </div>
+              <p className="text-xs text-theme-secondary opacity-60 -mt-3">{t('digitizeInvoicesDesc')}</p>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onNavigate('INVOICE_DIGITIZE')}
+                className="w-full py-3.5 rounded-2xl bg-theme-bg text-theme-secondary font-black text-xs uppercase hover:bg-theme-soft transition-colors border border-theme-soft flex items-center justify-center gap-2"
+              >
+                <Receipt size={14} /> {t('digitizeInvoices')}
+              </motion.button>
+
+              <div className="pt-2 border-t border-theme-soft space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Cloud size={14} className="text-blue-400" />
+                    <span className="text-xs font-bold text-theme-primary">{t('ocrCloudEnable')}</span>
+                  </div>
+                  <button
+                    onClick={() => setOcrCloudEnabled(!ocrCloudEnabled)}
+                    className={`w-10 h-5 rounded-full transition-all relative ${ocrCloudEnabled ? "bg-theme-brand" : "bg-theme-soft"}`}
+                  >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${ocrCloudEnabled ? "left-6" : "left-1"}`} />
+                  </button>
+                </div>
+                <p className="text-[10px] text-theme-secondary opacity-50 -mt-2">{t('ocrCloudEnableDesc')}</p>
+
+                <AnimatePresence>
+                  {ocrCloudEnabled && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden space-y-3"
+                    >
+                      <input
+                        type="text"
+                        placeholder={t('ocrAzureEndpoint')}
+                        value={ocrAzureEndpoint}
+                        onChange={e => setOcrAzureEndpoint(e.target.value)}
+                        className="w-full bg-theme-bg border border-theme-soft rounded-xl px-3 py-2.5 text-xs font-bold text-theme-primary outline-none focus:border-theme-brand/50"
+                      />
+                      <input
+                        type="password"
+                        placeholder={t('ocrAzureApiKey')}
+                        value={ocrAzureApiKey}
+                        onChange={e => setOcrAzureApiKey(e.target.value)}
+                        className="w-full bg-theme-bg border border-theme-soft rounded-xl px-3 py-2.5 text-xs font-bold text-theme-primary outline-none focus:border-theme-brand/50"
+                      />
+                      <select
+                        value={ocrAzureModel}
+                        onChange={e => setOcrAzureModel(e.target.value as 'prebuilt-invoice' | 'prebuilt-receipt')}
+                        className="w-full bg-theme-bg border border-theme-soft rounded-xl px-3 py-2.5 text-xs font-bold text-theme-primary outline-none focus:border-theme-brand/50"
+                      >
+                        <option value="prebuilt-invoice">{t('ocrAzureModel')}: prebuilt-invoice</option>
+                        <option value="prebuilt-receipt">{t('ocrAzureModel')}: prebuilt-receipt</option>
+                      </select>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )}

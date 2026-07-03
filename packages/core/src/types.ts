@@ -1,3 +1,5 @@
+import type { InvoiceData } from './services/ocr/types';
+
 export enum Currency {
   USD = 'USD',
   VES = 'VES',
@@ -15,7 +17,7 @@ export type RateType = 'OFFICIAL' | 'PARALLEL';
 
 export type Language = 'en' | 'es' | 'pt';
 
-export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES' | 'GOALS' | 'INCOME' | 'FISCAL_REPORT' | 'CONTACTS' | 'DEBT_TRACKER' | 'EXPORT' | 'FIN_CALENDAR' | 'IMPORT' | 'PDF_REPORT' | 'SCENARIO_PLANNER' | 'ACADEMY';
+export type ViewState = 'DASHBOARD' | 'ADD' | 'SCHEDULED' | 'BUDGET' | 'ANALYSIS' | 'WALLET' | 'PROFILE' | 'TRANSFER' | 'TRANSACTIONS' | 'HEATMAP' | 'CURRENCY_PERF' | 'SCHEDULED_NOTIFICATIONS' | 'SHOPPING_LIST' | 'INVOICES' | 'GOALS' | 'INCOME' | 'FISCAL_REPORT' | 'CONTACTS' | 'DEBT_TRACKER' | 'EXPORT' | 'FIN_CALENDAR' | 'IMPORT' | 'PDF_REPORT' | 'SCENARIO_PLANNER' | 'ACADEMY' | 'INVOICE_DIGITIZE';
 
 export type SyncStatus = 'pending' | 'synced' | 'conflict';
 
@@ -47,6 +49,11 @@ export interface UserProfile {
   dashboardLayout?: DashboardLayout;
   usdtSpread?: number; // P2P spread % over spot (e.g. 1.5 = +1.5%)
   updatedAt?: string;
+  /** Dev-mode-only cloud OCR opt-in — see .plans/parity_invoice_ocr_plan.md §2. Never on by default. */
+  ocrCloudEnabled?: boolean;
+  ocrAzureEndpoint?: string;
+  ocrAzureApiKey?: string;
+  ocrAzureModel?: 'prebuilt-invoice' | 'prebuilt-receipt';
 }
 
 export interface Account {
@@ -79,6 +86,7 @@ export interface Transaction {
   scheduledId?: string;
   isAutoPosted?: boolean; // For recurring transaction badging
   receipt?: string; // Base64 image
+  invoiceData?: InvoiceData; // Structured OCR extraction — additive read-enrichment, never overwrites amount/category/normalizedAmountUSD
   budgetMonth?: string; // YYYY-MM
   skipBalanceUpdate?: boolean;
   fiscalTag?: FiscalTag;

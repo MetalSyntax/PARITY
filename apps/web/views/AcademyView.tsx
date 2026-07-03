@@ -1,10 +1,14 @@
-import React from 'react';
-import { ArrowLeft, Trophy, Zap, Sprout, BarChart2, Landmark, Layers, Receipt, Target, Swords, CheckCircle2 } from 'lucide-react';
-import { getLevel, getLevelProgress, getXPToNextLevel, CHALLENGE_TEMPLATES, LEVELS } from '@parity/core';
-import type { GamificationProfile, LevelId } from '@parity/core';
+import React, { useState } from 'react';
+import { ArrowLeft, Trophy, Zap, Sprout, BarChart2, Landmark, Layers, Receipt, Target, Swords, CheckCircle2, Coins, Calendar } from 'lucide-react';
+import { getLevel, getLevelProgress, getXPToNextLevel, CHALLENGE_TEMPLATES, LEVELS, LevelId, DailyGoalTier } from '@parity/core';
+import type { GamificationProfile } from '@parity/core';
 import { StreakCalendar } from '../components/gamification/StreakCalendar';
 import { ChallengeCard } from '../components/gamification/ChallengeCard';
 import { BadgeGrid } from '../components/gamification/BadgeGrid';
+import { FinancialPath } from '../components/gamification/FinancialPath';
+import { ShopView } from './ShopView';
+import { WeeklyRecapView } from './WeeklyRecapView';
+import { Card, SegmentedControl } from '@parity/ui';
 
 const LEVEL_ICONS: Record<LevelId, React.ReactNode> = {
   novice:     <Sprout   size={40} className="text-zinc-400" />,
@@ -17,6 +21,10 @@ const LEVEL_ICONS: Record<LevelId, React.ReactNode> = {
 interface AcademyViewProps {
   profile: GamificationProfile | null;
   onBack: () => void;
+  onBuyItem: (itemId: string) => Promise<boolean>;
+  onEquipOutfit: (itemId: string | null) => Promise<void>;
+  onRerollChallenge: (challengeId: string) => Promise<boolean>;
+  onUpdateDailyGoal: (goal: DailyGoalTier) => Promise<void>;
   t: (key: string) => string;
 }
 
@@ -67,12 +75,46 @@ const XPSparkline: React.FC<{ xpLog: GamificationProfile['xpLog'] }> = ({ xpLog 
   );
 };
 
-export const AcademyView: React.FC<AcademyViewProps> = ({ profile, onBack, t }) => {
+export const AcademyView: React.FC<AcademyViewProps> = ({ 
+  profile, 
+  onBack, 
+  onBuyItem, 
+  onEquipOutfit, 
+  onRerollChallenge, 
+  onUpdateDailyGoal, 
+  t 
+}) => {
+  const [activeTab, setActiveTab] = useState<'path' | 'stats'>('path');
+  const [subView, setSubView] = useState<'shop' | 'recap' | null>(null);
+
   if (!profile) {
     return (
       <div className="flex-1 flex items-center justify-center text-theme-secondary">
         <p>{t('loading')}</p>
       </div>
+    );
+  }
+
+  // Handle nested sub-views
+  if (subView === 'shop') {
+    return (
+      <ShopView
+        profile={profile}
+        onBack={() => setSubView(null)}
+        onBuyItem={onBuyItem}
+        onEquipOutfit={onEquipOutfit}
+        t={t}
+      />
+    );
+  }
+
+  if (subView === 'recap') {
+    return (
+      <WeeklyRecapView
+        profile={profile}
+        onBack={() => setSubView(null)}
+        t={t}
+      />
     );
   }
 
@@ -91,120 +133,177 @@ export const AcademyView: React.FC<AcademyViewProps> = ({ profile, onBack, t }) 
   return (
     <div className="flex flex-col h-full bg-theme-bg">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-6 pb-4 flex-shrink-0">
-        <button
-          onClick={onBack}
-          className="p-2 rounded-xl bg-theme-surface border border-theme text-theme-secondary hover:text-theme-primary transition-colors"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <div>
-          <h1 className="text-lg font-bold text-theme-primary">{t('gamification_academy_title')}</h1>
-          <p className="text-xs text-theme-secondary">{profile.xp} XP total</p>
+      <div className="flex items-center justify-between px-4 pt-6 pb-4 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="p-2 rounded-xl bg-theme-surface border border-theme text-theme-secondary hover:text-theme-primary transition-colors"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold text-theme-primary">{t('gamification_academy_title')}</h1>
+            <p className="text-xs text-theme-secondary">{profile.xp} XP total</p>
+          </div>
+        </div>
+
+        {/* Currency & Recap quick buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSubView('recap')}
+            className="p-2 rounded-xl bg-theme-surface border border-theme text-theme-secondary hover:text-theme-primary transition-colors"
+            title="Weekly Recap"
+          >
+            <Calendar size={18} />
+          </button>
+          <button
+            onClick={() => setSubView('shop')}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20 transition-all font-bold text-xs"
+          >
+            <Coins size={14} className="fill-yellow-500" />
+            <span>{profile.coins.balance}</span>
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-8 space-y-5">
-        {/* Level Card */}
-        <div className="bg-theme-surface border border-theme rounded-2xl p-5">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-2xl bg-theme-card flex items-center justify-center flex-shrink-0">
-              {LEVEL_ICONS[profile.level]}
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-theme-secondary mb-0.5">{t('gamification_level_label')}</p>
-              <p className="text-xl font-bold text-theme-primary">{t(levelDef.nameKey)}</p>
-              <p className="text-xs text-theme-secondary mt-0.5">
-                {xpToNext !== null ? `${xpToNext} XP para ${t(LEVELS[currentLevelIndex + 1]?.nameKey ?? '')}` : t('gamification_max_level')}
-              </p>
-            </div>
-          </div>
-          {/* Level progress bar */}
-          <div className="h-3 bg-theme-card rounded-full overflow-hidden mb-2">
-            <div
-              className="h-full bg-theme-brand rounded-full transition-all duration-700"
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-theme-secondary">
-            <span>{levelDef.minXP} XP</span>
-            <span className="font-semibold text-theme-primary">{profile.xp} XP</span>
-            <span>{levelDef.maxXP !== null ? `${levelDef.maxXP} XP` : '∞'}</span>
-          </div>
-        </div>
-
-        {/* Streak Card */}
-        <StreakCalendar
-          currentDays={profile.streak.currentDays}
-          longestDays={profile.streak.longestDays}
-          lastActivityDate={profile.streak.lastActivityDate}
-          t={t}
+      {/* Tabs */}
+      <div className="px-4 mb-4">
+        <SegmentedControl
+          value={activeTab}
+          onChange={(val: any) => setActiveTab(val)}
+          options={[
+            { label: t('gamification_learning_path_tab'), value: 'path' },
+            { label: t('gamification_stats_tab'), value: 'stats' }
+          ]}
         />
+      </div>
 
-        {/* Active Challenges */}
-        {activeTemplates.length > 0 && (
-          <div>
-            <p className="text-sm font-semibold text-theme-primary mb-3">
-              {t('gamification_academy_activeChallenges')}
-            </p>
-            <div className="space-y-2">
-              {activeTemplates.map(tmpl => (
-                <ChallengeCard
-                  key={tmpl.id}
-                  template={tmpl}
-                  progress={profile.challengeProgress[tmpl.id]}
-                  t={t}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* XP History Sparkline */}
-        <div className="bg-theme-surface border border-theme rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Zap size={16} className="text-theme-brand" />
-            <p className="text-sm font-semibold text-theme-primary">{t('gamification_academy_xpHistory')}</p>
-          </div>
-          <XPSparkline xpLog={profile.xpLog} />
-        </div>
-
-        {/* Badge Grid */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Trophy size={16} className="text-theme-brand" />
-            <p className="text-sm font-semibold text-theme-primary">{t('gamification_academy_badges')}</p>
-            <span className="ml-auto text-xs text-theme-secondary">
-              {profile.badges.length}/{19}
-            </span>
-          </div>
-          <BadgeGrid earnedBadges={profile.badges} t={t} />
-        </div>
-
-        {/* Lifetime Stats */}
-        <div>
-          <p className="text-sm font-semibold text-theme-primary mb-3">
-            {t('gamification_academy_lifetimeStats')}
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: t('gamification_stat_transactions'), value: profile.stats.totalTransactionsLogged, Icon: Receipt,      color: 'text-sky-400',     bg: 'bg-sky-400/10' },
-              { label: t('gamification_stat_goals'),        value: profile.stats.totalGoalsCompleted,     Icon: Target,       color: 'text-amber-400',   bg: 'bg-amber-400/10' },
-              { label: t('gamification_stat_debts'),        value: profile.stats.totalDebtsSettled,       Icon: Swords,       color: 'text-rose-400',    bg: 'bg-rose-400/10' },
-              { label: t('gamification_stat_green_months'), value: profile.stats.totalBudgetMonthsInGreen, Icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-            ].map(({ label, value, Icon, color, bg }) => (
-              <div key={label} className="bg-theme-card rounded-xl p-3 flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
-                  <Icon size={18} className={color} />
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-8 space-y-5">
+        {activeTab === 'path' ? (
+          <FinancialPath profile={profile} t={t} />
+        ) : (
+          <>
+            {/* Level Card */}
+            <div className="bg-theme-surface border border-theme rounded-2xl p-5">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-theme-card flex items-center justify-center flex-shrink-0">
+                  {LEVEL_ICONS[profile.level]}
                 </div>
-                <div>
-                  <p className="text-xl font-bold text-theme-primary">{value}</p>
-                  <p className="text-xs text-theme-secondary">{label}</p>
+                <div className="flex-1">
+                  <p className="text-xs text-theme-secondary mb-0.5">{t('gamification_level_label')}</p>
+                  <p className="text-xl font-bold text-theme-primary">{t(levelDef.nameKey)}</p>
+                  <p className="text-xs text-theme-secondary mt-0.5">
+                    {xpToNext !== null ? `${xpToNext} XP para ${t(LEVELS[currentLevelIndex + 1]?.nameKey ?? '')}` : t('gamification_max_level')}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+              {/* Level progress bar */}
+              <div className="h-3 bg-theme-card rounded-full overflow-hidden mb-2">
+                <div
+                  className="h-full bg-theme-brand rounded-full transition-all duration-700"
+                  style={{ width: `${progress * 100}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-theme-secondary">
+                <span>{levelDef.minXP} XP</span>
+                <span className="font-semibold text-theme-primary">{profile.xp} XP</span>
+                <span>{levelDef.maxXP !== null ? `${levelDef.maxXP} XP` : '∞'}</span>
+              </div>
+            </div>
+
+            {/* Daily Goal Settings Card */}
+            <div className="bg-theme-surface border border-theme rounded-2xl p-5 space-y-3">
+              <div className="flex items-center gap-2 text-theme-brand">
+                <Target size={18} />
+                <p className="text-sm font-semibold text-theme-primary">{t('gamification_daily_goal_title')}</p>
+              </div>
+              <SegmentedControl
+                value={profile.dailyGoal}
+                onChange={(val: any) => onUpdateDailyGoal(val)}
+                options={[
+                  { label: t('gamification_daily_goal_light'), value: 'light' },
+                  { label: t('gamification_daily_goal_steady'), value: 'steady' },
+                  { label: t('gamification_daily_goal_intense'), value: 'intense' }
+                ]}
+              />
+            </div>
+
+            {/* Streak Card */}
+            <StreakCalendar
+              currentDays={profile.streak.currentDays}
+              longestDays={profile.streak.longestDays}
+              lastActivityDate={profile.streak.lastActivityDate}
+              t={t}
+            />
+
+            {/* Active Challenges */}
+            {activeTemplates.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold text-theme-primary mb-3">
+                  {t('gamification_academy_activeChallenges')}
+                </p>
+                <div className="space-y-2">
+                  {activeTemplates.map(tmpl => (
+                    <ChallengeCard
+                      key={tmpl.id}
+                      template={tmpl}
+                      progress={profile.challengeProgress[tmpl.id]}
+                      onReroll={() => onRerollChallenge(tmpl.id)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* XP History Sparkline */}
+            <div className="bg-theme-surface border border-theme rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap size={16} className="text-theme-brand" />
+                <p className="text-sm font-semibold text-theme-primary">{t('gamification_academy_xpHistory')}</p>
+              </div>
+              <XPSparkline xpLog={profile.xpLog} />
+            </div>
+
+            {/* Badge Grid */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy size={16} className="text-theme-brand" />
+                <p className="text-sm font-semibold text-theme-primary">{t('gamification_academy_badges')}</p>
+                <span className="ml-auto text-xs text-theme-secondary">
+                  {profile.badges.length}/{19}
+                </span>
+              </div>
+              <BadgeGrid earnedBadges={profile.badges} t={t} />
+            </div>
+
+            {/* Lifetime Stats */}
+            <div>
+              <p className="text-sm font-semibold text-theme-primary mb-3">
+                {t('gamification_academy_lifetimeStats')}
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: t('gamification_stat_transactions'), value: profile.stats.totalTransactionsLogged, Icon: Receipt,      color: 'text-sky-400',     bg: 'bg-sky-400/10' },
+                  { label: t('gamification_stat_goals'),        value: profile.stats.totalGoalsCompleted,     Icon: Target,       color: 'text-amber-400',   bg: 'bg-amber-400/10' },
+                  { label: t('gamification_stat_debts'),        value: profile.stats.totalDebtsSettled,       Icon: Swords,       color: 'text-rose-400',    bg: 'bg-rose-400/10' },
+                  { label: t('gamification_stat_green_months'), value: profile.stats.totalBudgetMonthsInGreen, Icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+                ].map(({ label, value, Icon, color, bg }) => (
+                  <div key={label} className="bg-theme-card rounded-xl p-3 flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
+                      <Icon size={18} className={color} />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-theme-primary">{value}</p>
+                      <p className="text-xs text-theme-secondary">{label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

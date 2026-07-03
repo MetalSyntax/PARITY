@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ArrowLeft, Search, TrendingUp, Coins, DollarSign, X, Receipt, Euro, Layers, Trash2, Calendar, RefreshCw, Plus, PieChart, ArrowRightLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Search, TrendingUp, Coins, DollarSign, X, Receipt, Euro, Layers, Trash2, Calendar, RefreshCw, Plus, PieChart, ArrowRightLeft, ChevronDown, ScanText, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Transaction, Language, Currency, TransactionType, Account } from '@parity/core';
+import { Transaction, Language, Currency, TransactionType, Account, UserProfile } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 import { formatMonth } from '@parity/core';
 import { CATEGORIES } from '../constants';
 import { TransactionDetailModal } from '../components/TransactionDetailModal';
 import { TransactionItem } from '../components/TransactionItem';
 import { renderAccountIcon } from '../utils/iconUtils';
+import { InvoiceQuickDigitizeModal } from './settings/InvoiceQuickDigitizeModal';
 
 interface TransactionsListViewProps {
   onBack: () => void;
@@ -22,6 +23,9 @@ interface TransactionsListViewProps {
   onUpdateTransaction: (t: Transaction) => void;
   initialViewMode?: 'LIST' | 'INVOICES';
   showConfirm: (config: { message: string, onConfirm: () => void }) => void;
+  userProfile: UserProfile;
+  isDevMode?: boolean;
+  showAlert: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
@@ -36,7 +40,10 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   onToggleDisplayCurrency,
   onUpdateTransaction,
   initialViewMode = 'LIST',
-  showConfirm
+  showConfirm,
+  userProfile,
+  isDevMode,
+  showAlert
 }) => {
   const t = (key: any) => getTranslation(lang, key);
 
@@ -48,6 +55,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
   const [openPopup, setOpenPopup] = useState<'month' | 'wallet' | 'type' | 'category' | null>(null);
   const [viewMode, setViewMode] = useState<'LIST' | 'INVOICES'>(initialViewMode);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [digitizeTx, setDigitizeTx] = useState<Transaction | null>(null);
 
   const [showAddMonthModal, setShowAddMonthModal] = useState(false);
   const [newMonthInput, setNewMonthInput] = useState(new Date().toISOString().slice(0, 7));
@@ -474,6 +482,13 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
                   className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black aspect-square cursor-pointer hover:border-theme-brand transition-colors"
                 >
                   <img src={tx.receipt} alt="Receipt" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDigitizeTx(tx); }}
+                    title={t('digitizeSingle')}
+                    className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-sm transition-colors ${tx.invoiceData ? 'bg-emerald-500/80 text-white' : 'bg-black/60 text-white hover:bg-theme-brand'}`}
+                  >
+                    {tx.invoiceData ? <CheckCircle2 size={14} /> : <ScanText size={14} />}
+                  </button>
                   <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
                     <p className="text-white text-[10px] font-bold truncate">
                       {tx.note || (t(CATEGORIES.find(c => c.id === tx.category)?.name.toLowerCase() || ''))}
@@ -540,6 +555,19 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         language={lang}
         displayCurrency={displayCurrency}
       />
+
+      <AnimatePresence>
+        {digitizeTx && (
+          <InvoiceQuickDigitizeModal
+            transaction={digitizeTx}
+            userProfile={userProfile}
+            isDevMode={isDevMode}
+            onClose={() => setDigitizeTx(null)}
+            onUpdateTransaction={(tx) => { onUpdateTransaction(tx); setDigitizeTx(null); }}
+            showAlert={showAlert}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Add Month Modal */}
       <AnimatePresence>

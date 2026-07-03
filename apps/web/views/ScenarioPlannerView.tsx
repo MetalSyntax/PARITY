@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Plus, Check, ArrowLeft, X, BarChart2, Zap, ArrowRightLeft } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Check, ArrowLeft, X, BarChart2, Zap, ArrowRightLeft, Sparkles } from 'lucide-react';
 import { Language, Currency } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 
@@ -190,6 +190,20 @@ export const ScenarioPlannerView: React.FC<ScenarioPlannerViewProps> = ({
           <Plus size={22} />
         </motion.button>
       </div>
+
+       {/* Gamification badge preview integration */}
+       <div className="bg-theme-surface border border-theme rounded-2xl p-4 mb-4 flex items-center justify-between gap-3 shadow-md">
+         <div className="flex items-center gap-3">
+           <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+             <Sparkles size={18} />
+           </div>
+           <div>
+             <p className="text-xs font-bold text-theme-primary">
+               {t('gamification_integration_scenario_badge_preview')}
+             </p>
+           </div>
+         </div>
+       </div>
 
       {/* Scenario Selector Pills */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar pt-2 pb-8 mb-4">

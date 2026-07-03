@@ -1,11 +1,27 @@
 import React from 'react';
 import type { ChallengeTemplate } from '@parity/core';
 import type { ChallengeProgress } from '@parity/core';
-import { CheckCircle2 } from 'lucide-react';
+import { 
+  CheckCircle2, 
+  FileText, 
+  TrendingUp, 
+  Activity, 
+  PiggyBank, 
+  Utensils, 
+  Flame, 
+  Handshake, 
+  Award, 
+  Percent, 
+  Target, 
+  HelpCircle,
+  RotateCw,
+  Coins
+} from 'lucide-react';
 
 interface ChallengeCardProps {
   template: ChallengeTemplate;
   progress: ChallengeProgress | undefined;
+  onReroll?: () => void;
   t: (key: string) => string;
 }
 
@@ -15,16 +31,33 @@ const HORIZON_COLORS = {
   monthly: 'text-amber-400 bg-amber-400/10',
 };
 
-export const ChallengeCard: React.FC<ChallengeCardProps> = ({ template, progress, t }) => {
+const IconMap: Record<string, React.ComponentType<any>> = {
+  FileText,
+  TrendingUp,
+  Activity,
+  PiggyBank,
+  Utensils,
+  Flame,
+  Handshake,
+  Award,
+  Percent,
+  Target,
+};
+
+export const ChallengeCard: React.FC<ChallengeCardProps> = ({ template, progress, onReroll, t }) => {
   const current = progress?.current ?? 0;
   const target = getTargetCount(template);
   const pct = target > 0 ? Math.min(1, current / target) : 0;
   const completed = progress?.completed ?? false;
 
+  const ChallengeIcon = IconMap[template.icon] || HelpCircle;
+
   return (
     <div className={`p-4 rounded-xl bg-theme-card border ${completed ? 'border-green-500/30' : 'border-theme'}`}>
       <div className="flex items-start gap-3 mb-3">
-        <span className="text-2xl flex-shrink-0">{template.icon}</span>
+        <span className="p-2 rounded-xl bg-theme-surface border border-theme text-theme-brand flex-shrink-0">
+          <ChallengeIcon size={18} />
+        </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <p className="text-sm font-semibold text-theme-primary truncate">{t(template.titleKey)}</p>
@@ -37,6 +70,22 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({ template, progress
             {t(`challenge_horizon_${template.horizon}`)}
           </span>
           <span className="text-xs font-bold text-theme-brand">+{template.xpReward} XP</span>
+          
+          {/* Swap Reroll Button */}
+          {!completed && onReroll && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onReroll();
+              }}
+              title="Swap challenge (10 Coins)"
+              className="mt-1 p-1 px-1.5 rounded-lg bg-theme-surface border border-theme text-theme-secondary hover:text-theme-primary hover:border-theme-brand/40 transition-colors flex items-center gap-1 text-[9px] font-bold"
+            >
+              <RotateCw size={10} />
+              <Coins size={10} className="fill-yellow-500/10 text-yellow-500" />
+              <span>10</span>
+            </button>
+          )}
         </div>
       </div>
 
