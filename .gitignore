@@ -37,7 +37,9 @@ backlog
 .archive/
 
 # Claude Code settings
-.claude/
+.claude/worktrees/
+.claude/settings.local.json
+!.claude/skills/
 .plans
 mobile-experimental
 .turbo
