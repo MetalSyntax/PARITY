@@ -332,11 +332,136 @@ export const useGoogleDriveSync = <T extends object>({
     }
   }, [gapiInited, isAuthenticated]);
 
+  // ── Generic helpers used by the minimal ("sync") backup flow ──
+  // These are additive and do not change the behavior of exportToCloud/importFromCloud/listCloudBackups above.
+  const getValidToken = async (gapi: any): Promise<string | null> => {
+    let token = gapi.client.getToken()?.access_token;
+    if (!token) {
+      const savedTokenData = localStorage.getItem(GOOGLE_TOKEN_KEY);
+      if (savedTokenData) {
+        const { token: savedToken, expiresAt } = JSON.parse(savedTokenData);
+        if (Date.now() < expiresAt) {
+          token = savedToken;
+          gapi.client.setToken({ access_token: token });
+        }
+      }
+    }
+    return token || null;
+  };
+
+  const findFileIdByName = async (gapi: any, name: string) => {
+    const listResponse = await gapi.client.drive.files.list({
+      q: `name = '${name}' and trashed = false`,
+      fields: 'files(id, name)',
+    });
+    const files = listResponse.result.files;
+    return files && files.length > 0 ? files[0].id : null;
+  };
+
+  // Upload arbitrary JSON to a Drive file identified by name (create-or-update), independent of the
+  // hook's fixed `fileName`/`localData`. Used for the minimal ("sync") backup, which targets a
+  // differently-named file with a delta payload instead of the full app state.
+  const uploadJson = useCallback(async (targetFileName: string, data: any) => {
+    if (!gapiInited || !isAuthenticated) throw new Error('Not authenticated');
+    setIsSyncing(true);
+    try {
+      const gapi = (window as any).gapi;
+      const token = await getValidToken(gapi);
+      if (!token) {
+        setIsAuthenticated(false);
+        throw new Error('No active session');
+      }
+
+      const fileId = await findFileIdByName(gapi, targetFileName);
+      const body = JSON.stringify(data);
+
+      if (fileId) {
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body,
+        });
+      } else {
+        const fileMetadata = { name: targetFileName, mimeType: 'application/json' };
+        const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(fileMetadata),
+        });
+        const fileJson = await createRes.json();
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileJson.id}?uploadType=media`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body,
+        });
+      }
+    } catch (error: any) {
+      console.error('Upload JSON Error', error);
+      if (error?.status === 401) {
+        setIsAuthenticated(false);
+        localStorage.removeItem(GOOGLE_TOKEN_KEY);
+      }
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [gapiInited, isAuthenticated]);
+
+  // List Drive files whose name contains the given prefix (e.g. 'parity_sync_' for minimal backups,
+  // as opposed to listCloudBackups' hardcoded 'parity_backup_' for full backups).
+  const listFilesByPrefix = useCallback(async (prefix: string) => {
+    if (!gapiInited || !isAuthenticated) return [];
+    setIsSyncing(true);
+    try {
+      const gapi = (window as any).gapi;
+      const token = await getValidToken(gapi);
+      if (!token) {
+        setIsAuthenticated(false);
+        throw new Error('No active session');
+      }
+      const listResponse = await gapi.client.drive.files.list({
+        q: `name contains '${prefix}' and trashed = false`,
+        fields: 'files(id, name, modifiedTime, size)',
+        orderBy: 'modifiedTime desc',
+      });
+      return listResponse.result.files || [];
+    } catch (error) {
+      console.error('List Files Error', error);
+      return [];
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [gapiInited, isAuthenticated]);
+
+  // Fetch and parse a Drive file's JSON content without applying it to local state — the caller
+  // decides whether to full-replace (like importFromCloud does) or merge (minimal restore).
+  const fetchFileContent = useCallback(async (fileId: string) => {
+    if (!gapiInited || !isAuthenticated) throw new Error('Not authenticated');
+    setIsSyncing(true);
+    try {
+      const gapi = (window as any).gapi;
+      const token = await getValidToken(gapi);
+      if (!token) {
+        setIsAuthenticated(false);
+        throw new Error('No active session');
+      }
+      const fileContent = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return await fileContent.json();
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [gapiInited, isAuthenticated]);
+
   return {
     handleLogin,
     exportToCloud,
     importFromCloud,
     listCloudBackups,
+    uploadJson,
+    listFilesByPrefix,
+    fetchFileContent,
     isSyncing,
     isAuthenticated
   };

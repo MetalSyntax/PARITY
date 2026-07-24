@@ -21,7 +21,10 @@ interface ProfileViewProps {
   onLogin: () => void;
   onExport: () => void;
   onImport: (fileId?: string) => void;
+  onExportMinimal: () => void;
+  onImportMinimal: (fileId: string) => void;
   listCloudBackups: () => Promise<any[]>;
+  listMinimalBackups: () => Promise<any[]>;
   isDevMode: boolean;
   onDevModeTrigger: () => void;
   navbarFavorites: string[];
@@ -49,7 +52,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onLogin,
   onExport,
   onImport,
+  onExportMinimal,
+  onImportMinimal,
   listCloudBackups,
+  listMinimalBackups,
   isDevMode,
   onDevModeTrigger,
   navbarFavorites,
@@ -74,7 +80,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [ocrAzureApiKey, setOcrAzureApiKey] = useState(profile.ocrAzureApiKey ?? '');
   const [ocrAzureModel, setOcrAzureModel] = useState<'prebuilt-invoice' | 'prebuilt-receipt'>(profile.ocrAzureModel ?? 'prebuilt-invoice');
   const [cloudBackups, setCloudBackups] = useState<any[] | null>(null);
+  const [cloudBackupsType, setCloudBackupsType] = useState<'full' | 'minimal'>('full');
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
+  const [cloudChoiceMode, setCloudChoiceMode] = useState<'backup' | 'restore' | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<{ id: string; type: 'full' | 'minimal' } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
   const [showTerms, setShowTerms] = useState(false);
@@ -130,6 +139,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleChooseBackup = (type: 'full' | 'minimal') => {
+    setCloudChoiceMode(null);
+    if (type === 'full') onExport();
+    else onExportMinimal();
+  };
+
+  const handleChooseRestore = async (type: 'full' | 'minimal') => {
+    setCloudChoiceMode(null);
+    setIsLoadingBackups(true);
+    const backups = type === 'full' ? await listCloudBackups() : await listMinimalBackups();
+    setCloudBackupsType(type);
+    setCloudBackups(backups);
+    setIsLoadingBackups(false);
+  };
+
+  const handleConfirmRestore = () => {
+    if (!restoreTarget) return;
+    if (restoreTarget.type === 'full') onImport(restoreTarget.id);
+    else onImportMinimal(restoreTarget.id);
+    setRestoreTarget(null);
   };
 
   return (
@@ -523,10 +554,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </motion.button>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    <motion.button 
+                    <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={onExport}
+                      onClick={() => setCloudChoiceMode('backup')}
                       disabled={isSyncing}
                       className={`w-full py-3.5 rounded-2xl font-black text-xs uppercase transition-all flex items-center justify-center gap-2 ${
                         isSyncing ? 'bg-theme-brand/20 text-theme-brand animate-pulse' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
@@ -534,15 +565,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     >
                       {isSyncing ? t('processing') : t('cloudExport')}
                     </motion.button>
-                    <motion.button 
+                    <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={async () => {
-                        setIsLoadingBackups(true);
-                        const backups = await listCloudBackups();
-                        setCloudBackups(backups);
-                        setIsLoadingBackups(false);
-                      }}
+                      onClick={() => setCloudChoiceMode('restore')}
                       disabled={isSyncing || isLoadingBackups}
                       className={`w-full py-3.5 rounded-2xl font-black text-xs uppercase transition-all flex items-center justify-center gap-2 ${
                         (isSyncing || isLoadingBackups) ? 'bg-theme-brand/20 text-theme-brand animate-pulse' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
@@ -815,10 +841,48 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
+      {cloudChoiceMode !== null && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
+            <h3 className="text-xl font-black text-theme-primary mb-1">
+              {t(cloudChoiceMode === 'backup' ? 'cloudBackupChoiceTitle' : 'cloudRestoreChoiceTitle')}
+            </h3>
+            <p className="text-xs text-theme-secondary mb-6 opacity-60">
+              {t(cloudChoiceMode === 'backup' ? 'cloudBackupChoiceDesc' : 'cloudRestoreChoiceDesc')}
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => cloudChoiceMode === 'backup' ? handleChooseBackup('full') : handleChooseRestore('full')}
+                className="w-full text-left p-4 rounded-2xl bg-theme-bg/50 border border-theme-soft hover:bg-theme-soft hover:border-theme-brand/50 transition-all flex flex-col gap-1"
+              >
+                <span className="text-sm font-bold text-theme-primary">{t('cloudFull')}</span>
+                <span className="text-[10px] text-theme-secondary opacity-70">{t('cloudFullDesc')}</span>
+              </button>
+              <button
+                onClick={() => cloudChoiceMode === 'backup' ? handleChooseBackup('minimal') : handleChooseRestore('minimal')}
+                className="w-full text-left p-4 rounded-2xl bg-theme-bg/50 border border-theme-soft hover:bg-theme-soft hover:border-theme-brand/50 transition-all flex flex-col gap-1"
+              >
+                <span className="text-sm font-bold text-theme-primary">{t('cloudMinimal')}</span>
+                <span className="text-[10px] text-theme-secondary opacity-70">{t('cloudMinimalDesc')}</span>
+              </button>
+            </div>
+            <button
+                onClick={() => setCloudChoiceMode(null)}
+                className="mt-6 w-full py-4 rounded-2xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors"
+            >
+                {t('cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {cloudBackups !== null && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
-            <h3 className="text-xl font-black text-theme-primary mb-4">{t('restoreData')}</h3>
+            <h3 className="text-xl font-black text-theme-primary mb-1">{t('restoreData')}</h3>
+            <p className="text-xs text-theme-secondary mb-4 opacity-60">
+              {t(cloudBackupsType === 'full' ? 'cloudFull' : 'cloudMinimal')}
+            </p>
             {cloudBackups.length === 0 ? (
               <p className="text-sm text-theme-secondary text-center py-8">{t('noCloudBackups')}</p>
             ) : (
@@ -827,8 +891,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                    <button
                      key={bkp.id}
                      onClick={() => {
-                        onImport(bkp.id);
                         setCloudBackups(null);
+                        setRestoreTarget({ id: bkp.id, type: cloudBackupsType });
                      }}
                      className="w-full text-left p-4 rounded-2xl bg-theme-bg/50 border border-theme-soft hover:bg-theme-soft hover:border-theme-brand/50 transition-all flex flex-col gap-1"
                    >
@@ -840,12 +904,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 ))}
               </div>
             )}
-            <button 
+            <button
                 onClick={() => setCloudBackups(null)}
                 className="mt-6 w-full py-4 rounded-2xl bg-white/5 text-theme-secondary font-bold hover:bg-white/10 transition-colors"
             >
                 {t('cancel')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {restoreTarget !== null && (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
+            <h3 className="text-xl font-black text-theme-primary mb-3">{t('restoreData')}</h3>
+            <p className="text-sm text-theme-secondary mb-6">
+              {t(restoreTarget.type === 'full' ? 'importConfirm' : 'importConfirmMinimal')}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRestoreTarget(null)}
+                className="flex-1 py-4 rounded-2xl bg-theme-bg text-theme-secondary font-bold hover:bg-theme-soft transition-colors text-xs uppercase"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={handleConfirmRestore}
+                className={`flex-1 py-4 rounded-2xl text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all hover:brightness-110 ${
+                  restoreTarget.type === 'full' ? 'bg-red-500 shadow-red-500/20' : 'bg-blue-500 shadow-blue-500/20'
+                }`}
+              >
+                {t('confirm')}
+              </button>
+            </div>
           </div>
         </div>
       )}

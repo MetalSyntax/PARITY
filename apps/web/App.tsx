@@ -65,6 +65,8 @@ const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const STORAGE_KEY = 'parity_data_v3';
+const MINIMAL_BACKUP_PREFIX = 'parity_sync_';
+const LAST_CLOUD_SYNC_KEY = 'parity_last_cloud_sync_at';
 
 /**
  * Main application component that wraps the application with necessary providers.
@@ -341,21 +343,26 @@ function AppContent() {
       setConfirmConfig(config);
   };
 
-  const { handleLogin, exportToCloud, importFromCloud, listCloudBackups, isSyncing, isAuthenticated } = useGoogleDriveSync({
+  const {
+    handleLogin, exportToCloud, importFromCloud, listCloudBackups,
+    uploadJson, listFilesByPrefix, fetchFileContent,
+    isSyncing, isAuthenticated
+  } = useGoogleDriveSync({
     fileName: `parity_backup_${new Date().toISOString().split('T')[0]}.json`,
     localData: {
         userId: userProfile.name, // Extra metadata
         lastBackup: new Date().toISOString(),
-        exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals, shoppingLists, syncQueue: [] // We don't backup the queue itself in the target file
+        exchangeRate, accounts, transactions, scheduledPayments, userProfile, budgets, goals, shoppingItems, shoppingLists, syncQueue: [] // We don't backup the queue itself in the target file
     },
     setLocalData: (data: any) => {
-        if (data.userProfile) handleImportData(data, true); 
+        if (data.userProfile) handleImportData(data, true);
     },
     googleClientId: GOOGLE_CLIENT_ID,
     onSyncSuccess: () => {
         syncService.markQueueAsSynced().then(() => {
             syncService.getPendingCount().then(c => setSyncPendingCount(c));
         });
+        setLastCloudSyncAt(new Date().toISOString());
         showAlert('alert_syncSuccess', 'success');
     },
     onSyncError: (e) => showAlert('alert_syncError', 'error'),
@@ -365,32 +372,230 @@ function AppContent() {
     }
   });
 
-  const [pendingSync, setPendingSync] = useState(false);
+  // Watermark used by the minimal ("sync") backup to know what changed since the last
+  // successful cloud operation (full or minimal alike). UI preference, not encrypted —
+  // same tier as displayCurrency/isBalanceVisible/etc.
+  const [lastCloudSyncAt, setLastCloudSyncAtState] = useState<string | null>(() =>
+    localStorage.getItem(LAST_CLOUD_SYNC_KEY)
+  );
+  const setLastCloudSyncAt = useCallback((iso: string) => {
+    localStorage.setItem(LAST_CLOUD_SYNC_KEY, iso);
+    setLastCloudSyncAtState(iso);
+  }, []);
 
-  const performSyncFlow = useCallback(async () => {
+  // 1. MINIMAL BACKUP — uploads only transactions changed since lastCloudSyncAt, plus a full
+  // snapshot of the smaller entity collections (accounts, budgets, goals, scheduledPayments,
+  // shoppingLists) so a restore-mínimo on another device stays internally consistent.
+  const handleMinimalBackup = useCallback(async () => {
+    if (!isAuthenticated) return;
+    const since = lastCloudSyncAt;
+    const changedTransactions = since
+      ? transactions.filter(t => t.updatedAt && t.updatedAt > since)
+      : transactions;
+    const syncedAt = new Date().toISOString();
+    const payload = {
+      __backupType: 'minimal',
+      syncedAt,
+      since,
+      accounts,
+      transactions: changedTransactions,
+      scheduledPayments,
+      budgets,
+      goals,
+      shoppingLists,
+      userProfile,
+    };
+    const fileName = `${MINIMAL_BACKUP_PREFIX}${syncedAt.split('T')[0]}.json`;
     try {
-      await exportToCloud();
-      await importFromCloud();
+      await uploadJson(fileName, payload);
+      setLastCloudSyncAt(syncedAt);
+      showAlert('alert_syncSuccess', 'success');
     } catch (err) {
-      console.error("Dashboard sync error", err);
+      console.error('Minimal backup failed', err);
+      showAlert('alert_syncError', 'error');
     }
-  }, [exportToCloud, importFromCloud]);
+  }, [isAuthenticated, lastCloudSyncAt, transactions, accounts, scheduledPayments, budgets, goals, shoppingLists, userProfile, uploadJson, showAlert]);
+
+  // Applies (sign=1) or reverts (sign=-1) a single transaction's balance effect on `accountsList`.
+  // Mirrors the currency-conversion math in handleSaveTransaction so merged transactions during a
+  // minimal restore land on the same balances as if they'd been entered locally.
+  const applyTransactionDelta = useCallback((accountsList: Account[], tx: Transaction, sign: 1 | -1): Account[] => {
+    const isUSDType = (c: Currency) => c === Currency.USD || c === Currency.USDT;
+    const txRate = tx.exchangeRate;
+    const txEuroRate = tx.euroRate || tx.exchangeRate;
+
+    return accountsList.map(acc => {
+      if (tx.skipBalanceUpdate) return acc;
+
+      if (acc.id === tx.accountId) {
+        let deduction = tx.amount;
+        if ((tx.type === TransactionType.EXPENSE || tx.type === TransactionType.TRANSFER) && (tx.fee || 0) > 0) {
+          deduction += tx.fee!;
+        }
+        if (acc.currency !== tx.originalCurrency) {
+          if (isUSDType(acc.currency)) {
+            if (tx.originalCurrency === Currency.VES) deduction = deduction / txRate;
+            else if (tx.originalCurrency === Currency.EUR) deduction = deduction * (txEuroRate / txRate);
+          } else if (acc.currency === Currency.VES) {
+            if (isUSDType(tx.originalCurrency)) deduction = deduction * txRate;
+            else if (tx.originalCurrency === Currency.EUR) deduction = deduction * txEuroRate;
+          } else if (acc.currency === Currency.EUR) {
+            if (isUSDType(tx.originalCurrency)) deduction = deduction * (txRate / txEuroRate);
+            else if (tx.originalCurrency === Currency.VES) deduction = deduction / txEuroRate;
+          }
+        }
+        const modifier = tx.type === TransactionType.INCOME ? 1 : -1;
+        return { ...acc, balance: acc.balance + (deduction * modifier * sign) };
+      }
+
+      if (tx.type === TransactionType.TRANSFER && tx.toAccountId && acc.id === tx.toAccountId) {
+        let addition = tx.amount;
+        if (tx.originalCurrency !== acc.currency) {
+          if (acc.currency === Currency.VES) {
+            if (isUSDType(tx.originalCurrency)) addition = tx.amount * txRate;
+            else if (tx.originalCurrency === Currency.EUR) addition = tx.amount * txEuroRate;
+          } else if (acc.currency === Currency.EUR) {
+            if (isUSDType(tx.originalCurrency)) addition = tx.amount * (txRate / txEuroRate);
+            else if (tx.originalCurrency === Currency.VES) addition = tx.amount / txEuroRate;
+          } else if (isUSDType(acc.currency)) {
+            if (tx.originalCurrency === Currency.VES) addition = tx.amount / txRate;
+            else if (tx.originalCurrency === Currency.EUR) addition = tx.amount * (txEuroRate / txRate);
+          }
+        }
+        return { ...acc, balance: acc.balance + (addition * sign) };
+      }
+
+      return acc;
+    });
+  }, []);
+
+  // Generic "add new / newest-updatedAt-wins" merge for the small entity collections. Never used
+  // for accounts (balance needs the transaction-aware merge above) or transactions (handled inline
+  // in handleMinimalRestore so it can also patch account balances as it goes).
+  const mergeByIdNewestWins = useCallback(<T extends { id: string; updatedAt?: string; createdAt?: string }>(
+    local: T[], incoming: T[]
+  ): T[] => {
+    let result = [...local];
+    incoming.forEach(item => {
+      const idx = result.findIndex(r => r.id === item.id);
+      if (idx === -1) {
+        result = [...result, item];
+      } else {
+        const localTime = result[idx].updatedAt || result[idx].createdAt || '';
+        const incomingTime = item.updatedAt || item.createdAt || '';
+        if (incomingTime > localTime) {
+          result = result.map((r, i) => (i === idx ? item : r));
+        }
+      }
+    });
+    return result;
+  }, []);
+
+  // 2. MINIMAL RESTORE — additive merge, never a full replace. New records are added; records that
+  // exist on both sides keep whichever version has the newer updatedAt.
+  const handleMinimalRestore = useCallback(async (fileId: string) => {
+    try {
+      const data = await fetchFileContent(fileId);
+      if (!data) throw new Error('Empty minimal backup');
+
+      let mergedAccounts = [...accounts];
+      let mergedTransactions = [...transactions];
+
+      (data.transactions || []).forEach((incomingTx: Transaction) => {
+        const idx = mergedTransactions.findIndex(t => t.id === incomingTx.id);
+        if (idx === -1) {
+          mergedTransactions = [incomingTx, ...mergedTransactions];
+          mergedAccounts = applyTransactionDelta(mergedAccounts, incomingTx, 1);
+        } else {
+          const localTx = mergedTransactions[idx];
+          const incomingTime = incomingTx.updatedAt || '';
+          const localTime = localTx.updatedAt || '';
+          if (incomingTime > localTime) {
+            mergedAccounts = applyTransactionDelta(mergedAccounts, localTx, -1);
+            mergedAccounts = applyTransactionDelta(mergedAccounts, incomingTx, 1);
+            mergedTransactions = mergedTransactions.map((t, i) => (i === idx ? incomingTx : t));
+          }
+        }
+      });
+
+      // Account metadata (name/icon/color/currency) merges newest-wins; balance is left alone here —
+      // it's already been kept consistent via applyTransactionDelta above.
+      (data.accounts || []).forEach((incomingAcc: Account) => {
+        const idx = mergedAccounts.findIndex(a => a.id === incomingAcc.id);
+        if (idx === -1) {
+          mergedAccounts = [...mergedAccounts, incomingAcc];
+        } else {
+          const localAcc = mergedAccounts[idx];
+          const incomingTime = incomingAcc.updatedAt || '';
+          const localTime = localAcc.updatedAt || '';
+          if (incomingTime > localTime) {
+            mergedAccounts = mergedAccounts.map((a, i) => (i === idx ? { ...incomingAcc, balance: a.balance } : a));
+          }
+        }
+      });
+
+      const mergedBudgets = mergeByIdNewestWins(budgets, data.budgets || []);
+      const mergedGoals = mergeByIdNewestWins(goals, data.goals || []);
+      const mergedScheduled = mergeByIdNewestWins(scheduledPayments, data.scheduledPayments || []);
+      const mergedShoppingLists = mergeByIdNewestWins(shoppingLists, data.shoppingLists || []);
+
+      setAccounts(mergedAccounts);
+      setTransactions(mergedTransactions);
+      setBudgets(mergedBudgets);
+      setGoals(mergedGoals);
+      setScheduledPayments(mergedScheduled);
+      setShoppingLists(mergedShoppingLists);
+
+      const newAppData: AppData = {
+        exchangeRate, usdRateParallel, euroRate, euroRateParallel,
+        accounts: mergedAccounts,
+        transactions: mergedTransactions,
+        scheduledPayments: mergedScheduled,
+        userProfile,
+        budgets: mergedBudgets,
+        goals: mergedGoals,
+        rateHistory,
+        shoppingItems,
+        shoppingLists: mergedShoppingLists,
+        profiles,
+        activeProfileId,
+        contacts,
+        debts,
+      };
+      if (storageType === 'INDEXED_DB') {
+        await idbService.save(newAppData);
+      } else {
+        const encrypted = await encryptData(newAppData);
+        localStorage.setItem(STORAGE_KEY, encrypted);
+      }
+
+      setLastCloudSyncAt(data.syncedAt || new Date().toISOString());
+      showAlert('alert_importSuccess', 'success');
+    } catch (err) {
+      console.error('Minimal restore failed', err);
+      showAlert('alert_importError', 'error');
+    }
+  }, [accounts, transactions, budgets, goals, scheduledPayments, shoppingLists, userProfile, exchangeRate, usdRateParallel, euroRate, euroRateParallel, rateHistory, shoppingItems, profiles, activeProfileId, contacts, debts, storageType, fetchFileContent, applyTransactionDelta, mergeByIdNewestWins, setLastCloudSyncAt, showAlert]);
+
+  const [pendingSync, setPendingSync] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && pendingSync) {
       setPendingSync(false);
-      performSyncFlow();
+      handleMinimalBackup();
     }
-  }, [isAuthenticated, pendingSync, performSyncFlow]);
+  }, [isAuthenticated, pendingSync, handleMinimalBackup]);
 
+  // Dashboard cloud icon: by default runs the minimal backup (upload-only). Full backup/restore
+  // and minimal restore live in ProfileView, where the user explicitly chooses Full vs Mínimo.
   const handleDashboardSync = useCallback(async () => {
     if (!isAuthenticated) {
       setPendingSync(true);
       handleLogin();
     } else {
-      await performSyncFlow();
+      await handleMinimalBackup();
     }
-  }, [isAuthenticated, handleLogin, performSyncFlow]);
+  }, [isAuthenticated, handleLogin, handleMinimalBackup]);
 
 
 
@@ -1221,8 +1426,9 @@ function AppContent() {
         setBudgets(data.budgets || []);
         setGoals(data.goals || []);
         setShoppingItems(data.shoppingItems || []);
+        setShoppingLists(data.shoppingLists || []);
         setUserProfile(data.userProfile);
-        
+
         const newData: AppData = {
             exchangeRate: data.exchangeRate || exchangeRate,
             accounts: data.accounts || [],
@@ -1231,7 +1437,8 @@ function AppContent() {
             userProfile: data.userProfile,
             budgets: data.budgets || [],
             goals: data.goals || [],
-            shoppingItems: data.shoppingItems || []
+            shoppingItems: data.shoppingItems || [],
+            shoppingLists: data.shoppingLists || []
         };
 
         if (storageType === 'INDEXED_DB') {
@@ -1596,6 +1803,9 @@ function AppContent() {
               onLogin={handleLogin}
               onExport={exportToCloud}
               onImport={importFromCloud}
+              onExportMinimal={handleMinimalBackup}
+              onImportMinimal={handleMinimalRestore}
+              listMinimalBackups={() => listFilesByPrefix(MINIMAL_BACKUP_PREFIX)}
               isDevMode={isDevMode}
               onDevModeTrigger={handleDevModeTrigger}
               navbarFavorites={navbarFavorites}
