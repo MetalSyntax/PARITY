@@ -1,32 +1,37 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useExchangeRates } from './hooks/useExchangeRates';
-import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint, ShoppingCart, Target, FileText, Users, Scale, CalendarDays, FlaskConical, GraduationCap } from 'lucide-react';
+import { Plus, Wallet, Home, ChartArea, User, Lock, Calendar as CalendarIcon, PieChart, Receipt, Activity, TrendingUp, ChartCandlestick, CalendarRange, Calendar1, Fingerprint, ShoppingCart, Target, FileText, Users, Scale, CalendarDays, FlaskConical, GraduationCap, WifiOff } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
-import { AddTransaction } from './views/AddTransaction';
-import { SettingsModal } from './components/SettingsModal';
-import { TransferView } from './views/TransferView';
-import { BudgetView } from './views/BudgetView';
-import { AnalysisView } from './views/AnalysisView';
-import { FiscalReportView } from "./views/FiscalReportView";
-import { WalletView } from './views/WalletView';
-import { ProfileView } from './views/ProfileView';
-import { Onboarding } from './views/Onboarding';
-import { ScheduledPaymentView } from './views/ScheduledPaymentView';
-import { TransactionsListView } from './views/TransactionsListView';
-import { CalendarHeatmapView } from './views/CalendarHeatmapView';
-import { CurrencyPerformanceView } from './views/CurrencyPerformanceView';
-import { InvoiceDigitizeView } from './views/settings/InvoiceDigitizeView';
-import { ScheduledNotificationsView } from './views/ScheduledNotificationsView';
-import { ShoppingListView } from './views/ShoppingListView';
-import { PeopleView } from './views/PeopleView';
-import { DataPortabilityView } from './views/DataPortabilityView';
-import { FinancialCalendarView } from './views/FinancialCalendarView';
-import { ScenarioPlannerView } from './views/ScenarioPlannerView';
 import { LegalBanner } from './components/LegalBanner';
 import { PinModal } from './components/PinModal';
 import { TutorialSystem } from './components/TutorialSystem';
-import { AcademyView } from './views/AcademyView';
+
+// Lazy-loaded: only Dashboard (the default view) and the always-on-screen shell components
+// above are in the initial bundle. Every other view is its own chunk, fetched the moment the
+// user actually navigates there — this is what makes the PWA's first paint fast regardless of
+// how many features/views the app has grown to.
+const AddTransaction = lazy(() => import('./views/AddTransaction').then(m => ({ default: m.AddTransaction })));
+const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const TransferView = lazy(() => import('./views/TransferView').then(m => ({ default: m.TransferView })));
+const BudgetView = lazy(() => import('./views/BudgetView').then(m => ({ default: m.BudgetView })));
+const AnalysisView = lazy(() => import('./views/AnalysisView').then(m => ({ default: m.AnalysisView })));
+const FiscalReportView = lazy(() => import('./views/FiscalReportView').then(m => ({ default: m.FiscalReportView })));
+const WalletView = lazy(() => import('./views/WalletView').then(m => ({ default: m.WalletView })));
+const ProfileView = lazy(() => import('./views/ProfileView').then(m => ({ default: m.ProfileView })));
+const Onboarding = lazy(() => import('./views/Onboarding').then(m => ({ default: m.Onboarding })));
+const ScheduledPaymentView = lazy(() => import('./views/ScheduledPaymentView').then(m => ({ default: m.ScheduledPaymentView })));
+const TransactionsListView = lazy(() => import('./views/TransactionsListView').then(m => ({ default: m.TransactionsListView })));
+const CalendarHeatmapView = lazy(() => import('./views/CalendarHeatmapView').then(m => ({ default: m.CalendarHeatmapView })));
+const CurrencyPerformanceView = lazy(() => import('./views/CurrencyPerformanceView').then(m => ({ default: m.CurrencyPerformanceView })));
+const InvoiceDigitizeView = lazy(() => import('./views/settings/InvoiceDigitizeView').then(m => ({ default: m.InvoiceDigitizeView })));
+const ScheduledNotificationsView = lazy(() => import('./views/ScheduledNotificationsView').then(m => ({ default: m.ScheduledNotificationsView })));
+const ShoppingListView = lazy(() => import('./views/ShoppingListView').then(m => ({ default: m.ShoppingListView })));
+const PeopleView = lazy(() => import('./views/PeopleView').then(m => ({ default: m.PeopleView })));
+const DataPortabilityView = lazy(() => import('./views/DataPortabilityView').then(m => ({ default: m.DataPortabilityView })));
+const FinancialCalendarView = lazy(() => import('./views/FinancialCalendarView').then(m => ({ default: m.FinancialCalendarView })));
+const ScenarioPlannerView = lazy(() => import('./views/ScenarioPlannerView').then(m => ({ default: m.ScenarioPlannerView })));
+const AcademyView = lazy(() => import('./views/AcademyView').then(m => ({ default: m.AcademyView })));
 import { useGamification } from './hooks/useGamification';
 import { XPToastContainer } from './components/gamification/XPToast';
 import { LevelUpModal } from './components/gamification/LevelUpModal';
@@ -45,8 +50,10 @@ import { formatAmount } from '@parity/core';
 import { projectMonthEndSpending, calculateRunway, checkBudgetForecasts } from '@parity/core';
 import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList, EntityType, Contact, Debt, convertCurrency } from '@parity/core';
 import { idbService, StorageType, AppData } from '@parity/core';
+import { buildMinimalSyncPayload } from '@parity/core';
 import { encryptData, decryptData, setWebCryptoSecrets } from '@parity/core';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { syncService } from '@parity/core';
 
 // Bootstrap web crypto secrets from Vite env vars before any encrypt/decrypt call.
@@ -58,6 +65,13 @@ setWebCryptoSecrets(
 
 const queryClient = new QueryClient();
 
+// Shown for the brief moment a lazy-loaded view's chunk is still being fetched.
+const ViewLoadingFallback: React.FC = () => (
+  <div className="flex-1 flex items-center justify-center py-24">
+    <div className="w-8 h-8 border-2 border-theme-brand/30 border-t-theme-brand rounded-full animate-spin" />
+  </div>
+);
+
 // In the native wrapper, __PARITY_MOBILE_CONFIG__ is injected before this module runs.
 // Falls back to the Vite env var for web/Vercel deployments.
 const GOOGLE_CLIENT_ID =
@@ -67,6 +81,7 @@ const GOOGLE_CLIENT_ID =
 const STORAGE_KEY = 'parity_data_v3';
 const MINIMAL_BACKUP_PREFIX = 'parity_sync_';
 const LAST_CLOUD_SYNC_KEY = 'parity_last_cloud_sync_at';
+const OFFLINE_READY_AT_KEY = 'parity_offline_ready_at';
 
 /**
  * Main application component that wraps the application with necessary providers.
@@ -117,6 +132,7 @@ function AppContent() {
   };
   
   // PWA Registration with Prompt
+  const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const {
     offlineReady: [offlineReady, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
@@ -124,6 +140,7 @@ function AppContent() {
   } = useRegisterSW({
     onRegistered(r) {
       console.log('SW Registered:', r);
+      swRegistrationRef.current = r || null;
       // Check for updates every hour
       r && setInterval(() => {
         r.update();
@@ -320,6 +337,49 @@ function AppContent() {
       setTimeout(() => setAlertConfig(null), 3000);
   };
 
+  // Offline/online status — everything data-related already works offline (local-first
+  // IndexedDB), this just surfaces that fact to the user instead of leaving them guessing
+  // whether a sudden disconnect broke something.
+  const { isOnline, reconnectedAt } = useOnlineStatus();
+  useEffect(() => {
+    if (reconnectedAt !== null) showAlert('alert_connectionRestored', 'success');
+    // Only reconnect events (not every showAlert identity change) should trigger this toast.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reconnectedAt]);
+
+  // "Download for 100% offline" (ProfileView Danger-Zone-adjacent card). Local-first storage
+  // already means transactions/budgets/etc. survive a dropped connection with zero extra work;
+  // what this button adds is: (1) make sure the service worker has the latest app shell fully
+  // precached rather than a stale/partial one, and (2) refresh + persist exchange rates one
+  // more time right before the user expects to go offline, with an explicit confirmation.
+  const [isPreparingOffline, setIsPreparingOffline] = useState(false);
+  const [offlineReadySince, setOfflineReadySince] = useState<string | null>(
+    () => localStorage.getItem(OFFLINE_READY_AT_KEY)
+  );
+
+  const handlePrepareOffline = useCallback(async () => {
+    setIsPreparingOffline(true);
+    try {
+      if (needRefresh) {
+        // A newer app shell is already precached — switch to it now so what's "ready for
+        // offline" is the latest version, not the one currently running. This reloads the page.
+        await updateServiceWorker(true);
+        return;
+      }
+      await swRegistrationRef.current?.update();
+      await fetchAllRates();
+      const readyAt = new Date().toISOString();
+      localStorage.setItem(OFFLINE_READY_AT_KEY, readyAt);
+      setOfflineReadySince(readyAt);
+      showAlert('alert_offlineDownloadSuccess', 'success');
+    } catch (err) {
+      console.error('Prepare offline failed', err);
+      showAlert('alert_offlineDownloadError', 'error');
+    } finally {
+      setIsPreparingOffline(false);
+    }
+  }, [needRefresh, updateServiceWorker, fetchAllRates, showAlert]);
+
   const sendPushNotification = async (title: string, body: string, tag: string) => {
       if (!('Notification' in window)) return;
       let permission = Notification.permission;
@@ -386,25 +446,17 @@ function AppContent() {
   // 1. MINIMAL BACKUP — uploads only transactions changed since lastCloudSyncAt, plus a full
   // snapshot of the smaller entity collections (accounts, budgets, goals, scheduledPayments,
   // shoppingLists) so a restore-mínimo on another device stays internally consistent.
+  //
+  // buildMinimalSyncPayload strips `receipt` (a full-resolution base64 photo, often 1-5MB
+  // apiece) from every transaction — that field alone was what ballooned this "minimal" file
+  // into the megabytes. Receipt images still travel via the full backup.
   const handleMinimalBackup = useCallback(async () => {
     if (!isAuthenticated) return;
     const since = lastCloudSyncAt;
-    const changedTransactions = since
-      ? transactions.filter(t => t.updatedAt && t.updatedAt > since)
-      : transactions;
     const syncedAt = new Date().toISOString();
-    const payload = {
-      __backupType: 'minimal',
-      syncedAt,
-      since,
-      accounts,
-      transactions: changedTransactions,
-      scheduledPayments,
-      budgets,
-      goals,
-      shoppingLists,
-      userProfile,
-    };
+    const payload = buildMinimalSyncPayload({
+      since, syncedAt, transactions, accounts, scheduledPayments, budgets, goals, shoppingLists, userProfile,
+    });
     const fileName = `${MINIMAL_BACKUP_PREFIX}${syncedAt.split('T')[0]}.json`;
     try {
       await uploadJson(fileName, payload);
@@ -1617,13 +1669,15 @@ function AppContent() {
 
   if (isFirstTime) {
       return (
-          <Onboarding 
-            lang={userProfile.language}
-            onStartFresh={handleStartFresh}
-            onSyncFromCloud={handleOnboardingCloudSync}
-            isSyncing={isSyncing}
-            isDevMode={isDevMode}
-          />
+          <Suspense fallback={<ViewLoadingFallback />}>
+            <Onboarding
+              lang={userProfile.language}
+              onStartFresh={handleStartFresh}
+              onSyncFromCloud={handleOnboardingCloudSync}
+              isSyncing={isSyncing}
+              isDevMode={isDevMode}
+            />
+          </Suspense>
       );
   }
 
@@ -1675,6 +1729,7 @@ function AppContent() {
               transition={{ duration: 0.16, ease: 'easeInOut' }}
               className="flex-1 flex flex-col min-h-full"
             >
+          <Suspense fallback={<ViewLoadingFallback />}>
           {currentView === 'DASHBOARD' && (
             <Dashboard
               accounts={filteredAccounts}
@@ -1839,6 +1894,9 @@ function AppContent() {
                   showAlert('profileDeleted', 'success');
               }}
               onResetAppData={handleResetAppData}
+              onPrepareOffline={handlePrepareOffline}
+              isPreparingOffline={isPreparingOffline}
+              offlineReadySince={offlineReadySince}
             />
           )}
           {currentView === 'BUDGET' && (
@@ -2104,6 +2162,7 @@ function AppContent() {
               }}
             />
           )}
+          </Suspense>
             </motion.div>
           </AnimatePresence>
         </motion.div>
@@ -2196,6 +2255,7 @@ function AppContent() {
 
         {/* Modals */}
         {showAdd && (
+          <Suspense fallback={<ViewLoadingFallback />}>
           <AddTransaction
             onClose={() => {
                 setShowAdd(false);
@@ -2228,10 +2288,12 @@ function AppContent() {
             isDevMode={isDevMode}
             userProfile={userProfile}
           />
+          </Suspense>
         )}
 
         {showSettings && (
-          <SettingsModal 
+          <Suspense fallback={<ViewLoadingFallback />}>
+          <SettingsModal
             currentRate={exchangeRate}
             usdRateParallel={usdRateParallel}
             euroRate={euroRate}
@@ -2253,6 +2315,15 @@ function AppContent() {
             onRefreshRates={fetchAllRates}
             hasFetchedRates={hasFetchedRates}
           />
+          </Suspense>
+        )}
+
+        {/* Persistent offline indicator — stays up the whole time the connection is down,
+            whether the app opened offline or lost it mid-session. */}
+        {!isOnline && (
+          <div className="fixed top-0 inset-x-0 z-[90] bg-amber-500 text-black text-center text-[11px] font-black uppercase tracking-wide py-1.5 flex items-center justify-center gap-1.5 shadow-lg">
+            <WifiOff size={12} strokeWidth={3} /> {t('workingOffline') || 'Trabajando sin conexión'}
+          </div>
         )}
 
         {/* Global Popup Alert */}

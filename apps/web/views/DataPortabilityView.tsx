@@ -306,9 +306,14 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
   const fmtSigned = (n: number) =>
     isBalanceVisible ? `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}` : '••••••';
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     try {
-      const { jsPDF } = (window as any).jspdf;
+      // Dynamically imported so the ~300KB jsPDF + autotable bundle only loads the moment a
+      // report is actually requested, instead of on every app open.
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
       const doc = new jsPDF();
       const blue: [number, number, number] = [43, 108, 238];
       const grey: [number, number, number] = [100, 100, 100];
@@ -386,7 +391,7 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
         doc.setFont(undefined, 'bold');
         doc.text(t('topCategories'), 14, 100);
 
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: 104,
           head: [[t('category'), 'USD', '%']],
           body: topCats.map(([catId, amount]) => {
@@ -417,7 +422,7 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
 
       const sortedTxs = [...filteredTxs].sort((a, b) => b.date.localeCompare(a.date));
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: tableY + 4,
         head: [[t('date'), t('description'), t('type'), 'USD']],
         body: sortedTxs.map(tx => {
@@ -446,7 +451,7 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
       doc.setDrawColor(220, 220, 220);
       doc.line(14, 25, 196, 25);
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: 30,
         head: [['Par', t('rate'), t('type')]],
         body: [

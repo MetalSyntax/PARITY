@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ArrowLeft, Search, TrendingUp, Coins, DollarSign, X, Receipt, Euro, Layers, Trash2, Calendar, RefreshCw, Plus, PieChart, ArrowRightLeft, ChevronDown, ScanText, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { List, useDynamicRowHeight, type RowComponentProps } from 'react-window';
 import { Transaction, Language, Currency, TransactionType, Account, UserProfile } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 import { formatMonth } from '@parity/core';
@@ -8,7 +9,80 @@ import { CATEGORIES } from '../constants';
 import { TransactionDetailModal } from '../components/TransactionDetailModal';
 import { TransactionItem } from '../components/TransactionItem';
 import { renderAccountIcon } from '../utils/iconUtils';
+import { filterAndSortTransactions, groupTransactionsByDate } from '../utils/transactionListUtils';
 import { InvoiceQuickDigitizeModal } from './settings/InvoiceQuickDigitizeModal';
+
+// A trailing spacer row (no visual content) so the last transaction isn't flush against
+// the bottom nav — the list used to get this via the page's own pb-24, but that only
+// works when the whole page scrolls together, which virtualization can't do.
+const BOTTOM_SPACER_HEIGHT = 96;
+const DEFAULT_ITEM_ROW_HEIGHT = 88;
+
+type VirtualRow =
+  | { kind: 'header'; date: string }
+  | { kind: 'tx'; tx: Transaction }
+  | { kind: 'spacer' };
+
+const formatGroupLabel = (date: string, t: (key: any) => string, lang: Language): string => {
+  const dateObj = new Date(`${date}T12:00:00`);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  if (date === todayStr) return t('today');
+  if (date === yesterdayStr) return t('yesterday');
+  return dateObj.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+    year: dateObj.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+  });
+};
+
+interface TransactionRowProps {
+  rows: VirtualRow[];
+  accounts: Account[];
+  lang: Language;
+  isBalanceVisible: boolean;
+  displayCurrency: Currency;
+  onSelect: (t: Transaction) => void;
+  onEdit: (t: Transaction) => void;
+  onDelete: (id: string) => void;
+  t: (key: any) => string;
+}
+
+// Renders one flattened row (date header, transaction, or trailing spacer) for the
+// virtualized list — flattening groups into a single indexable array is what lets
+// react-window render only what's on screen regardless of how many transactions exist.
+const TransactionRow: React.FC<RowComponentProps<TransactionRowProps>> = ({
+  index, style, rows, accounts, lang, isBalanceVisible, displayCurrency, onSelect, onEdit, onDelete, t
+}) => {
+  const row = rows[index];
+  // Force the spacer's real rendered height so the ResizeObserver behind useDynamicRowHeight
+  // measures BOTTOM_SPACER_HEIGHT rather than whatever height it was previously estimated at.
+  if (row.kind === 'spacer') return <div style={{ ...style, height: BOTTOM_SPACER_HEIGHT }} />;
+  if (row.kind === 'header') {
+    return (
+      <div style={style} className="flex items-end px-1 pb-2">
+        <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest">
+          {formatGroupLabel(row.date, t, lang)}
+        </h3>
+      </div>
+    );
+  }
+  return (
+    <div style={style} className="px-1">
+      <TransactionItem
+        transaction={row.tx}
+        accounts={accounts}
+        lang={lang}
+        isBalanceVisible={isBalanceVisible}
+        displayCurrency={displayCurrency}
+        onSelect={onSelect}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    </div>
+  );
+};
 
 interface TransactionsListViewProps {
   onBack: () => void;
@@ -118,34 +192,61 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
 
   const activeFilterCount = [searchQuery, filterType !== 'ALL', selectedWalletId, selectedMonth !== 'ALL', selectedCategory !== 'ALL'].filter(Boolean).length;
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      const category = CATEGORIES.find((c) => c.id === tx.category);
-      const categoryName = category ? t(category.name.toLowerCase()) : '';
-      const matchesSearch =
-        (tx.note || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        categoryName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = filterType === 'ALL' || tx.type === filterType;
-      const matchesCategory = selectedCategory === 'ALL' || tx.category === selectedCategory;
-      const matchesMonth = selectedMonth === 'ALL' || tx.date.startsWith(selectedMonth);
-      const matchesWallet = !selectedWalletId || tx.accountId === selectedWalletId || tx.toAccountId === selectedWalletId;
-      return matchesSearch && matchesType && matchesCategory && matchesMonth && matchesWallet;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, searchQuery, filterType, selectedCategory, lang, selectedMonth, selectedWalletId]);
+  // Lowercased translated category names, keyed by category id — computed once per language
+  // change instead of doing a CATEGORIES.find() + translation lookup for every transaction
+  // on every filter/search keystroke.
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    CATEGORIES.forEach(c => map.set(c.id, t(c.name.toLowerCase()).toLowerCase()));
+    return map;
+  }, [lang]);
 
-  const groupedTransactions = useMemo(() => {
-    const groups: Record<string, Transaction[]> = {};
-    filteredTransactions.forEach((tx) => {
-      const date = tx.date.split('T')[0];
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(tx);
-    });
-    return groups;
-  }, [filteredTransactions]);
+  const filteredTransactions = useMemo(() => (
+    filterAndSortTransactions(
+      transactions,
+      { searchQuery, filterType, selectedCategory, selectedMonth, selectedWalletId },
+      categoryNameById
+    )
+  ), [transactions, searchQuery, filterType, selectedCategory, selectedMonth, selectedWalletId, categoryNameById]);
+
+  const groupedTransactions = useMemo(
+    () => groupTransactionsByDate(filteredTransactions),
+    [filteredTransactions]
+  );
 
   const sortedDates = useMemo(() => {
-    return Object.keys(groupedTransactions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    return Object.keys(groupedTransactions).sort((a, b) => (b > a ? 1 : b < a ? -1 : 0));
   }, [groupedTransactions]);
+
+  // Flatten date groups into a single indexable array (header rows + transaction rows) so
+  // react-window can virtualize the whole thing — only rows near the viewport ever mount,
+  // which is what makes 100k transactions render as fast as 100.
+  const virtualRows = useMemo<VirtualRow[]>(() => {
+    const rows: VirtualRow[] = [];
+    sortedDates.forEach(date => {
+      rows.push({ kind: 'header', date });
+      groupedTransactions[date].forEach(tx => rows.push({ kind: 'tx', tx }));
+    });
+    rows.push({ kind: 'spacer' });
+    return rows;
+  }, [sortedDates, groupedTransactions]);
+
+  // Row heights vary (a header line, a plain transaction, one with an extra fee line) so we
+  // let react-window measure real rendered heights via ResizeObserver instead of guessing —
+  // the spacer row above overrides its own measured height back up to BOTTOM_SPACER_HEIGHT.
+  const rowHeightCache = useDynamicRowHeight({ defaultRowHeight: DEFAULT_ITEM_ROW_HEIGHT });
+
+  const transactionRowProps = useMemo<TransactionRowProps>(() => ({
+    rows: virtualRows,
+    accounts,
+    lang,
+    isBalanceVisible,
+    displayCurrency,
+    onSelect: setSelectedTx,
+    onEdit: onEditTransaction,
+    onDelete: onDeleteTransaction,
+    t,
+  }), [virtualRows, accounts, lang, isBalanceVisible, displayCurrency, onEditTransaction, onDeleteTransaction]);
 
   const togglePopup = (name: typeof openPopup) => setOpenPopup(prev => prev === name ? null : name);
 
@@ -169,7 +270,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
     }`;
 
   return (
-    <div className="h-full flex flex-col bg-theme-bg overflow-y-auto no-scrollbar px-6 py-6 pb-24 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
+    <div className="h-full flex flex-col bg-theme-bg overflow-hidden px-6 pt-6 animate-in slide-in-from-right duration-300 w-full max-w-2xl md:max-w-5xl lg:max-w-7xl mx-auto">
 
       {/* Top utility bar */}
       <div className="flex items-center justify-end mb-4 gap-2">
@@ -462,87 +563,68 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = ({
         </div>
       </div>
 
-      {/* Transactions List */}
-      <div>
+      {/* Transactions List — this section owns its own scroll (flex-1 + min-h-0) so the
+          virtualized list below can measure a bounded height via ResizeObserver */}
+      <div className="flex-1 min-h-0 -mx-6 px-6 pb-6">
         {viewMode === 'INVOICES' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
-            {filteredTransactions.filter(tx => tx.receipt).length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center py-20 text-theme-secondary">
-                <div className="w-16 h-16 rounded-full bg-theme-surface flex items-center justify-center mb-4">
-                  <Receipt size={24} />
-                </div>
-                <p className="text-sm">{t('noInvoicesFound')}</p>
-              </div>
-            ) : (
-              filteredTransactions.filter(tx => tx.receipt).map(tx => (
-                <motion.div
-                  key={tx.id}
-                  layoutId={`tx-invoice-${tx.id}`}
-                  onClick={() => setSelectedTx(tx)}
-                  className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black aspect-square cursor-pointer hover:border-theme-brand transition-colors"
-                >
-                  <img src={tx.receipt} alt="Receipt" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDigitizeTx(tx); }}
-                    title={t('digitizeSingle')}
-                    className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-sm transition-colors ${tx.invoiceData ? 'bg-emerald-500/80 text-white' : 'bg-black/60 text-white hover:bg-theme-brand'}`}
-                  >
-                    {tx.invoiceData ? <CheckCircle2 size={14} /> : <ScanText size={14} />}
-                  </button>
-                  <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
-                    <p className="text-white text-[10px] font-bold truncate">
-                      {tx.note || (t(CATEGORIES.find(c => c.id === tx.category)?.name.toLowerCase() || ''))}
-                    </p>
-                    <p className="text-white/70 text-[9px]">{new Date(tx.date).toLocaleDateString()}</p>
+          <div className="h-full overflow-y-auto no-scrollbar">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4 pb-24">
+              {filteredTransactions.filter(tx => tx.receipt).length === 0 ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-20 text-theme-secondary">
+                  <div className="w-16 h-16 rounded-full bg-theme-surface flex items-center justify-center mb-4">
+                    <Receipt size={24} />
                   </div>
-                </motion.div>
-              ))
-            )}
+                  <p className="text-sm">{t('noInvoicesFound')}</p>
+                </div>
+              ) : (
+                filteredTransactions.filter(tx => tx.receipt).map(tx => (
+                  <motion.div
+                    key={tx.id}
+                    layoutId={`tx-invoice-${tx.id}`}
+                    onClick={() => setSelectedTx(tx)}
+                    className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black aspect-square cursor-pointer hover:border-theme-brand transition-colors"
+                  >
+                    <img
+                      src={tx.receipt}
+                      alt="Receipt"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDigitizeTx(tx); }}
+                      title={t('digitizeSingle')}
+                      className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-sm transition-colors ${tx.invoiceData ? 'bg-emerald-500/80 text-white' : 'bg-black/60 text-white hover:bg-theme-brand'}`}
+                    >
+                      {tx.invoiceData ? <CheckCircle2 size={14} /> : <ScanText size={14} />}
+                    </button>
+                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+                      <p className="text-white text-[10px] font-bold truncate">
+                        {tx.note || (t(CATEGORIES.find(c => c.id === tx.category)?.name.toLowerCase() || ''))}
+                      </p>
+                      <p className="text-white/70 text-[9px]">{new Date(tx.date).toLocaleDateString()}</p>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
           </div>
         ) : sortedDates.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-theme-secondary">
+          <div className="h-full flex flex-col items-center justify-center text-theme-secondary">
             <div className="w-16 h-16 rounded-full bg-theme-surface flex items-center justify-center mb-4">
               <Search size={24} />
             </div>
             <p className="text-sm">{t('noTransactionsFound')}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-8 mt-4">
-            {sortedDates.map((date) => (
-              <div key={date}>
-                <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest mb-4 sticky top-0 bg-theme-bg/95 backdrop-blur-sm py-2 z-10">
-                  {(() => {
-                    const dateObj = new Date(`${date}T12:00:00`);
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    const yesterdayStr = yesterday.toISOString().split('T')[0];
-                    if (date === todayStr) return t('today');
-                    if (date === yesterdayStr) return t('yesterday');
-                    return dateObj?.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', {
-                      weekday: 'short', month: 'short', day: 'numeric',
-                      year: dateObj.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                    });
-                  })()}
-                </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-1">
-                  {groupedTransactions[date].map((transaction) => (
-                    <TransactionItem
-                      key={transaction.id}
-                      transaction={transaction}
-                      accounts={accounts}
-                      lang={lang}
-                      isBalanceVisible={isBalanceVisible}
-                      displayCurrency={displayCurrency}
-                      onSelect={setSelectedTx}
-                      onEdit={onEditTransaction}
-                      onDelete={onDeleteTransaction}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <List
+            className="no-scrollbar"
+            rowComponent={TransactionRow}
+            rowCount={virtualRows.length}
+            rowHeight={rowHeightCache}
+            rowProps={transactionRowProps}
+            overscanCount={8}
+          />
         )}
       </div>
 

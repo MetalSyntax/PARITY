@@ -93,9 +93,14 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     try {
-      const { jsPDF } = (window as any).jspdf;
+      // Dynamically imported so this ~300KB library only loads when a PDF is actually
+      // requested — it's bundled (not a CDN script), so this works fully offline too.
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
       const doc = new jsPDF();
       
       // Indigo theme color
@@ -144,7 +149,7 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
         `Bs. ${(tx.normalizedAmountUSD * exchangeRate).toFixed(2)}`
       ]);
       
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: 85,
         head: [[t('date'), t('note'), t('type'), 'USD', 'VES']],
         body: tableData,
@@ -169,7 +174,7 @@ export const FiscalReportView: React.FC<FiscalReportViewProps> = ({
       
     } catch (error) {
       console.error("PDF generation failed", error);
-      alert("Export failed. Ensure you are online to load the export library.");
+      alert("Export failed.");
     }
   };
 

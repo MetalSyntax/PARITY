@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Globe, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, HardDrive, Info, Settings2, Bell, Trash2, Plus, Users, FileText, Scale, Home, Wallet, PieChart, Receipt, ChartArea, ChartCandlestick, CalendarRange, Calendar1, ShoppingCart, Trophy, TrendingUp, CalendarDays, LineChart, GraduationCap, Pin } from 'lucide-react';
+import { ArrowLeft, User, Globe, Upload, Cloud, ShieldCheck, Layout, Save, ChevronRight, CheckCircle2, HardDrive, HardDriveDownload, Info, Settings2, Bell, Trash2, Plus, Users, FileText, Scale, Home, Wallet, PieChart, Receipt, ChartArea, ChartCandlestick, CalendarRange, Calendar1, ShoppingCart, Trophy, TrendingUp, CalendarDays, LineChart, GraduationCap, Pin } from 'lucide-react';
 import { TermsModal } from '../components/legal/TermsModal';
 import { PrivacyModal } from '../components/legal/PrivacyModal';
 import { UserProfile, Language, Transaction, Account } from '@parity/core';
@@ -36,6 +36,9 @@ interface ProfileViewProps {
   onCreateProfile: (name: string) => void;
   onDeleteProfile: (id: string) => void;
   onResetAppData: () => void;
+  onPrepareOffline: () => void;
+  isPreparingOffline: boolean;
+  offlineReadySince: string | null;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -66,7 +69,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onSwitchProfile,
   onCreateProfile,
   onDeleteProfile,
-  onResetAppData
+  onResetAppData,
+  onPrepareOffline,
+  isPreparingOffline,
+  offlineReadySince
 }) => {
   const [name, setName] = useState(profile.name);
   const [lang, setLang] = useState<Language>(profile.language);
@@ -698,6 +704,34 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <ChevronRight className="w-4 h-4 text-theme-secondary opacity-30 flex-shrink-0" />
           </button>
+        </motion.div>
+
+        {/* Offline readiness — always visible, not gated behind dev mode. Local-first storage
+            already means transactions/budgets/etc. work offline; this just makes sure the app
+            shell is on the latest cached version and exchange rates are fresh before the user
+            goes offline, and gives them a clear "you're covered" confirmation. */}
+        <motion.div variants={itemVariants} className="bg-theme-surface border border-theme-soft rounded-2xl p-6 relative overflow-hidden shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <HardDriveDownload size={16} className="text-theme-brand" />
+            <h3 className="text-lg font-black text-theme-primary">{t('offlineDownloadTitle')}</h3>
+          </div>
+          <p className="text-xs text-theme-secondary mb-4 opacity-60">{t('offlineDownloadDesc')}</p>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onPrepareOffline}
+            disabled={isPreparingOffline}
+            className={`w-full py-3.5 rounded-2xl font-black text-xs uppercase transition-all flex items-center justify-center gap-2 ${
+              isPreparingOffline ? 'bg-theme-brand/20 text-theme-brand animate-pulse' : 'bg-theme-brand/10 text-theme-brand border border-theme-brand/20'
+            }`}
+          >
+            <HardDriveDownload size={14} /> {isPreparingOffline ? t('offlineDownloadInProgress') : t('offlineDownloadButton')}
+          </motion.button>
+          {offlineReadySince && (
+            <p className="text-[10px] text-theme-secondary opacity-50 mt-3 text-center">
+              {t('offlineReadySince').replace('{date}', new Date(offlineReadySince).toLocaleString())}
+            </p>
+          )}
         </motion.div>
 
         {/* Danger Zone */}

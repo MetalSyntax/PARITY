@@ -14,6 +14,7 @@ export * from './services/ocr/providers/azureDocumentIntelligenceProvider';
 export * from './utils/forecast';
 export * from './utils/formatUtils';
 export * from './utils/chartUtils';
+export * from './utils/minimalSync';
 export * from './gamification/schema';
 export * from './gamification/events';
 export * from './gamification/levels';

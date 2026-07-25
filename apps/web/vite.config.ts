@@ -27,7 +27,37 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        runtimeCaching: []
+        // Precached app-shell assets already work fully offline (see globPatterns above).
+        // These two rules cover the cross-origin network calls the app also makes:
+        runtimeCaching: [
+          {
+            // Exchange rates: prefer a fresh value, but if the connection is slow or drops
+            // mid-request, fall back to the last cached response almost immediately instead
+            // of hanging — this is what keeps rate conversions working through a sudden
+            // disconnect rather than stalling on a dead request.
+            urlPattern: /^https:\/\/ve\.dolarapi\.com\/.*/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'exchange-rates-cache',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Tesseract.js's WASM engine, worker script and language data are fetched from
+            // jsDelivr at runtime (not bundled — see services/invoiceOcrClient.ts). They're
+            // versioned/immutable, so once OCR has been used successfully while online,
+            // caching them means invoice scanning keeps working offline afterwards too.
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/tesseract\.js.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ocr-engine-cache',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       devOptions: { enabled: true, type: 'module' }
     })

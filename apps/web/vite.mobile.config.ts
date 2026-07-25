@@ -5,14 +5,15 @@
  * Usage:  pnpm --filter @parity/web build:mobile
  * Output: apps/web/dist-mobile/  →  synced to apps/mobile/assets/www/ via sync-web script
  *
- * PREREQUISITE before activating offline mode in the wrapper:
- * The main index.html currently loads these from CDN and must be self-hosted first:
- *   - Tailwind CSS  →  replace cdn.tailwindcss.com with a PostCSS generated stylesheet
- *   - Google Fonts  →  self-host Inter + JetBrains Mono via fontsource
- *   - Tesseract.js  →  install tesseract.js npm package and import directly
- *   - jsPDF         →  install jspdf npm package and import directly
+ * PREREQUISITE before activating offline mode in the wrapper — DONE, kept here as a pointer:
+ * index.html used to load Tailwind/fonts/Tesseract.js/jsPDF from CDNs, which both slowed down
+ * startup and meant a dropped connection could leave the app unstyled or missing OCR/PDF
+ * export mid-use. All four are now real bundled deps (postcss+tailwindcss, @fontsource-variable,
+ * tesseract.js, jspdf/jspdf-autotable via dynamic import) — see apps/web/tailwind.config.js,
+ * apps/web/postcss.config.js and apps/web/index.css.
  *
- * Once those are bundled, switch WEB_URL in apps/mobile/app/index.tsx to the local file URI.
+ * Remaining step to actually switch the wrapper to local files: point WEB_URL in
+ * apps/mobile/app/index.tsx to the local file URI instead of the hosted deployment.
  */
 
 import { defineConfig, Plugin } from 'vite';
