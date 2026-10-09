@@ -31,6 +31,15 @@ export type StorageType = 'LOCAL_STORAGE' | 'INDEXED_DB';
 
 export class IndexedDBService {
     private db: IDBDatabase | null = null;
+    // Every write goes through this chain so writes land in call order. Without it a slow
+    // encrypt of an older snapshot could commit after a newer one and silently drop data.
+    private writeChain: Promise<unknown> = Promise.resolve();
+
+    private serialize<T>(fn: () => Promise<T>): Promise<T> {
+        const run = this.writeChain.then(fn, fn);
+        this.writeChain = run.catch(() => undefined);
+        return run;
+    }
     // ... constructor, open ...
 
     public async open(): Promise<void> {
@@ -59,11 +68,17 @@ export class IndexedDBService {
         });
     }
 
-    public async save(data: AppData): Promise<void> {
+    // Does NOT write the sync queue: that key is owned by the queue methods below, so a full
+    // save (which callers build from React state with `syncQueue: []`) can't wipe pending actions.
+    public save(data: AppData): Promise<void> {
+        return this.serialize(() => this.writeAll(data));
+    }
+
+    private async writeAll(data: AppData): Promise<void> {
         await this.ensureOpen();
         
         // Encrypt everything before opening transaction
-        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping, encShoppingLists, encQueue, encProfiles, encActiveProfileId, encContacts, encDebts] = await Promise.all([
+        const [encAccounts, encTrans, encSched, encProfile, encMeta, encBudgets, encGoals, encHistory, encShopping, encShoppingLists, encProfiles, encActiveProfileId, encContacts, encDebts] = await Promise.all([
             encryptData(data.accounts),
             encryptData(data.transactions),
             encryptData(data.scheduledPayments),
@@ -74,7 +89,6 @@ export class IndexedDBService {
             encryptData(data.rateHistory || []),
             encryptData(data.shoppingItems || []),
             encryptData(data.shoppingLists || []),
-            encryptData(data.syncQueue || []),
             encryptData(data.profiles || []),
             encryptData(data.activeProfileId || ''),
             encryptData(data.contacts || []),
@@ -96,7 +110,6 @@ export class IndexedDBService {
             store.put(encHistory, KEYS.HISTORY);
             store.put(encShopping, KEYS.SHOPPING);
             store.put(encShoppingLists, KEYS.SHOPPING_LISTS);
-            store.put(encQueue, KEYS.SYNC_QUEUE);
             store.put(encProfiles, KEYS.PROFILES);
             store.put(encActiveProfileId, KEYS.ACTIVE_PROFILE_ID);
             store.put(encContacts, KEYS.CONTACTS);
@@ -197,37 +210,52 @@ export class IndexedDBService {
         });
     }
 
-    // Sync Queue Specific Methods
-    public async pushToSyncQueue(action: any): Promise<void> {
-        const data = await this.read();
-        if (data) {
-            const queue = data.syncQueue || [];
-            queue.push(action);
-            await this.save({ ...data, syncQueue: queue });
+    // Sync Queue Specific Methods — these touch only the SYNC_QUEUE key. They used to
+    // read() the whole dataset and save() it back, which could rewrite a snapshot taken
+    // before a just-added transaction was committed, losing it if the app was then closed.
+    private async readQueue(): Promise<SyncAction[]> {
+        await this.ensureOpen();
+        const raw = await new Promise<any>((resolve, reject) => {
+            const req = this.db!.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).get(KEYS.SYNC_QUEUE);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+        if (!raw) return [];
+        try {
+            return (await decryptData(raw)) || [];
+        } catch {
+            return [];
         }
+    }
+
+    private mutateQueue(fn: (queue: SyncAction[]) => SyncAction[]): Promise<void> {
+        return this.serialize(async () => {
+            const enc = await encryptData(fn(await this.readQueue()));
+            await new Promise<void>((resolve, reject) => {
+                const tx = this.db!.transaction([STORE_NAME], 'readwrite');
+                tx.objectStore(STORE_NAME).put(enc, KEYS.SYNC_QUEUE);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        });
+    }
+
+    public pushToSyncQueue(action: any): Promise<void> {
+        return this.mutateQueue(queue => [...queue, action]);
     }
 
     public async getSyncQueue(): Promise<any[]> {
-        const data = await this.read();
-        return data?.syncQueue || [];
+        return this.readQueue();
     }
 
-    public async updateSyncStatus(actionId: string, status: 'synced'|'conflict', payload?: any): Promise<void> {
-        const data = await this.read();
-        if (data && data.syncQueue) {
-            const queue = data.syncQueue.map(a => 
-                a.id === actionId ? { ...a, syncStatus: status, payload: payload || a.payload } : a
-            );
-            await this.save({ ...data, syncQueue: queue });
-        }
+    public updateSyncStatus(actionId: string, status: 'synced'|'conflict', payload?: any): Promise<void> {
+        return this.mutateQueue(queue => queue.map(a =>
+            a.id === actionId ? { ...a, syncStatus: status, payload: payload || a.payload } : a
+        ));
     }
 
-    public async removeSyncedFromQueue(): Promise<void> {
-        const data = await this.read();
-        if (data && data.syncQueue) {
-            const queue = data.syncQueue.filter(a => a.syncStatus !== 'synced');
-            await this.save({ ...data, syncQueue: queue });
-        }
+    public removeSyncedFromQueue(): Promise<void> {
+        return this.mutateQueue(queue => queue.filter(a => a.syncStatus !== 'synced'));
     }
 
     public async delete(): Promise<void> {
@@ -253,13 +281,14 @@ export class IndexedDBService {
     
     // "Editar" logic in this context is just overwriting specific fields or the whole object.
     // For completeness as requested: "logica para editar"
-    public async update(partialData: Partial<AppData>): Promise<void> {
-         const current = await this.read();
-         if (!current) {
-             throw new Error("No data to update");
-         }
-         const updated = { ...current, ...partialData };
-         await this.save(updated);
+    public update(partialData: Partial<AppData>): Promise<void> {
+        return this.serialize(async () => {
+            const current = await this.read();
+            if (!current) {
+                throw new Error("No data to update");
+            }
+            await this.writeAll({ ...current, ...partialData });
+        });
     }
 
     public async saveGamificationProfile(profile: GamificationProfile): Promise<void> {

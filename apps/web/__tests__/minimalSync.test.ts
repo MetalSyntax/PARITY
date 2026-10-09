@@ -105,4 +105,24 @@ describe('buildMinimalSyncPayload', () => {
     const sizeInKB = Buffer.byteLength(JSON.stringify(payload), 'utf8') / 1024;
     expect(sizeInKB).toBeLessThan(100);
   });
+
+  it('includes only deletions made after `since`', () => {
+    const payload = buildMinimalSyncPayload({
+      since: '2026-07-10T00:00:00.000Z',
+      syncedAt: '2026-07-24T00:00:00.000Z',
+      transactions: [],
+      accounts: [],
+      scheduledPayments: [],
+      budgets: [],
+      goals: [],
+      shoppingLists: [],
+      userProfile: baseUserProfile,
+      deletedTransactions: [
+        { id: 'old', deletedAt: '2026-07-01T00:00:00.000Z' },
+        { id: 'new', deletedAt: '2026-07-20T00:00:00.000Z' },
+      ],
+    });
+
+    expect(payload.deletedTransactions.map(d => d.id)).toEqual(['new']);
+  });
 });

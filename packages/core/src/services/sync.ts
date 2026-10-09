@@ -76,12 +76,13 @@ export class SyncService {
 
     /**
      * Marks all pending items as synced.
-     * Should be called after a successful Google Drive export.
+     * Should be called after a successful Google Drive export. Pass the upload's start time so
+     * actions queued while it was in flight stay pending for the next sync.
      */
-    public async markQueueAsSynced(): Promise<void> {
+    public async markQueueAsSynced(before: number = Date.now()): Promise<void> {
         const queue = await idbService.getSyncQueue();
         for (const action of queue) {
-            if (action.syncStatus === 'pending') {
+            if (action.syncStatus === 'pending' && action.timestamp <= before) {
                 await idbService.updateSyncStatus(action.id, 'synced');
             }
         }

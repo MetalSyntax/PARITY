@@ -65,9 +65,19 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
         ));
     };
 
-    const [parent, listItems, setListItems] = useDragAndDrop<ShoppingItem>(items, {
+    // formkit sorts listItems live while dragging; committing each intermediate order to the parent
+    // made the "items -> listItems" sync revert the drag mid-gesture. Commit only on drop.
+    const latestRef = useRef({ items, onUpdateItems });
+    latestRef.current = { items, onUpdateItems };
+
+    const [parent, listItems, setListItems] = useDragAndDrop<HTMLDivElement, ShoppingItem>(items, {
         dragHandle: ".drag-handle",
         plugins: [animations()],
+        onDragend: ({ values }) => {
+            const { items: current, onUpdateItems: commit } = latestRef.current;
+            const sorted = values as ShoppingItem[];
+            if (sorted.map(i => i.id).join() !== current.map(i => i.id).join()) commit(sorted);
+        },
     });
 
     const listItemsRef = useRef(listItems);
@@ -78,12 +88,6 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
             setListItems(items);
         }
     }, [items]);
-
-    React.useEffect(() => {
-        if (JSON.stringify(listItems) !== JSON.stringify(items)) {
-            onUpdateItems(listItems);
-        }
-    }, [listItems]);
 
     const addItem = () => {
         if (!newItemName.trim()) return;
@@ -325,7 +329,7 @@ export const ShoppingListView: React.FC<ShoppingListViewProps> = ({
                                     >
                                         <div className="flex items-center justify-between gap-4">
                                             <div className="flex items-center gap-3 overflow-hidden flex-1">
-                                                <div className="drag-handle p-1.5 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-theme-secondary touch-none">
+                                                <div className="drag-handle p-1.5 opacity-50 sm:opacity-0 sm:group-hover:opacity-100 cursor-grab active:cursor-grabbing text-theme-secondary touch-none">
                                                     <GripVertical size={16} />
                                                 </div>
                                                 <button 

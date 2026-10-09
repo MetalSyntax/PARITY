@@ -51,6 +51,7 @@ import { projectMonthEndSpending, calculateRunway, checkBudgetForecasts } from '
 import { Transaction, Account, Currency, TransactionType, ViewState, UserProfile, ScheduledPayment, Budget, Goal, ConfirmConfig, RateType, ShoppingItem, ShoppingList, EntityType, Contact, Debt, convertCurrency } from '@parity/core';
 import { idbService, StorageType, AppData } from '@parity/core';
 import { buildMinimalSyncPayload } from '@parity/core';
+import type { TransactionTombstone } from '@parity/core';
 import { encryptData, decryptData, setWebCryptoSecrets } from '@parity/core';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -82,6 +83,31 @@ const STORAGE_KEY = 'parity_data_v3';
 const MINIMAL_BACKUP_PREFIX = 'parity_sync_';
 const LAST_CLOUD_SYNC_KEY = 'parity_last_cloud_sync_at';
 const OFFLINE_READY_AT_KEY = 'parity_offline_ready_at';
+// Ids of deleted transactions (+ when), so the minimal sync can propagate deletions and a minimal
+// restore doesn't resurrect them. Only opaque ids/timestamps, so it lives with the UI prefs.
+const TX_TOMBSTONES_KEY = 'parity_tx_tombstones';
+const TOMBSTONE_TTL_MS = 180 * 86_400_000;
+
+const readTombstones = (): TransactionTombstone[] => {
+  try {
+    return JSON.parse(localStorage.getItem(TX_TOMBSTONES_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const recordTombstone = (id: string) => {
+  const cutoff = new Date(Date.now() - TOMBSTONE_TTL_MS).toISOString();
+  const kept = readTombstones().filter(d => d.id !== id && d.deletedAt > cutoff);
+  try {
+    localStorage.setItem(TX_TOMBSTONES_KEY, JSON.stringify([...kept, { id, deletedAt: new Date().toISOString() }]));
+  } catch (e) {
+    console.error('[PARITY] Failed to record deletion', e);
+  }
+};
+
+// Any local change to a transaction must bump updatedAt, or the minimal sync never uploads it.
+const touch = <T extends object>(tx: T): T => ({ ...tx, updatedAt: new Date().toISOString() });
 
 /**
  * Main application component that wraps the application with necessary providers.
@@ -405,7 +431,7 @@ function AppContent() {
 
   const {
     handleLogin, exportToCloud, importFromCloud, listCloudBackups,
-    uploadJson, listFilesByPrefix, fetchFileContent,
+    uploadJson, listFilesByPrefix, fetchFileContent, deleteFile,
     isSyncing, isAuthenticated
   } = useGoogleDriveSync({
     fileName: `parity_backup_${new Date().toISOString().split('T')[0]}.json`,
@@ -450,21 +476,30 @@ function AppContent() {
   // buildMinimalSyncPayload strips `receipt` (a full-resolution base64 photo, often 1-5MB
   // apiece) from every transaction — that field alone was what ballooned this "minimal" file
   // into the megabytes. Receipt images still travel via the full backup.
-  const handleMinimalBackup = useCallback(async () => {
+  // `silent` is used by the automatic sync below: no toasts, the queue/watermark still update.
+  const handleMinimalBackup = useCallback(async (silent?: boolean) => {
     if (!isAuthenticated) return;
-    const since = lastCloudSyncAt;
-    const syncedAt = new Date().toISOString();
+    const startedAt = Date.now();
+    const syncedAt = new Date(startedAt).toISOString();
+    const day = syncedAt.split('T')[0];
+    // The file is one-per-day and overwritten on each sync, so it must hold every change since
+    // the start of that day — not just since the previous sync — or same-day syncs erase each other.
+    const dayStart = `${day}T00:00:00.000Z`;
+    const since = lastCloudSyncAt ? (lastCloudSyncAt < dayStart ? lastCloudSyncAt : dayStart) : null;
     const payload = buildMinimalSyncPayload({
       since, syncedAt, transactions, accounts, scheduledPayments, budgets, goals, shoppingLists, userProfile,
+      deletedTransactions: readTombstones(),
     });
-    const fileName = `${MINIMAL_BACKUP_PREFIX}${syncedAt.split('T')[0]}.json`;
+    const fileName = `${MINIMAL_BACKUP_PREFIX}${day}.json`;
     try {
       await uploadJson(fileName, payload);
       setLastCloudSyncAt(syncedAt);
-      showAlert('alert_syncSuccess', 'success');
+      await syncService.markQueueAsSynced(startedAt);
+      setSyncPendingCount(await syncService.getPendingCount());
+      if (silent !== true) showAlert('alert_syncSuccess', 'success');
     } catch (err) {
       console.error('Minimal backup failed', err);
-      showAlert('alert_syncError', 'error');
+      if (silent !== true) showAlert('alert_syncError', 'error');
     }
   }, [isAuthenticated, lastCloudSyncAt, transactions, accounts, scheduledPayments, budgets, goals, shoppingLists, userProfile, uploadJson, showAlert]);
 
@@ -552,8 +587,22 @@ function AppContent() {
 
       let mergedAccounts = [...accounts];
       let mergedTransactions = [...transactions];
+      const localDeletedAt = new Map(readTombstones().map(d => [d.id, d.deletedAt]));
+
+      // Deletions made on the other device: drop the local copy unless it was edited afterwards.
+      (data.deletedTransactions || []).forEach((del: TransactionTombstone) => {
+        const localTx = mergedTransactions.find(t => t.id === del.id);
+        if (localTx && (localTx.updatedAt || '') <= del.deletedAt) {
+          mergedAccounts = applyTransactionDelta(mergedAccounts, localTx, -1);
+          mergedTransactions = mergedTransactions.filter(t => t.id !== del.id);
+          recordTombstone(del.id);
+        }
+      });
 
       (data.transactions || []).forEach((incomingTx: Transaction) => {
+        // Deleted here after the backup's version was written: don't bring it back.
+        const deletedAt = localDeletedAt.get(incomingTx.id);
+        if (deletedAt && deletedAt >= (incomingTx.updatedAt || '')) return;
         const idx = mergedTransactions.findIndex(t => t.id === incomingTx.id);
         if (idx === -1) {
           mergedTransactions = [incomingTx, ...mergedTransactions];
@@ -621,13 +670,14 @@ function AppContent() {
         localStorage.setItem(STORAGE_KEY, encrypted);
       }
 
-      setLastCloudSyncAt(data.syncedAt || new Date().toISOString());
+      // Don't move the upload watermark here: a restore uploads nothing, and advancing it to the
+      // backup's syncedAt would make local changes older than that never reach the cloud.
       showAlert('alert_importSuccess', 'success');
     } catch (err) {
       console.error('Minimal restore failed', err);
       showAlert('alert_importError', 'error');
     }
-  }, [accounts, transactions, budgets, goals, scheduledPayments, shoppingLists, userProfile, exchangeRate, usdRateParallel, euroRate, euroRateParallel, rateHistory, shoppingItems, profiles, activeProfileId, contacts, debts, storageType, fetchFileContent, applyTransactionDelta, mergeByIdNewestWins, setLastCloudSyncAt, showAlert]);
+  }, [accounts, transactions, budgets, goals, scheduledPayments, shoppingLists, userProfile, exchangeRate, usdRateParallel, euroRate, euroRateParallel, rateHistory, shoppingItems, profiles, activeProfileId, contacts, debts, storageType, fetchFileContent, applyTransactionDelta, mergeByIdNewestWins, showAlert]);
 
   const [pendingSync, setPendingSync] = useState(false);
 
@@ -648,6 +698,48 @@ function AppContent() {
       await handleMinimalBackup();
     }
   }, [isAuthenticated, handleLogin, handleMinimalBackup]);
+
+  // Automatic minimal sync while signed in to Drive: debounced after any data change, and flushed
+  // right away when the app is backgrounded (phones often kill the PWA soon after). Also runs once
+  // after load/login so anything left unsynced by a previous session gets uploaded.
+  const minimalBackupRef = useRef(handleMinimalBackup);
+  minimalBackupRef.current = handleMinimalBackup;
+  const autoSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSyncInFlightRef = useRef<Promise<void> | null>(null);
+
+  const runAutoSync = useCallback(() => {
+    if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+    autoSyncTimerRef.current = null;
+    if (!navigator.onLine) return;
+    // Chain behind an in-flight sync so changes made during the upload aren't skipped.
+    const prev = autoSyncInFlightRef.current ?? Promise.resolve();
+    const run = prev.then(() => minimalBackupRef.current(true));
+    autoSyncInFlightRef.current = run.finally(() => {
+      if (autoSyncInFlightRef.current === run) autoSyncInFlightRef.current = null;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isLoaded) return;
+    if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+    autoSyncTimerRef.current = setTimeout(runAutoSync, 5000);
+    // uploadJson is a dep so the sync re-arms once the Drive client finishes initializing.
+  }, [isAuthenticated, isLoaded, transactions, accounts, scheduledPayments, budgets, goals, shoppingLists, uploadJson, runAutoSync]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const flush = () => {
+      if (document.visibilityState === 'hidden' && autoSyncTimerRef.current) runAutoSync();
+    };
+    const onOnline = () => runAutoSync();
+    document.addEventListener('visibilitychange', flush);
+    window.addEventListener('online', onOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', flush);
+      window.removeEventListener('online', onOnline);
+      if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+    };
+  }, [isAuthenticated, runAutoSync]);
 
 
 
@@ -1276,6 +1368,7 @@ function AppContent() {
         if (updated && !skipStateUpdate) {
             setAccounts(updated);
             setTransactions(prev => prev.filter(t => t.id !== id));
+            recordTombstone(id);
             pushToSyncQueue('TRANSACTION', id, 'DELETE', null);
         }
         return updated;
@@ -1288,6 +1381,7 @@ function AppContent() {
             if (updated) {
                 setAccounts(updated);
                 setTransactions(prev => prev.filter(t => t.id !== id));
+                recordTombstone(id);
                 pushToSyncQueue('TRANSACTION', id, 'DELETE', null);
             }
         }
@@ -1764,7 +1858,7 @@ function AppContent() {
                euroRate={userProfile.rateType === 'PARALLEL' ? (euroRateParallel || euroRate) : euroRate}
               euroRateParallel={euroRateParallel}
               usdRateParallel={usdRateParallel}
-              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
+              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? touch(tx) : t))}
               hasFetchedRates={hasFetchedRates}
               onUpdateProfile={handleUpdateProfile}
               syncPendingCount={syncPendingCount}
@@ -1861,6 +1955,7 @@ function AppContent() {
               onExportMinimal={handleMinimalBackup}
               onImportMinimal={handleMinimalRestore}
               listMinimalBackups={() => listFilesByPrefix(MINIMAL_BACKUP_PREFIX)}
+              onDeleteBackup={deleteFile}
               isDevMode={isDevMode}
               onDevModeTrigger={handleDevModeTrigger}
               navbarFavorites={navbarFavorites}
@@ -1990,7 +2085,7 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
               displayCurrency={displayCurrency}
               onToggleDisplayCurrency={toggleDisplayCurrency}
-              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
+              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? touch(tx) : t))}
               initialViewMode={currentView === 'INVOICES' ? 'INVOICES' : 'LIST'}
               showConfirm={showConfirm}
               userProfile={userProfile}
@@ -2027,7 +2122,7 @@ function AppContent() {
             <InvoiceDigitizeView
               onBack={() => setCurrentView('PROFILE')}
               transactions={filteredTransactions}
-              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t))}
+              onUpdateTransaction={(tx) => setTransactions(prev => prev.map(t => t.id === tx.id ? touch(tx) : t))}
               userProfile={userProfile}
               showAlert={showAlert}
             />
@@ -2085,7 +2180,7 @@ function AppContent() {
                 setShowAdd(true);
               }}
               onCreateDirectTransaction={(tx) => {
-                setTransactions(prev => [{ ...tx, id: tx.id || Date.now().toString(), profileId: activeProfileId } as Transaction, ...prev]);
+                setTransactions(prev => [touch({ ...tx, id: tx.id || Date.now().toString(), profileId: activeProfileId } as Transaction), ...prev]);
               }}
               initialTab={currentView === 'DEBT_TRACKER' ? 'DEBTS' : 'CONTACTS'}
             />
@@ -2104,7 +2199,7 @@ function AppContent() {
               profile={userProfile}
               onImportData={handleImportData}
               onImportTransactions={(txs) => {
-                setTransactions(prev => [...(txs as Transaction[]), ...prev]);
+                setTransactions(prev => [...(txs as Transaction[]).map(touch), ...prev]);
               }}
               onBack={() => setCurrentView('DASHBOARD')}
             />

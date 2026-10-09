@@ -25,6 +25,7 @@ interface ProfileViewProps {
   onImportMinimal: (fileId: string) => void;
   listCloudBackups: () => Promise<any[]>;
   listMinimalBackups: () => Promise<any[]>;
+  onDeleteBackup: (fileId: string) => Promise<void>;
   isDevMode: boolean;
   onDevModeTrigger: () => void;
   navbarFavorites: string[];
@@ -59,6 +60,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onImportMinimal,
   listCloudBackups,
   listMinimalBackups,
+  onDeleteBackup,
   isDevMode,
   onDevModeTrigger,
   navbarFavorites,
@@ -90,6 +92,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   const [cloudChoiceMode, setCloudChoiceMode] = useState<'backup' | 'restore' | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<{ id: string; type: 'full' | 'minimal' } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
   const [showTerms, setShowTerms] = useState(false);
@@ -160,6 +163,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setCloudBackupsType(type);
     setCloudBackups(backups);
     setIsLoadingBackups(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      await onDeleteBackup(id);
+      setCloudBackups(prev => prev ? prev.filter(b => b.id !== id) : prev);
+      showAlert(t('backupDeleted'), 'success');
+    } catch (err) {
+      console.error('Delete backup failed', err);
+      showAlert(t('backupDeleteError'), 'error');
+    }
   };
 
   const handleConfirmRestore = () => {
@@ -922,19 +939,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             ) : (
               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                 {cloudBackups.map(bkp => (
-                   <button
-                     key={bkp.id}
-                     onClick={() => {
-                        setCloudBackups(null);
-                        setRestoreTarget({ id: bkp.id, type: cloudBackupsType });
-                     }}
-                     className="w-full text-left p-4 rounded-2xl bg-theme-bg/50 border border-theme-soft hover:bg-theme-soft hover:border-theme-brand/50 transition-all flex flex-col gap-1"
-                   >
-                      <span className="text-sm font-bold text-theme-primary truncate block w-full">{bkp.name}</span>
-                      <span className="text-[10px] text-theme-secondary opacity-70">
-                        {new Date(bkp.modifiedTime).toLocaleString()} • {bkp.size ? (parseInt(bkp.size) / 1024).toFixed(1) + ' KB' : t('unknown')}
-                      </span>
-                   </button>
+                   <div key={bkp.id} className="flex items-stretch gap-2">
+                     <button
+                       onClick={() => {
+                          setCloudBackups(null);
+                          setRestoreTarget({ id: bkp.id, type: cloudBackupsType });
+                       }}
+                       className="flex-1 min-w-0 text-left p-4 rounded-2xl bg-theme-bg/50 border border-theme-soft hover:bg-theme-soft hover:border-theme-brand/50 transition-all flex flex-col gap-1"
+                     >
+                        <span className="text-sm font-bold text-theme-primary truncate block w-full">{bkp.name}</span>
+                        <span className="text-[10px] text-theme-secondary opacity-70">
+                          {new Date(bkp.modifiedTime).toLocaleString()} • {bkp.size ? (parseInt(bkp.size) / 1024).toFixed(1) + ' KB' : t('unknown')}
+                        </span>
+                     </button>
+                     <button
+                       onClick={() => setDeleteTarget({ id: bkp.id, name: bkp.name })}
+                       disabled={isSyncing}
+                       aria-label={`${t('deleteBackup')}: ${bkp.name}`}
+                       title={t('deleteBackup')}
+                       className="shrink-0 w-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 disabled:opacity-40 transition-all flex items-center justify-center"
+                     >
+                       <Trash2 size={16} />
+                     </button>
+                   </div>
                 ))}
               </div>
             )}
@@ -944,6 +971,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             >
                 {t('cancel')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget !== null && (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-theme-surface border border-white/10 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
+            <h3 className="text-xl font-black text-theme-primary mb-1">{t('deleteBackup')}</h3>
+            <p className="text-xs text-theme-secondary mb-3 opacity-60 truncate">{deleteTarget.name}</p>
+            <p className="text-sm text-theme-secondary mb-6">{t('deleteBackupConfirm')}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-4 rounded-2xl bg-theme-bg text-theme-secondary font-bold hover:bg-theme-soft transition-colors text-xs uppercase"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 py-4 rounded-2xl text-white font-black text-xs uppercase shadow-lg active:scale-95 transition-all hover:brightness-110 bg-red-500 shadow-red-500/20"
+              >
+                {t('delete')}
+              </button>
+            </div>
           </div>
         </div>
       )}

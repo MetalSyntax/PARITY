@@ -374,27 +374,27 @@ export const useGoogleDriveSync = <T extends object>({
 
       const fileId = await findFileIdByName(gapi, targetFileName);
       const body = JSON.stringify(data);
+      // fetch() doesn't reject on HTTP errors; without this a 401/5xx counted as a successful sync.
+      const ensureOk = (res: Response) => {
+        if (!res.ok) throw Object.assign(new Error(`Drive upload failed (${res.status})`), { status: res.status });
+        return res;
+      };
 
-      if (fileId) {
-        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body,
-        });
-      } else {
+      let targetId = fileId;
+      if (!targetId) {
         const fileMetadata = { name: targetFileName, mimeType: 'application/json' };
-        const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        const createRes = ensureOk(await fetch('https://www.googleapis.com/drive/v3/files', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(fileMetadata),
-        });
-        const fileJson = await createRes.json();
-        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileJson.id}?uploadType=media`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body,
-        });
+        }));
+        targetId = (await createRes.json()).id;
       }
+      ensureOk(await fetch(`https://www.googleapis.com/upload/drive/v3/files/${targetId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body,
+      }));
     } catch (error: any) {
       console.error('Upload JSON Error', error);
       if (error?.status === 401) {
@@ -448,7 +448,35 @@ export const useGoogleDriveSync = <T extends object>({
       const fileContent = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!fileContent.ok) throw new Error(`Drive download failed (${fileContent.status})`);
       return await fileContent.json();
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [gapiInited, isAuthenticated]);
+
+  // Permanently delete a backup file from Drive (full or minimal).
+  const deleteFile = useCallback(async (fileId: string) => {
+    if (!gapiInited || !isAuthenticated) throw new Error('Not authenticated');
+    setIsSyncing(true);
+    try {
+      const gapi = (window as any).gapi;
+      const token = await getValidToken(gapi);
+      if (!token) {
+        setIsAuthenticated(false);
+        throw new Error('No active session');
+      }
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok && res.status !== 404) {
+        if (res.status === 401) {
+          setIsAuthenticated(false);
+          localStorage.removeItem(GOOGLE_TOKEN_KEY);
+        }
+        throw new Error(`Drive delete failed (${res.status})`);
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -462,6 +490,7 @@ export const useGoogleDriveSync = <T extends object>({
     uploadJson,
     listFilesByPrefix,
     fetchFileContent,
+    deleteFile,
     isSyncing,
     isAuthenticated
   };

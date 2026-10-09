@@ -10,6 +10,13 @@ export interface MinimalSyncPayloadInput {
   goals: Goal[];
   shoppingLists: ShoppingList[];
   userProfile: UserProfile;
+  /** Local record of deleted transactions, so deletions propagate too. */
+  deletedTransactions?: TransactionTombstone[];
+}
+
+export interface TransactionTombstone {
+  id: string;
+  deletedAt: string;
 }
 
 export type MinimalSyncTransaction = Omit<Transaction, 'receipt'>;
@@ -20,6 +27,7 @@ export interface MinimalSyncPayload {
   since: string | null;
   accounts: Account[];
   transactions: MinimalSyncTransaction[];
+  deletedTransactions: TransactionTombstone[];
   scheduledPayments: ScheduledPayment[];
   budgets: Budget[];
   goals: Goal[];
@@ -46,6 +54,7 @@ export function buildMinimalSyncPayload(input: MinimalSyncPayloadInput): Minimal
     since: input.since,
     accounts: input.accounts,
     transactions: changedTransactions,
+    deletedTransactions: (input.deletedTransactions || []).filter(d => !input.since || d.deletedAt > input.since!),
     scheduledPayments: input.scheduledPayments,
     budgets: input.budgets,
     goals: input.goals,
