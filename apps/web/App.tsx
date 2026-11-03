@@ -2198,6 +2198,11 @@ function AppContent() {
               isBalanceVisible={isBalanceVisible}
               profile={userProfile}
               onImportData={handleImportData}
+              scheduledPayments={filteredScheduledPayments}
+              budgets={filteredBudgets}
+              goals={filteredGoals}
+              shoppingLists={filteredShoppingLists}
+              shoppingItems={shoppingItems}
               onImportTransactions={(txs) => {
                 setTransactions(prev => [...(txs as Transaction[]).map(touch), ...prev]);
               }}

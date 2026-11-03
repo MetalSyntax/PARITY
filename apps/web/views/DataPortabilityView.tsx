@@ -7,7 +7,7 @@ import {
   TrendingUp, TrendingDown, Share2, FileDown, FileUp, FileText,
   FileJson, FileSpreadsheet, ArrowLeft
 } from 'lucide-react';
-import { Transaction, Account, Currency, Language, TransactionType, UserProfile } from '@parity/core';
+import { Transaction, Account, Currency, Language, TransactionType, UserProfile, ScheduledPayment, Budget, Goal, ShoppingList, ShoppingItem } from '@parity/core';
 import { getTranslation } from '@parity/i18n';
 import { CATEGORIES } from '../constants';
 
@@ -35,6 +35,12 @@ export interface DataPortabilityViewProps {
   displayCurrency: Currency;
   isBalanceVisible: boolean;
   onImportData: (data: any) => void;
+  /** Para que «Respaldo JSON» incluya todo, igual que la copia de Google Drive. */
+  scheduledPayments?: ScheduledPayment[];
+  budgets?: Budget[];
+  goals?: Goal[];
+  shoppingLists?: ShoppingList[];
+  shoppingItems?: ShoppingItem[];
   onImportTransactions?: (txs: Partial<Transaction>[]) => void;
   onBack?: () => void;
 }
@@ -50,6 +56,11 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
   onImportData,
   onImportTransactions,
   onBack,
+  scheduledPayments,
+  budgets,
+  goals,
+  shoppingLists,
+  shoppingItems,
 }) => {
   const t = (key: any) => getTranslation(lang, key);
   const [activeTab, setActiveTab] = useState<DataTab>(initialTab);
@@ -146,9 +157,15 @@ export const DataPortabilityView: React.FC<DataPortabilityViewProps> = ({
       const backup = {
         version: 3,
         date: new Date().toISOString(),
+        exchangeRate,
         userProfile: profile,
         accounts,
         transactions,
+        scheduledPayments: scheduledPayments ?? [],
+        budgets: budgets ?? [],
+        goals: goals ?? [],
+        shoppingLists: shoppingLists ?? [],
+        shoppingItems: shoppingItems ?? [],
       };
       const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2));
       triggerDownload(dataStr, `parity_backup_${new Date().toISOString().split('T')[0]}.json`);
